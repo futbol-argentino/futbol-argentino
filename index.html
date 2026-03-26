@@ -53,6 +53,9 @@
     <option value="visitante">Victorias visitante</option>
     <option value="empate">Empates</option>
   </select>
+ <select id="filtro-temporada" onchange="filtrar()">
+  <option value="">Todas las temporadas</option>
+</select>
   <table>
     <thead>
       <tr>
@@ -161,7 +164,8 @@ async function cargarDatos() {
         selectEquipo.appendChild(opt);
       });
 
-    filtrar();
+    filtrar()const tempFiltro = document.getElementById('filtro-temporada').value;
+const coincideTemp = !tempFiltro || p.Fase === tempFiltro;
   } catch(e) {
     document.getElementById('tabla-partidos').innerHTML = 
       '<tr><td colspan="5" class="loading">Error cargando datos. Revisá las URLs.</td></tr>';
@@ -211,7 +215,13 @@ tbody.innerHTML = filtrados.slice(0, 200).map(p => {
   }).join('');
 }
 
-cargarDatos();
+cargarDatos()const temporadasUnicas = [...new Set(partidos.map(p => p.Fase))].sort();
+const selectTemp = document.getElementById('filtro-temporada');
+temporadasUnicas.forEach(t => {
+  const opt = document.createElement('option');
+  opt.value = t; opt.textContent = t;
+  selectTemp.appendChild(opt);
+});
 </script>
 </body>
 </html>
