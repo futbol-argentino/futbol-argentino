@@ -42,6 +42,39 @@
   <div class="stat-box"><span id="total-temporadas">-</span><p>Temporadas</p></div>
 </div>
 
+<div id="stats-equipo" style="display:none; margin:20px; padding:20px; background:#1a1a4e; border-radius:12px; border:1px solid #75AADB;">
+  <h2 id="stats-nombre" style="color:#75AADB; margin-bottom:15px; text-align:center;"></h2>
+  <div style="display:flex; justify-content:center; gap:15px; flex-wrap:wrap;">
+    <div style="background:#0a0a2e; padding:15px 20px; border-radius:10px; text-align:center; min-width:80px;">
+      <span id="stats-pj" style="display:block; font-size:28px; font-weight:bold; color:#75AADB;">0</span>
+      <p style="color:#aaa; font-size:12px;">PJ</p>
+    </div>
+    <div style="background:#0a0a2e; padding:15px 20px; border-radius:10px; text-align:center; min-width:80px;">
+      <span id="stats-pg" style="display:block; font-size:28px; font-weight:bold; color:#27AE60;">0</span>
+      <p style="color:#aaa; font-size:12px;">PG</p>
+    </div>
+    <div style="background:#0a0a2e; padding:15px 20px; border-radius:10px; text-align:center; min-width:80px;">
+      <span id="stats-pe" style="display:block; font-size:28px; font-weight:bold; color:#F39C12;">0</span>
+      <p style="color:#aaa; font-size:12px;">PE</p>
+    </div>
+    <div style="background:#0a0a2e; padding:15px 20px; border-radius:10px; text-align:center; min-width:80px;">
+      <span id="stats-pp" style="display:block; font-size:28px; font-weight:bold; color:#E74C3C;">0</span>
+      <p style="color:#aaa; font-size:12px;">PP</p>
+    </div>
+    <div style="background:#0a0a2e; padding:15px 20px; border-radius:10px; text-align:center; min-width:80px;">
+      <span id="stats-gf" style="display:block; font-size:28px; font-weight:bold; color:#75AADB;">0</span>
+      <p style="color:#aaa; font-size:12px;">GF</p>
+    </div>
+    <div style="background:#0a0a2e; padding:15px 20px; border-radius:10px; text-align:center; min-width:80px;">
+      <span id="stats-gc" style="display:block; font-size:28px; font-weight:bold; color:#75AADB;">0</span>
+      <p style="color:#aaa; font-size:12px;">GC</p>
+    </div>
+    <div style="background:#0a0a2e; padding:15px 20px; border-radius:10px; text-align:center; min-width:80px;">
+      <span id="stats-dg" style="display:block; font-size:28px; font-weight:bold; color:#75AADB;">0</span>
+      <p style="color:#aaa; font-size:12px;">DG</p>
+    </div>
+  </div>
+</div>
 <div class="buscador">
   <input type="text" id="buscar" placeholder="🔍 Buscar equipo..." oninput="filtrar()">
   <select id="filtro-equipo" onchange="filtrar()">
@@ -168,7 +201,28 @@ async function cargarDatos() {
   }
 }
 
-function filtrar() {
+function filtrar() {const equipoSeleccionado = document.getElementById('filtro-equipo').value;
+  if (equipoSeleccionado) {
+    const nombreEquipo = equipos[equipoSeleccionado];
+    const partEquipo = partidos.filter(p => p.Local_ID === equipoSeleccionado || p.Visitante_ID === equipoSeleccionado);
+    const pj = partEquipo.length;
+    const pg = partEquipo.filter(p => p.Tipo_Definicion === '0' && p.ID_Ganador === equipoSeleccionado).length;
+    const pp = partEquipo.filter(p => p.Tipo_Definicion === '0' && p.ID_Ganador !== equipoSeleccionado && p.ID_Ganador !== '').length;
+    const pe = pj - pg - pp;
+    const gf = partEquipo.reduce((acc, p) => acc + (p.Local_ID === equipoSeleccionado ? parseInt(p.Goles_Local)||0 : parseInt(p.Goles_Visitante)||0), 0);
+    const gc = partEquipo.reduce((acc, p) => acc + (p.Local_ID === equipoSeleccionado ? parseInt(p.Goles_Visitante)||0 : parseInt(p.Goles_Local)||0), 0);
+    document.getElementById('stats-equipo').style.display = 'block';
+    document.getElementById('stats-nombre').textContent = nombreEquipo;
+    document.getElementById('stats-pj').textContent = pj;
+    document.getElementById('stats-pg').textContent = pg;
+    document.getElementById('stats-pe').textContent = pe;
+    document.getElementById('stats-pp').textContent = pp;
+    document.getElementById('stats-gf').textContent = gf;
+    document.getElementById('stats-gc').textContent = gc;
+    document.getElementById('stats-dg').textContent = gf - gc;
+  } else {
+    document.getElementById('stats-equipo').style.display = 'none';
+  }
   const buscar = document.getElementById('buscar').value.toLowerCase();
   const equipoFiltro = document.getElementById('filtro-equipo').value;
   const resultadoFiltro = document.getElementById('filtro-resultado').value;
