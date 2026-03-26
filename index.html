@@ -837,7 +837,7 @@ function filtrar() {
       const fecha = p.Fecha ? p.Fecha.split('T')[0] : '';
       const torneo = temporadas[p.ID_Temporada] || p.Fase || '';
       const resClass = resultadoClase(p.Goles_Local, p.Goles_Visitante);
-      return `<tr>
+      return `<tr onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
         <td class="td-fecha">${fecha}</td>
         <td><div class="td-equipo">${escudo(local)}<span class="td-nombre">${local}</span></div></td>
         <td class="td-resultado"><span class="${resClass}">${p.Goles_Local} - ${p.Goles_Visitante}</span></td>
@@ -904,7 +904,67 @@ function filtrar() {
   }
 }
 
+function verPartido(id) {
+  const p = partidos.find(x => x.ID_Partido == id);
+  if (!p) return;
+  const local = equipos[p.Local_ID] || p.Local_ID;
+  const visitante = equipos[p.Visitante_ID] || p.Visitante_ID;
+  const torneo = temporadas[p.ID_Temporada] || p.Fase || '';
+  const fecha = p.Fecha ? p.Fecha.split('T')[0] : '';
+  document.getElementById('modal-titulo').textContent = local + ' vs ' + visitante;
+  document.getElementById('modal-fecha').textContent = fecha;
+  document.getElementById('modal-torneo').textContent = torneo;
+  document.getElementById('modal-resultado').textContent = p.Goles_Local + ' - ' + p.Goles_Visitante;
+  document.getElementById('modal-fase').textContent = p.Fase || '';
+  document.getElementById('modal-estadio').textContent = p.Estadio || 'No disponible';
+  document.getElementById('modal-goleadores').textContent = p.Goleadores || 'No disponible';
+  document.getElementById('modal-amonestados').textContent = p.Amonestados || 'No disponible';
+  document.getElementById('modal-expulsados').textContent = p.Expulsados || 'No disponible';
+  document.getElementById('modal').style.display = 'flex';
+}
+
+function cerrarModal() {
+  document.getElementById('modal').style.display = 'none';
+}
 cargarDatos();
 </script>
+<div id="modal" onclick="cerrarModal()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:1000; align-items:center; justify-content:center; padding:20px;">
+  <div onclick="event.stopPropagation()" style="background:#0C1A30; border:1px solid rgba(117,170,219,0.3); border-radius:20px; padding:32px; max-width:600px; width:100%; max-height:90vh; overflow-y:auto;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <div style="font-family:'Barlow Condensed',sans-serif; font-size:24px; font-weight:800;" id="modal-titulo"></div>
+      <button onclick="cerrarModal()" style="background:transparent; border:none; color:#8A9BB5; font-size:24px; cursor:pointer;">✕</button>
+    </div>
+    <div style="text-align:center; margin-bottom:24px;">
+      <div style="font-family:'Barlow Condensed',sans-serif; font-size:52px; font-weight:800; color:#75AADB;" id="modal-resultado"></div>
+      <div style="color:#8A9BB5; font-size:13px; margin-top:4px;" id="modal-fecha"></div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      <div style="background:#060E1E; border-radius:10px; padding:14px;">
+        <div style="font-size:10px; color:#8A9BB5; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Torneo</div>
+        <div style="font-size:14px; font-weight:500;" id="modal-torneo"></div>
+      </div>
+      <div style="background:#060E1E; border-radius:10px; padding:14px;">
+        <div style="font-size:10px; color:#8A9BB5; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Fase</div>
+        <div style="font-size:14px; font-weight:500;" id="modal-fase"></div>
+      </div>
+      <div style="background:#060E1E; border-radius:10px; padding:14px; grid-column:span 2;">
+        <div style="font-size:10px; color:#8A9BB5; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Estadio</div>
+        <div style="font-size:14px; font-weight:500;" id="modal-estadio"></div>
+      </div>
+      <div style="background:#060E1E; border-radius:10px; padding:14px; grid-column:span 2;">
+        <div style="font-size:10px; color:#8A9BB5; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Goleadores</div>
+        <div style="font-size:14px; font-weight:500;" id="modal-goleadores"></div>
+      </div>
+      <div style="background:#060E1E; border-radius:10px; padding:14px;">
+        <div style="font-size:10px; color:#8A9BB5; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Amonestados</div>
+        <div style="font-size:14px; font-weight:500;" id="modal-amonestados"></div>
+      </div>
+      <div style="background:#060E1E; border-radius:10px; padding:14px;">
+        <div style="font-size:10px; color:#8A9BB5; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Expulsados</div>
+        <div style="font-size:14px; font-weight:500;" id="modal-expulsados"></div>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
