@@ -4,138 +4,681 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Base de Datos del Fútbol Argentino</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: Arial, sans-serif; background: #0a0a2e; color: white; }
-  header { background: #1a1a4e; padding: 20px; text-align: center; border-bottom: 3px solid #75AADB; }
-  header h1 { color: #75AADB; font-size: 24px; }
-  header p { color: #aaa; font-size: 14px; margin-top: 5px; }
-  .buscador { padding: 20px; background: #111133; }
-  .buscador input, .buscador select { 
-    padding: 10px; margin: 5px; border-radius: 8px; 
-    border: 1px solid #75AADB; background: #0a0a2e; 
-    color: white; font-size: 14px; width: calc(50% - 12px);
+  :root {
+    --azul: #0057A8;
+    --azul-oscuro: #003D7A;
+    --azul-medio: #0A1F44;
+    --celeste: #75AADB;
+    --celeste-claro: #A8CBF0;
+    --blanco: #F5F7FA;
+    --gris-claro: #E8EDF4;
+    --gris-medio: #8A9BB5;
+    --fondo: #060E1E;
+    --fondo2: #0C1A30;
+    --fondo3: #0F2040;
+    --verde: #00C853;
+    --rojo: #FF3D3D;
+    --amarillo: #FFB300;
+    --borde: rgba(117,170,219,0.15);
+    --borde-activo: rgba(117,170,219,0.5);
   }
-  .buscador input { width: calc(100% - 10px); margin-bottom: 10px; }
-  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-  th { background: #1a1a4e; color: #75AADB; padding: 12px 8px; text-align: left; font-size: 13px; }
-  td { padding: 10px 8px; border-bottom: 1px solid #222244; font-size: 13px; }
-  tr:hover { background: #111133; }
-  .resultado { text-align: center; font-weight: bold; font-size: 16px; color: #75AADB; }
-  .loading { text-align: center; padding: 40px; color: #75AADB; }
-  .stats { display: flex; justify-content: center; gap: 20px; padding: 15px; background: #111133; flex-wrap: wrap; }
-  .stat-box { background: #1a1a4e; padding: 15px 25px; border-radius: 10px; text-align: center; border: 1px solid #75AADB; }
-  .stat-box span { display: block; font-size: 28px; font-weight: bold; color: #75AADB; }
-  .stat-box p { font-size: 12px; color: #aaa; margin-top: 4px; }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Barlow', sans-serif;
+    background: var(--fondo);
+    color: var(--blanco);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: relative;
+    background: linear-gradient(135deg, #060E1E 0%, #0A1F44 50%, #003D7A 100%);
+    padding: 0;
+    overflow: hidden;
+    border-bottom: 2px solid var(--azul);
+  }
+
+  header::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 320px; height: 320px;
+    background: radial-gradient(circle, rgba(117,170,219,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; left: 10%;
+    width: 400px; height: 200px;
+    background: radial-gradient(ellipse, rgba(0,87,168,0.2) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .header-inner {
+    position: relative;
+    z-index: 1;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 28px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .header-icon {
+    width: 52px; height: 52px;
+    background: linear-gradient(135deg, var(--azul), var(--celeste));
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    box-shadow: 0 4px 20px rgba(0,87,168,0.4);
+    flex-shrink: 0;
+  }
+
+  .header-text h1 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: clamp(20px, 3vw, 30px);
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: var(--blanco);
+    line-height: 1.1;
+  }
+
+  .header-text h1 span { color: var(--celeste); }
+
+  .header-text p {
+    font-size: 13px;
+    color: var(--gris-medio);
+    margin-top: 3px;
+    font-weight: 300;
+    letter-spacing: 0.3px;
+  }
+
+  /* ── STATS GLOBALES ── */
+  .stats-bar {
+    background: var(--fondo2);
+    border-bottom: 1px solid var(--borde);
+    padding: 0 32px;
+  }
+
+  .stats-bar-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    gap: 0;
+  }
+
+  .stat-item {
+    padding: 16px 32px 16px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-right: 1px solid var(--borde);
+    margin-right: 32px;
+  }
+
+  .stat-item:last-child { border-right: none; margin-right: 0; }
+
+  .stat-num {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--celeste);
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--gris-medio);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-weight: 500;
+  }
+
+  /* ── MAIN ── */
+  .main {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px 32px;
+  }
+
+  /* ── PANEL DE FILTROS ── */
+  .filtros-panel {
+    background: var(--fondo2);
+    border: 1px solid var(--borde);
+    border-radius: 16px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+  }
+
+  .filtros-titulo {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--gris-medio);
+    margin-bottom: 14px;
+  }
+
+  .filtros-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 12px;
+    align-items: end;
+  }
+
+  .filtro-grupo { display: flex; flex-direction: column; gap: 6px; }
+
+  .filtro-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--gris-medio);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+
+  .filtro-input, .filtro-select {
+    background: var(--fondo3);
+    border: 1px solid var(--borde);
+    border-radius: 10px;
+    color: var(--blanco);
+    font-family: 'Barlow', sans-serif;
+    font-size: 14px;
+    padding: 10px 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    width: 100%;
+  }
+
+  .filtro-input::placeholder { color: var(--gris-medio); }
+
+  .filtro-input:focus, .filtro-select:focus {
+    border-color: var(--celeste);
+    box-shadow: 0 0 0 3px rgba(117,170,219,0.12);
+  }
+
+  .filtro-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238A9BB5' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+    cursor: pointer;
+  }
+
+  .btn-limpiar {
+    background: transparent;
+    border: 1px solid var(--borde);
+    border-radius: 10px;
+    color: var(--gris-medio);
+    font-family: 'Barlow', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 10px 18px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-limpiar:hover {
+    border-color: var(--celeste);
+    color: var(--celeste);
+  }
+
+  /* ── STATS EQUIPO ── */
+  .stats-card {
+    display: none;
+    background: var(--fondo2);
+    border: 1px solid var(--borde-activo);
+    border-radius: 16px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+  }
+
+  .stats-card.visible { display: block; }
+
+  .stats-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--borde);
+  }
+
+  .stats-card-escudo {
+    width: 40px; height: 40px;
+    object-fit: contain;
+  }
+
+  .stats-card-nombre {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--blanco);
+  }
+
+  .stats-card-sub {
+    font-size: 12px;
+    color: var(--gris-medio);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-top: 2px;
+  }
+
+  .stats-nums {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .stat-pill {
+    flex: 1;
+    min-width: 70px;
+    background: var(--fondo3);
+    border-radius: 10px;
+    padding: 12px 10px;
+    text-align: center;
+    border: 1px solid var(--borde);
+  }
+
+  .stat-pill-num {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1;
+    display: block;
+  }
+
+  .stat-pill-num.verde { color: var(--verde); }
+  .stat-pill-num.rojo { color: var(--rojo); }
+  .stat-pill-num.amarillo { color: var(--amarillo); }
+  .stat-pill-num.celeste { color: var(--celeste); }
+
+  .stat-pill-label {
+    font-size: 10px;
+    color: var(--gris-medio);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-top: 4px;
+    font-weight: 500;
+    display: block;
+  }
+
+  /* ── TABLA ── */
+  .tabla-wrapper {
+    background: var(--fondo2);
+    border: 1px solid var(--borde);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .tabla-header {
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--borde);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .tabla-titulo {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--blanco);
+    letter-spacing: 0.5px;
+  }
+
+  .tabla-count {
+    font-size: 12px;
+    color: var(--gris-medio);
+    background: var(--fondo3);
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--borde);
+  }
+
+  .tabla-scroll { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px;
+  }
+
+  thead tr {
+    background: var(--fondo3);
+    border-bottom: 1px solid var(--borde);
+  }
+
+  th {
+    padding: 12px 16px;
+    text-align: left;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--gris-medio);
+    white-space: nowrap;
+  }
+
+  th.center { text-align: center; }
+
+  tbody tr {
+    border-bottom: 1px solid var(--borde);
+    transition: background 0.15s;
+  }
+
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(117,170,219,0.05); }
+
+  td {
+    padding: 11px 16px;
+    font-size: 14px;
+    color: var(--blanco);
+    vertical-align: middle;
+  }
+
+  .td-fecha {
+    color: var(--gris-medio);
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .td-equipo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    white-space: nowrap;
+  }
+
+  .td-escudo {
+    width: 22px; height: 22px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+
+  .td-nombre { font-weight: 500; }
+
+  .td-resultado {
+    text-align: center;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    white-space: nowrap;
+    letter-spacing: 1px;
+  }
+
+  .res-local { color: var(--verde); }
+  .res-empate { color: var(--amarillo); }
+  .res-visita { color: var(--rojo); }
+
+  .td-torneo {
+    font-size: 12px;
+    color: var(--gris-medio);
+  }
+
+  .badge-torneo {
+    display: inline-block;
+    background: rgba(117,170,219,0.1);
+    border: 1px solid rgba(117,170,219,0.2);
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 11px;
+    color: var(--celeste-claro);
+    white-space: nowrap;
+  }
+
+  .loading-row td {
+    text-align: center;
+    padding: 48px;
+    color: var(--gris-medio);
+    font-size: 14px;
+  }
+
+  .dot-loading::after {
+    content: '';
+    animation: dots 1.2s infinite;
+  }
+
+  @keyframes dots {
+    0%,20% { content: '.'; }
+    40% { content: '..'; }
+    60%,100% { content: '...'; }
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    .header-inner { padding: 20px 16px; }
+    .stats-bar { padding: 0 16px; }
+    .stats-bar-inner { gap: 0; overflow-x: auto; }
+    .stat-item { padding: 12px 20px 12px 0; margin-right: 20px; flex-shrink: 0; }
+    .main { padding: 16px; }
+    .filtros-panel { padding: 16px; }
+    .filtros-grid { grid-template-columns: 1fr 1fr; }
+    .btn-limpiar { grid-column: span 2; }
+    .stats-nums { gap: 6px; }
+    .stat-pill { min-width: 60px; padding: 10px 8px; }
+    .stat-pill-num { font-size: 22px; }
+    .tabla-header { padding: 12px 16px; }
+    th, td { padding: 10px 12px; }
+    .td-escudo { width: 18px; height: 18px; }
+    .td-resultado { font-size: 16px; }
+  }
+
+  @media (max-width: 480px) {
+    .filtros-grid { grid-template-columns: 1fr; }
+    .btn-limpiar { grid-column: span 1; }
+    .header-text h1 { font-size: 18px; }
+  }
+
+  /* ── SELECT OPTIONS ── */
+  select option { background: #0C1A30; color: #F5F7FA; }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>⚽ Base de Datos del Fútbol Argentino</h1>
-  <p>El historial más completo del fútbol argentino</p>
+  <div class="header-inner">
+    <div class="header-brand">
+      <div class="header-icon">⚽</div>
+      <div class="header-text">
+        <h1>Fútbol <span>Argentino</span></h1>
+        <p>La base de datos más completa del fútbol nacional</p>
+      </div>
+    </div>
+  </div>
 </header>
 
-<div class="stats">
-  <div class="stat-box"><span id="total-partidos">-</span><p>Partidos</p></div>
-  <div class="stat-box"><span id="total-equipos">-</span><p>Equipos</p></div>
-  <div class="stat-box"><span id="total-temporadas">-</span><p>Temporadas</p></div>
+<div class="stats-bar">
+  <div class="stats-bar-inner">
+    <div class="stat-item">
+      <div>
+        <div class="stat-num" id="total-partidos">-</div>
+        <div class="stat-label">Partidos</div>
+      </div>
+    </div>
+    <div class="stat-item">
+      <div>
+        <div class="stat-num" id="total-equipos">-</div>
+        <div class="stat-label">Equipos</div>
+      </div>
+    </div>
+    <div class="stat-item">
+      <div>
+        <div class="stat-num" id="total-temporadas">-</div>
+        <div class="stat-label">Temporadas</div>
+      </div>
+    </div>
+  </div>
 </div>
 
-<div id="stats-enfrentamiento" style="display:none; margin:20px; padding:20px; background:#1a1a4e; border-radius:12px; border:1px solid #75AADB;">
-  <h2 id="enf-titulo" style="color:#75AADB; margin-bottom:15px; text-align:center;"></h2>
-  <div style="display:flex; justify-content:center; gap:15px; flex-wrap:wrap;">
-    <div style="background:#0a0a2e; padding:15px 20px; border-radius:10px; text-align:center; min-width:80px;">
-      <span id="enf-pj" style="display:block; font-size:28px; font-weight:bold; color:#75AADB;">0</span>
-      <p style="color:#aaa; font-size:12px;">Partidos</p>
-    </div>
-    <div style="background:#0a0a2e; padding:15px 20px; border-radius:10px; text-align:center; min-width:80px;">
-      <span id="enf-g1" style="display:block; font-size:28px; font-weight:bold; color:#27AE60;">0</span>
-      <p id="enf-g1-nombre" style="color:#aaa; font-size:12px;">Equipo 1</p>
-    </div>
-    <div style="background:#0a0a2e; padding:15px 20px; border-radius:10px; text-align:center; min-width:80px;">
-      <span id="enf-emp" style="display:block; font-size:28px; font-weight:bold; color:#F39C12;">0</span>
-      <p style="color:#aaa; font-size:12px;">Empates</p>
-    </div>
-    <div style="background:#0a0a2e; padding:15px 20px; border-radius:10px; text-align:center; min-width:80px;">
-      <span id="enf-g2" style="display:block; font-size:28px; font-weight:bold; color:#E74C3C;">0</span>
-      <p id="enf-g2-nombre" style="color:#aaa; font-size:12px;">Equipo 2</p>
-    </div>
-    <div style="background:#0a0a2e; padding:15px 20px; border-radius:10px; text-align:center; min-width:80px;">
-      <span id="enf-gf1" style="display:block; font-size:28px; font-weight:bold; color:#75AADB;">0</span>
-      <p id="enf-gf1-nombre" style="color:#aaa; font-size:12px;">Goles E1</p>
-    </div>
-    <div style="background:#0a0a2e; padding:15px 20px; border-radius:10px; text-align:center; min-width:80px;">
-      <span id="enf-gf2" style="display:block; font-size:28px; font-weight:bold; color:#75AADB;">0</span>
-      <p id="enf-gf2-nombre" style="color:#aaa; font-size:12px;">Goles E2</p>
-    </div>
-  </div>
-</div>
-<div id="stats-equipo" style="display:none; margin:20px; padding:20px; background:#1a1a4e; border-radius:12px; border:1px solid #75AADB;">
-  <h2 id="stats-nombre" style="color:#75AADB; margin-bottom:15px; text-align:center;"></h2>
-  <div style="display:flex; justify-content:center; gap:15px; flex-wrap:wrap;">
-    <div style="background:#0a0a2e; padding:15px 20px; border-radius:10px; text-align:center; min-width:80px;">
-      <span id="stats-pj" style="display:block; font-size:28px; font-weight:bold; color:#75AADB;">0</span>
-      <p style="color:#aaa; font-size:12px;">PJ</p>
-    </div>
-    <div style="background:#0a0a2e; padding:15px 20px; border-radius:10px; text-align:center; min-width:80px;">
-      <span id="stats-pg" style="display:block; font-size:28px; font-weight:bold; color:#27AE60;">0</span>
-      <p style="color:#aaa; font-size:12px;">PG</p>
-    </div>
-    <div style="background:#0a0a2e; padding:15px 20px; border-radius:10px; text-align:center; min-width:80px;">
-      <span id="stats-pe" style="display:block; font-size:28px; font-weight:bold; color:#F39C12;">0</span>
-      <p style="color:#aaa; font-size:12px;">PE</p>
-    </div>
-    <div style="background:#0a0a2e; padding:15px 20px; border-radius:10px; text-align:center; min-width:80px;">
-      <span id="stats-pp" style="display:block; font-size:28px; font-weight:bold; color:#E74C3C;">0</span>
-      <p style="color:#aaa; font-size:12px;">PP</p>
-    </div>
-    <div style="background:#0a0a2e; padding:15px 20px; border-radius:10px; text-align:center; min-width:80px;">
-      <span id="stats-gf" style="display:block; font-size:28px; font-weight:bold; color:#75AADB;">0</span>
-      <p style="color:#aaa; font-size:12px;">GF</p>
-    </div>
-    <div style="background:#0a0a2e; padding:15px 20px; border-radius:10px; text-align:center; min-width:80px;">
-      <span id="stats-gc" style="display:block; font-size:28px; font-weight:bold; color:#75AADB;">0</span>
-      <p style="color:#aaa; font-size:12px;">GC</p>
-    </div>
-    <div style="background:#0a0a2e; padding:15px 20px; border-radius:10px; text-align:center; min-width:80px;">
-      <span id="stats-dg" style="display:block; font-size:28px; font-weight:bold; color:#75AADB;">0</span>
-      <p style="color:#aaa; font-size:12px;">DG</p>
+<div class="main">
+
+  <!-- FILTROS -->
+  <div class="filtros-panel">
+    <div class="filtros-titulo">🔍 Filtros de búsqueda</div>
+    <div class="filtros-grid">
+      <div class="filtro-grupo">
+        <label class="filtro-label">Buscar equipo</label>
+        <input type="text" id="buscar" class="filtro-input" placeholder="Ej: Boca, River..." oninput="filtrar()">
+      </div>
+      <div class="filtro-grupo">
+        <label class="filtro-label">Equipo</label>
+        <select id="filtro-equipo" class="filtro-select" onchange="filtrar()">
+          <option value="">Todos los equipos</option>
+        </select>
+      </div>
+      <div class="filtro-grupo">
+        <label class="filtro-label">Contra</label>
+        <select id="filtro-equipo2" class="filtro-select" onchange="filtrar()">
+          <option value="">Cualquier equipo</option>
+        </select>
+      </div>
+      <div class="filtro-grupo">
+        <label class="filtro-label">Resultado</label>
+        <select id="filtro-resultado" class="filtro-select" onchange="filtrar()">
+          <option value="">Todos</option>
+          <option value="local">Victoria local</option>
+          <option value="visitante">Victoria visitante</option>
+          <option value="empate">Empate</option>
+        </select>
+      </div>
+      <button class="btn-limpiar" onclick="limpiarFiltros()">✕ Limpiar</button>
     </div>
   </div>
-</div>
-<div class="buscador">
-  <input type="text" id="buscar" placeholder="🔍 Buscar equipo..." oninput="filtrar()">
-  <select id="filtro-equipo" onchange="filtrar()">
-    <option value="">Todos los equipos</option>
-  </select>
- <select id="filtro-equipo2" onchange="filtrar()">
-  <option value="">Contra cualquier equipo</option>
-</select>
-  <select id="filtro-resultado" onchange="filtrar()">
-    <option value="">Todos los resultados</option>
-    <option value="local">Victorias local</option>
-    <option value="visitante">Victorias visitante</option>
-    <option value="empate">Empates</option>
-  </select>
-  <table>
-    <thead>
-      <tr>
-        <th>Fecha</th>
-        <th>Local</th>
-        <th>Resultado</th>
-        <th>Visitante</th>
-        <th>Competencia</th>
-      </tr>
-    </thead>
-    <tbody id="tabla-partidos">
-      <tr><td colspan="5" class="loading">Cargando partidos...</td></tr>
-    </tbody>
-  </table>
+
+  <!-- STATS ENFRENTAMIENTO -->
+  <div id="stats-enfrentamiento" class="stats-card">
+    <div class="stats-card-header">
+      <div>
+        <div class="stats-card-nombre" id="enf-titulo"></div>
+        <div class="stats-card-sub">Historial de enfrentamientos</div>
+      </div>
+    </div>
+    <div class="stats-nums">
+      <div class="stat-pill">
+        <span class="stat-pill-num celeste" id="enf-pj">0</span>
+        <span class="stat-pill-label">Partidos</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-pill-num verde" id="enf-g1">0</span>
+        <span class="stat-pill-label" id="enf-g1-nombre">Equipo 1</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-pill-num amarillo" id="enf-emp">0</span>
+        <span class="stat-pill-label">Empates</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-pill-num rojo" id="enf-g2">0</span>
+        <span class="stat-pill-label" id="enf-g2-nombre">Equipo 2</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-pill-num celeste" id="enf-gf1">0</span>
+        <span class="stat-pill-label" id="enf-gf1-nombre">Goles E1</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-pill-num celeste" id="enf-gf2">0</span>
+        <span class="stat-pill-label" id="enf-gf2-nombre">Goles E2</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATS EQUIPO -->
+  <div id="stats-equipo" class="stats-card">
+    <div class="stats-card-header">
+      <img id="stats-escudo" class="stats-card-escudo" src="" alt="" onerror="this.style.display='none'">
+      <div>
+        <div class="stats-card-nombre" id="stats-nombre"></div>
+        <div class="stats-card-sub">Estadísticas históricas</div>
+      </div>
+    </div>
+    <div class="stats-nums">
+      <div class="stat-pill">
+        <span class="stat-pill-num celeste" id="stats-pj">0</span>
+        <span class="stat-pill-label">PJ</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-pill-num verde" id="stats-pg">0</span>
+        <span class="stat-pill-label">PG</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-pill-num amarillo" id="stats-pe">0</span>
+        <span class="stat-pill-label">PE</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-pill-num rojo" id="stats-pp">0</span>
+        <span class="stat-pill-label">PP</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-pill-num celeste" id="stats-gf">0</span>
+        <span class="stat-pill-label">GF</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-pill-num celeste" id="stats-gc">0</span>
+        <span class="stat-pill-label">GC</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-pill-num celeste" id="stats-dg">0</span>
+        <span class="stat-pill-label">DG</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA -->
+  <div class="tabla-wrapper">
+    <div class="tabla-header">
+      <div class="tabla-titulo">Partidos</div>
+      <div class="tabla-count" id="tabla-count">Cargando...</div>
+    </div>
+    <div class="tabla-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Local</th>
+            <th class="center">Resultado</th>
+            <th>Visitante</th>
+            <th>Torneo</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-partidos">
+          <tr class="loading-row">
+            <td colspan="5"><span class="dot-loading">Cargando partidos</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
 </div>
 
 <script>
 const URL_PARTIDOS = 'Partidos.csv';
+const URL_EQUIPOS = 'Equipos.csv';
+const URL_TEMPORADAS = 'Temporadas.csv';
+
 const ESCUDOS = {
   'Aldosivi': 'escudos/aldosivi.png',
   'All Boys': 'escudos/all_boys.png',
@@ -184,7 +727,7 @@ const ESCUDOS = {
   'Union': 'escudos/union.png',
   'Velez Sarsfield': 'escudos/velez_sarsfield.png'
 };
-const URL_EQUIPOS = 'Equipos.csv';
+
 let partidos = [];
 let equipos = {};
 let temporadas = {};
@@ -202,15 +745,21 @@ function csvToArray(csv) {
 
 async function cargarDatos() {
   try {
-    const [resP, resE] = await Promise.all([
+    const [resP, resE, resT] = await Promise.all([
       fetch(URL_PARTIDOS),
-      fetch(URL_EQUIPOS)
+      fetch(URL_EQUIPOS),
+      fetch(URL_TEMPORADAS)
     ]);
     const csvP = await resP.text();
     const csvE = await resE.text();
+    const csvT = await resT.text();
 
     const equiposArr = csvToArray(csvE);
     equiposArr.forEach(e => equipos[e.ID_Equipo] = e.Nombre_Equipo);
+
+    const temporadasArr = csvToArray(csvT);
+    temporadasArr.forEach(t => temporadas[t.ID_Temporada] = t.Competencia);
+    document.getElementById('total-temporadas').textContent = temporadasArr.length;
 
     partidos = csvToArray(csvP).filter(p => p.ID_Partido);
 
@@ -218,47 +767,104 @@ async function cargarDatos() {
     document.getElementById('total-equipos').textContent = equiposArr.length;
 
     const selectEquipo = document.getElementById('filtro-equipo');
-    equiposArr.sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo))
-      .forEach(e => {
-       const selectEquipo2 = document.getElementById('filtro-equipo2');
-equiposArr.sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo))
-  .forEach(e => {
-    const opt = document.createElement('option');
-    opt.value = e.ID_Equipo;
-    opt.textContent = e.Nombre_Equipo;
-    selectEquipo2.appendChild(opt);
-  });
+    const selectEquipo2 = document.getElementById('filtro-equipo2');
+    equiposArr.sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo)).forEach(e => {
+      [selectEquipo, selectEquipo2].forEach(sel => {
         const opt = document.createElement('option');
         opt.value = e.ID_Equipo;
         opt.textContent = e.Nombre_Equipo;
-        selectEquipo.appendChild(opt);
+        sel.appendChild(opt);
       });
+    });
 
     filtrar();
   } catch(e) {
-    document.getElementById('tabla-partidos').innerHTML = 
-      '<tr><td colspan="5" class="loading">Error cargando datos. Revisá las URLs.</td></tr>';
+    document.getElementById('tabla-partidos').innerHTML =
+      '<tr class="loading-row"><td colspan="5">Error cargando datos. Revisá los archivos CSV.</td></tr>';
+    document.getElementById('tabla-count').textContent = 'Error';
   }
 }
 
+function limpiarFiltros() {
+  document.getElementById('buscar').value = '';
+  document.getElementById('filtro-equipo').value = '';
+  document.getElementById('filtro-equipo2').value = '';
+  document.getElementById('filtro-resultado').value = '';
+  filtrar();
+}
+
+function escudo(nombre) {
+  return ESCUDOS[nombre] ? `<img src="${ESCUDOS[nombre]}" class="td-escudo" alt="" onerror="this.style.display='none'">` : '';
+}
+
+function resultadoClase(gl, gv) {
+  const l = parseInt(gl)||0, v = parseInt(gv)||0;
+  if (l > v) return 'res-local';
+  if (v > l) return 'res-visita';
+  return 'res-empate';
+}
+
 function filtrar() {
-  const equipoSeleccionado = document.getElementById('filtro-equipo').value;
-  const equipoSeleccionado2 = document.getElementById('filtro-equipo2').value;
-  if (equipoSeleccionado && equipoSeleccionado2) {
-    const nombre1 = equipos[equipoSeleccionado];
-    const nombre2 = equipos[equipoSeleccionado2];
+  const buscar = document.getElementById('buscar').value.toLowerCase();
+  const equipoFiltro = document.getElementById('filtro-equipo').value;
+  const equipoFiltro2 = document.getElementById('filtro-equipo2').value;
+  const resultadoFiltro = document.getElementById('filtro-resultado').value;
+
+  let filtrados = partidos.filter(p => {
+    const nL = (equipos[p.Local_ID] || '').toLowerCase();
+    const nV = (equipos[p.Visitante_ID] || '').toLowerCase();
+    const coincideBuscar = !buscar || nL.includes(buscar) || nV.includes(buscar);
+    const coincideEquipo = !equipoFiltro || p.Local_ID === equipoFiltro || p.Visitante_ID === equipoFiltro;
+    const coincideEnfrentamiento = !equipoFiltro2 || !equipoFiltro ||
+      (p.Local_ID === equipoFiltro && p.Visitante_ID === equipoFiltro2) ||
+      (p.Local_ID === equipoFiltro2 && p.Visitante_ID === equipoFiltro);
+    let coincideResultado = true;
+    if (resultadoFiltro === 'local') coincideResultado = parseInt(p.Goles_Local) > parseInt(p.Goles_Visitante);
+    if (resultadoFiltro === 'visitante') coincideResultado = parseInt(p.Goles_Visitante) > parseInt(p.Goles_Local);
+    if (resultadoFiltro === 'empate') coincideResultado = p.Goles_Local === p.Goles_Visitante;
+    return coincideBuscar && coincideEquipo && coincideEnfrentamiento && coincideResultado;
+  });
+
+  const tbody = document.getElementById('tabla-partidos');
+  document.getElementById('tabla-count').textContent = filtrados.length.toLocaleString() + ' partidos';
+
+  if (filtrados.length === 0) {
+    tbody.innerHTML = '<tr class="loading-row"><td colspan="5">No se encontraron partidos con esos filtros.</td></tr>';
+  } else {
+    tbody.innerHTML = filtrados.slice(0, 200).map(p => {
+      const local = equipos[p.Local_ID] || p.Local_ID;
+      const visitante = equipos[p.Visitante_ID] || p.Visitante_ID;
+      const fecha = p.Fecha ? p.Fecha.split('T')[0] : '';
+      const torneo = temporadas[p.ID_Temporada] || p.Fase || '';
+      const resClass = resultadoClase(p.Goles_Local, p.Goles_Visitante);
+      return `<tr>
+        <td class="td-fecha">${fecha}</td>
+        <td><div class="td-equipo">${escudo(local)}<span class="td-nombre">${local}</span></div></td>
+        <td class="td-resultado"><span class="${resClass}">${p.Goles_Local} - ${p.Goles_Visitante}</span></td>
+        <td><div class="td-equipo">${escudo(visitante)}<span class="td-nombre">${visitante}</span></div></td>
+        <td class="td-torneo"><span class="badge-torneo">${torneo}</span></td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Stats
+  const equipoSel = document.getElementById('filtro-equipo').value;
+  const equipoSel2 = document.getElementById('filtro-equipo2').value;
+
+  if (equipoSel && equipoSel2) {
+    const nombre1 = equipos[equipoSel], nombre2 = equipos[equipoSel2];
     const partEnf = partidos.filter(p =>
-      (p.Local_ID === equipoSeleccionado && p.Visitante_ID === equipoSeleccionado2) ||
-      (p.Local_ID === equipoSeleccionado2 && p.Visitante_ID === equipoSeleccionado)
+      (p.Local_ID === equipoSel && p.Visitante_ID === equipoSel2) ||
+      (p.Local_ID === equipoSel2 && p.Visitante_ID === equipoSel)
     );
     const pj = partEnf.length;
-    const g1 = partEnf.filter(p => p.Tipo_Definicion === '0' && p.ID_Ganador === equipoSeleccionado).length;
-    const g2 = partEnf.filter(p => p.Tipo_Definicion === '0' && p.ID_Ganador === equipoSeleccionado2).length;
+    const g1 = partEnf.filter(p => p.Tipo_Definicion === '0' && p.ID_Ganador === equipoSel).length;
+    const g2 = partEnf.filter(p => p.Tipo_Definicion === '0' && p.ID_Ganador === equipoSel2).length;
     const emp = pj - g1 - g2;
-    const gf1 = partEnf.reduce((acc, p) => acc + (p.Local_ID === equipoSeleccionado ? parseInt(p.Goles_Local)||0 : parseInt(p.Goles_Visitante)||0), 0);
-    const gf2 = partEnf.reduce((acc, p) => acc + (p.Local_ID === equipoSeleccionado2 ? parseInt(p.Goles_Local)||0 : parseInt(p.Goles_Visitante)||0), 0);
-    document.getElementById('stats-enfrentamiento').style.display = 'block';
-    document.getElementById('stats-equipo').style.display = 'none';
+    const gf1 = partEnf.reduce((a,p) => a + (p.Local_ID === equipoSel ? parseInt(p.Goles_Local)||0 : parseInt(p.Goles_Visitante)||0), 0);
+    const gf2 = partEnf.reduce((a,p) => a + (p.Local_ID === equipoSel2 ? parseInt(p.Goles_Local)||0 : parseInt(p.Goles_Visitante)||0), 0);
+    document.getElementById('stats-enfrentamiento').classList.add('visible');
+    document.getElementById('stats-equipo').classList.remove('visible');
     document.getElementById('enf-titulo').textContent = nombre1 + ' vs ' + nombre2;
     document.getElementById('enf-pj').textContent = pj;
     document.getElementById('enf-g1').textContent = g1;
@@ -270,55 +876,32 @@ function filtrar() {
     document.getElementById('enf-gf1-nombre').textContent = 'Goles ' + nombre1;
     document.getElementById('enf-gf2').textContent = gf2;
     document.getElementById('enf-gf2-nombre').textContent = 'Goles ' + nombre2;
-  } else if (equipoSeleccionado) {
-} else {
-    document.getElementById('stats-equipo').style.display = 'none';
-    document.getElementById('stats-enfrentamiento').style.display = 'none';
+  } else if (equipoSel) {
+    const nombreEquipo = equipos[equipoSel];
+    const partEquipo = partidos.filter(p => p.Local_ID === equipoSel || p.Visitante_ID === equipoSel);
+    const pj = partEquipo.length;
+    const pg = partEquipo.filter(p => p.Tipo_Definicion === '0' && p.ID_Ganador === equipoSel).length;
+    const pp = partEquipo.filter(p => p.Tipo_Definicion === '0' && p.ID_Ganador !== equipoSel && p.ID_Ganador !== '').length;
+    const pe = pj - pg - pp;
+    const gf = partEquipo.reduce((a,p) => a + (p.Local_ID === equipoSel ? parseInt(p.Goles_Local)||0 : parseInt(p.Goles_Visitante)||0), 0);
+    const gc = partEquipo.reduce((a,p) => a + (p.Local_ID === equipoSel ? parseInt(p.Goles_Visitante)||0 : parseInt(p.Goles_Local)||0), 0);
+    document.getElementById('stats-equipo').classList.add('visible');
+    document.getElementById('stats-enfrentamiento').classList.remove('visible');
+    document.getElementById('stats-nombre').textContent = nombreEquipo;
+    document.getElementById('stats-pj').textContent = pj;
+    document.getElementById('stats-pg').textContent = pg;
+    document.getElementById('stats-pe').textContent = pe;
+    document.getElementById('stats-pp').textContent = pp;
+    document.getElementById('stats-gf').textContent = gf;
+    document.getElementById('stats-gc').textContent = gc;
+    document.getElementById('stats-dg').textContent = gf - gc;
+    const escudoEl = document.getElementById('stats-escudo');
+    if (ESCUDOS[nombreEquipo]) { escudoEl.src = ESCUDOS[nombreEquipo]; escudoEl.style.display = 'block'; }
+    else escudoEl.style.display = 'none';
+  } else {
+    document.getElementById('stats-equipo').classList.remove('visible');
+    document.getElementById('stats-enfrentamiento').classList.remove('visible');
   }
-  const buscar = document.getElementById('buscar').value.toLowerCase();
-  const equipoFiltro = document.getElementById('filtro-equipo').value;
-  const resultadoFiltro = document.getElementById('filtro-resultado').value;
-
-  let filtrados = partidos.filter(p => {
-    const nombreLocal = (equipos[p.Local_ID] || '').toLowerCase();
-    const nombreVisitante = (equipos[p.Visitante_ID] || '').toLowerCase();
-
-    const coincideBuscar = !buscar || nombreLocal.includes(buscar) || nombreVisitante.includes(buscar);
-    const equipo2 = document.getElementById('filtro-equipo2').value;
-const coincideEquipo = !equipoFiltro || p.Local_ID === equipoFiltro || p.Visitante_ID === equipoFiltro;
-const coincideEnfrentamiento = !equipo2 || !equipoFiltro ||
-  (p.Local_ID === equipoFiltro && p.Visitante_ID === equipo2) ||
-  (p.Local_ID === equipo2 && p.Visitante_ID === equipoFiltro);
-
-    let coincideResultado = true;
-    if (resultadoFiltro === 'local') coincideResultado = parseInt(p.Goles_Local) > parseInt(p.Goles_Visitante);
-    if (resultadoFiltro === 'visitante') coincideResultado = parseInt(p.Goles_Visitante) > parseInt(p.Goles_Local);
-    if (resultadoFiltro === 'empate') coincideResultado = p.Goles_Local === p.Goles_Visitante;
-
-    return coincideBuscar && coincideEquipo && coincideResultado && coincideEnfrentamiento;
-  });
-
-  const tbody = document.getElementById('tabla-partidos');
-
-  if (filtrados.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" class="loading">No se encontraron partidos.</td></tr>';
-    return;
-  }
-
-tbody.innerHTML = filtrados.slice(0, 200).map(p => {
-    const local = equipos[p.Local_ID] || p.Local_ID;
-    const visitante = equipos[p.Visitante_ID] || p.Visitante_ID;
-    const fecha = p.Fecha ? p.Fecha.split('T')[0] : '';
-    const escLocal = ESCUDOS[local] ? `<img src="${ESCUDOS[local]}" style="width:24px;height:24px;object-fit:contain;margin-right:6px;vertical-align:middle;">` : '';
-    const escVisitante = ESCUDOS[visitante] ? `<img src="${ESCUDOS[visitante]}" style="width:24px;height:24px;object-fit:contain;margin-left:6px;vertical-align:middle;">` : '';
-    return `<tr>
-      <td>${fecha}</td>
-      <td>${escLocal}${local}</td>
-      <td class="resultado">${p.Goles_Local} - ${p.Goles_Visitante}</td>
-      <td>${visitante}${escVisitante}</td>
-      <td>${p.Fase || ''}</td>
-    </tr>`;
-  }).join('');
 }
 
 cargarDatos();
