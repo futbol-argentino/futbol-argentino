@@ -80,6 +80,9 @@
   <select id="filtro-equipo" onchange="filtrar()">
     <option value="">Todos los equipos</option>
   </select>
+ <select id="filtro-equipo2" onchange="filtrar()">
+  <option value="">Contra cualquier equipo</option>
+</select>
   <select id="filtro-resultado" onchange="filtrar()">
     <option value="">Todos los resultados</option>
     <option value="local">Victorias local</option>
@@ -188,6 +191,14 @@ async function cargarDatos() {
     const selectEquipo = document.getElementById('filtro-equipo');
     equiposArr.sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo))
       .forEach(e => {
+       const selectEquipo2 = document.getElementById('filtro-equipo2');
+equiposArr.sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo))
+  .forEach(e => {
+    const opt = document.createElement('option');
+    opt.value = e.ID_Equipo;
+    opt.textContent = e.Nombre_Equipo;
+    selectEquipo2.appendChild(opt);
+  });
         const opt = document.createElement('option');
         opt.value = e.ID_Equipo;
         opt.textContent = e.Nombre_Equipo;
@@ -232,14 +243,18 @@ function filtrar() {const equipoSeleccionado = document.getElementById('filtro-e
     const nombreVisitante = (equipos[p.Visitante_ID] || '').toLowerCase();
 
     const coincideBuscar = !buscar || nombreLocal.includes(buscar) || nombreVisitante.includes(buscar);
-    const coincideEquipo = !equipoFiltro || p.Local_ID === equipoFiltro || p.Visitante_ID === equipoFiltro;
+    const equipo2 = document.getElementById('filtro-equipo2').value;
+const coincideEquipo = !equipoFiltro || p.Local_ID === equipoFiltro || p.Visitante_ID === equipoFiltro;
+const coincideEnfrentamiento = !equipo2 || !equipoFiltro ||
+  (p.Local_ID === equipoFiltro && p.Visitante_ID === equipo2) ||
+  (p.Local_ID === equipo2 && p.Visitante_ID === equipoFiltro);
 
     let coincideResultado = true;
     if (resultadoFiltro === 'local') coincideResultado = parseInt(p.Goles_Local) > parseInt(p.Goles_Visitante);
     if (resultadoFiltro === 'visitante') coincideResultado = parseInt(p.Goles_Visitante) > parseInt(p.Goles_Local);
     if (resultadoFiltro === 'empate') coincideResultado = p.Goles_Local === p.Goles_Visitante;
 
-    return coincideBuscar && coincideEquipo && coincideResultado;
+    return coincideBuscar && coincideEquipo && coincideResultado && coincideEnfrentamiento;
   });
 
   const tbody = document.getElementById('tabla-partidos');
