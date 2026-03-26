@@ -42,6 +42,35 @@
   <div class="stat-box"><span id="total-temporadas">-</span><p>Temporadas</p></div>
 </div>
 
+ <div id="stats-enfrentamiento" style="display:none; margin:20px; padding:20px; background:#1a1a4e; border-radius:12px; border:1px solid #75AADB;">
+  <h2 id="enf-titulo" style="color:#75AADB; margin-bottom:15px; text-align:center;"></h2>
+  <div style="display:flex; justify-content:center; gap:15px; flex-wrap:wrap;">
+    <div style="background:#0a0a2e; padding:15px 20px; border-radius:10px; text-align:center; min-width:80px;">
+      <span id="enf-pj" style="display:block; font-size:28px; font-weight:bold; color:#75AADB;">0</span>
+      <p style="color:#aaa; font-size:12px;">Partidos</p>
+    </div>
+    <div style="background:#0a0a2e; padding:15px 20px; border-radius:10px; text-align:center; min-width:80px;">
+      <span id="enf-g1" style="display:block; font-size:28px; font-weight:bold; color:#27AE60;">0</span>
+      <p id="enf-g1-nombre" style="color:#aaa; font-size:12px;">Equipo 1</p>
+    </div>
+    <div style="background:#0a0a2e; padding:15px 20px; border-radius:10px; text-align:center; min-width:80px;">
+      <span id="enf-emp" style="display:block; font-size:28px; font-weight:bold; color:#F39C12;">0</span>
+      <p style="color:#aaa; font-size:12px;">Empates</p>
+    </div>
+    <div style="background:#0a0a2e; padding:15px 20px; border-radius:10px; text-align:center; min-width:80px;">
+      <span id="enf-g2" style="display:block; font-size:28px; font-weight:bold; color:#E74C3C;">0</span>
+      <p id="enf-g2-nombre" style="color:#aaa; font-size:12px;">Equipo 2</p>
+    </div>
+    <div style="background:#0a0a2e; padding:15px 20px; border-radius:10px; text-align:center; min-width:80px;">
+      <span id="enf-gf1" style="display:block; font-size:28px; font-weight:bold; color:#75AADB;">0</span>
+      <p id="enf-gf1-nombre" style="color:#aaa; font-size:12px;">Goles E1</p>
+    </div>
+    <div style="background:#0a0a2e; padding:15px 20px; border-radius:10px; text-align:center; min-width:80px;">
+      <span id="enf-gf2" style="display:block; font-size:28px; font-weight:bold; color:#75AADB;">0</span>
+      <p id="enf-gf2-nombre" style="color:#aaa; font-size:12px;">Goles E2</p>
+    </div>
+  </div>
+</div>
 <div id="stats-equipo" style="display:none; margin:20px; padding:20px; background:#1a1a4e; border-radius:12px; border:1px solid #75AADB;">
   <h2 id="stats-nombre" style="color:#75AADB; margin-bottom:15px; text-align:center;"></h2>
   <div style="display:flex; justify-content:center; gap:15px; flex-wrap:wrap;">
@@ -188,16 +217,62 @@ async function cargarDatos() {
     document.getElementById('total-partidos').textContent = partidos.length.toLocaleString();
     document.getElementById('total-equipos').textContent = equiposArr.length;
 
-    const selectEquipo = document.getElementById('filtro-equipo');
-    equiposArr.sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo))
-      .forEach(e => {
-       const selectEquipo2 = document.getElementById('filtro-equipo2');
-equiposArr.sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo))
-  .forEach(e => {
-    const opt = document.createElement('option');
-    opt.value = e.ID_Equipo;
-    opt.textContent = e.Nombre_Equipo;
-    selectEquipo2.appendChild(opt);
+const equipoSeleccionado = document.getElementById('filtro-equipo').value;
+const equipoSeleccionado2 = document.getElementById('filtro-equipo2').value;
+
+if (equipoSeleccionado && equipoSeleccionado2) {
+  const nombre1 = equipos[equipoSeleccionado];
+  const nombre2 = equipos[equipoSeleccionado2];
+  const partEnf = partidos.filter(p =>
+    (p.Local_ID === equipoSeleccionado && p.Visitante_ID === equipoSeleccionado2) ||
+    (p.Local_ID === equipoSeleccionado2 && p.Visitante_ID === equipoSeleccionado)
+  );
+  const pj = partEnf.length;
+  const g1 = partEnf.filter(p => p.Tipo_Definicion === '0' && p.ID_Ganador === equipoSeleccionado).length;
+  const g2 = partEnf.filter(p => p.Tipo_Definicion === '0' && p.ID_Ganador === equipoSeleccionado2).length;
+  const emp = pj - g1 - g2;
+  const gf1 = partEnf.reduce((acc, p) => acc + (p.Local_ID === equipoSeleccionado ? parseInt(p.Goles_Local)||0 : parseInt(p.Goles_Visitante)||0), 0);
+  const gf2 = partEnf.reduce((acc, p) => acc + (p.Local_ID === equipoSeleccionado2 ? parseInt(p.Goles_Local)||0 : parseInt(p.Goles_Visitante)||0), 0);
+
+  document.getElementById('stats-enfrentamiento').style.display = 'block';
+  document.getElementById('stats-equipo').style.display = 'none';
+  document.getElementById('enf-titulo').textContent = nombre1 + ' vs ' + nombre2;
+  document.getElementById('enf-pj').textContent = pj;
+  document.getElementById('enf-g1').textContent = g1;
+  document.getElementById('enf-g1-nombre').textContent = nombre1;
+  document.getElementById('enf-emp').textContent = emp;
+  document.getElementById('enf-g2').textContent = g2;
+  document.getElementById('enf-g2-nombre').textContent = nombre2;
+  document.getElementById('enf-gf1').textContent = gf1;
+  document.getElementById('enf-gf1-nombre').textContent = 'Goles ' + nombre1;
+  document.getElementById('enf-gf2').textContent = gf2;
+  document.getElementById('enf-gf2-nombre').textContent = 'Goles ' + nombre2;
+
+} else if (equipoSeleccionado) {
+  const nombreEquipo = equipos[equipoSeleccionado];
+  const partEquipo = partidos.filter(p => p.Local_ID === equipoSeleccionado || p.Visitante_ID === equipoSeleccionado);
+  const pj = partEquipo.length;
+  const pg = partEquipo.filter(p => p.Tipo_Definicion === '0' && p.ID_Ganador === equipoSeleccionado).length;
+  const pp = partEquipo.filter(p => p.Tipo_Definicion === '0' && p.ID_Ganador !== equipoSeleccionado && p.ID_Ganador !== '').length;
+  const pe = pj - pg - pp;
+  const gf = partEquipo.reduce((acc, p) => acc + (p.Local_ID === equipoSeleccionado ? parseInt(p.Goles_Local)||0 : parseInt(p.Goles_Visitante)||0), 0);
+  const gc = partEquipo.reduce((acc, p) => acc + (p.Local_ID === equipoSeleccionado ? parseInt(p.Goles_visitante)||0 : parseInt(p.Goles_Local)||0), 0);
+
+  document.getElementById('stats-equipo').style.display = 'block';
+  document.getElementById('stats-enfrentamiento').style.display = 'none';
+  document.getElementById('stats-nombre').textContent = nombreEquipo;
+  document.getElementById('stats-pj').textContent = pj;
+  document.getElementById('stats-pg').textContent = pg;
+  document.getElementById('stats-pe').textContent = pe;
+  document.getElementById('stats-pp').textContent = pp;
+  document.getElementById('stats-gf').textContent = gf;
+  document.getElementById('stats-gc').textContent = gc;
+  document.getElementById('stats-dg').textContent = gf - gc;
+
+} else {
+  document.getElementById('stats-equipo').style.display = 'none';
+  document.getElementById('stats-enfrentamiento').style.display = 'none';
+}
   });
         const opt = document.createElement('option');
         opt.value = e.ID_Equipo;
