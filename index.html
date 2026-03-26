@@ -71,6 +71,54 @@
 
 <script>
 const URL_PARTIDOS = 'Partidos.csv';
+const ESCUDOS = {
+  'Aldosivi': 'escudos/aldosivi.png',
+  'All Boys': 'escudos/all_boys.png',
+  'Almagro': 'escudos/almagro.png',
+  'Argentinos Juniors': 'escudos/argentinos_juniors.png',
+  'Arsenal': 'escudos/arsenal.png',
+  'Atletico Rafaela': 'escudos/atletico_rafaela.png',
+  'Atletico Tucuman': 'escudos/atletico_tucuman.png',
+  'Banfield': 'escudos/banfield.png',
+  'Barracas Central': 'escudos/barracas_central.png',
+  'Belgrano': 'escudos/belgrano.png',
+  'Boca Juniors': 'escudos/boca_juniors.png',
+  'Central Cordoba SdE': 'escudos/central_cordoba_sde.png',
+  'Chacarita Juniors': 'escudos/chacarita_juniors.png',
+  'Colon': 'escudos/colon.png',
+  'Crucero del Norte': 'escudos/crucero_del_norte.png',
+  'Defensa y Justicia': 'escudos/defensa_y_justicia.png',
+  'Deportivo Riestra': 'escudos/deportivo_riestra.png',
+  'Estudiantes LP': 'escudos/estudiantes_lp.png',
+  'Gimnasia de Jujuy': 'escudos/gimnasia_jujuy.png',
+  'Gimnasia LP': 'escudos/gimnasia_lp.png',
+  'Godoy Cruz': 'escudos/godoy_cruz.png',
+  'Huracan': 'escudos/huracan.png',
+  'Huracan de Tres Arroyos': 'escudos/huracan_tres_arroyos.png',
+  'Independiente': 'escudos/independiente.png',
+  'Independiente Rivadavia': 'escudos/independiente_rivadavia.png',
+  'Instituto': 'escudos/instituto.png',
+  'Lanus': 'escudos/lanus.png',
+  'Newells': 'escudos/newells.png',
+  'Nueva Chicago': 'escudos/nueva_chicago.png',
+  'Olimpo': 'escudos/olimpo.png',
+  'Patronato': 'escudos/patronato.png',
+  'Platense': 'escudos/platense.png',
+  'Quilmes': 'escudos/quilmes.png',
+  'Racing Club': 'escudos/racing_club.png',
+  'River Plate': 'escudos/river_plate.png',
+  'Rosario Central': 'escudos/rosario_central.png',
+  'San Lorenzo': 'escudos/san_lorenzo.png',
+  'San Martin SJ': 'escudos/san_martin_sj.png',
+  'San Martin Tucuman': 'escudos/san_martin_tucuman.png',
+  'Sarmiento': 'escudos/sarmiento.png',
+  'Talleres': 'escudos/talleres.png',
+  'Temperley': 'escudos/temperley.png',
+  'Tigre': 'escudos/tigre.png',
+  'Tiro Federal': 'escudos/tiro_federal.png',
+  'Union': 'escudos/union.png',
+  'Velez Sarsfield': 'escudos/velez_sarsfield.png'
+};
 const URL_EQUIPOS = 'Equipos.csv';
 let partidos = [];
 let equipos = {};
@@ -147,15 +195,17 @@ function filtrar() {
     return;
   }
 
-  tbody.innerHTML = filtrados.slice(0, 200).map(p => {
+tbody.innerHTML = filtrados.slice(0, 200).map(p => {
     const local = equipos[p.Local_ID] || p.Local_ID;
     const visitante = equipos[p.Visitante_ID] || p.Visitante_ID;
     const fecha = p.Fecha ? p.Fecha.split('T')[0] : '';
+    const escLocal = ESCUDOS[local] ? `<img src="${ESCUDOS[local]}" style="width:24px;height:24px;object-fit:contain;margin-right:6px;vertical-align:middle;">` : '';
+    const escVisitante = ESCUDOS[visitante] ? `<img src="${ESCUDOS[visitante]}" style="width:24px;height:24px;object-fit:contain;margin-left:6px;vertical-align:middle;">` : '';
     return `<tr>
       <td>${fecha}</td>
-      <td>${local}</td>
+      <td>${escLocal}${local}</td>
       <td class="resultado">${p.Goles_Local} - ${p.Goles_Visitante}</td>
-      <td>${visitante}</td>
+      <td>${visitante}${escVisitante}</td>
       <td>${p.Fase || ''}</td>
     </tr>`;
   }).join('');
