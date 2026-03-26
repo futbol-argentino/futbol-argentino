@@ -202,11 +202,17 @@ function csvToArray(csv) {
 
 async function cargarDatos() {
   try {
-    const [resP, resE] = await Promise.all([
+   const [resP, resE, resT] = await Promise.all([
       fetch(URL_PARTIDOS),
-      fetch(URL_EQUIPOS)
+      fetch(URL_EQUIPOS),
+      fetch('TEMPORADAS.csv')
     ]);
-    const csvP = await resP.text();
+   const csvE = await resE.text();
+    const csvT = await resT.text();
+    const temporadasArr = csvToArray(csvT);
+    const temporadas = {};
+    temporadasArr.forEach(t => temporadas[t.ID_Temporada] = t.Competencia);
+    document.getElementById('total-temporadas').textContent = temporadasArr.length;
     const csvE = await resE.text();
 
     const equiposArr = csvToArray(csvE);
@@ -316,7 +322,7 @@ tbody.innerHTML = filtrados.slice(0, 200).map(p => {
       <td>${escLocal}${local}</td>
       <td class="resultado">${p.Goles_Local} - ${p.Goles_Visitante}</td>
       <td>${visitante}${escVisitante}</td>
-      <td>${p.Fase || ''}</td>
+      <td>${temporadas[p.ID_Temporada] || p.Fase || ''}</td>
     </tr>`;
   }).join('');
 }
