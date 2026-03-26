@@ -185,6 +185,7 @@ const ESCUDOS = {
   'Velez Sarsfield': 'escudos/velez_sarsfield.png'
 };
 const URL_EQUIPOS = 'Equipos.csv';
+const URL_TEMPORADAS = 'Temporadas.csv';
 let partidos = [];
 let equipos = {};
 let temporadas = {};
@@ -204,10 +205,16 @@ async function cargarDatos() {
   try {
     const [resP, resE] = await Promise.all([
       fetch(URL_PARTIDOS),
-      fetch(URL_EQUIPOS)
+      fetch(URL_EQUIPOS),
+      fetch(URL_TEMPORADAS)
     ]);
     const csvP = await resP.text();
     const csvE = await resE.text();
+   const csvT = await resT.text();
+const temporadasArr = csvToArray(csvT);
+const temporadas = {};
+temporadasArr.forEach(t => temporadas[t.ID_Temporada] = t.Competencia);
+document.getElementById('total-temporadas').textContent = temporadasArr.length;
 
     const equiposArr = csvToArray(csvE);
     equiposArr.forEach(e => equipos[e.ID_Equipo] = e.Nombre_Equipo);
@@ -316,7 +323,7 @@ tbody.innerHTML = filtrados.slice(0, 200).map(p => {
       <td>${escLocal}${local}</td>
       <td class="resultado">${p.Goles_Local} - ${p.Goles_Visitante}</td>
       <td>${visitante}${escVisitante}</td>
-      <td>${p.Fase || ''}</td>
+      <td>${temporadas[p.ID_Temporada] || p.Fase || ''}</td>
     </tr>`;
   }).join('');
 }
