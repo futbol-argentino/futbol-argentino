@@ -541,6 +541,17 @@ td { padding: 10px 16px; font-size: 14px; color: var(--texto-1); vertical-align:
   .tab-btn { flex: 1; justify-content: center; }
 }
 
+.modal-desplegable { cursor: pointer; transition: border-color 0.2s; }
+.modal-desplegable:hover { border-color: var(--borde-hover); }
+.modal-desplegable-contenido {
+  display: none;
+  margin-top: 8px;
+  font-size: 14px; font-weight: 500;
+  color: var(--texto-1);
+  padding-top: 8px;
+  border-top: 1px solid var(--borde);
+}
+
 select option { background: #0C1A30; color: #F5F7FA; }
 </style>
 </head>
@@ -773,15 +784,47 @@ select option { background: #0C1A30; color: #F5F7FA; }
       <div class="modal-equipos" id="modal-titulo"></div>
       <button class="modal-cerrar" onclick="cerrarModal()">✕</button>
     </div>
-    <div class="modal-resultado-num" id="modal-resultado"></div>
+
+    <!-- ESCUDOS + RESULTADO -->
+    <div style="display:flex; align-items:center; justify-content:center; gap:20px; margin-bottom:6px;">
+      <img id="modal-escudo-local" src="" alt="" style="width:56px;height:56px;object-fit:contain;" onerror="this.style.display='none'">
+      <div class="modal-resultado-num" id="modal-resultado"></div>
+      <img id="modal-escudo-visita" src="" alt="" style="width:56px;height:56px;object-fit:contain;" onerror="this.style.display='none'">
+    </div>
     <div class="modal-fecha-txt" id="modal-fecha"></div>
+
     <div class="modal-grid">
       <div class="modal-dato"><div class="modal-dato-label">Torneo</div><div class="modal-dato-valor" id="modal-torneo"></div></div>
       <div class="modal-dato"><div class="modal-dato-label">Fase</div><div class="modal-dato-valor" id="modal-fase"></div></div>
       <div class="modal-dato full"><div class="modal-dato-label">Estadio</div><div class="modal-dato-valor" id="modal-estadio"></div></div>
-      <div class="modal-dato full"><div class="modal-dato-label">Goleadores</div><div class="modal-dato-valor" id="modal-goleadores"></div></div>
-      <div class="modal-dato"><div class="modal-dato-label">Amonestados</div><div class="modal-dato-valor" id="modal-amonestados"></div></div>
-      <div class="modal-dato"><div class="modal-dato-label">Expulsados</div><div class="modal-dato-valor" id="modal-expulsados"></div></div>
+
+      <!-- DESPLEGABLE GOLEADORES -->
+      <div class="modal-dato full modal-desplegable" onclick="toggleDesplegable('goleadores')">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="modal-dato-label">⚽ Goleadores</div>
+          <span id="arrow-goleadores" style="color:var(--texto-2);font-size:12px;transition:transform 0.2s;">▼</span>
+        </div>
+        <div id="modal-goleadores" class="modal-desplegable-contenido"></div>
+      </div>
+
+      <!-- DESPLEGABLE AMONESTADOS -->
+      <div class="modal-dato modal-desplegable" onclick="toggleDesplegable('amonestados')">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="modal-dato-label">🟨 Amonestados</div>
+          <span id="arrow-amonestados" style="color:var(--texto-2);font-size:12px;transition:transform 0.2s;">▼</span>
+        </div>
+        <div id="modal-amonestados" class="modal-desplegable-contenido"></div>
+      </div>
+
+      <!-- DESPLEGABLE EXPULSADOS -->
+      <div class="modal-dato modal-desplegable" onclick="toggleDesplegable('expulsados')">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="modal-dato-label">🟥 Expulsados</div>
+          <span id="arrow-expulsados" style="color:var(--texto-2);font-size:12px;transition:transform 0.2s;">▼</span>
+        </div>
+        <div id="modal-expulsados" class="modal-desplegable-contenido"></div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -801,9 +844,9 @@ const ESCUDOS = {
   'Chacarita Juniors':'escudos/chacarita_juniors.png','Colon':'escudos/colon.png',
   'Crucero del Norte':'escudos/crucero_del_norte.png','Defensa y Justicia':'escudos/defensa_y_justicia.png',
   'Deportivo Riestra':'escudos/deportivo_riestra.png','Estudiantes LP':'escudos/estudiantes_lp.png',
-  'Gimnasia de Jujuy':'escudos/gimnasia_de_jujuy.png','Gimnasia LP':'escudos/gimnasia_lp.png',
+  'Gimnasia de Jujuy':'escudos/gimnasia_jujuy.png','Gimnasia LP':'escudos/gimnasia_lp.png',
   'Godoy Cruz':'escudos/godoy_cruz.png','Huracan':'escudos/huracan.png',
-  'Huracan de Tres Arroyos':'escudos/huracan-de_tres_arroyos.png','Independiente':'escudos/independiente.png',
+  'Huracan de Tres Arroyos':'escudos/huracan_tres_arroyos.png','Independiente':'escudos/independiente.png',
   'Independiente Rivadavia':'escudos/independiente_rivadavia.png','Instituto':'escudos/instituto.png',
   'Lanus':'escudos/lanus.png','Newells':'escudos/newells.png',
   'Nueva Chicago':'escudos/nueva_chicago.png','Olimpo':'escudos/olimpo.png',
@@ -1111,17 +1154,42 @@ function verPartido(id) {
   const visita = equipos[p.Visitante_ID]||p.Visitante_ID;
   const torneo = temporadas[p.ID_Temporada]||p.Fase||'';
   const fecha = p.Fecha ? p.Fecha.split('T')[0] : '';
+
   document.getElementById('modal-titulo').textContent = local+' vs '+visita;
   document.getElementById('modal-resultado').textContent = p.Goles_Local+' - '+p.Goles_Visitante;
   document.getElementById('modal-fecha').textContent = fecha;
   document.getElementById('modal-torneo').textContent = torneo;
   document.getElementById('modal-fase').textContent = p.Fase||'';
   document.getElementById('modal-estadio').textContent = p.Estadio||'No disponible';
-  document.getElementById('modal-goleadores').textContent = p.Goleadores||'No disponible';
-  document.getElementById('modal-amonestados').textContent = p.Amonestados||'No disponible';
-  document.getElementById('modal-expulsados').textContent = p.Expulsados||'No disponible';
+
+  // Escudos
+  const escLocal = document.getElementById('modal-escudo-local');
+  const escVisita = document.getElementById('modal-escudo-visita');
+  if (ESCUDOS[local]) { escLocal.src = ESCUDOS[local]; escLocal.style.display = 'block'; }
+  else escLocal.style.display = 'none';
+  if (ESCUDOS[visita]) { escVisita.src = ESCUDOS[visita]; escVisita.style.display = 'block'; }
+  else escVisita.style.display = 'none';
+
+  // Desplegables — cerrados por defecto
+  ['goleadores','amonestados','expulsados'].forEach(campo => {
+    const valor = p[campo.charAt(0).toUpperCase()+campo.slice(1)] || p[campo] || 'No disponible';
+    const el = document.getElementById('modal-'+campo);
+    el.textContent = valor;
+    el.style.display = 'none';
+    document.getElementById('arrow-'+campo).style.transform = 'rotate(0deg)';
+  });
+
   document.getElementById('modal').classList.add('visible');
 }
+
+function toggleDesplegable(campo) {
+  const el = document.getElementById('modal-'+campo);
+  const arrow = document.getElementById('arrow-'+campo);
+  const abierto = el.style.display === 'block';
+  el.style.display = abierto ? 'none' : 'block';
+  arrow.style.transform = abierto ? 'rotate(0deg)' : 'rotate(180deg)';
+}
+
 function cerrarModal() {
   document.getElementById('modal').classList.remove('visible');
 }
