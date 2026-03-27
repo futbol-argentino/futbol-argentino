@@ -6,501 +6,573 @@
 <title>Base de Datos del Fútbol Argentino</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --azul: #0057A8;
-    --azul-oscuro: #003D7A;
-    --azul-medio: #0A1F44;
-    --celeste: #75AADB;
-    --celeste-claro: #A8CBF0;
-    --blanco: #F5F7FA;
-    --gris-claro: #E8EDF4;
-    --gris-medio: #8A9BB5;
-    --fondo: #060E1E;
-    --fondo2: #0C1A30;
-    --fondo3: #0F2040;
-    --verde: #00C853;
-    --rojo: #FF3D3D;
-    --amarillo: #FFB300;
-    --borde: rgba(117,170,219,0.15);
-    --borde-activo: rgba(117,170,219,0.5);
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    font-family: 'Barlow', sans-serif;
-    background: var(--fondo);
-    color: var(--blanco);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* ── HEADER ── */
-  header {
-    position: relative;
-    background: linear-gradient(135deg, #060E1E 0%, #0A1F44 50%, #003D7A 100%);
-    padding: 0;
-    overflow: hidden;
-    border-bottom: 2px solid var(--azul);
-  }
-
-  header::before {
-    content: '';
-    position: absolute;
-    top: -80px; right: -80px;
-    width: 320px; height: 320px;
-    background: radial-gradient(circle, rgba(117,170,219,0.12) 0%, transparent 70%);
-    pointer-events: none;
-  }
-
-  header::after {
-    content: '';
-    position: absolute;
-    bottom: -60px; left: 10%;
-    width: 400px; height: 200px;
-    background: radial-gradient(ellipse, rgba(0,87,168,0.2) 0%, transparent 70%);
-    pointer-events: none;
-  }
-
-  .header-inner {
-    position: relative;
-    z-index: 1;
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 28px 32px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    flex-wrap: wrap;
-  }
-
-  .header-brand {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .header-icon {
-    width: 52px; height: 52px;
-    background: linear-gradient(135deg, var(--azul), var(--celeste));
-    border-radius: 14px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 26px;
-    box-shadow: 0 4px 20px rgba(0,87,168,0.4);
-    flex-shrink: 0;
-  }
-
-  .header-text h1 {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: clamp(20px, 3vw, 30px);
-    font-weight: 800;
-    letter-spacing: 0.5px;
-    color: var(--blanco);
-    line-height: 1.1;
-  }
-
-  .header-text h1 span { color: var(--celeste); }
-
-  .header-text p {
-    font-size: 13px;
-    color: var(--gris-medio);
-    margin-top: 3px;
-    font-weight: 300;
-    letter-spacing: 0.3px;
-  }
-
-  /* ── STATS GLOBALES ── */
-  .stats-bar {
-    background: var(--fondo2);
-    border-bottom: 1px solid var(--borde);
-    padding: 0 32px;
-  }
-
-  .stats-bar-inner {
-    max-width: 1400px;
-    margin: 0 auto;
-    display: flex;
-    gap: 0;
-  }
-
-  .stat-item {
-    padding: 16px 32px 16px 0;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    border-right: 1px solid var(--borde);
-    margin-right: 32px;
-  }
-
-  .stat-item:last-child { border-right: none; margin-right: 0; }
-
-  .stat-num {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--celeste);
-    line-height: 1;
-  }
-
-  .stat-label {
-    font-size: 11px;
-    color: var(--gris-medio);
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    font-weight: 500;
-  }
-
-  /* ── MAIN ── */
-  .main {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 24px 32px;
-  }
-
-  /* ── PANEL DE FILTROS ── */
-  .filtros-panel {
-    background: var(--fondo2);
-    border: 1px solid var(--borde);
-    border-radius: 16px;
-    padding: 20px 24px;
-    margin-bottom: 20px;
-  }
-
-  .filtros-titulo {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: var(--gris-medio);
-    margin-bottom: 14px;
-  }
-
-  .filtros-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr auto;
-    gap: 12px;
-    align-items: end;
-  }
-
-  .filtro-grupo { display: flex; flex-direction: column; gap: 6px; }
-
-  .filtro-label {
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--gris-medio);
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-  }
-
-  .filtro-input, .filtro-select {
-    background: var(--fondo3);
-    border: 1px solid var(--borde);
-    border-radius: 10px;
-    color: var(--blanco);
-    font-family: 'Barlow', sans-serif;
-    font-size: 14px;
-    padding: 10px 14px;
-    transition: border-color 0.2s, box-shadow 0.2s;
-    outline: none;
-    appearance: none;
-    -webkit-appearance: none;
-    width: 100%;
-  }
-
-  .filtro-input::placeholder { color: var(--gris-medio); }
-
-  .filtro-input:focus, .filtro-select:focus {
-    border-color: var(--celeste);
-    box-shadow: 0 0 0 3px rgba(117,170,219,0.12);
-  }
-
-  .filtro-select {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238A9BB5' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    padding-right: 36px;
-    cursor: pointer;
-  }
-
-  .btn-limpiar {
-    background: transparent;
-    border: 1px solid var(--borde);
-    border-radius: 10px;
-    color: var(--gris-medio);
-    font-family: 'Barlow', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    padding: 10px 18px;
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-  }
-
-  .btn-limpiar:hover {
-    border-color: var(--celeste);
-    color: var(--celeste);
-  }
-
-  /* ── STATS EQUIPO ── */
-  .stats-card {
-    display: none;
-    background: var(--fondo2);
-    border: 1px solid var(--borde-activo);
-    border-radius: 16px;
-    padding: 20px 24px;
-    margin-bottom: 20px;
-  }
-
-  .stats-card.visible { display: block; }
-
-  .stats-card-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-    padding-bottom: 14px;
-    border-bottom: 1px solid var(--borde);
-  }
-
-  .stats-card-escudo {
-    width: 40px; height: 40px;
-    object-fit: contain;
-  }
-
-  .stats-card-nombre {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--blanco);
-  }
-
-  .stats-card-sub {
-    font-size: 12px;
-    color: var(--gris-medio);
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    margin-top: 2px;
-  }
-
-  .stats-nums {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .stat-pill {
-    flex: 1;
-    min-width: 70px;
-    background: var(--fondo3);
-    border-radius: 10px;
-    padding: 12px 10px;
-    text-align: center;
-    border: 1px solid var(--borde);
-  }
-
-  .stat-pill-num {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 26px;
-    font-weight: 700;
-    line-height: 1;
-    display: block;
-  }
-
-  .stat-pill-num.verde { color: var(--verde); }
-  .stat-pill-num.rojo { color: var(--rojo); }
-  .stat-pill-num.amarillo { color: var(--amarillo); }
-  .stat-pill-num.celeste { color: var(--celeste); }
-
-  .stat-pill-label {
-    font-size: 10px;
-    color: var(--gris-medio);
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    margin-top: 4px;
-    font-weight: 500;
-    display: block;
-  }
-
-  /* ── TABLA ── */
-  .tabla-wrapper {
-    background: var(--fondo2);
-    border: 1px solid var(--borde);
-    border-radius: 16px;
-    overflow: hidden;
-  }
-
-  .tabla-header {
-    padding: 16px 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid var(--borde);
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-
-  .tabla-titulo {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--blanco);
-    letter-spacing: 0.5px;
-  }
-
-  .tabla-count {
-    font-size: 12px;
-    color: var(--gris-medio);
-    background: var(--fondo3);
-    padding: 4px 10px;
-    border-radius: 20px;
-    border: 1px solid var(--borde);
-  }
-
-  .tabla-scroll { overflow-x: auto; }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 600px;
-  }
-
-  thead tr {
-    background: var(--fondo3);
-    border-bottom: 1px solid var(--borde);
-  }
-
-  th {
-    padding: 12px 16px;
-    text-align: left;
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: var(--gris-medio);
-    white-space: nowrap;
-  }
-
-  th.center { text-align: center; }
-
-  tbody tr {
-    border-bottom: 1px solid var(--borde);
-    transition: background 0.15s;
-  }
-
-  tbody tr:last-child { border-bottom: none; }
-  tbody tr:hover { background: rgba(117,170,219,0.05); }
-
-  td {
-    padding: 11px 16px;
-    font-size: 14px;
-    color: var(--blanco);
-    vertical-align: middle;
-  }
-
-  .td-fecha {
-    color: var(--gris-medio);
-    font-size: 13px;
-    white-space: nowrap;
-  }
-
-  .td-equipo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    white-space: nowrap;
-  }
-
-  .td-escudo {
-    width: 22px; height: 22px;
-    object-fit: contain;
-    flex-shrink: 0;
-  }
-
-  .td-nombre { font-weight: 500; }
-
-  .td-resultado {
-    text-align: center;
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 18px;
-    font-weight: 700;
-    white-space: nowrap;
-    letter-spacing: 1px;
-  }
-
-  .res-local { color: var(--verde); }
-  .res-empate { color: var(--amarillo); }
-  .res-visita { color: var(--rojo); }
-
-  .td-torneo {
-    font-size: 12px;
-    color: var(--gris-medio);
-  }
-
-  .badge-torneo {
-    display: inline-block;
-    background: rgba(117,170,219,0.1);
-    border: 1px solid rgba(117,170,219,0.2);
-    border-radius: 6px;
-    padding: 3px 8px;
-    font-size: 11px;
-    color: var(--celeste-claro);
-    white-space: nowrap;
-  }
-
-  .loading-row td {
-    text-align: center;
-    padding: 48px;
-    color: var(--gris-medio);
-    font-size: 14px;
-  }
-
-  .dot-loading::after {
-    content: '';
-    animation: dots 1.2s infinite;
-  }
-
-  @keyframes dots {
-    0%,20% { content: '.'; }
-    40% { content: '..'; }
-    60%,100% { content: '...'; }
-  }
-
-  /* ── RESPONSIVE ── */
-  @media (max-width: 768px) {
-    .header-inner { padding: 20px 16px; }
-    .stats-bar { padding: 0 16px; }
-    .stats-bar-inner { gap: 0; overflow-x: auto; }
-    .stat-item { padding: 12px 20px 12px 0; margin-right: 20px; flex-shrink: 0; }
-    .main { padding: 16px; }
-    .filtros-panel { padding: 16px; }
-    .filtros-grid { grid-template-columns: 1fr 1fr; }
-    .btn-limpiar { grid-column: span 2; }
-    .stats-nums { gap: 6px; }
-    .stat-pill { min-width: 60px; padding: 10px 8px; }
-    .stat-pill-num { font-size: 22px; }
-    .tabla-header { padding: 12px 16px; }
-    th, td { padding: 10px 12px; }
-    .td-escudo { width: 18px; height: 18px; }
-    .td-resultado { font-size: 16px; }
-  }
-
-  @media (max-width: 480px) {
-    .filtros-grid { grid-template-columns: 1fr; }
-    .btn-limpiar { grid-column: span 1; }
-    .header-text h1 { font-size: 18px; }
-  }
-
-  /* ── SELECT OPTIONS ── */
-  select option { background: #0C1A30; color: #F5F7FA; }
+:root {
+  --azul:          #0057A8;
+  --azul-oscuro:   #003D7A;
+  --azul-claro:    #1976D2;
+  --celeste:       #75AADB;
+  --celeste-claro: #B3D1F0;
+  --fondo:         #060E1E;
+  --fondo-2:       #0C1A30;
+  --fondo-3:       #0F2040;
+  --texto-1:       #F0F4FA;
+  --texto-2:       #8A9BB5;
+  --texto-3:       #4A5A72;
+  --verde:         #00C853;
+  --rojo:          #FF3D3D;
+  --amarillo:      #FFB300;
+  --borde:         rgba(117,170,219,0.12);
+  --borde-hover:   rgba(117,170,219,0.35);
+  --borde-activo:  rgba(117,170,219,0.6);
+  --fuente-titulo: 'Barlow Condensed', sans-serif;
+  --fuente-cuerpo: 'Barlow', sans-serif;
+  --trans: all 0.2s ease;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: var(--fuente-cuerpo); background: var(--fondo); color: var(--texto-1); overflow-x: hidden; }
+img { max-width: 100%; display: block; }
+
+/* ── SIDEBAR MENÚ ── */
+.sidebar-overlay {
+  position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6);
+  z-index: 200;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.sidebar-overlay.activo { opacity: 1; pointer-events: all; }
+
+.sidebar {
+  position: fixed; top: 0; left: -280px;
+  width: 260px; height: 100vh;
+  background: var(--fondo-2);
+  border-right: 1px solid var(--borde-activo);
+  z-index: 300;
+  transition: left 0.25s ease;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.sidebar.activo { left: 0; }
+
+.sidebar-header {
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid var(--borde);
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.sidebar-logo {
+  display: flex; align-items: center; gap: 10px;
+}
+
+.sidebar-logo-icon {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--azul), var(--celeste));
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px;
+}
+
+.sidebar-logo-text {
+  font-family: var(--fuente-titulo);
+  font-size: 17px; font-weight: 800;
+  color: var(--texto-1);
+}
+.sidebar-logo-text span { color: var(--celeste); }
+
+.sidebar-close {
+  background: transparent; border: none;
+  color: var(--texto-2); font-size: 20px;
+  cursor: pointer; padding: 4px;
+  border-radius: 6px; transition: var(--trans);
+}
+.sidebar-close:hover { color: var(--texto-1); background: var(--fondo-3); }
+
+.sidebar-nav {
+  padding: 16px 12px;
+  display: flex; flex-direction: column; gap: 4px;
+  flex: 1;
+}
+
+.sidebar-nav-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: var(--trans);
+  border: 1px solid transparent;
+}
+.sidebar-nav-item:hover { background: var(--fondo-3); }
+.sidebar-nav-item.activo {
+  background: rgba(117,170,219,0.1);
+  border-color: rgba(117,170,219,0.2);
+}
+
+.sidebar-nav-icon {
+  font-size: 18px; width: 24px; text-align: center; flex-shrink: 0;
+}
+
+.sidebar-nav-texto {
+  font-family: var(--fuente-titulo);
+  font-size: 16px; font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--texto-2);
+}
+.sidebar-nav-item.activo .sidebar-nav-texto { color: var(--celeste); }
+.sidebar-nav-item:hover .sidebar-nav-texto { color: var(--texto-1); }
+
+.sidebar-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--borde);
+  font-size: 11px; color: var(--texto-3);
+  text-align: center;
+}
+
+/* ── HEADER ── */
+header {
+  position: relative;
+  background: linear-gradient(135deg, #060E1E 0%, #0A1F44 50%, #003D7A 100%);
+  border-bottom: 2px solid var(--azul);
+  overflow: hidden;
+}
+header::before {
+  content: '';
+  position: absolute; top: -80px; right: -80px;
+  width: 320px; height: 320px;
+  background: radial-gradient(circle, rgba(117,170,219,0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.header-inner {
+  position: relative; z-index: 1;
+  max-width: 1400px; margin: 0 auto;
+  padding: 24px 32px;
+  display: flex; align-items: center; gap: 16px;
+}
+
+.btn-menu {
+  background: rgba(117,170,219,0.1);
+  border: 1px solid var(--borde-activo);
+  border-radius: 10px;
+  color: var(--celeste);
+  width: 42px; height: 42px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 18px;
+  transition: var(--trans); flex-shrink: 0;
+}
+.btn-menu:hover { background: rgba(117,170,219,0.2); }
+
+.header-brand { display: flex; align-items: center; gap: 14px; }
+
+.header-icon {
+  width: 50px; height: 50px;
+  background: linear-gradient(135deg, var(--azul), var(--celeste));
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 4px 20px rgba(0,87,168,0.4);
+  flex-shrink: 0;
+}
+
+.header-text h1 {
+  font-family: var(--fuente-titulo);
+  font-size: clamp(20px, 3vw, 28px);
+  font-weight: 800; letter-spacing: 0.5px;
+  color: var(--texto-1); line-height: 1.1;
+}
+.header-text h1 span { color: var(--celeste); }
+.header-text p { font-size: 13px; color: var(--texto-2); margin-top: 3px; font-weight: 300; }
+
+/* ── STATS BAR ── */
+.stats-bar {
+  background: var(--fondo-2);
+  border-bottom: 1px solid var(--borde);
+}
+.stats-bar-inner {
+  max-width: 1400px; margin: 0 auto;
+  padding: 0 32px;
+  display: flex; overflow-x: auto;
+}
+.stat-item {
+  padding: 14px 28px 14px 0;
+  margin-right: 28px;
+  border-right: 1px solid var(--borde);
+  flex-shrink: 0;
+}
+.stat-item:last-child { border-right: none; margin-right: 0; }
+.stat-num {
+  font-family: var(--fuente-titulo);
+  font-size: 26px; font-weight: 700;
+  color: var(--celeste); line-height: 1;
+}
+.stat-label {
+  font-size: 10px; color: var(--texto-2);
+  text-transform: uppercase; letter-spacing: 0.8px; font-weight: 500;
+}
+
+/* ── MAIN ── */
+.main { max-width: 1400px; margin: 0 auto; padding: 24px 32px; }
+
+/* ── TABS (pestañas) ── */
+.tabs-barra {
+  display: flex; gap: 4px;
+  background: var(--fondo-2);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  padding: 6px;
+  margin-bottom: 20px;
+  width: fit-content;
+}
+
+.tab-btn {
+  font-family: var(--fuente-titulo);
+  font-size: 14px; font-weight: 600;
+  letter-spacing: 0.5px; text-transform: uppercase;
+  padding: 8px 20px;
+  border-radius: 8px;
+  border: none; background: transparent;
+  color: var(--texto-2);
+  cursor: pointer; transition: var(--trans);
+  display: flex; align-items: center; gap: 8px;
+}
+.tab-btn:hover { color: var(--texto-1); background: var(--fondo-3); }
+.tab-btn.activo {
+  background: var(--azul);
+  color: white;
+  box-shadow: 0 2px 12px rgba(0,87,168,0.4);
+}
+
+.tab-panel { display: none; }
+.tab-panel.activo { display: block; }
+
+/* ── FILTROS ── */
+.filtros-panel {
+  background: var(--fondo-2);
+  border: 1px solid var(--borde);
+  border-radius: 16px;
+  padding: 18px 22px;
+  margin-bottom: 20px;
+}
+.filtros-titulo {
+  font-family: var(--fuente-titulo);
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--texto-2); margin-bottom: 14px;
+}
+.filtros-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr auto;
+  gap: 12px; align-items: end;
+}
+.filtro-grupo { display: flex; flex-direction: column; gap: 6px; }
+.filtro-label { font-size: 11px; font-weight: 500; color: var(--texto-2); text-transform: uppercase; letter-spacing: 0.8px; }
+.filtro-input, .filtro-select {
+  background: var(--fondo-3);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  color: var(--texto-1);
+  font-family: var(--fuente-cuerpo);
+  font-size: 14px; padding: 10px 14px;
+  transition: var(--trans); outline: none;
+  appearance: none; -webkit-appearance: none; width: 100%;
+}
+.filtro-input::placeholder { color: var(--texto-3); }
+.filtro-input:focus, .filtro-select:focus {
+  border-color: var(--celeste);
+  box-shadow: 0 0 0 3px rgba(117,170,219,0.12);
+}
+.filtro-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238A9BB5' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px; cursor: pointer;
+}
+.btn-limpiar {
+  background: transparent;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  color: var(--texto-2);
+  font-family: var(--fuente-cuerpo);
+  font-size: 13px; font-weight: 500;
+  padding: 10px 18px; cursor: pointer;
+  transition: var(--trans); white-space: nowrap;
+}
+.btn-limpiar:hover { border-color: var(--celeste); color: var(--celeste); }
+
+/* ── STATS CARDS ── */
+.stats-card {
+  display: none;
+  background: var(--fondo-2);
+  border: 1px solid var(--borde-activo);
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+}
+.stats-card.visible { display: block; }
+.stats-card-header {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 16px; padding-bottom: 14px;
+  border-bottom: 1px solid var(--borde);
+}
+.stats-card-escudo { width: 38px; height: 38px; object-fit: contain; }
+.stats-card-nombre { font-family: var(--fuente-titulo); font-size: 22px; font-weight: 700; }
+.stats-card-sub { font-size: 11px; color: var(--texto-2); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px; }
+.stats-nums { display: flex; gap: 8px; flex-wrap: wrap; }
+.stat-pill {
+  flex: 1; min-width: 68px;
+  background: var(--fondo-3);
+  border-radius: 10px; padding: 12px 10px;
+  text-align: center; border: 1px solid var(--borde);
+}
+.stat-pill-num { font-family: var(--fuente-titulo); font-size: 26px; font-weight: 700; line-height: 1; display: block; }
+.stat-pill-label { font-size: 10px; color: var(--texto-2); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 4px; font-weight: 500; display: block; }
+.num-verde { color: var(--verde); }
+.num-rojo { color: var(--rojo); }
+.num-amarillo { color: var(--amarillo); }
+.num-celeste { color: var(--celeste); }
+
+/* ── TABLA ── */
+.tabla-wrapper {
+  background: var(--fondo-2);
+  border: 1px solid var(--borde);
+  border-radius: 16px; overflow: hidden;
+}
+.tabla-header {
+  padding: 14px 22px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--borde); flex-wrap: wrap; gap: 10px;
+}
+.tabla-titulo { font-family: var(--fuente-titulo); font-size: 16px; font-weight: 700; }
+.tabla-count {
+  font-size: 12px; color: var(--texto-2);
+  background: var(--fondo-3); padding: 4px 10px;
+  border-radius: 20px; border: 1px solid var(--borde);
+}
+.tabla-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; min-width: 600px; }
+thead tr { background: var(--fondo-3); border-bottom: 1px solid var(--borde); }
+th {
+  padding: 11px 16px; text-align: left;
+  font-family: var(--fuente-titulo);
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 1px; text-transform: uppercase;
+  color: var(--texto-2); white-space: nowrap;
+}
+th.center { text-align: center; }
+tbody tr { border-bottom: 1px solid var(--borde); transition: background 0.15s; cursor: pointer; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: rgba(117,170,219,0.05); }
+td { padding: 10px 16px; font-size: 14px; color: var(--texto-1); vertical-align: middle; }
+.td-fecha { color: var(--texto-2); font-size: 13px; white-space: nowrap; }
+.td-equipo { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+.td-escudo { width: 22px; height: 22px; object-fit: contain; flex-shrink: 0; }
+.td-resultado { text-align: center; font-family: var(--fuente-titulo); font-size: 18px; font-weight: 700; white-space: nowrap; letter-spacing: 1px; }
+.res-local { color: var(--verde); }
+.res-empate { color: var(--amarillo); }
+.res-visita { color: var(--rojo); }
+.badge-torneo {
+  display: inline-block;
+  background: rgba(117,170,219,0.08);
+  border: 1px solid rgba(117,170,219,0.18);
+  border-radius: 6px; padding: 3px 8px;
+  font-size: 11px; color: var(--celeste-claro); white-space: nowrap;
+}
+.loading-row td { text-align: center; padding: 48px; color: var(--texto-2); font-size: 14px; }
+
+/* ── PESTAÑA EQUIPOS ── */
+.equipos-buscar {
+  background: var(--fondo-2);
+  border: 1px solid var(--borde);
+  border-radius: 12px; padding: 14px 18px;
+  margin-bottom: 20px;
+  display: flex; align-items: center; gap: 12px;
+}
+.equipos-buscar input {
+  background: transparent; border: none;
+  color: var(--texto-1); font-family: var(--fuente-cuerpo);
+  font-size: 15px; outline: none; flex: 1;
+}
+.equipos-buscar input::placeholder { color: var(--texto-3); }
+.equipos-buscar-icon { color: var(--texto-2); font-size: 16px; }
+
+.equipos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+}
+
+.equipo-card {
+  background: var(--fondo-2);
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  padding: 20px 14px;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 12px;
+  cursor: pointer; transition: var(--trans);
+  text-align: center;
+}
+.equipo-card:hover {
+  border-color: var(--borde-hover);
+  background: var(--fondo-3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+.equipo-card-escudo {
+  width: 56px; height: 56px;
+  object-fit: contain;
+}
+.equipo-card-nombre {
+  font-family: var(--fuente-titulo);
+  font-size: 15px; font-weight: 600;
+  color: var(--texto-1); line-height: 1.2;
+}
+
+/* ── VISTA DETALLE EQUIPO ── */
+.detalle-equipo { display: none; }
+.detalle-equipo.visible { display: block; }
+
+.detalle-header {
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 20px;
+}
+.btn-volver {
+  background: transparent;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  color: var(--texto-2);
+  font-family: var(--fuente-cuerpo);
+  font-size: 14px; padding: 8px 16px;
+  cursor: pointer; transition: var(--trans);
+  display: flex; align-items: center; gap: 6px;
+}
+.btn-volver:hover { border-color: var(--celeste); color: var(--celeste); }
+.detalle-equipo-nombre {
+  font-family: var(--fuente-titulo);
+  font-size: 28px; font-weight: 800;
+}
+.detalle-equipo-escudo { width: 44px; height: 44px; object-fit: contain; }
+
+.detalle-filtro {
+  background: var(--fondo-2);
+  border: 1px solid var(--borde);
+  border-radius: 12px; padding: 14px 18px;
+  margin-bottom: 16px;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.detalle-filtro-label { font-size: 12px; color: var(--texto-2); text-transform: uppercase; letter-spacing: 0.8px; white-space: nowrap; }
+.detalle-filtro select {
+  background: var(--fondo-3);
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  color: var(--texto-1);
+  font-family: var(--fuente-cuerpo);
+  font-size: 14px; padding: 8px 32px 8px 12px;
+  outline: none; cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238A9BB5' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  transition: var(--trans);
+}
+.detalle-filtro select:focus { border-color: var(--celeste); }
+
+/* ── MODAL ── */
+.modal-overlay {
+  display: none; position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.85);
+  z-index: 400;
+  align-items: center; justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.visible { display: flex; }
+.modal-box {
+  background: var(--fondo-2);
+  border: 1px solid var(--borde-hover);
+  border-radius: 20px; padding: 28px;
+  max-width: 580px; width: 100%;
+  max-height: 90vh; overflow-y: auto;
+}
+.modal-top {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 16px;
+}
+.modal-equipos { font-family: var(--fuente-titulo); font-size: 22px; font-weight: 800; }
+.modal-cerrar {
+  background: transparent; border: none;
+  color: var(--texto-2); font-size: 22px;
+  cursor: pointer; padding: 2px 6px;
+  border-radius: 6px; transition: var(--trans);
+  flex-shrink: 0;
+}
+.modal-cerrar:hover { color: var(--texto-1); background: var(--fondo-3); }
+.modal-resultado-num {
+  font-family: var(--fuente-titulo);
+  font-size: 52px; font-weight: 800;
+  color: var(--celeste); text-align: center;
+  line-height: 1;
+}
+.modal-fecha-txt { text-align: center; color: var(--texto-2); font-size: 13px; margin-top: 4px; margin-bottom: 20px; }
+.modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.modal-dato {
+  background: var(--fondo);
+  border-radius: 10px; padding: 13px;
+}
+.modal-dato.full { grid-column: span 2; }
+.modal-dato-label { font-size: 10px; color: var(--texto-2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+.modal-dato-valor { font-size: 14px; font-weight: 500; color: var(--texto-1); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .filtros-grid { grid-template-columns: 1fr 1fr; }
+  .btn-limpiar { grid-column: span 2; }
+}
+@media (max-width: 600px) {
+  .header-inner { padding: 16px; }
+  .stats-bar-inner { padding: 0 16px; }
+  .main { padding: 16px; }
+  .filtros-grid { grid-template-columns: 1fr; }
+  .btn-limpiar { grid-column: span 1; }
+  .equipos-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+  .modal-grid { grid-template-columns: 1fr; }
+  .modal-dato.full { grid-column: span 1; }
+  .tabs-barra { width: 100%; }
+  .tab-btn { flex: 1; justify-content: center; }
+}
+
+select option { background: #0C1A30; color: #F5F7FA; }
 </style>
 </head>
 <body>
 
+<!-- OVERLAY Y SIDEBAR -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="cerrarSidebar()"></div>
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">⚽</div>
+      <span class="sidebar-logo-text">Fútbol <span>AR</span></span>
+    </div>
+    <button class="sidebar-close" onclick="cerrarSidebar()">✕</button>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="sidebar-nav-item activo" onclick="cambiarTab('buscador'); cerrarSidebar();" id="menu-buscador">
+      <span class="sidebar-nav-icon">🔍</span>
+      <span class="sidebar-nav-texto">Buscador</span>
+    </div>
+    <div class="sidebar-nav-item" onclick="cambiarTab('equipos'); cerrarSidebar();" id="menu-equipos">
+      <span class="sidebar-nav-icon">🏆</span>
+      <span class="sidebar-nav-texto">Equipos</span>
+    </div>
+  </nav>
+  <div class="sidebar-footer">Base de Datos del Fútbol Argentino</div>
+</div>
+
+<!-- HEADER -->
 <header>
   <div class="header-inner">
+    <button class="btn-menu" onclick="abrirSidebar()">☰</button>
     <div class="header-brand">
       <div class="header-icon">⚽</div>
       <div class="header-text">
@@ -511,227 +583,245 @@
   </div>
 </header>
 
+<!-- STATS BAR -->
 <div class="stats-bar">
   <div class="stats-bar-inner">
     <div class="stat-item">
-      <div>
-        <div class="stat-num" id="total-partidos">-</div>
-        <div class="stat-label">Partidos</div>
-      </div>
+      <div><div class="stat-num" id="total-partidos">-</div><div class="stat-label">Partidos</div></div>
     </div>
     <div class="stat-item">
-      <div>
-        <div class="stat-num" id="total-equipos">-</div>
-        <div class="stat-label">Equipos</div>
-      </div>
+      <div><div class="stat-num" id="total-equipos">-</div><div class="stat-label">Equipos</div></div>
     </div>
     <div class="stat-item">
-      <div>
-        <div class="stat-num" id="total-temporadas">-</div>
-        <div class="stat-label">Temporadas</div>
-      </div>
+      <div><div class="stat-num" id="total-temporadas">-</div><div class="stat-label">Temporadas</div></div>
     </div>
   </div>
 </div>
 
+<!-- MAIN -->
 <div class="main">
 
-  <!-- FILTROS -->
-  <div class="filtros-panel">
-    <div class="filtros-titulo">🔍 Filtros de búsqueda</div>
-    <div class="filtros-grid">
-      <div class="filtro-grupo">
-        <label class="filtro-label">Buscar equipo</label>
-        <input type="text" id="buscar" class="filtro-input" placeholder="Ej: Boca, River..." oninput="filtrar()">
+  <!-- TABS -->
+  <div class="tabs-barra">
+    <button class="tab-btn activo" id="tab-buscador" onclick="cambiarTab('buscador')">🔍 Buscador</button>
+    <button class="tab-btn" id="tab-equipos" onclick="cambiarTab('equipos')">🏆 Equipos</button>
+  </div>
+
+  <!-- ══ TAB BUSCADOR ══ -->
+  <div class="tab-panel activo" id="panel-buscador">
+
+    <div class="filtros-panel">
+      <div class="filtros-titulo">🔍 Filtros de búsqueda</div>
+      <div class="filtros-grid">
+        <div class="filtro-grupo">
+          <label class="filtro-label">Buscar equipo</label>
+          <input type="text" id="buscar" class="filtro-input" placeholder="Ej: Boca, River..." oninput="filtrar()">
+        </div>
+        <div class="filtro-grupo">
+          <label class="filtro-label">Equipo</label>
+          <select id="filtro-equipo" class="filtro-select" onchange="filtrar()">
+            <option value="">Todos los equipos</option>
+          </select>
+        </div>
+        <div class="filtro-grupo">
+          <label class="filtro-label">Contra</label>
+          <select id="filtro-equipo2" class="filtro-select" onchange="filtrar()">
+            <option value="">Cualquier equipo</option>
+          </select>
+        </div>
+        <div class="filtro-grupo">
+          <label class="filtro-label">Resultado</label>
+          <select id="filtro-resultado" class="filtro-select" onchange="filtrar()">
+            <option value="">Todos</option>
+            <option value="local">Victoria local</option>
+            <option value="visitante">Victoria visitante</option>
+            <option value="empate">Empate</option>
+          </select>
+        </div>
+        <button class="btn-limpiar" onclick="limpiarFiltros()">✕ Limpiar</button>
       </div>
-      <div class="filtro-grupo">
-        <label class="filtro-label">Equipo</label>
-        <select id="filtro-equipo" class="filtro-select" onchange="filtrar()">
-          <option value="">Todos los equipos</option>
+    </div>
+
+    <!-- Stats enfrentamiento -->
+    <div id="stats-enfrentamiento" class="stats-card">
+      <div class="stats-card-header">
+        <div>
+          <div class="stats-card-nombre" id="enf-titulo"></div>
+          <div class="stats-card-sub">Historial de enfrentamientos</div>
+        </div>
+      </div>
+      <div class="stats-nums">
+        <div class="stat-pill"><span class="stat-pill-num num-celeste" id="enf-pj">0</span><span class="stat-pill-label">Partidos</span></div>
+        <div class="stat-pill"><span class="stat-pill-num num-verde" id="enf-g1">0</span><span class="stat-pill-label" id="enf-g1-nombre">E1</span></div>
+        <div class="stat-pill"><span class="stat-pill-num num-amarillo" id="enf-emp">0</span><span class="stat-pill-label">Empates</span></div>
+        <div class="stat-pill"><span class="stat-pill-num num-rojo" id="enf-g2">0</span><span class="stat-pill-label" id="enf-g2-nombre">E2</span></div>
+        <div class="stat-pill"><span class="stat-pill-num num-celeste" id="enf-gf1">0</span><span class="stat-pill-label" id="enf-gf1-nombre">Goles E1</span></div>
+        <div class="stat-pill"><span class="stat-pill-num num-celeste" id="enf-gf2">0</span><span class="stat-pill-label" id="enf-gf2-nombre">Goles E2</span></div>
+      </div>
+    </div>
+
+    <!-- Stats equipo -->
+    <div id="stats-equipo" class="stats-card">
+      <div class="stats-card-header">
+        <img id="stats-escudo" class="stats-card-escudo" src="" alt="" onerror="this.style.display='none'">
+        <div>
+          <div class="stats-card-nombre" id="stats-nombre"></div>
+          <div class="stats-card-sub">Estadísticas históricas</div>
+        </div>
+      </div>
+      <div class="stats-nums">
+        <div class="stat-pill"><span class="stat-pill-num num-celeste" id="stats-pj">0</span><span class="stat-pill-label">PJ</span></div>
+        <div class="stat-pill"><span class="stat-pill-num num-verde" id="stats-pg">0</span><span class="stat-pill-label">PG</span></div>
+        <div class="stat-pill"><span class="stat-pill-num num-amarillo" id="stats-pe">0</span><span class="stat-pill-label">PE</span></div>
+        <div class="stat-pill"><span class="stat-pill-num num-rojo" id="stats-pp">0</span><span class="stat-pill-label">PP</span></div>
+        <div class="stat-pill"><span class="stat-pill-num num-celeste" id="stats-gf">0</span><span class="stat-pill-label">GF</span></div>
+        <div class="stat-pill"><span class="stat-pill-num num-celeste" id="stats-gc">0</span><span class="stat-pill-label">GC</span></div>
+        <div class="stat-pill"><span class="stat-pill-num num-celeste" id="stats-dg">0</span><span class="stat-pill-label">DG</span></div>
+      </div>
+    </div>
+
+    <!-- Tabla buscador -->
+    <div class="tabla-wrapper">
+      <div class="tabla-header">
+        <div class="tabla-titulo">Partidos</div>
+        <div class="tabla-count" id="tabla-count">Cargando...</div>
+      </div>
+      <div class="tabla-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th><th>Local</th>
+              <th class="center">Resultado</th>
+              <th>Visitante</th><th>Torneo</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-partidos">
+            <tr class="loading-row"><td colspan="5">Cargando partidos...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- fin panel-buscador -->
+
+  <!-- ══ TAB EQUIPOS ══ -->
+  <div class="tab-panel" id="panel-equipos">
+
+    <!-- Vista grilla de equipos -->
+    <div id="vista-equipos">
+      <div class="equipos-buscar">
+        <span class="equipos-buscar-icon">🔍</span>
+        <input type="text" id="buscar-equipo" placeholder="Buscar equipo..." oninput="filtrarEquipos()">
+      </div>
+      <div class="equipos-grid" id="equipos-grid"></div>
+    </div>
+
+    <!-- Vista detalle de un equipo -->
+    <div class="detalle-equipo" id="vista-detalle">
+      <div class="detalle-header">
+        <button class="btn-volver" onclick="volverEquipos()">← Volver</button>
+        <img id="detalle-escudo" class="detalle-equipo-escudo" src="" alt="" onerror="this.style.display='none'">
+        <div class="detalle-equipo-nombre" id="detalle-nombre"></div>
+      </div>
+
+      <!-- Stats del equipo en detalle -->
+      <div class="stats-nums" id="detalle-stats" style="margin-bottom:16px;"></div>
+
+      <!-- Filtro rival -->
+      <div class="detalle-filtro">
+        <span class="detalle-filtro-label">Filtrar rival:</span>
+        <select id="detalle-filtro-rival" onchange="filtrarDetalle()">
+          <option value="">Todos los rivales</option>
+        </select>
+        <select id="detalle-filtro-resultado" onchange="filtrarDetalle()">
+          <option value="">Todos los resultados</option>
+          <option value="victoria">Victorias</option>
+          <option value="empate">Empates</option>
+          <option value="derrota">Derrotas</option>
         </select>
       </div>
-      <div class="filtro-grupo">
-        <label class="filtro-label">Contra</label>
-        <select id="filtro-equipo2" class="filtro-select" onchange="filtrar()">
-          <option value="">Cualquier equipo</option>
-        </select>
+
+      <!-- Tabla detalle -->
+      <div class="tabla-wrapper">
+        <div class="tabla-header">
+          <div class="tabla-titulo" id="detalle-tabla-titulo">Partidos</div>
+          <div class="tabla-count" id="detalle-count"></div>
+        </div>
+        <div class="tabla-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th><th>Local</th>
+                <th class="center">Resultado</th>
+                <th>Visitante</th><th>Torneo</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-detalle"></tbody>
+          </table>
+        </div>
       </div>
-      <div class="filtro-grupo">
-        <label class="filtro-label">Resultado</label>
-        <select id="filtro-resultado" class="filtro-select" onchange="filtrar()">
-          <option value="">Todos</option>
-          <option value="local">Victoria local</option>
-          <option value="visitante">Victoria visitante</option>
-          <option value="empate">Empate</option>
-        </select>
-      </div>
-      <button class="btn-limpiar" onclick="limpiarFiltros()">✕ Limpiar</button>
+    </div>
+
+  </div><!-- fin panel-equipos -->
+
+</div><!-- fin main -->
+
+<!-- MODAL PARTIDO -->
+<div class="modal-overlay" id="modal" onclick="cerrarModal()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-top">
+      <div class="modal-equipos" id="modal-titulo"></div>
+      <button class="modal-cerrar" onclick="cerrarModal()">✕</button>
+    </div>
+    <div class="modal-resultado-num" id="modal-resultado"></div>
+    <div class="modal-fecha-txt" id="modal-fecha"></div>
+    <div class="modal-grid">
+      <div class="modal-dato"><div class="modal-dato-label">Torneo</div><div class="modal-dato-valor" id="modal-torneo"></div></div>
+      <div class="modal-dato"><div class="modal-dato-label">Fase</div><div class="modal-dato-valor" id="modal-fase"></div></div>
+      <div class="modal-dato full"><div class="modal-dato-label">Estadio</div><div class="modal-dato-valor" id="modal-estadio"></div></div>
+      <div class="modal-dato full"><div class="modal-dato-label">Goleadores</div><div class="modal-dato-valor" id="modal-goleadores"></div></div>
+      <div class="modal-dato"><div class="modal-dato-label">Amonestados</div><div class="modal-dato-valor" id="modal-amonestados"></div></div>
+      <div class="modal-dato"><div class="modal-dato-label">Expulsados</div><div class="modal-dato-valor" id="modal-expulsados"></div></div>
     </div>
   </div>
-
-  <!-- STATS ENFRENTAMIENTO -->
-  <div id="stats-enfrentamiento" class="stats-card">
-    <div class="stats-card-header">
-      <div>
-        <div class="stats-card-nombre" id="enf-titulo"></div>
-        <div class="stats-card-sub">Historial de enfrentamientos</div>
-      </div>
-    </div>
-    <div class="stats-nums">
-      <div class="stat-pill">
-        <span class="stat-pill-num celeste" id="enf-pj">0</span>
-        <span class="stat-pill-label">Partidos</span>
-      </div>
-      <div class="stat-pill">
-        <span class="stat-pill-num verde" id="enf-g1">0</span>
-        <span class="stat-pill-label" id="enf-g1-nombre">Equipo 1</span>
-      </div>
-      <div class="stat-pill">
-        <span class="stat-pill-num amarillo" id="enf-emp">0</span>
-        <span class="stat-pill-label">Empates</span>
-      </div>
-      <div class="stat-pill">
-        <span class="stat-pill-num rojo" id="enf-g2">0</span>
-        <span class="stat-pill-label" id="enf-g2-nombre">Equipo 2</span>
-      </div>
-      <div class="stat-pill">
-        <span class="stat-pill-num celeste" id="enf-gf1">0</span>
-        <span class="stat-pill-label" id="enf-gf1-nombre">Goles E1</span>
-      </div>
-      <div class="stat-pill">
-        <span class="stat-pill-num celeste" id="enf-gf2">0</span>
-        <span class="stat-pill-label" id="enf-gf2-nombre">Goles E2</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- STATS EQUIPO -->
-  <div id="stats-equipo" class="stats-card">
-    <div class="stats-card-header">
-      <img id="stats-escudo" class="stats-card-escudo" src="" alt="" onerror="this.style.display='none'">
-      <div>
-        <div class="stats-card-nombre" id="stats-nombre"></div>
-        <div class="stats-card-sub">Estadísticas históricas</div>
-      </div>
-    </div>
-    <div class="stats-nums">
-      <div class="stat-pill">
-        <span class="stat-pill-num celeste" id="stats-pj">0</span>
-        <span class="stat-pill-label">PJ</span>
-      </div>
-      <div class="stat-pill">
-        <span class="stat-pill-num verde" id="stats-pg">0</span>
-        <span class="stat-pill-label">PG</span>
-      </div>
-      <div class="stat-pill">
-        <span class="stat-pill-num amarillo" id="stats-pe">0</span>
-        <span class="stat-pill-label">PE</span>
-      </div>
-      <div class="stat-pill">
-        <span class="stat-pill-num rojo" id="stats-pp">0</span>
-        <span class="stat-pill-label">PP</span>
-      </div>
-      <div class="stat-pill">
-        <span class="stat-pill-num celeste" id="stats-gf">0</span>
-        <span class="stat-pill-label">GF</span>
-      </div>
-      <div class="stat-pill">
-        <span class="stat-pill-num celeste" id="stats-gc">0</span>
-        <span class="stat-pill-label">GC</span>
-      </div>
-      <div class="stat-pill">
-        <span class="stat-pill-num celeste" id="stats-dg">0</span>
-        <span class="stat-pill-label">DG</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- TABLA -->
-  <div class="tabla-wrapper">
-    <div class="tabla-header">
-      <div class="tabla-titulo">Partidos</div>
-      <div class="tabla-count" id="tabla-count">Cargando...</div>
-    </div>
-    <div class="tabla-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Local</th>
-            <th class="center">Resultado</th>
-            <th>Visitante</th>
-            <th>Torneo</th>
-          </tr>
-        </thead>
-        <tbody id="tabla-partidos">
-          <tr class="loading-row">
-            <td colspan="5"><span class="dot-loading">Cargando partidos</span></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
 </div>
 
 <script>
-const URL_PARTIDOS = 'Partidos.csv';
-const URL_EQUIPOS = 'Equipos.csv';
+const URL_PARTIDOS   = 'Partidos.csv';
+const URL_EQUIPOS    = 'Equipos.csv';
 const URL_TEMPORADAS = 'Temporadas.csv';
 
 const ESCUDOS = {
-  'Aldosivi': 'escudos/aldosivi.png',
-  'All Boys': 'escudos/all_boys.png',
-  'Almagro': 'escudos/almagro.png',
-  'Argentinos Juniors': 'escudos/argentinos_juniors.png',
-  'Arsenal': 'escudos/arsenal.png',
-  'Atletico Rafaela': 'escudos/atletico_rafaela.png',
-  'Atletico Tucuman': 'escudos/atletico_tucuman.png',
-  'Banfield': 'escudos/banfield.png',
-  'Barracas Central': 'escudos/barracas_central.png',
-  'Belgrano': 'escudos/belgrano.png',
-  'Boca Juniors': 'escudos/boca_juniors.png',
-  'Central Cordoba SdE': 'escudos/central_cordoba_sde.png',
-  'Chacarita Juniors': 'escudos/chacarita_juniors.png',
-  'Colon': 'escudos/colon.png',
-  'Crucero del Norte': 'escudos/crucero_del_norte.png',
-  'Defensa y Justicia': 'escudos/defensa_y_justicia.png',
-  'Deportivo Riestra': 'escudos/deportivo_riestra.png',
-  'Estudiantes LP': 'escudos/estudiantes_lp.png',
-  'Gimnasia de Jujuy': 'escudos/gimnasia_jujuy.png',
-  'Gimnasia LP': 'escudos/gimnasia_lp.png',
-  'Godoy Cruz': 'escudos/godoy_cruz.png',
-  'Huracan': 'escudos/huracan.png',
-  'Huracan de Tres Arroyos': 'escudos/huracan_tres_arroyos.png',
-  'Independiente': 'escudos/independiente.png',
-  'Independiente Rivadavia': 'escudos/independiente_rivadavia.png',
-  'Instituto': 'escudos/instituto.png',
-  'Lanus': 'escudos/lanus.png',
-  'Newells': 'escudos/newells.png',
-  'Nueva Chicago': 'escudos/nueva_chicago.png',
-  'Olimpo': 'escudos/olimpo.png',
-  'Patronato': 'escudos/patronato.png',
-  'Platense': 'escudos/platense.png',
-  'Quilmes': 'escudos/quilmes.png',
-  'Racing Club': 'escudos/racing_club.png',
-  'River Plate': 'escudos/river_plate.png',
-  'Rosario Central': 'escudos/rosario_central.png',
-  'San Lorenzo': 'escudos/san_lorenzo.png',
-  'San Martin SJ': 'escudos/san_martin_sj.png',
-  'San Martin Tucuman': 'escudos/san_martin_tucuman.png',
-  'Sarmiento': 'escudos/sarmiento.png',
-  'Talleres': 'escudos/talleres.png',
-  'Temperley': 'escudos/temperley.png',
-  'Tigre': 'escudos/tigre.png',
-  'Tiro Federal': 'escudos/tiro_federal.png',
-  'Union': 'escudos/union.png',
-  'Velez Sarsfield': 'escudos/velez_sarsfield.png'
+  'Aldosivi':'escudos/aldosivi.png','All Boys':'escudos/all_boys.png',
+  'Almagro':'escudos/almagro.png','Argentinos Juniors':'escudos/argentinos_juniors.png',
+  'Arsenal':'escudos/arsenal.png','Atletico Rafaela':'escudos/atletico_rafaela.png',
+  'Atletico Tucuman':'escudos/atletico_tucuman.png','Banfield':'escudos/banfield.png',
+  'Barracas Central':'escudos/barracas_central.png','Belgrano':'escudos/belgrano.png',
+  'Boca Juniors':'escudos/boca_juniors.png','Central Cordoba SdE':'escudos/central_cordoba_sde.png',
+  'Chacarita Juniors':'escudos/chacarita_juniors.png','Colon':'escudos/colon.png',
+  'Crucero del Norte':'escudos/crucero_del_norte.png','Defensa y Justicia':'escudos/defensa_y_justicia.png',
+  'Deportivo Riestra':'escudos/deportivo_riestra.png','Estudiantes LP':'escudos/estudiantes_lp.png',
+  'Gimnasia de Jujuy':'escudos/gimnasia_jujuy.png','Gimnasia LP':'escudos/gimnasia_lp.png',
+  'Godoy Cruz':'escudos/godoy_cruz.png','Huracan':'escudos/huracan.png',
+  'Huracan de Tres Arroyos':'escudos/huracan_tres_arroyos.png','Independiente':'escudos/independiente.png',
+  'Independiente Rivadavia':'escudos/independiente_rivadavia.png','Instituto':'escudos/instituto.png',
+  'Lanus':'escudos/lanus.png','Newells':'escudos/newells.png',
+  'Nueva Chicago':'escudos/nueva_chicago.png','Olimpo':'escudos/olimpo.png',
+  'Patronato':'escudos/patronato.png','Platense':'escudos/platense.png',
+  'Quilmes':'escudos/quilmes.png','Racing Club':'escudos/racing_club.png',
+  'River Plate':'escudos/river_plate.png','Rosario Central':'escudos/rosario_central.png',
+  'San Lorenzo':'escudos/san_lorenzo.png','San Martin SJ':'escudos/san_martin_sj.png',
+  'San Martin Tucuman':'escudos/san_martin_tucuman.png','Sarmiento':'escudos/sarmiento.png',
+  'Talleres':'escudos/talleres.png','Temperley':'escudos/temperley.png',
+  'Tigre':'escudos/tigre.png','Tiro Federal':'escudos/tiro_federal.png',
+  'Union':'escudos/union.png','Velez Sarsfield':'escudos/velez_sarsfield.png'
 };
 
-let partidos = [];
-let equipos = {};
-let temporadas = {};
+let partidos = [], equipos = {}, temporadas = {};
+let equiposArr = [];
+let equipoDetalleID = null;
 
+// ── CSV ──
 function csvToArray(csv) {
   const lines = csv.trim().split('\n');
   const headers = lines[0].split(',');
@@ -743,228 +833,300 @@ function csvToArray(csv) {
   });
 }
 
+// ── CARGAR ──
 async function cargarDatos() {
   try {
     const [resP, resE, resT] = await Promise.all([
-      fetch(URL_PARTIDOS),
-      fetch(URL_EQUIPOS),
-      fetch(URL_TEMPORADAS)
+      fetch(URL_PARTIDOS), fetch(URL_EQUIPOS), fetch(URL_TEMPORADAS)
     ]);
     const csvP = await resP.text();
     const csvE = await resE.text();
     const csvT = await resT.text();
 
-    const equiposArr = csvToArray(csvE);
+    equiposArr = csvToArray(csvE);
     equiposArr.forEach(e => equipos[e.ID_Equipo] = e.Nombre_Equipo);
 
-    const temporadasArr = csvToArray(csvT);
-    temporadasArr.forEach(t => temporadas[t.ID_Temporada] = t.Competencia);
-    document.getElementById('total-temporadas').textContent = temporadasArr.length;
+    const tempArr = csvToArray(csvT);
+    tempArr.forEach(t => temporadas[t.ID_Temporada] = t.Competencia);
+    document.getElementById('total-temporadas').textContent = tempArr.length;
 
     partidos = csvToArray(csvP).filter(p => p.ID_Partido);
-
     document.getElementById('total-partidos').textContent = partidos.length.toLocaleString();
     document.getElementById('total-equipos').textContent = equiposArr.length;
 
-    const selectEquipo = document.getElementById('filtro-equipo');
-    const selectEquipo2 = document.getElementById('filtro-equipo2');
+    // Llenar selects del buscador
+    const sel1 = document.getElementById('filtro-equipo');
+    const sel2 = document.getElementById('filtro-equipo2');
     equiposArr.sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo)).forEach(e => {
-      [selectEquipo, selectEquipo2].forEach(sel => {
+      [sel1, sel2].forEach(sel => {
         const opt = document.createElement('option');
-        opt.value = e.ID_Equipo;
-        opt.textContent = e.Nombre_Equipo;
+        opt.value = e.ID_Equipo; opt.textContent = e.Nombre_Equipo;
         sel.appendChild(opt);
       });
     });
 
+    renderizarEquipos();
     filtrar();
-  } catch(e) {
+  } catch(err) {
     document.getElementById('tabla-partidos').innerHTML =
-      '<tr class="loading-row"><td colspan="5">Error cargando datos. Revisá los archivos CSV.</td></tr>';
-    document.getElementById('tabla-count').textContent = 'Error';
+      '<tr class="loading-row"><td colspan="5">Error cargando datos.</td></tr>';
   }
 }
 
-function limpiarFiltros() {
-  document.getElementById('buscar').value = '';
-  document.getElementById('filtro-equipo').value = '';
-  document.getElementById('filtro-equipo2').value = '';
-  document.getElementById('filtro-resultado').value = '';
-  filtrar();
+// ── SIDEBAR ──
+function abrirSidebar() {
+  document.getElementById('sidebar').classList.add('activo');
+  document.getElementById('sidebar-overlay').classList.add('activo');
+}
+function cerrarSidebar() {
+  document.getElementById('sidebar').classList.remove('activo');
+  document.getElementById('sidebar-overlay').classList.remove('activo');
 }
 
-function escudo(nombre) {
-  return ESCUDOS[nombre] ? `<img src="${ESCUDOS[nombre]}" class="td-escudo" alt="" onerror="this.style.display='none'">` : '';
+// ── TABS ──
+function cambiarTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('activo'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('activo'));
+  document.querySelectorAll('.sidebar-nav-item').forEach(i => i.classList.remove('activo'));
+  document.getElementById('panel-' + tab).classList.add('activo');
+  document.getElementById('tab-' + tab).classList.add('activo');
+  document.getElementById('menu-' + tab).classList.add('activo');
 }
 
-function resultadoClase(gl, gv) {
+// ── HELPERS ──
+function escudoImg(nombre, size) {
+  return ESCUDOS[nombre]
+    ? `<img src="${ESCUDOS[nombre]}" style="width:${size}px;height:${size}px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">`
+    : '';
+}
+function resClase(gl, gv) {
   const l = parseInt(gl)||0, v = parseInt(gv)||0;
-  if (l > v) return 'res-local';
-  if (v > l) return 'res-visita';
-  return 'res-empate';
+  return l > v ? 'res-local' : (v > l ? 'res-visita' : 'res-empate');
+}
+function filaPartido(p) {
+  const local = equipos[p.Local_ID] || p.Local_ID;
+  const visita = equipos[p.Visitante_ID] || p.Visitante_ID;
+  const fecha = p.Fecha ? p.Fecha.split('T')[0] : '';
+  const torneo = temporadas[p.ID_Temporada] || p.Fase || '';
+  const rc = resClase(p.Goles_Local, p.Goles_Visitante);
+  return `<tr onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
+    <td class="td-fecha">${fecha}</td>
+    <td><div class="td-equipo">${escudoImg(local,22)}<span>${local}</span></div></td>
+    <td class="td-resultado"><span class="${rc}">${p.Goles_Local} - ${p.Goles_Visitante}</span></td>
+    <td><div class="td-equipo">${escudoImg(visita,22)}<span>${visita}</span></div></td>
+    <td><span class="badge-torneo">${torneo}</span></td>
+  </tr>`;
+}
+
+// ── BUSCADOR ──
+function limpiarFiltros() {
+  ['buscar','filtro-equipo','filtro-equipo2','filtro-resultado'].forEach(id => {
+    const el = document.getElementById(id);
+    el.value = '';
+  });
+  filtrar();
 }
 
 function filtrar() {
   const buscar = document.getElementById('buscar').value.toLowerCase();
-  const equipoFiltro = document.getElementById('filtro-equipo').value;
-  const equipoFiltro2 = document.getElementById('filtro-equipo2').value;
-  const resultadoFiltro = document.getElementById('filtro-resultado').value;
+  const eq1 = document.getElementById('filtro-equipo').value;
+  const eq2 = document.getElementById('filtro-equipo2').value;
+  const res = document.getElementById('filtro-resultado').value;
 
   let filtrados = partidos.filter(p => {
-    const nL = (equipos[p.Local_ID] || '').toLowerCase();
-    const nV = (equipos[p.Visitante_ID] || '').toLowerCase();
-    const coincideBuscar = !buscar || nL.includes(buscar) || nV.includes(buscar);
-    const coincideEquipo = !equipoFiltro || p.Local_ID === equipoFiltro || p.Visitante_ID === equipoFiltro;
-    const coincideEnfrentamiento = !equipoFiltro2 || !equipoFiltro ||
-      (p.Local_ID === equipoFiltro && p.Visitante_ID === equipoFiltro2) ||
-      (p.Local_ID === equipoFiltro2 && p.Visitante_ID === equipoFiltro);
-    let coincideResultado = true;
-    if (resultadoFiltro === 'local') coincideResultado = parseInt(p.Goles_Local) > parseInt(p.Goles_Visitante);
-    if (resultadoFiltro === 'visitante') coincideResultado = parseInt(p.Goles_Visitante) > parseInt(p.Goles_Local);
-    if (resultadoFiltro === 'empate') coincideResultado = p.Goles_Local === p.Goles_Visitante;
-    return coincideBuscar && coincideEquipo && coincideEnfrentamiento && coincideResultado;
+    const nL = (equipos[p.Local_ID]||'').toLowerCase();
+    const nV = (equipos[p.Visitante_ID]||'').toLowerCase();
+    const okBuscar = !buscar || nL.includes(buscar) || nV.includes(buscar);
+    const okEq1 = !eq1 || p.Local_ID === eq1 || p.Visitante_ID === eq1;
+    const okEq2 = !eq2 || !eq1 ||
+      (p.Local_ID === eq1 && p.Visitante_ID === eq2) ||
+      (p.Local_ID === eq2 && p.Visitante_ID === eq1);
+    let okRes = true;
+    if (res === 'local') okRes = parseInt(p.Goles_Local) > parseInt(p.Goles_Visitante);
+    if (res === 'visitante') okRes = parseInt(p.Goles_Visitante) > parseInt(p.Goles_Local);
+    if (res === 'empate') okRes = p.Goles_Local === p.Goles_Visitante;
+    return okBuscar && okEq1 && okEq2 && okRes;
   });
 
   const tbody = document.getElementById('tabla-partidos');
   document.getElementById('tabla-count').textContent = filtrados.length.toLocaleString() + ' partidos';
 
-  if (filtrados.length === 0) {
-    tbody.innerHTML = '<tr class="loading-row"><td colspan="5">No se encontraron partidos con esos filtros.</td></tr>';
-  } else {
-    tbody.innerHTML = filtrados.slice(0, 200).map(p => {
-      const local = equipos[p.Local_ID] || p.Local_ID;
-      const visitante = equipos[p.Visitante_ID] || p.Visitante_ID;
-      const fecha = p.Fecha ? p.Fecha.split('T')[0] : '';
-      const torneo = temporadas[p.ID_Temporada] || p.Fase || '';
-      const resClass = resultadoClase(p.Goles_Local, p.Goles_Visitante);
-      return `<tr onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
-        <td class="td-fecha">${fecha}</td>
-        <td><div class="td-equipo">${escudo(local)}<span class="td-nombre">${local}</span></div></td>
-        <td class="td-resultado"><span class="${resClass}">${p.Goles_Local} - ${p.Goles_Visitante}</span></td>
-        <td><div class="td-equipo">${escudo(visitante)}<span class="td-nombre">${visitante}</span></div></td>
-        <td class="td-torneo"><span class="badge-torneo">${torneo}</span></td>
-      </tr>`;
-    }).join('');
-  }
+  tbody.innerHTML = filtrados.length === 0
+    ? '<tr class="loading-row"><td colspan="5">No se encontraron partidos.</td></tr>'
+    : filtrados.slice(0, 200).map(filaPartido).join('');
 
   // Stats
-  const equipoSel = document.getElementById('filtro-equipo').value;
-  const equipoSel2 = document.getElementById('filtro-equipo2').value;
-
-  if (equipoSel && equipoSel2) {
-    const nombre1 = equipos[equipoSel], nombre2 = equipos[equipoSel2];
-    const partEnf = partidos.filter(p =>
-      (p.Local_ID === equipoSel && p.Visitante_ID === equipoSel2) ||
-      (p.Local_ID === equipoSel2 && p.Visitante_ID === equipoSel)
-    );
-    const pj = partEnf.length;
-    const g1 = partEnf.filter(p => p.Tipo_Definicion === '0' && p.ID_Ganador === equipoSel).length;
-    const g2 = partEnf.filter(p => p.Tipo_Definicion === '0' && p.ID_Ganador === equipoSel2).length;
-    const emp = pj - g1 - g2;
-    const gf1 = partEnf.reduce((a,p) => a + (p.Local_ID === equipoSel ? parseInt(p.Goles_Local)||0 : parseInt(p.Goles_Visitante)||0), 0);
-    const gf2 = partEnf.reduce((a,p) => a + (p.Local_ID === equipoSel2 ? parseInt(p.Goles_Local)||0 : parseInt(p.Goles_Visitante)||0), 0);
+  if (eq1 && eq2) {
+    const n1 = equipos[eq1], n2 = equipos[eq2];
+    const pe = partidos.filter(p =>
+      (p.Local_ID===eq1 && p.Visitante_ID===eq2)||(p.Local_ID===eq2 && p.Visitante_ID===eq1));
+    const pj = pe.length;
+    const g1 = pe.filter(p=>p.Tipo_Definicion==='0'&&p.ID_Ganador===eq1).length;
+    const g2 = pe.filter(p=>p.Tipo_Definicion==='0'&&p.ID_Ganador===eq2).length;
+    const emp = pj-g1-g2;
+    const gf1 = pe.reduce((a,p)=>a+(p.Local_ID===eq1?parseInt(p.Goles_Local)||0:parseInt(p.Goles_Visitante)||0),0);
+    const gf2 = pe.reduce((a,p)=>a+(p.Local_ID===eq2?parseInt(p.Goles_Local)||0:parseInt(p.Goles_Visitante)||0),0);
     document.getElementById('stats-enfrentamiento').classList.add('visible');
     document.getElementById('stats-equipo').classList.remove('visible');
-    document.getElementById('enf-titulo').textContent = nombre1 + ' vs ' + nombre2;
+    document.getElementById('enf-titulo').textContent = n1+' vs '+n2;
     document.getElementById('enf-pj').textContent = pj;
-    document.getElementById('enf-g1').textContent = g1;
-    document.getElementById('enf-g1-nombre').textContent = nombre1;
+    document.getElementById('enf-g1').textContent = g1; document.getElementById('enf-g1-nombre').textContent = n1;
     document.getElementById('enf-emp').textContent = emp;
-    document.getElementById('enf-g2').textContent = g2;
-    document.getElementById('enf-g2-nombre').textContent = nombre2;
-    document.getElementById('enf-gf1').textContent = gf1;
-    document.getElementById('enf-gf1-nombre').textContent = 'Goles ' + nombre1;
-    document.getElementById('enf-gf2').textContent = gf2;
-    document.getElementById('enf-gf2-nombre').textContent = 'Goles ' + nombre2;
-  } else if (equipoSel) {
-    const nombreEquipo = equipos[equipoSel];
-    const partEquipo = partidos.filter(p => p.Local_ID === equipoSel || p.Visitante_ID === equipoSel);
-    const pj = partEquipo.length;
-    const pg = partEquipo.filter(p => p.Tipo_Definicion === '0' && p.ID_Ganador === equipoSel).length;
-    const pp = partEquipo.filter(p => p.Tipo_Definicion === '0' && p.ID_Ganador !== equipoSel && p.ID_Ganador !== '').length;
-    const pe = pj - pg - pp;
-    const gf = partEquipo.reduce((a,p) => a + (p.Local_ID === equipoSel ? parseInt(p.Goles_Local)||0 : parseInt(p.Goles_Visitante)||0), 0);
-    const gc = partEquipo.reduce((a,p) => a + (p.Local_ID === equipoSel ? parseInt(p.Goles_Visitante)||0 : parseInt(p.Goles_Local)||0), 0);
+    document.getElementById('enf-g2').textContent = g2; document.getElementById('enf-g2-nombre').textContent = n2;
+    document.getElementById('enf-gf1').textContent = gf1; document.getElementById('enf-gf1-nombre').textContent = 'Goles '+n1;
+    document.getElementById('enf-gf2').textContent = gf2; document.getElementById('enf-gf2-nombre').textContent = 'Goles '+n2;
+  } else if (eq1) {
+    const nombre = equipos[eq1];
+    const pe = partidos.filter(p=>p.Local_ID===eq1||p.Visitante_ID===eq1);
+    const pj = pe.length;
+    const pg = pe.filter(p=>p.Tipo_Definicion==='0'&&p.ID_Ganador===eq1).length;
+    const pp = pe.filter(p=>p.Tipo_Definicion==='0'&&p.ID_Ganador!==eq1&&p.ID_Ganador!=='').length;
+    const gf = pe.reduce((a,p)=>a+(p.Local_ID===eq1?parseInt(p.Goles_Local)||0:parseInt(p.Goles_Visitante)||0),0);
+    const gc = pe.reduce((a,p)=>a+(p.Local_ID===eq1?parseInt(p.Goles_Visitante)||0:parseInt(p.Goles_Local)||0),0);
     document.getElementById('stats-equipo').classList.add('visible');
     document.getElementById('stats-enfrentamiento').classList.remove('visible');
-    document.getElementById('stats-nombre').textContent = nombreEquipo;
+    document.getElementById('stats-nombre').textContent = nombre;
     document.getElementById('stats-pj').textContent = pj;
     document.getElementById('stats-pg').textContent = pg;
-    document.getElementById('stats-pe').textContent = pe;
+    document.getElementById('stats-pe').textContent = pj-pg-pp;
     document.getElementById('stats-pp').textContent = pp;
     document.getElementById('stats-gf').textContent = gf;
     document.getElementById('stats-gc').textContent = gc;
-    document.getElementById('stats-dg').textContent = gf - gc;
-    const escudoEl = document.getElementById('stats-escudo');
-    if (ESCUDOS[nombreEquipo]) { escudoEl.src = ESCUDOS[nombreEquipo]; escudoEl.style.display = 'block'; }
-    else escudoEl.style.display = 'none';
+    document.getElementById('stats-dg').textContent = gf-gc;
+    const escEl = document.getElementById('stats-escudo');
+    if (ESCUDOS[nombre]) { escEl.src = ESCUDOS[nombre]; escEl.style.display='block'; }
+    else escEl.style.display='none';
   } else {
     document.getElementById('stats-equipo').classList.remove('visible');
     document.getElementById('stats-enfrentamiento').classList.remove('visible');
   }
 }
 
+// ── PESTAÑA EQUIPOS ──
+function renderizarEquipos(filtro='') {
+  const grid = document.getElementById('equipos-grid');
+  const lista = equiposArr
+    .filter(e => e.Nombre_Equipo.toLowerCase().includes(filtro.toLowerCase()))
+    .sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo));
+
+  grid.innerHTML = lista.map(e => {
+    const esc = ESCUDOS[e.Nombre_Equipo];
+    const imgHtml = esc
+      ? `<img src="${esc}" class="equipo-card-escudo" alt="${e.Nombre_Equipo}" onerror="this.style.display='none'">`
+      : `<div style="width:56px;height:56px;background:var(--fondo-3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;">⚽</div>`;
+    return `<div class="equipo-card" onclick="verDetalleEquipo('${e.ID_Equipo}')">
+      ${imgHtml}
+      <div class="equipo-card-nombre">${e.Nombre_Equipo}</div>
+    </div>`;
+  }).join('');
+}
+
+function filtrarEquipos() {
+  renderizarEquipos(document.getElementById('buscar-equipo').value);
+}
+
+function verDetalleEquipo(id) {
+  equipoDetalleID = id;
+  const nombre = equipos[id];
+
+  document.getElementById('vista-equipos').style.display = 'none';
+  document.getElementById('vista-detalle').classList.add('visible');
+
+  document.getElementById('detalle-nombre').textContent = nombre;
+  const escEl = document.getElementById('detalle-escudo');
+  if (ESCUDOS[nombre]) { escEl.src = ESCUDOS[nombre]; escEl.style.display = 'block'; }
+  else escEl.style.display = 'none';
+
+  // Stats
+  const pe = partidos.filter(p => p.Local_ID===id||p.Visitante_ID===id);
+  const pj = pe.length;
+  const pg = pe.filter(p=>p.Tipo_Definicion==='0'&&p.ID_Ganador===id).length;
+  const pp = pe.filter(p=>p.Tipo_Definicion==='0'&&p.ID_Ganador!==id&&p.ID_Ganador!=='').length;
+  const gf = pe.reduce((a,p)=>a+(p.Local_ID===id?parseInt(p.Goles_Local)||0:parseInt(p.Goles_Visitante)||0),0);
+  const gc = pe.reduce((a,p)=>a+(p.Local_ID===id?parseInt(p.Goles_Visitante)||0:parseInt(p.Goles_Local)||0),0);
+
+  document.getElementById('detalle-stats').innerHTML = `
+    <div class="stat-pill"><span class="stat-pill-num num-celeste">${pj}</span><span class="stat-pill-label">PJ</span></div>
+    <div class="stat-pill"><span class="stat-pill-num num-verde">${pg}</span><span class="stat-pill-label">PG</span></div>
+    <div class="stat-pill"><span class="stat-pill-num num-amarillo">${pj-pg-pp}</span><span class="stat-pill-label">PE</span></div>
+    <div class="stat-pill"><span class="stat-pill-num num-rojo">${pp}</span><span class="stat-pill-label">PP</span></div>
+    <div class="stat-pill"><span class="stat-pill-num num-celeste">${gf}</span><span class="stat-pill-label">GF</span></div>
+    <div class="stat-pill"><span class="stat-pill-num num-celeste">${gc}</span><span class="stat-pill-label">GC</span></div>
+    <div class="stat-pill"><span class="stat-pill-num num-celeste">${gf-gc}</span><span class="stat-pill-label">DG</span></div>
+  `;
+
+  // Llenar select de rivales
+  const selRival = document.getElementById('detalle-filtro-rival');
+  selRival.innerHTML = '<option value="">Todos los rivales</option>';
+  const rivalesIds = [...new Set(pe.map(p => p.Local_ID===id ? p.Visitante_ID : p.Local_ID))];
+  rivalesIds
+    .map(rid => equipos[rid])
+    .filter(Boolean)
+    .sort()
+    .forEach(nombre => {
+      const rid = Object.keys(equipos).find(k => equipos[k] === nombre);
+      const opt = document.createElement('option');
+      opt.value = rid; opt.textContent = nombre;
+      selRival.appendChild(opt);
+    });
+
+  document.getElementById('detalle-filtro-resultado').value = '';
+  document.getElementById('detalle-tabla-titulo').textContent = 'Partidos de ' + nombre;
+  filtrarDetalle();
+}
+
+function filtrarDetalle() {
+  const id = equipoDetalleID;
+  const rival = document.getElementById('detalle-filtro-rival').value;
+  const res = document.getElementById('detalle-filtro-resultado').value;
+
+  let lista = partidos.filter(p => p.Local_ID===id||p.Visitante_ID===id);
+
+  if (rival) {
+    lista = lista.filter(p =>
+      (p.Local_ID===id&&p.Visitante_ID===rival)||(p.Local_ID===rival&&p.Visitante_ID===id));
+  }
+
+  if (res === 'victoria') lista = lista.filter(p=>p.Tipo_Definicion==='0'&&p.ID_Ganador===id);
+  if (res === 'derrota')  lista = lista.filter(p=>p.Tipo_Definicion==='0'&&p.ID_Ganador!==id&&p.ID_Ganador!=='');
+  if (res === 'empate')   lista = lista.filter(p=>p.Goles_Local===p.Goles_Visitante&&p.Tipo_Definicion==='0');
+
+  document.getElementById('detalle-count').textContent = lista.length + ' partidos';
+  document.getElementById('tabla-detalle').innerHTML = lista.length === 0
+    ? '<tr class="loading-row"><td colspan="5">No se encontraron partidos.</td></tr>'
+    : lista.slice(0, 200).map(filaPartido).join('');
+}
+
+function volverEquipos() {
+  document.getElementById('vista-equipos').style.display = 'block';
+  document.getElementById('vista-detalle').classList.remove('visible');
+  equipoDetalleID = null;
+}
+
+// ── MODAL ──
 function verPartido(id) {
   const p = partidos.find(x => x.ID_Partido == id);
   if (!p) return;
-  const local = equipos[p.Local_ID] || p.Local_ID;
-  const visitante = equipos[p.Visitante_ID] || p.Visitante_ID;
-  const torneo = temporadas[p.ID_Temporada] || p.Fase || '';
+  const local = equipos[p.Local_ID]||p.Local_ID;
+  const visita = equipos[p.Visitante_ID]||p.Visitante_ID;
+  const torneo = temporadas[p.ID_Temporada]||p.Fase||'';
   const fecha = p.Fecha ? p.Fecha.split('T')[0] : '';
-  document.getElementById('modal-titulo').textContent = local + ' vs ' + visitante;
+  document.getElementById('modal-titulo').textContent = local+' vs '+visita;
+  document.getElementById('modal-resultado').textContent = p.Goles_Local+' - '+p.Goles_Visitante;
   document.getElementById('modal-fecha').textContent = fecha;
   document.getElementById('modal-torneo').textContent = torneo;
-  document.getElementById('modal-resultado').textContent = p.Goles_Local + ' - ' + p.Goles_Visitante;
-  document.getElementById('modal-fase').textContent = p.Fase || '';
-  document.getElementById('modal-estadio').textContent = p.Estadio || 'No disponible';
-  document.getElementById('modal-goleadores').textContent = p.Goleadores || 'No disponible';
-  document.getElementById('modal-amonestados').textContent = p.Amonestados || 'No disponible';
-  document.getElementById('modal-expulsados').textContent = p.Expulsados || 'No disponible';
-  document.getElementById('modal').style.display = 'flex';
+  document.getElementById('modal-fase').textContent = p.Fase||'';
+  document.getElementById('modal-estadio').textContent = p.Estadio||'No disponible';
+  document.getElementById('modal-goleadores').textContent = p.Goleadores||'No disponible';
+  document.getElementById('modal-amonestados').textContent = p.Amonestados||'No disponible';
+  document.getElementById('modal-expulsados').textContent = p.Expulsados||'No disponible';
+  document.getElementById('modal').classList.add('visible');
+}
+function cerrarModal() {
+  document.getElementById('modal').classList.remove('visible');
 }
 
-function cerrarModal() {
-  document.getElementById('modal').style.display = 'none';
-}
 cargarDatos();
 </script>
-<div id="modal" onclick="cerrarModal()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:1000; align-items:center; justify-content:center; padding:20px;">
-  <div onclick="event.stopPropagation()" style="background:#0C1A30; border:1px solid rgba(117,170,219,0.3); border-radius:20px; padding:32px; max-width:600px; width:100%; max-height:90vh; overflow-y:auto;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-      <div style="font-family:'Barlow Condensed',sans-serif; font-size:24px; font-weight:800;" id="modal-titulo"></div>
-      <button onclick="cerrarModal()" style="background:transparent; border:none; color:#8A9BB5; font-size:24px; cursor:pointer;">✕</button>
-    </div>
-    <div style="text-align:center; margin-bottom:24px;">
-      <div style="font-family:'Barlow Condensed',sans-serif; font-size:52px; font-weight:800; color:#75AADB;" id="modal-resultado"></div>
-      <div style="color:#8A9BB5; font-size:13px; margin-top:4px;" id="modal-fecha"></div>
-    </div>
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-      <div style="background:#060E1E; border-radius:10px; padding:14px;">
-        <div style="font-size:10px; color:#8A9BB5; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Torneo</div>
-        <div style="font-size:14px; font-weight:500;" id="modal-torneo"></div>
-      </div>
-      <div style="background:#060E1E; border-radius:10px; padding:14px;">
-        <div style="font-size:10px; color:#8A9BB5; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Fase</div>
-        <div style="font-size:14px; font-weight:500;" id="modal-fase"></div>
-      </div>
-      <div style="background:#060E1E; border-radius:10px; padding:14px; grid-column:span 2;">
-        <div style="font-size:10px; color:#8A9BB5; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Estadio</div>
-        <div style="font-size:14px; font-weight:500;" id="modal-estadio"></div>
-      </div>
-      <div style="background:#060E1E; border-radius:10px; padding:14px; grid-column:span 2;">
-        <div style="font-size:10px; color:#8A9BB5; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Goleadores</div>
-        <div style="font-size:14px; font-weight:500;" id="modal-goleadores"></div>
-      </div>
-      <div style="background:#060E1E; border-radius:10px; padding:14px;">
-        <div style="font-size:10px; color:#8A9BB5; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Amonestados</div>
-        <div style="font-size:14px; font-weight:500;" id="modal-amonestados"></div>
-      </div>
-      <div style="background:#060E1E; border-radius:10px; padding:14px;">
-        <div style="font-size:10px; color:#8A9BB5; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Expulsados</div>
-        <div style="font-size:14px; font-weight:500;" id="modal-expulsados"></div>
-      </div>
-    </div>
-  </div>
-</div>
 </body>
 </html>
