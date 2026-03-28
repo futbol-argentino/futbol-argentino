@@ -1189,4 +1189,35 @@ function verPartido(id) {
   const escLocal = document.getElementById('modal-escudo-local');
   const escVisita = document.getElementById('modal-escudo-visita');
   if (ESCUDOS[local]) { escLocal.src = ESCUDOS[local]; escLocal.style.display = 'block'; }
-  else e
+  else escLocal.style.display = 'none';
+  if (ESCUDOS[visita]) { escVisita.src = ESCUDOS[visita]; escVisita.style.display = 'block'; }
+  else escVisita.style.display = 'none';
+
+  // Desplegables — cerrados por defecto
+  ['goleadores','amonestados','expulsados'].forEach(campo => {
+    const valor = p[campo.charAt(0).toUpperCase()+campo.slice(1)] || p[campo] || 'No disponible';
+    const el = document.getElementById('modal-'+campo);
+    el.textContent = valor;
+    el.style.display = 'none';
+    document.getElementById('arrow-'+campo).style.transform = 'rotate(0deg)';
+  });
+
+  document.getElementById('modal').classList.add('visible');
+}
+
+function toggleDesplegable(campo) {
+  const el = document.getElementById('modal-'+campo);
+  const arrow = document.getElementById('arrow-'+campo);
+  const abierto = el.style.display === 'block';
+  el.style.display = abierto ? 'none' : 'block';
+  arrow.style.transform = abierto ? 'rotate(0deg)' : 'rotate(180deg)';
+}
+
+function cerrarModal() {
+  document.getElementById('modal').classList.remove('visible');
+}
+
+cargarDatos();
+</script>
+</body>
+</html>
