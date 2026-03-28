@@ -584,6 +584,10 @@ select option { background: #0C1A30; color: #F5F7FA; }
       <span class="sidebar-nav-icon">📊</span>
       <span class="sidebar-nav-texto">Estadísticas</span>
     </div>
+    <div class="sidebar-nav-item" onclick="cambiarTab('campeones'); cerrarSidebar();" id="menu-campeones">
+      <span class="sidebar-nav-icon">🥇</span>
+      <span class="sidebar-nav-texto">Campeones</span>
+    </div>
   </nav>
   <div class="sidebar-footer">Base de Datos del Fútbol Argentino</div>
 </div>
@@ -737,30 +741,30 @@ select option { background: #0C1A30; color: #F5F7FA; }
       <!-- Stats del equipo en detalle -->
       <div class="stats-nums" id="detalle-stats" style="margin-bottom:16px;"></div>
 
-      <!-- TABLA DE RIVALES -->
+      <!-- TABLA DE RIVALES (desplegable) -->
       <div class="tabla-wrapper" style="margin-bottom:16px;">
-        <div class="tabla-header">
+        <div class="tabla-header" onclick="toggleRivales()" style="cursor:pointer;user-select:none;">
           <div class="tabla-titulo">📊 Historial vs Rivales</div>
-          <div class="tabla-count" id="detalle-rivales-count"></div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="tabla-count" id="detalle-rivales-count"></div>
+            <span id="arrow-rivales" style="color:var(--texto-2);font-size:12px;transition:transform 0.2s;">▼</span>
+          </div>
         </div>
-        <div class="tabla-scroll">
-          <table style="min-width:700px;">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Rival</th>
-                <th style="text-align:center;">PJ</th>
-                <th style="text-align:center;">PG</th>
-                <th style="text-align:center;">PE</th>
-                <th style="text-align:center;">PP</th>
-                <th style="text-align:center;">GF</th>
-                <th style="text-align:center;">GC</th>
-                <th style="text-align:center;">DG</th>
-                <th style="text-align:center;">Diferencia</th>
-              </tr>
-            </thead>
-            <tbody id="tabla-rivales"></tbody>
-          </table>
+        <div id="rivales-contenido" style="display:none;">
+          <div class="tabla-scroll">
+            <table style="min-width:700px;">
+              <thead>
+                <tr>
+                  <th>#</th><th>Rival</th>
+                  <th style="text-align:center;">PJ</th><th style="text-align:center;">PG</th>
+                  <th style="text-align:center;">PE</th><th style="text-align:center;">PP</th>
+                  <th style="text-align:center;">GF</th><th style="text-align:center;">GC</th>
+                  <th style="text-align:center;">DG</th><th style="text-align:center;">Diferencia</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-rivales"></tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -905,6 +909,15 @@ select option { background: #0C1A30; color: #F5F7FA; }
 
   </div><!-- fin panel-estadisticas -->
 
+  <!-- ══ TAB CAMPEONES ══ -->
+  <div class="tab-panel" id="panel-campeones">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;text-align:center;">
+      <div style="font-size:64px;margin-bottom:20px;">🥇</div>
+      <div style="font-family:var(--fuente-titulo);font-size:28px;font-weight:800;color:var(--texto-1);margin-bottom:10px;">Campeones</div>
+      <div style="font-size:15px;color:var(--texto-2);max-width:400px;line-height:1.6;">Esta sección estará disponible próximamente. Aquí se listarán todos los torneos disputados y sus campeones históricos.</div>
+    </div>
+  </div><!-- fin panel-campeones -->
+
 </div><!-- fin main -->
 
 <!-- MODAL FICHA JUGADOR -->
@@ -917,7 +930,7 @@ select option { background: #0C1A30; color: #F5F7FA; }
     <!-- Foto + datos básicos -->
     <div style="display:flex;gap:20px;align-items:flex-start;margin-bottom:20px;">
       <div style="flex-shrink:0;">
-        <img id="ficha-foto" src="" alt="" style="width:90px;height:90px;object-fit:cover;border-radius:12px;border:2px solid var(--borde-activo);" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2290%22 height=%2290%22><rect width=%2290%22 height=%2290%22 fill=%22%230F2040%22 rx=%2212%22/><text x=%2245%22 y=%2252%22 font-size=%2236%22 text-anchor=%22middle%22>👤</text></svg>'">
+        <img id="ficha-foto" src="" alt="" style="width:140px;height:140px;object-fit:cover;border-radius:14px;border:2px solid var(--borde-activo);" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22140%22 height=%22140%22><rect width=%22140%22 height=%22140%22 fill=%22%230F2040%22 rx=%2214%22/><text x=%2270%22 y=%2282%22 font-size=%2256%22 text-anchor=%22middle%22>👤</text></svg>'">
       </div>
       <div style="flex:1;">
         <div id="ficha-nombre" style="font-family:var(--fuente-titulo);font-size:24px;font-weight:800;margin-bottom:6px;"></div>
@@ -1441,6 +1454,14 @@ function filtrarDetalle() {
     : lista.slice(0, 200).map(filaPartido).join('');
 }
 
+function toggleRivales() {
+  const contenido = document.getElementById('rivales-contenido');
+  const arrow = document.getElementById('arrow-rivales');
+  const abierto = contenido.style.display === 'block';
+  contenido.style.display = abierto ? 'none' : 'block';
+  arrow.style.transform = abierto ? 'rotate(0deg)' : 'rotate(180deg)';
+}
+
 function volverEquipos() {
   document.getElementById('vista-equipos').style.display = 'block';
   document.getElementById('vista-detalle').classList.remove('visible');
@@ -1460,12 +1481,14 @@ function renderLista(items) {
     return `<span style="color:var(--texto-3);font-size:13px;font-style:italic;">Ninguno</span>`;
   }
   return items.map(item => {
+    const nombreLimpio = limpiarNombre(item);
     let texto = item
       .replace(/\(P\)/gi, '<span style="background:var(--amarillo);color:#000;font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px;">P</span>')
       .replace(/\(EC\)/gi, '<span style="background:var(--rojo);color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px;">EC</span>');
-    // Limpiar código de país del texto visible del modal pero mantener el resto
-    texto = texto.replace(/\([A-Z]{3}\)/g, '');
-    return `<div style="font-size:13px;color:var(--texto-1);padding:5px 0;border-bottom:1px solid var(--borde);display:flex;align-items:center;gap:4px;">${texto}</div>`;
+    texto = texto.replace(/\([A-Z]{3}\)/g, '').replace(/\[[^\]]*\]/g, '');
+    return `<div style="font-size:13px;color:var(--texto-1);padding:5px 0;border-bottom:1px solid var(--borde);display:flex;align-items:center;gap:4px;">
+      <span onclick="event.stopPropagation();verFichaJugador('${nombreLimpio.replace(/'/g,"\\'")}')" style="cursor:pointer;color:var(--celeste-claro);font-weight:500;text-decoration:underline dotted;">${texto}</span>
+    </div>`;
   }).join('');
 }
 
@@ -1702,12 +1725,25 @@ function renderEstadisticas() {
 }
 
 // ── FICHA JUGADOR ──
+function formatearAnios(aniosSet) {
+  const anios = [...aniosSet].sort();
+  if (anios.length === 0) return '—';
+  const grupos = [];
+  let inicio = anios[0], prev = anios[0];
+  for (let i = 1; i < anios.length; i++) {
+    if (anios[i] === prev + 1) { prev = anios[i]; }
+    else { grupos.push(inicio === prev ? `${inicio}` : `${inicio}-${prev}`); inicio = anios[i]; prev = anios[i]; }
+  }
+  grupos.push(inicio === prev ? `${inicio}` : `${inicio}-${prev}`);
+  return grupos.join(', ');
+}
+
 function verFichaJugador(nombre) {
-  // Recopilar stats de todos los equipos
-  const porEquipo = {}; // equipoId → { goles, penales, ec, amonestados, expulsados }
+  const porEquipo = {};
   let nacionalidad = null;
 
   partidos.forEach(p => {
+    const anio = p.Fecha ? parseInt(p.Fecha.split('/')[2] || p.Fecha.split('-')[0]) : null;
     ['Goleadores','Amonestados','Expulsados'].forEach(campo => {
       const raw = p[campo] || '';
       if (!raw) return;
@@ -1719,8 +1755,9 @@ function verFichaJugador(nombre) {
           const n = limpiarNombre(entrada);
           if (n.toLowerCase() !== nombre.toLowerCase()) return;
           if (nac && !nacionalidad) nacionalidad = nac;
-          if (!porEquipo[equipoId]) porEquipo[equipoId] = { goles:0, penales:0, ec:0, amonestados:0, expulsados:0 };
+          if (!porEquipo[equipoId]) porEquipo[equipoId] = { goles:0, penales:0, ec:0, amonestados:0, expulsados:0, anios: new Set() };
           const r = porEquipo[equipoId];
+          if (anio) r.anios.add(anio);
           if (campo === 'Goleadores') {
             if (/\(EC\)/i.test(entrada)) r.ec++;
             else if (/\(P\)/i.test(entrada)) { r.goles++; r.penales++; }
@@ -1733,13 +1770,10 @@ function verFichaJugador(nombre) {
     });
   });
 
-  const equiposLista = Object.keys(porEquipo).map(id => equipos[id] || id);
+  const equiposNombres = Object.keys(porEquipo).map(id => equipos[id] || id);
   const totales = Object.values(porEquipo).reduce((a, r) => ({
-    goles: a.goles + r.goles,
-    penales: a.penales + r.penales,
-    ec: a.ec + r.ec,
-    amonestados: a.amonestados + r.amonestados,
-    expulsados: a.expulsados + r.expulsados
+    goles: a.goles + r.goles, penales: a.penales + r.penales,
+    ec: a.ec + r.ec, amonestados: a.amonestados + r.amonestados, expulsados: a.expulsados + r.expulsados
   }), { goles:0, penales:0, ec:0, amonestados:0, expulsados:0 });
 
   const fotoKey = nombre.toLowerCase().replace(/\s+/g,'_').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
@@ -1748,7 +1782,7 @@ function verFichaJugador(nombre) {
   document.getElementById('ficha-nombre').textContent = nombre;
   document.getElementById('ficha-nacionalidad').innerHTML = nacionalidad
     ? `${getBandera(nacionalidad)} ${getNombrePais(nacionalidad)}` : 'Nacionalidad no registrada';
-  document.getElementById('ficha-equipos-lista').textContent = `Equipos: ${equiposLista.join(', ')}`;
+  document.getElementById('ficha-equipos-lista').textContent = `Equipos: ${equiposNombres.join(', ')}`;
 
   document.getElementById('ficha-stats').innerHTML = [
     ['⚽ Goles', totales.goles, 'var(--celeste)'],
@@ -1766,8 +1800,12 @@ function verFichaJugador(nombre) {
     .sort((a,b) => b[1].goles - a[1].goles)
     .map(([eid, r]) => {
       const esc = ESCUDOS[equipos[eid]] ? `<img src="${ESCUDOS[equipos[eid]]}" style="width:18px;height:18px;object-fit:contain;margin-right:6px;" onerror="this.style.display='none'">` : '';
+      const aniosStr = formatearAnios(r.anios);
       return `<tr>
-        <td><div style="display:flex;align-items:center;">${esc}${equipos[eid]||eid}</div></td>
+        <td>
+          <div style="display:flex;align-items:center;">${esc}${equipos[eid]||eid}</div>
+          <div style="font-size:11px;color:var(--texto-3);margin-top:2px;">${aniosStr}</div>
+        </td>
         <td style="text-align:center;font-weight:600;color:var(--celeste);">${r.goles||'—'}</td>
         <td style="text-align:center;color:var(--amarillo);">${r.penales||'—'}</td>
         <td style="text-align:center;color:var(--amarillo);">${r.amonestados||'—'}</td>
