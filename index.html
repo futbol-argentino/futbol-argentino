@@ -737,6 +737,33 @@ select option { background: #0C1A30; color: #F5F7FA; }
       <!-- Stats del equipo en detalle -->
       <div class="stats-nums" id="detalle-stats" style="margin-bottom:16px;"></div>
 
+      <!-- TABLA DE RIVALES -->
+      <div class="tabla-wrapper" style="margin-bottom:16px;">
+        <div class="tabla-header">
+          <div class="tabla-titulo">📊 Historial vs Rivales</div>
+          <div class="tabla-count" id="detalle-rivales-count"></div>
+        </div>
+        <div class="tabla-scroll">
+          <table style="min-width:700px;">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Rival</th>
+                <th style="text-align:center;">PJ</th>
+                <th style="text-align:center;">PG</th>
+                <th style="text-align:center;">PE</th>
+                <th style="text-align:center;">PP</th>
+                <th style="text-align:center;">GF</th>
+                <th style="text-align:center;">GC</th>
+                <th style="text-align:center;">DG</th>
+                <th style="text-align:center;">Diferencia</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-rivales"></tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- Filtro rival -->
       <div class="detalle-filtro">
         <span class="detalle-filtro-label">Filtrar rival:</span>
@@ -805,7 +832,8 @@ select option { background: #0C1A30; color: #F5F7FA; }
             <div class="tabla-titulo">⚽ Top Goleadores</div>
             <div class="tabla-count" id="count-goleadores"></div>
           </div>
-          <table style="width:100%;border-collapse:collapse;">
+          <div class="tabla-scroll">
+          <table style="width:100%;border-collapse:collapse;min-width:400px;">
             <thead><tr>
               <th style="width:40px;">#</th>
               <th>Jugador</th>
@@ -815,6 +843,7 @@ select option { background: #0C1A30; color: #F5F7FA; }
             </tr></thead>
             <tbody id="tabla-goleadores-stats"></tbody>
           </table>
+          </div>
         </div>
 
         <!-- GOLES EN CONTRA -->
@@ -823,7 +852,8 @@ select option { background: #0C1A30; color: #F5F7FA; }
             <div class="tabla-titulo">🔴 Goles en Contra</div>
             <div class="tabla-count" id="count-gc"></div>
           </div>
-          <table style="width:100%;border-collapse:collapse;">
+          <div class="tabla-scroll">
+          <table style="width:100%;border-collapse:collapse;min-width:300px;">
             <thead><tr>
               <th style="width:40px;">#</th>
               <th>Jugador</th>
@@ -831,6 +861,7 @@ select option { background: #0C1A30; color: #F5F7FA; }
             </tr></thead>
             <tbody id="tabla-gc-stats"></tbody>
           </table>
+          </div>
         </div>
 
         <!-- TOP AMONESTADOS -->
@@ -839,7 +870,8 @@ select option { background: #0C1A30; color: #F5F7FA; }
             <div class="tabla-titulo">🟨 Top Amonestados</div>
             <div class="tabla-count" id="count-amonestados"></div>
           </div>
-          <table style="width:100%;border-collapse:collapse;">
+          <div class="tabla-scroll">
+          <table style="width:100%;border-collapse:collapse;min-width:300px;">
             <thead><tr>
               <th style="width:40px;">#</th>
               <th>Jugador</th>
@@ -847,6 +879,7 @@ select option { background: #0C1A30; color: #F5F7FA; }
             </tr></thead>
             <tbody id="tabla-amonestados-stats"></tbody>
           </table>
+          </div>
         </div>
 
         <!-- TOP EXPULSADOS -->
@@ -855,7 +888,8 @@ select option { background: #0C1A30; color: #F5F7FA; }
             <div class="tabla-titulo">🟥 Top Expulsados</div>
             <div class="tabla-count" id="count-expulsados"></div>
           </div>
-          <table style="width:100%;border-collapse:collapse;">
+          <div class="tabla-scroll">
+          <table style="width:100%;border-collapse:collapse;min-width:300px;">
             <thead><tr>
               <th style="width:40px;">#</th>
               <th>Jugador</th>
@@ -863,6 +897,7 @@ select option { background: #0C1A30; color: #F5F7FA; }
             </tr></thead>
             <tbody id="tabla-expulsados-stats"></tbody>
           </table>
+          </div>
         </div>
 
       </div>
@@ -871,6 +906,43 @@ select option { background: #0C1A30; color: #F5F7FA; }
   </div><!-- fin panel-estadisticas -->
 
 </div><!-- fin main -->
+
+<!-- MODAL FICHA JUGADOR -->
+<div class="modal-overlay" id="modal-jugador" onclick="cerrarFichaJugador()">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:640px;">
+    <div class="modal-top">
+      <div class="modal-equipos" id="ficha-titulo"></div>
+      <button class="modal-cerrar" onclick="cerrarFichaJugador()">✕</button>
+    </div>
+    <!-- Foto + datos básicos -->
+    <div style="display:flex;gap:20px;align-items:flex-start;margin-bottom:20px;">
+      <div style="flex-shrink:0;">
+        <img id="ficha-foto" src="" alt="" style="width:90px;height:90px;object-fit:cover;border-radius:12px;border:2px solid var(--borde-activo);" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2290%22 height=%2290%22><rect width=%2290%22 height=%2290%22 fill=%22%230F2040%22 rx=%2212%22/><text x=%2245%22 y=%2252%22 font-size=%2236%22 text-anchor=%22middle%22>👤</text></svg>'">
+      </div>
+      <div style="flex:1;">
+        <div id="ficha-nombre" style="font-family:var(--fuente-titulo);font-size:24px;font-weight:800;margin-bottom:6px;"></div>
+        <div id="ficha-nacionalidad" style="font-size:14px;color:var(--texto-2);margin-bottom:4px;"></div>
+        <div id="ficha-equipos-lista" style="font-size:13px;color:var(--texto-3);"></div>
+      </div>
+    </div>
+    <!-- Stats globales -->
+    <div id="ficha-stats" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;"></div>
+    <!-- Desglose por equipo -->
+    <div style="font-size:11px;color:var(--texto-2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;font-weight:600;">Estadísticas por equipo</div>
+    <div class="tabla-scroll">
+      <table style="width:100%;border-collapse:collapse;min-width:400px;">
+        <thead><tr>
+          <th>Equipo</th>
+          <th style="text-align:center;width:70px;">⚽ Goles</th>
+          <th style="text-align:center;width:70px;">🅿️ Pen.</th>
+          <th style="text-align:center;width:70px;">🟨 Amon.</th>
+          <th style="text-align:center;width:70px;">🟥 Exp.</th>
+        </tr></thead>
+        <tbody id="ficha-tabla-equipos"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL PARTIDO -->
 <div class="modal-overlay" id="modal" onclick="cerrarModal()">
@@ -1256,7 +1328,49 @@ function verDetalleEquipo(id) {
     <div class="stat-pill"><span class="stat-pill-num num-celeste">${gf-gc}</span><span class="stat-pill-label">DG</span></div>
   `;
 
-  // Llenar select de rivales
+  // Tabla de rivales
+  const rivalStats = {};
+  pe.forEach(p => {
+    const rivalId = p.Local_ID === id ? p.Visitante_ID : p.Local_ID;
+    if (!rivalStats[rivalId]) rivalStats[rivalId] = { pj:0, pg:0, pe:0, pp:0, gf:0, gc:0 };
+    const r = rivalStats[rivalId];
+    r.pj++;
+    const esLocal = p.Local_ID === id;
+    const gl = parseInt(p.Goles_Local)||0, gv = parseInt(p.Goles_Visitante)||0;
+    r.gf += esLocal ? gl : gv;
+    r.gc += esLocal ? gv : gl;
+    if (p.Tipo_Definicion === '0') {
+      if (p.ID_Ganador === id) r.pg++;
+      else if (p.ID_Ganador && p.ID_Ganador !== '') r.pp++;
+      else r.pe++;
+    } else {
+      if (gl === gv) r.pe++;
+    }
+  });
+
+  const rivalesOrdenados = Object.entries(rivalStats)
+    .map(([rid, s]) => ({ rid, nombre: equipos[rid]||rid, ...s, dif: s.pg - s.pp }))
+    .sort((a, b) => b.dif - a.dif);
+
+  document.getElementById('detalle-rivales-count').textContent = rivalesOrdenados.length + ' rivales';
+  document.getElementById('tabla-rivales').innerHTML = rivalesOrdenados.map((r, i) => {
+    const dg = r.gf - r.gc;
+    const difColor = r.dif > 0 ? 'var(--verde)' : (r.dif < 0 ? 'var(--rojo)' : 'var(--amarillo)');
+    const difTxt = r.dif > 0 ? `+${r.dif}` : `${r.dif}`;
+    const esc = ESCUDOS[r.nombre] ? `<img src="${ESCUDOS[r.nombre]}" style="width:20px;height:20px;object-fit:contain;margin-right:6px;" onerror="this.style.display='none'">` : '';
+    return `<tr>
+      <td style="color:var(--texto-2);font-size:13px;">${i+1}</td>
+      <td><div style="display:flex;align-items:center;">${esc}${r.nombre}</div></td>
+      <td style="text-align:center;font-weight:600;">${r.pj}</td>
+      <td style="text-align:center;color:var(--verde);">${r.pg}</td>
+      <td style="text-align:center;color:var(--amarillo);">${r.pe}</td>
+      <td style="text-align:center;color:var(--rojo);">${r.pp}</td>
+      <td style="text-align:center;">${r.gf}</td>
+      <td style="text-align:center;">${r.gc}</td>
+      <td style="text-align:center;color:var(--texto-2);">${dg > 0 ? '+'+dg : dg}</td>
+      <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;font-weight:700;color:${difColor};">${difTxt}</td>
+    </tr>`;
+  }).join('');
   const selRival = document.getElementById('detalle-filtro-rival');
   selRival.innerHTML = '<option value="">Todos los rivales</option>';
   const rivalesIds = [...new Set(pe.map(p => p.Local_ID===id ? p.Visitante_ID : p.Local_ID))];
@@ -1408,9 +1522,36 @@ function cerrarModal() {
 }
 
 // ── ESTADÍSTICAS ──
+const BANDERAS = {
+  'ARG':'🇦🇷','BRA':'🇧🇷','URU':'🇺🇾','PAR':'🇵🇾','BOL':'🇧🇴','CHI':'🇨🇱','COL':'🇨🇴',
+  'PER':'🇵🇪','ECU':'🇪🇨','VEN':'🇻🇪','MEX':'🇲🇽','ESP':'🇪🇸','POR':'🇵🇹','FRA':'🇫🇷',
+  'ITA':'🇮🇹','ALE':'🇩🇪','ING':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','HOL':'🇳🇱','BEL':'🇧🇪','CRO':'🇭🇷',
+  'SER':'🇷🇸','USA':'🇺🇸','CAN':'🇨🇦','AUS':'🇦🇺','JAP':'🇯🇵','SEN':'🇸🇳',
+  'MAR':'🇲🇦','GHA':'🇬🇭','NGA':'🇳🇬','CMR':'🇨🇲','COS':'🇨🇷','PAN':'🇵🇦','HON':'🇭🇳'
+};
+
+function getBandera(pais) {
+  if (!pais) return '';
+  return BANDERAS[pais.toUpperCase()] || `<span style="font-size:10px;color:var(--texto-3);">${pais}</span>`;
+}
+
+function extraerNacionalidad(texto) {
+  const m = texto.match(/\[([A-Z]{2,3})\]/);
+  return m ? m[1] : null;
+}
+
+function limpiarNombre(texto) {
+  return texto
+    .replace(/\d+[''`´]?/g, '')
+    .replace(/\([^)]*\)/g, '')
+    .replace(/\[[^\]]*\]/g, '')
+    .trim();
+}
+
 function parsearGoleadores(equipoId) {
-  const goles = {};   // nombre → { normales, penales }
-  const ec = {};      // nombre → cantidad
+  const goles = {};
+  const ec = {};
+  const nacionalidades = {};
 
   partidos.forEach(p => {
     const raw = p['Goleadores'] || '';
@@ -1424,9 +1565,10 @@ function parsearGoleadores(equipoId) {
         if (!entrada || entrada.toLowerCase() === 'ninguno') return;
         const esEC = /\(EC\)/i.test(entrada);
         const esP  = /\(P\)/i.test(entrada);
-        // Limpiar nombre
-        let nombre = entrada.replace(/\d+[''`´]?/g, '').replace(/\([^)]*\)/g, '').trim();
+        const nac  = extraerNacionalidad(entrada);
+        const nombre = limpiarNombre(entrada);
         if (!nombre || nombre.length < 2) return;
+        if (nac) nacionalidades[nombre] = nac;
         if (esEC) {
           ec[nombre] = (ec[nombre] || 0) + 1;
         } else {
@@ -1437,11 +1579,12 @@ function parsearGoleadores(equipoId) {
       });
     });
   });
-  return { goles, ec };
+  return { goles, ec, nacionalidades };
 }
 
 function parsearTarjetas(campo, equipoId) {
   const conteo = {};
+  const nacionalidades = {};
   partidos.forEach(p => {
     const raw = p[campo] || '';
     if (!raw) return;
@@ -1450,89 +1593,155 @@ function parsearTarjetas(campo, equipoId) {
       const idEquipo = idx === 0 ? p.Local_ID : p.Visitante_ID;
       if (equipoId && idEquipo !== equipoId) return;
       parte.split('-').forEach(entrada => {
-        let nombre = entrada.trim().replace(/\([^)]*\)/g, '').trim();
+        const nac = extraerNacionalidad(entrada);
+        const nombre = limpiarNombre(entrada);
         if (!nombre || nombre.toLowerCase() === 'ninguno' || nombre.length < 2) return;
+        if (nac) nacionalidades[nombre] = nac;
         conteo[nombre] = (conteo[nombre] || 0) + 1;
       });
     });
   });
-  return Object.entries(conteo).sort((a, b) => b[1] - a[1]).slice(0, 30);
+  return { datos: Object.entries(conteo).sort((a, b) => b[1] - a[1]).slice(0, 30), nacionalidades };
+}
+
+function filaJugador(i, nombre, nac, cols) {
+  const bandera = nac ? `<span style="font-size:16px;margin-right:6px;">${getBandera(nac)}</span>` : '';
+  const nameCell = `<td style="font-size:14px;font-weight:500;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')">
+    <div style="display:flex;align-items:center;gap:4px;">${bandera}${nombre}</div>
+  </td>`;
+  return `<tr><td style="color:var(--texto-2);font-size:13px;width:40px;">${i+1}</td>${nameCell}${cols}</tr>`;
 }
 
 function renderEstadisticas() {
   const equipoId = document.getElementById('stats-filtro-equipo').value || null;
-  const { goles, ec } = parsearGoleadores(equipoId);
+  const { goles, ec, nacionalidades } = parsearGoleadores(equipoId);
 
-  // Tabla goleadores
   const golesOrdenados = Object.entries(goles)
-    .map(([n, d]) => [n, d])
     .sort((a, b) => (b[1].normales + b[1].penales) - (a[1].normales + a[1].penales))
     .slice(0, 30);
 
   const tbodyG = document.getElementById('tabla-goleadores-stats');
   document.getElementById('count-goleadores').textContent = golesOrdenados.length + ' jugadores';
-  if (golesOrdenados.length === 0) {
-    tbodyG.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>';
-  } else {
-    tbodyG.innerHTML = golesOrdenados.map(([nombre, d], i) => {
-      const total = d.normales + d.penales;
-      return `<tr>
-        <td style="color:var(--texto-2);font-size:13px;width:40px;">${i+1}</td>
-        <td style="font-size:14px;font-weight:500;">${nombre}</td>
-        <td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--celeste);">${total}</td>
-        <td style="text-align:center;font-size:13px;color:var(--texto-2);">${d.normales > 0 ? d.normales : '—'}</td>
-        <td style="text-align:center;font-size:13px;color:var(--amarillo);">${d.penales > 0 ? d.penales : '—'}</td>
-      </tr>`;
-    }).join('');
-  }
+  tbodyG.innerHTML = golesOrdenados.length === 0
+    ? '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>'
+    : golesOrdenados.map(([nombre, d], i) => {
+        const total = d.normales + d.penales;
+        return filaJugador(i, nombre, nacionalidades[nombre],
+          `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--celeste);">${total}</td>
+           <td style="text-align:center;font-size:13px;color:var(--texto-2);">${d.normales > 0 ? d.normales : '—'}</td>
+           <td style="text-align:center;font-size:13px;color:var(--amarillo);">${d.penales > 0 ? d.penales : '—'}</td>`);
+      }).join('');
 
-  // Tabla goles en contra
   const ecOrdenados = Object.entries(ec).sort((a,b) => b[1]-a[1]).slice(0, 30);
   const tbodyEC = document.getElementById('tabla-gc-stats');
   document.getElementById('count-gc').textContent = ecOrdenados.length + ' jugadores';
-  if (ecOrdenados.length === 0) {
-    tbodyEC.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>';
-  } else {
-    tbodyEC.innerHTML = ecOrdenados.map(([nombre, cant], i) => `
-      <tr>
-        <td style="color:var(--texto-2);font-size:13px;width:40px;">${i+1}</td>
-        <td style="font-size:14px;font-weight:500;">${nombre}</td>
-        <td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--rojo);">${cant}</td>
-      </tr>
-    `).join('');
-  }
+  tbodyEC.innerHTML = ecOrdenados.length === 0
+    ? '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>'
+    : ecOrdenados.map(([nombre, cant], i) =>
+        filaJugador(i, nombre, nacionalidades[nombre],
+          `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--rojo);">${cant}</td>`)
+      ).join('');
 
-  // Tabla amonestados
-  const amon = parsearTarjetas('Amonestados', equipoId);
+  const { datos: amon, nacionalidades: nacAmon } = parsearTarjetas('Amonestados', equipoId);
   const tbodyA = document.getElementById('tabla-amonestados-stats');
   document.getElementById('count-amonestados').textContent = amon.length + ' jugadores';
-  if (amon.length === 0) {
-    tbodyA.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>';
-  } else {
-    tbodyA.innerHTML = amon.map(([nombre, cant], i) => `
-      <tr>
-        <td style="color:var(--texto-2);font-size:13px;width:40px;">${i+1}</td>
-        <td style="font-size:14px;font-weight:500;">${nombre}</td>
-        <td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--amarillo);">${cant}</td>
-      </tr>
-    `).join('');
-  }
+  tbodyA.innerHTML = amon.length === 0
+    ? '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>'
+    : amon.map(([nombre, cant], i) =>
+        filaJugador(i, nombre, nacAmon[nombre],
+          `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--amarillo);">${cant}</td>`)
+      ).join('');
 
-  // Tabla expulsados
-  const expu = parsearTarjetas('Expulsados', equipoId);
+  const { datos: expu, nacionalidades: nacExpu } = parsearTarjetas('Expulsados', equipoId);
   const tbodyE = document.getElementById('tabla-expulsados-stats');
   document.getElementById('count-expulsados').textContent = expu.length + ' jugadores';
-  if (expu.length === 0) {
-    tbodyE.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>';
-  } else {
-    tbodyE.innerHTML = expu.map(([nombre, cant], i) => `
-      <tr>
-        <td style="color:var(--texto-2);font-size:13px;width:40px;">${i+1}</td>
-        <td style="font-size:14px;font-weight:500;">${nombre}</td>
-        <td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--rojo);">${cant}</td>
-      </tr>
-    `).join('');
-  }
+  tbodyE.innerHTML = expu.length === 0
+    ? '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>'
+    : expu.map(([nombre, cant], i) =>
+        filaJugador(i, nombre, nacExpu[nombre],
+          `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--rojo);">${cant}</td>`)
+      ).join('');
+}
+
+// ── FICHA JUGADOR ──
+function verFichaJugador(nombre) {
+  // Recopilar stats de todos los equipos
+  const porEquipo = {}; // equipoId → { goles, penales, ec, amonestados, expulsados }
+  let nacionalidad = null;
+
+  partidos.forEach(p => {
+    ['Goleadores','Amonestados','Expulsados'].forEach(campo => {
+      const raw = p[campo] || '';
+      if (!raw) return;
+      const partes = raw.split('/');
+      partes.forEach((parte, idx) => {
+        const equipoId = idx === 0 ? p.Local_ID : p.Visitante_ID;
+        parte.split('-').forEach(entrada => {
+          const nac = extraerNacionalidad(entrada);
+          const n = limpiarNombre(entrada);
+          if (n.toLowerCase() !== nombre.toLowerCase()) return;
+          if (nac && !nacionalidad) nacionalidad = nac;
+          if (!porEquipo[equipoId]) porEquipo[equipoId] = { goles:0, penales:0, ec:0, amonestados:0, expulsados:0 };
+          const r = porEquipo[equipoId];
+          if (campo === 'Goleadores') {
+            if (/\(EC\)/i.test(entrada)) r.ec++;
+            else if (/\(P\)/i.test(entrada)) { r.goles++; r.penales++; }
+            else r.goles++;
+          }
+          if (campo === 'Amonestados') r.amonestados++;
+          if (campo === 'Expulsados') r.expulsados++;
+        });
+      });
+    });
+  });
+
+  const equiposLista = Object.keys(porEquipo).map(id => equipos[id] || id);
+  const totales = Object.values(porEquipo).reduce((a, r) => ({
+    goles: a.goles + r.goles,
+    penales: a.penales + r.penales,
+    ec: a.ec + r.ec,
+    amonestados: a.amonestados + r.amonestados,
+    expulsados: a.expulsados + r.expulsados
+  }), { goles:0, penales:0, ec:0, amonestados:0, expulsados:0 });
+
+  const fotoKey = nombre.toLowerCase().replace(/\s+/g,'_').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  document.getElementById('ficha-foto').src = `jugadores/${fotoKey}.jpg`;
+  document.getElementById('ficha-titulo').textContent = nombre;
+  document.getElementById('ficha-nombre').textContent = nombre;
+  document.getElementById('ficha-nacionalidad').innerHTML = nacionalidad
+    ? `${getBandera(nacionalidad)} ${nacionalidad}` : 'Nacionalidad no registrada';
+  document.getElementById('ficha-equipos-lista').textContent = `Equipos: ${equiposLista.join(', ')}`;
+
+  document.getElementById('ficha-stats').innerHTML = [
+    ['⚽ Goles', totales.goles, 'var(--celeste)'],
+    ['🅿️ Penales', totales.penales, 'var(--amarillo)'],
+    ['↩️ E.C.', totales.ec, 'var(--rojo)'],
+    ['🟨 Amarillas', totales.amonestados, 'var(--amarillo)'],
+    ['🟥 Rojas', totales.expulsados, 'var(--rojo)'],
+  ].map(([label, val, color]) => `
+    <div style="background:var(--fondo-3);border:1px solid var(--borde);border-radius:10px;padding:10px 14px;text-align:center;flex:1;min-width:70px;">
+      <div style="font-family:var(--fuente-titulo);font-size:24px;font-weight:700;color:${color};">${val}</div>
+      <div style="font-size:10px;color:var(--texto-2);text-transform:uppercase;letter-spacing:0.8px;margin-top:3px;">${label}</div>
+    </div>`).join('');
+
+  document.getElementById('ficha-tabla-equipos').innerHTML = Object.entries(porEquipo)
+    .sort((a,b) => b[1].goles - a[1].goles)
+    .map(([eid, r]) => {
+      const esc = ESCUDOS[equipos[eid]] ? `<img src="${ESCUDOS[equipos[eid]]}" style="width:18px;height:18px;object-fit:contain;margin-right:6px;" onerror="this.style.display='none'">` : '';
+      return `<tr>
+        <td><div style="display:flex;align-items:center;">${esc}${equipos[eid]||eid}</div></td>
+        <td style="text-align:center;font-weight:600;color:var(--celeste);">${r.goles||'—'}</td>
+        <td style="text-align:center;color:var(--amarillo);">${r.penales||'—'}</td>
+        <td style="text-align:center;color:var(--amarillo);">${r.amonestados||'—'}</td>
+        <td style="text-align:center;color:var(--rojo);">${r.expulsados||'—'}</td>
+      </tr>`;
+    }).join('');
+
+  document.getElementById('modal-jugador').classList.add('visible');
+}
+
+function cerrarFichaJugador() {
+  document.getElementById('modal-jugador').classList.remove('visible');
 }
 
 cargarDatos();
