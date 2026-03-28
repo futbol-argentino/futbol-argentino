@@ -1,6 +1,6 @@
 ID_Partido,ID_Temporada,Numero_Fecha,Fase,Fecha,Fecha_Numerica,Local_ID,Visitante_ID,Goles_Local,Goles_Visitante,Tipo_Definicion,ID_Ganador,Estadio,Goleadores,Amonestados,Expulsados
 ,,,,,,,,,,,,,,,
-1,1,1,Fase Regular,23/1/2025,45680,14,23,0,3,0,23,Estadio Víctor Antonio Legrotaglie,/ 18´ Enzo Copetti - 26´ Ignacio Malcorra - 48´ Jáminton Campaz,Bruno Leyes - Mateo Mendoza - Roberto Fernández / Agustí­n Sández - Gaspar Duarte
+1,1,1,Fase Regular,23/1/2025,45680,14,23,0,3,0,23,Estadio Víctor Antonio Legrotaglie,/ 18´ Enzo Copetti (ARG) - 26´ Ignacio Malcorra (ARG) - 48´ Jáminton Campaz (COL),Bruno Leyes (ARG) - Mateo Mendoza (ARG) - Roberto Fernández (URU) / Agustí­n Sández (ARG) - Gaspar Duarte (ARG)
 3,1,1,Fase Regular,23/1/2025,45680,10,4,0,1,0,4,,,,
 4,1,1,Fase Regular,23/1/2025,45680,18,11,0,2,0,11,,,,
 5,1,1,Fase Regular,23/1/2025,45680,19,15,0,1,0,15,,,,
