@@ -736,9 +736,9 @@ select option { background: #0C1A30; color: #F5F7FA; }
         </select>
         <select id="detalle-filtro-resultado" onchange="filtrarDetalle()">
           <option value="">Todos los resultados</option>
-          <option value="victoria">Victorias</option>
+          <option value="victoria" id="opt-victoria">Victorias</option>
           <option value="empate">Empates</option>
-          <option value="derrota">Derrotas</option>
+          <option value="derrota" id="opt-derrota">Derrotas</option>
         </select>
       </div>
 
@@ -841,7 +841,7 @@ const ESCUDOS = {
   'Deportivo Riestra':'escudos/deportivo_riestra.png','Estudiantes LP':'escudos/estudiantes_lp.png',
   'Gimnasia de Jujuy':'escudos/gimnasia_de_jujuy.png','Gimnasia LP':'escudos/gimnasia_lp.png',
   'Godoy Cruz':'escudos/godoy_cruz.png','Huracan':'escudos/huracan.png',
-  'Huracan de Tres Arroyos':'escudos/Huracan-de_tres_arroyos.png','Independiente':'escudos/independiente.png',
+  'Huracan de Tres Arroyos':'escudos/huracan-de_tres_arroyos.png','Independiente':'escudos/independiente.png',
   'Independiente Rivadavia':'escudos/independiente_rivadavia.png','Instituto':'escudos/instituto.png',
   'Lanus':'escudos/lanus.png','Newells':'escudos/newells.png',
   'Nueva Chicago':'escudos/nueva_chicago.png','Olimpo':'escudos/olimpo.png',
@@ -1119,25 +1119,46 @@ function verDetalleEquipo(id) {
   selRival.innerHTML = '<option value="">Todos los rivales</option>';
   const rivalesIds = [...new Set(pe.map(p => p.Local_ID===id ? p.Visitante_ID : p.Local_ID))];
   rivalesIds
-    .map(rid => equipos[rid])
-    .filter(Boolean)
-    .sort()
-    .forEach(nombre => {
-      const rid = Object.keys(equipos).find(k => equipos[k] === nombre);
+    .map(rid => ({ id: rid, nombre: equipos[rid] }))
+    .filter(r => r.nombre)
+    .sort((a,b) => a.nombre.localeCompare(b.nombre))
+    .forEach(r => {
       const opt = document.createElement('option');
-      opt.value = rid; opt.textContent = nombre;
+      opt.value = r.id; opt.textContent = r.nombre;
       selRival.appendChild(opt);
     });
 
+  // Actualizar select de resultados con nombre del equipo
+  actualizarSelectResultado(id, nombre);
   document.getElementById('detalle-filtro-resultado').value = '';
   document.getElementById('detalle-tabla-titulo').textContent = 'Partidos de ' + nombre;
   filtrarDetalle();
+}
+
+function actualizarSelectResultado(equipoId, equipoNombre) {
+  const rival = document.getElementById('detalle-filtro-rival').value;
+  const rivalNombre = rival ? equipos[rival] : null;
+  const sel = document.getElementById('detalle-filtro-resultado');
+  const valorActual = sel.value;
+  sel.innerHTML = `
+    <option value="">Todos los resultados</option>
+    <option value="victoria">Victorias de ${equipoNombre}</option>
+    ${rivalNombre ? `<option value="victoria-rival">Victorias de ${rivalNombre}</option>` : ''}
+    <option value="empate">Empates</option>
+    ${!rivalNombre ? `<option value="derrota">Derrotas de ${equipoNombre}</option>` : ''}
+  `;
+  sel.value = valorActual;
 }
 
 function filtrarDetalle() {
   const id = equipoDetalleID;
   const rival = document.getElementById('detalle-filtro-rival').value;
   const res = document.getElementById('detalle-filtro-resultado').value;
+
+  // Actualizar opciones del select cuando cambia el rival
+  const nombre = equipos[id];
+  actualizarSelectResultado(id, nombre);
+  document.getElementById('detalle-filtro-resultado').value = res;
 
   let lista = partidos.filter(p => p.Local_ID===id||p.Visitante_ID===id);
 
@@ -1147,8 +1168,9 @@ function filtrarDetalle() {
   }
 
   if (res === 'victoria') lista = lista.filter(p=>p.Tipo_Definicion==='0'&&p.ID_Ganador===id);
-  if (res === 'derrota')  lista = lista.filter(p=>p.Tipo_Definicion==='0'&&p.ID_Ganador!==id&&p.ID_Ganador!=='');
-  if (res === 'empate')   lista = lista.filter(p=>p.Goles_Local===p.Goles_Visitante&&p.Tipo_Definicion==='0');
+  if (res === 'victoria-rival') lista = lista.filter(p=>p.Tipo_Definicion==='0'&&p.ID_Ganador===rival);
+  if (res === 'derrota') lista = lista.filter(p=>p.Tipo_Definicion==='0'&&p.ID_Ganador!==id&&p.ID_Ganador!=='');
+  if (res === 'empate') lista = lista.filter(p=>p.Goles_Local===p.Goles_Visitante&&p.Tipo_Definicion==='0');
 
   document.getElementById('detalle-count').textContent = lista.length + ' partidos';
 
