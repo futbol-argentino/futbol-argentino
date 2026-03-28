@@ -1522,17 +1522,55 @@ function cerrarModal() {
 }
 
 // ── ESTADÍSTICAS ──
-const BANDERAS = {
-  'ARG':'🇦🇷','BRA':'🇧🇷','URU':'🇺🇾','PAR':'🇵🇾','BOL':'🇧🇴','CHI':'🇨🇱','COL':'🇨🇴',
-  'PER':'🇵🇪','ECU':'🇪🇨','VEN':'🇻🇪','MEX':'🇲🇽','ESP':'🇪🇸','POR':'🇵🇹','FRA':'🇫🇷',
-  'ITA':'🇮🇹','ALE':'🇩🇪','ING':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','HOL':'🇳🇱','BEL':'🇧🇪','CRO':'🇭🇷',
-  'SER':'🇷🇸','USA':'🇺🇸','CAN':'🇨🇦','AUS':'🇦🇺','JAP':'🇯🇵','SEN':'🇸🇳',
-  'MAR':'🇲🇦','GHA':'🇬🇭','NGA':'🇳🇬','CMR':'🇨🇲','COS':'🇨🇷','PAN':'🇵🇦','HON':'🇭🇳'
+const PAISES = {
+  'ARG':{ nombre:'Argentina', codigo:'ar' },
+  'BRA':{ nombre:'Brasil', codigo:'br' },
+  'URU':{ nombre:'Uruguay', codigo:'uy' },
+  'PAR':{ nombre:'Paraguay', codigo:'py' },
+  'BOL':{ nombre:'Bolivia', codigo:'bo' },
+  'CHI':{ nombre:'Chile', codigo:'cl' },
+  'COL':{ nombre:'Colombia', codigo:'co' },
+  'PER':{ nombre:'Perú', codigo:'pe' },
+  'ECU':{ nombre:'Ecuador', codigo:'ec' },
+  'VEN':{ nombre:'Venezuela', codigo:'ve' },
+  'MEX':{ nombre:'México', codigo:'mx' },
+  'ESP':{ nombre:'España', codigo:'es' },
+  'POR':{ nombre:'Portugal', codigo:'pt' },
+  'FRA':{ nombre:'Francia', codigo:'fr' },
+  'ITA':{ nombre:'Italia', codigo:'it' },
+  'ALE':{ nombre:'Alemania', codigo:'de' },
+  'ING':{ nombre:'Inglaterra', codigo:'gb-eng' },
+  'HOL':{ nombre:'Países Bajos', codigo:'nl' },
+  'BEL':{ nombre:'Bélgica', codigo:'be' },
+  'CRO':{ nombre:'Croacia', codigo:'hr' },
+  'SER':{ nombre:'Serbia', codigo:'rs' },
+  'USA':{ nombre:'Estados Unidos', codigo:'us' },
+  'CAN':{ nombre:'Canadá', codigo:'ca' },
+  'AUS':{ nombre:'Australia', codigo:'au' },
+  'JAP':{ nombre:'Japón', codigo:'jp' },
+  'SEN':{ nombre:'Senegal', codigo:'sn' },
+  'MAR':{ nombre:'Marruecos', codigo:'ma' },
+  'GHA':{ nombre:'Ghana', codigo:'gh' },
+  'NGA':{ nombre:'Nigeria', codigo:'ng' },
+  'CMR':{ nombre:'Camerún', codigo:'cm' },
+  'COS':{ nombre:'Costa Rica', codigo:'cr' },
+  'PAN':{ nombre:'Panamá', codigo:'pa' },
+  'HON':{ nombre:'Honduras', codigo:'hn' },
+  'GUA':{ nombre:'Guatemala', codigo:'gt' },
+  'NIC':{ nombre:'Nicaragua', codigo:'ni' },
 };
 
-function getBandera(pais) {
-  if (!pais) return '';
-  return BANDERAS[pais.toUpperCase()] || `<span style="font-size:10px;color:var(--texto-3);">${pais}</span>`;
+function getBandera(codigo) {
+  if (!codigo) return '';
+  const p = PAISES[codigo.toUpperCase()];
+  if (!p) return `<span style="font-size:11px;color:var(--texto-3);">${codigo}</span>`;
+  return `<img src="https://flagcdn.com/20x15/${p.codigo}.png" alt="${p.nombre}" style="width:20px;height:15px;border-radius:2px;vertical-align:middle;margin-right:4px;" title="${p.nombre}">`;
+}
+
+function getNombrePais(codigo) {
+  if (!codigo) return 'Nacionalidad no registrada';
+  const p = PAISES[codigo.toUpperCase()];
+  return p ? p.nombre : codigo;
 }
 
 function extraerNacionalidad(texto) {
@@ -1709,7 +1747,7 @@ function verFichaJugador(nombre) {
   document.getElementById('ficha-titulo').textContent = nombre;
   document.getElementById('ficha-nombre').textContent = nombre;
   document.getElementById('ficha-nacionalidad').innerHTML = nacionalidad
-    ? `${getBandera(nacionalidad)} ${nacionalidad}` : 'Nacionalidad no registrada';
+    ? `${getBandera(nacionalidad)} ${getNombrePais(nacionalidad)}` : 'Nacionalidad no registrada';
   document.getElementById('ficha-equipos-lista').textContent = `Equipos: ${equiposLista.join(', ')}`;
 
   document.getElementById('ficha-stats').innerHTML = [
