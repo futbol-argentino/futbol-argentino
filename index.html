@@ -552,6 +552,10 @@ td { padding: 10px 16px; font-size: 14px; color: var(--texto-1); vertical-align:
   border-top: 1px solid var(--borde);
 }
 
+@media (max-width: 900px) {
+  #stats-general > div { grid-template-columns: 1fr; }
+}
+
 select option { background: #0C1A30; color: #F5F7FA; }
 </style>
 </head>
@@ -575,6 +579,10 @@ select option { background: #0C1A30; color: #F5F7FA; }
     <div class="sidebar-nav-item" onclick="cambiarTab('equipos'); cerrarSidebar();" id="menu-equipos">
       <span class="sidebar-nav-icon">🏆</span>
       <span class="sidebar-nav-texto">Equipos</span>
+    </div>
+    <div class="sidebar-nav-item" onclick="cambiarTab('estadisticas'); cerrarSidebar();" id="menu-estadisticas">
+      <span class="sidebar-nav-icon">📊</span>
+      <span class="sidebar-nav-texto">Estadísticas</span>
     </div>
   </nav>
   <div class="sidebar-footer">Base de Datos del Fútbol Argentino</div>
@@ -601,6 +609,7 @@ select option { background: #0C1A30; color: #F5F7FA; }
   <div class="tabs-barra">
     <button class="tab-btn activo" id="tab-buscador" onclick="cambiarTab('buscador')">🔍 Buscador</button>
     <button class="tab-btn" id="tab-equipos" onclick="cambiarTab('equipos')">🏆 Equipos</button>
+    <button class="tab-btn" id="tab-estadisticas" onclick="cambiarTab('estadisticas')">📊 Estadísticas</button>
   </div>
 
   <!-- ══ TAB BUSCADOR ══ -->
@@ -770,6 +779,70 @@ select option { background: #0C1A30; color: #F5F7FA; }
 
   </div><!-- fin panel-equipos -->
 
+  <!-- ══ TAB ESTADÍSTICAS ══ -->
+  <div class="tab-panel" id="panel-estadisticas">
+
+    <!-- Filtro por equipo -->
+    <div class="filtros-panel" style="margin-bottom:20px;">
+      <div class="filtros-titulo">📊 Filtrar por equipo</div>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <div class="filtro-grupo" style="flex:1;min-width:200px;">
+          <label class="filtro-label">Equipo</label>
+          <select id="stats-filtro-equipo" class="filtro-select" onchange="renderEstadisticas()">
+            <option value="">Todos los equipos (ranking general)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- RANKING GENERAL -->
+    <div id="stats-general">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+
+        <!-- TOP GOLEADORES -->
+        <div class="tabla-wrapper">
+          <div class="tabla-header">
+            <div class="tabla-titulo">⚽ Top Goleadores</div>
+          </div>
+          <div class="tabla-scroll">
+            <table>
+              <thead><tr><th>#</th><th>Jugador</th><th style="text-align:center;">Goles</th></tr></thead>
+              <tbody id="tabla-goleadores-stats"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TOP AMONESTADOS -->
+        <div class="tabla-wrapper">
+          <div class="tabla-header">
+            <div class="tabla-titulo">🟨 Top Amonestados</div>
+          </div>
+          <div class="tabla-scroll">
+            <table>
+              <thead><tr><th>#</th><th>Jugador</th><th style="text-align:center;">Amarillas</th></tr></thead>
+              <tbody id="tabla-amonestados-stats"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TOP EXPULSADOS -->
+        <div class="tabla-wrapper">
+          <div class="tabla-header">
+            <div class="tabla-titulo">🟥 Top Expulsados</div>
+          </div>
+          <div class="tabla-scroll">
+            <table>
+              <thead><tr><th>#</th><th>Jugador</th><th style="text-align:center;">Rojas</th></tr></thead>
+              <tbody id="tabla-expulsados-stats"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- fin panel-estadisticas -->
+
 </div><!-- fin main -->
 
 <!-- MODAL PARTIDO -->
@@ -800,14 +873,14 @@ select option { background: #0C1A30; color: #F5F7FA; }
           <span id="arrow-goleadores" style="color:var(--texto-2);font-size:12px;transition:transform 0.2s;">▼</span>
         </div>
         <div id="modal-goleadores" class="modal-desplegable-contenido">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;">
             <div>
-              <div style="font-size:10px;color:var(--texto-2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;" id="modal-goleadores-local-label"></div>
-              <div id="modal-goleadores-local" style="font-size:13px;color:var(--texto-1);"></div>
+              <div style="font-size:10px;color:var(--celeste);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;font-weight:600;" id="modal-goleadores-local-label"></div>
+              <div id="modal-goleadores-local"></div>
             </div>
             <div>
-              <div style="font-size:10px;color:var(--texto-2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;" id="modal-goleadores-visita-label"></div>
-              <div id="modal-goleadores-visita" style="font-size:13px;color:var(--texto-1);"></div>
+              <div style="font-size:10px;color:var(--celeste);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;font-weight:600;" id="modal-goleadores-visita-label"></div>
+              <div id="modal-goleadores-visita"></div>
             </div>
           </div>
         </div>
@@ -820,14 +893,14 @@ select option { background: #0C1A30; color: #F5F7FA; }
           <span id="arrow-amonestados" style="color:var(--texto-2);font-size:12px;transition:transform 0.2s;">▼</span>
         </div>
         <div id="modal-amonestados" class="modal-desplegable-contenido">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;">
             <div>
-              <div style="font-size:10px;color:var(--texto-2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;" id="modal-amonestados-local-label"></div>
-              <div id="modal-amonestados-local" style="font-size:13px;color:var(--texto-1);"></div>
+              <div style="font-size:10px;color:var(--amarillo);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;font-weight:600;" id="modal-amonestados-local-label"></div>
+              <div id="modal-amonestados-local"></div>
             </div>
             <div>
-              <div style="font-size:10px;color:var(--texto-2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;" id="modal-amonestados-visita-label"></div>
-              <div id="modal-amonestados-visita" style="font-size:13px;color:var(--texto-1);"></div>
+              <div style="font-size:10px;color:var(--amarillo);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;font-weight:600;" id="modal-amonestados-visita-label"></div>
+              <div id="modal-amonestados-visita"></div>
             </div>
           </div>
         </div>
@@ -840,14 +913,14 @@ select option { background: #0C1A30; color: #F5F7FA; }
           <span id="arrow-expulsados" style="color:var(--texto-2);font-size:12px;transition:transform 0.2s;">▼</span>
         </div>
         <div id="modal-expulsados" class="modal-desplegable-contenido">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;">
             <div>
-              <div style="font-size:10px;color:var(--texto-2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;" id="modal-expulsados-local-label"></div>
-              <div id="modal-expulsados-local" style="font-size:13px;color:var(--texto-1);"></div>
+              <div style="font-size:10px;color:var(--rojo);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;font-weight:600;" id="modal-expulsados-local-label"></div>
+              <div id="modal-expulsados-local"></div>
             </div>
             <div>
-              <div style="font-size:10px;color:var(--texto-2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;" id="modal-expulsados-visita-label"></div>
-              <div id="modal-expulsados-visita" style="font-size:13px;color:var(--texto-1);"></div>
+              <div style="font-size:10px;color:var(--rojo);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;font-weight:600;" id="modal-expulsados-visita-label"></div>
+              <div id="modal-expulsados-visita"></div>
             </div>
           </div>
         </div>
@@ -937,6 +1010,15 @@ async function cargarDatos() {
 
     renderizarEquipos();
     filtrar();
+
+    // Llenar select de estadísticas
+    const selStats = document.getElementById('stats-filtro-equipo');
+    equiposArr.sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo)).forEach(e => {
+      const opt = document.createElement('option');
+      opt.value = e.ID_Equipo; opt.textContent = e.Nombre_Equipo;
+      selStats.appendChild(opt);
+    });
+    renderEstadisticas();
   } catch(err) {
     document.getElementById('tabla-partidos').innerHTML =
       '<tr class="loading-row"><td colspan="5">Error cargando datos.</td></tr>';
@@ -1225,15 +1307,20 @@ function volverEquipos() {
 }
 
 // ── MODAL ──
-function splitDato(valor, nombreLocal, nombreVisita) {
-  if (!valor || valor === 'No disponible') {
-    return { local: 'No disponible', visita: 'No disponible' };
+function splitDato(valor) {
+  if (!valor || valor.trim() === '' || valor.toLowerCase() === 'ninguno' || valor.toLowerCase() === 'no disponible') {
+    return ['Ninguno'];
   }
-  const partes = valor.split('/');
-  return {
-    local: (partes[0] || 'Ninguno').trim(),
-    visita: (partes[1] || 'Ninguno').trim()
-  };
+  return valor.split('-').map(s => s.trim()).filter(s => s.length > 0);
+}
+
+function renderLista(items) {
+  if (items.length === 1 && items[0] === 'Ninguno') {
+    return `<span style="color:var(--texto-3);font-size:13px;font-style:italic;">Ninguno</span>`;
+  }
+  return items.map(item =>
+    `<div style="font-size:13px;color:var(--texto-1);padding:4px 0;border-bottom:1px solid var(--borde);">${item}</div>`
+  ).join('');
 }
 
 function verPartido(id) {
@@ -1262,12 +1349,13 @@ function verPartido(id) {
   // Datos separados por /
   ['goleadores','amonestados','expulsados'].forEach(campo => {
     const raw = p[campo.charAt(0).toUpperCase()+campo.slice(1)] || p[campo] || '';
-    const datos = splitDato(raw, local, visita);
+    const partes = raw.split('/');
+    const localItems = splitDato(partes[0] || '');
+    const visitaItems = splitDato(partes[1] || '');
     document.getElementById('modal-'+campo+'-local-label').textContent = local;
     document.getElementById('modal-'+campo+'-visita-label').textContent = visita;
-    document.getElementById('modal-'+campo+'-local').textContent = datos.local;
-    document.getElementById('modal-'+campo+'-visita').textContent = datos.visita;
-    // Cerrar desplegable por defecto
+    document.getElementById('modal-'+campo+'-local').innerHTML = renderLista(localItems);
+    document.getElementById('modal-'+campo+'-visita').innerHTML = renderLista(visitaItems);
     document.getElementById('modal-'+campo).style.display = 'none';
     document.getElementById('arrow-'+campo).style.transform = 'rotate(0deg)';
   });
@@ -1285,6 +1373,53 @@ function toggleDesplegable(campo) {
 
 function cerrarModal() {
   document.getElementById('modal').classList.remove('visible');
+}
+
+// ── ESTADÍSTICAS ──
+function parsearJugadores(campo, equipoId) {
+  const conteo = {};
+  partidos.forEach(p => {
+    let raw = p[campo] || '';
+    if (!raw) return;
+    const partes = raw.split('/');
+    // parte[0] = local, parte[1] = visita
+    partes.forEach((parte, idx) => {
+      const esLocal = idx === 0;
+      const idEquipo = esLocal ? p.Local_ID : p.Visitante_ID;
+      if (equipoId && idEquipo !== equipoId) return;
+      parte.split('-').forEach(jugador => {
+        // Limpiar minutos y espacios
+        const nombre = jugador.replace(/\d+['`´']?/g, '').trim();
+        if (!nombre || nombre.toLowerCase() === 'ninguno' || nombre.length < 2) return;
+        conteo[nombre] = (conteo[nombre] || 0) + 1;
+      });
+    });
+  });
+  return Object.entries(conteo)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 20);
+}
+
+function renderTablaStats(tbodyId, datos, icono) {
+  const tbody = document.getElementById(tbodyId);
+  if (datos.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>';
+    return;
+  }
+  tbody.innerHTML = datos.map(([nombre, cant], i) => `
+    <tr>
+      <td style="color:var(--texto-2);font-size:13px;width:32px;">${i+1}</td>
+      <td style="font-size:14px;">${nombre}</td>
+      <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;font-weight:700;color:var(--celeste);">${cant}</td>
+    </tr>
+  `).join('');
+}
+
+function renderEstadisticas() {
+  const equipoId = document.getElementById('stats-filtro-equipo').value || null;
+  renderTablaStats('tabla-goleadores-stats', parsearJugadores('Goleadores', equipoId), '⚽');
+  renderTablaStats('tabla-amonestados-stats', parsearJugadores('Amonestados', equipoId), '🟨');
+  renderTablaStats('tabla-expulsados-stats', parsearJugadores('Expulsados', equipoId), '🟥');
 }
 
 cargarDatos();
