@@ -746,7 +746,12 @@ select option { background: #0C1A30; color: #F5F7FA; }
       <div class="tabla-wrapper">
         <div class="tabla-header">
           <div class="tabla-titulo" id="detalle-tabla-titulo">Partidos</div>
-          <div class="tabla-count" id="detalle-count"></div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <button id="btn-orden-detalle" onclick="toggleOrdenDetalle()" style="background:var(--fondo-3);border:1px solid var(--borde);border-radius:8px;color:var(--texto-2);font-family:var(--fuente-cuerpo);font-size:12px;padding:5px 12px;cursor:pointer;transition:var(--trans);">
+              📅 Más recientes
+            </button>
+            <div class="tabla-count" id="detalle-count"></div>
+          </div>
         </div>
         <div class="tabla-scroll">
           <table>
@@ -836,7 +841,7 @@ const ESCUDOS = {
   'Deportivo Riestra':'escudos/deportivo_riestra.png','Estudiantes LP':'escudos/estudiantes_lp.png',
   'Gimnasia de Jujuy':'escudos/gimnasia_de_jujuy.png','Gimnasia LP':'escudos/gimnasia_lp.png',
   'Godoy Cruz':'escudos/godoy_cruz.png','Huracan':'escudos/huracan.png',
-  'Huracan de Tres Arroyos':'escudos/huracan_de_tres_arroyos.png','Independiente':'escudos/independiente.png',
+  'Huracan de Tres Arroyos':'escudos/Huracan-de_tres_arroyos.png','Independiente':'escudos/independiente.png',
   'Independiente Rivadavia':'escudos/independiente_rivadavia.png','Instituto':'escudos/instituto.png',
   'Lanus':'escudos/lanus.png','Newells':'escudos/newells.png',
   'Nueva Chicago':'escudos/nueva_chicago.png','Olimpo':'escudos/olimpo.png',
@@ -854,6 +859,7 @@ let partidos = [], equipos = {}, temporadas = {};
 let equiposArr = [];
 let equipoDetalleID = null;
 let ordenDesc = true;
+let ordenDetalleDesc = true;
 
 // ── CSV ──
 function csvToArray(csv) {
@@ -957,6 +963,13 @@ function toggleOrden() {
   filtrar();
 }
 
+function toggleOrdenDetalle() {
+  ordenDetalleDesc = !ordenDetalleDesc;
+  const btn = document.getElementById('btn-orden-detalle');
+  btn.textContent = ordenDetalleDesc ? '📅 Más recientes' : '📅 Más antiguos';
+  filtrarDetalle();
+}
+
 // ── BUSCADOR ──
 function limpiarFiltros() {
   ['buscar','filtro-equipo','filtro-equipo2','filtro-resultado'].forEach(id => {
@@ -992,8 +1005,9 @@ function filtrar() {
 
   // Ordenar por fecha
   filtrados.sort((a, b) => {
-    const fa = new Date(a.Fecha||0), fb = new Date(b.Fecha||0);
-    return ordenDesc ? fb - fa : fa - fb;
+    const fa = a.Fecha ? a.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$2-$1') : '0';
+    const fb = b.Fecha ? b.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$2-$1') : '0';
+    return ordenDesc ? fb.localeCompare(fa) : fa.localeCompare(fb);
   });
 
   tbody.innerHTML = filtrados.length === 0
@@ -1137,6 +1151,13 @@ function filtrarDetalle() {
   if (res === 'empate')   lista = lista.filter(p=>p.Goles_Local===p.Goles_Visitante&&p.Tipo_Definicion==='0');
 
   document.getElementById('detalle-count').textContent = lista.length + ' partidos';
+
+  lista.sort((a, b) => {
+    const fa = a.Fecha ? a.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$2-$1') : '0';
+    const fb = b.Fecha ? b.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$2-$1') : '0';
+    return ordenDetalleDesc ? fb.localeCompare(fa) : fa.localeCompare(fb);
+  });
+
   document.getElementById('tabla-detalle').innerHTML = lista.length === 0
     ? '<tr class="loading-row"><td colspan="5">No se encontraron partidos.</td></tr>'
     : lista.slice(0, 200).map(filaPartido).join('');
@@ -1168,35 +1189,4 @@ function verPartido(id) {
   const escLocal = document.getElementById('modal-escudo-local');
   const escVisita = document.getElementById('modal-escudo-visita');
   if (ESCUDOS[local]) { escLocal.src = ESCUDOS[local]; escLocal.style.display = 'block'; }
-  else escLocal.style.display = 'none';
-  if (ESCUDOS[visita]) { escVisita.src = ESCUDOS[visita]; escVisita.style.display = 'block'; }
-  else escVisita.style.display = 'none';
-
-  // Desplegables — cerrados por defecto
-  ['goleadores','amonestados','expulsados'].forEach(campo => {
-    const valor = p[campo.charAt(0).toUpperCase()+campo.slice(1)] || p[campo] || 'No disponible';
-    const el = document.getElementById('modal-'+campo);
-    el.textContent = valor;
-    el.style.display = 'none';
-    document.getElementById('arrow-'+campo).style.transform = 'rotate(0deg)';
-  });
-
-  document.getElementById('modal').classList.add('visible');
-}
-
-function toggleDesplegable(campo) {
-  const el = document.getElementById('modal-'+campo);
-  const arrow = document.getElementById('arrow-'+campo);
-  const abierto = el.style.display === 'block';
-  el.style.display = abierto ? 'none' : 'block';
-  arrow.style.transform = abierto ? 'rotate(0deg)' : 'rotate(180deg)';
-}
-
-function cerrarModal() {
-  document.getElementById('modal').classList.remove('visible');
-}
-
-cargarDatos();
-</script>
-</body>
-</html>
+  else e
