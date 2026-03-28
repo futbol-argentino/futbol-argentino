@@ -882,11 +882,8 @@ async function cargarDatos() {
 
     const tempArr = csvToArray(csvT);
     tempArr.forEach(t => temporadas[t.ID_Temporada] = t.Competencia);
-    document.getElementById('total-temporadas').textContent = tempArr.length;
 
     partidos = csvToArray(csvP).filter(p => p.ID_Partido);
-    document.getElementById('total-partidos').textContent = partidos.length.toLocaleString();
-    document.getElementById('total-equipos').textContent = equiposArr.length;
 
     // Llenar selects del buscador
     const sel1 = document.getElementById('filtro-equipo');
