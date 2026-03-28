@@ -799,25 +799,58 @@ select option { background: #0C1A30; color: #F5F7FA; }
           <div class="modal-dato-label">⚽ Goleadores</div>
           <span id="arrow-goleadores" style="color:var(--texto-2);font-size:12px;transition:transform 0.2s;">▼</span>
         </div>
-        <div id="modal-goleadores" class="modal-desplegable-contenido"></div>
+        <div id="modal-goleadores" class="modal-desplegable-contenido">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;">
+            <div>
+              <div style="font-size:10px;color:var(--texto-2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;" id="modal-goleadores-local-label"></div>
+              <div id="modal-goleadores-local" style="font-size:13px;color:var(--texto-1);"></div>
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--texto-2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;" id="modal-goleadores-visita-label"></div>
+              <div id="modal-goleadores-visita" style="font-size:13px;color:var(--texto-1);"></div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- DESPLEGABLE AMONESTADOS -->
-      <div class="modal-dato modal-desplegable" onclick="toggleDesplegable('amonestados')">
+      <div class="modal-dato full modal-desplegable" onclick="toggleDesplegable('amonestados')">
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <div class="modal-dato-label">🟨 Amonestados</div>
           <span id="arrow-amonestados" style="color:var(--texto-2);font-size:12px;transition:transform 0.2s;">▼</span>
         </div>
-        <div id="modal-amonestados" class="modal-desplegable-contenido"></div>
+        <div id="modal-amonestados" class="modal-desplegable-contenido">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;">
+            <div>
+              <div style="font-size:10px;color:var(--texto-2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;" id="modal-amonestados-local-label"></div>
+              <div id="modal-amonestados-local" style="font-size:13px;color:var(--texto-1);"></div>
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--texto-2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;" id="modal-amonestados-visita-label"></div>
+              <div id="modal-amonestados-visita" style="font-size:13px;color:var(--texto-1);"></div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- DESPLEGABLE EXPULSADOS -->
-      <div class="modal-dato modal-desplegable" onclick="toggleDesplegable('expulsados')">
+      <div class="modal-dato full modal-desplegable" onclick="toggleDesplegable('expulsados')">
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <div class="modal-dato-label">🟥 Expulsados</div>
           <span id="arrow-expulsados" style="color:var(--texto-2);font-size:12px;transition:transform 0.2s;">▼</span>
         </div>
-        <div id="modal-expulsados" class="modal-desplegable-contenido"></div>
+        <div id="modal-expulsados" class="modal-desplegable-contenido">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;">
+            <div>
+              <div style="font-size:10px;color:var(--texto-2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;" id="modal-expulsados-local-label"></div>
+              <div id="modal-expulsados-local" style="font-size:13px;color:var(--texto-1);"></div>
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--texto-2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;" id="modal-expulsados-visita-label"></div>
+              <div id="modal-expulsados-visita" style="font-size:13px;color:var(--texto-1);"></div>
+            </div>
+          </div>
+        </div>
       </div>
 
     </div>
@@ -1192,6 +1225,17 @@ function volverEquipos() {
 }
 
 // ── MODAL ──
+function splitDato(valor, nombreLocal, nombreVisita) {
+  if (!valor || valor === 'No disponible') {
+    return { local: 'No disponible', visita: 'No disponible' };
+  }
+  const partes = valor.split('/');
+  return {
+    local: (partes[0] || 'Ninguno').trim(),
+    visita: (partes[1] || 'Ninguno').trim()
+  };
+}
+
 function verPartido(id) {
   const p = partidos.find(x => x.ID_Partido == id);
   if (!p) return;
@@ -1215,12 +1259,16 @@ function verPartido(id) {
   if (ESCUDOS[visita]) { escVisita.src = ESCUDOS[visita]; escVisita.style.display = 'block'; }
   else escVisita.style.display = 'none';
 
-  // Desplegables — cerrados por defecto
+  // Datos separados por /
   ['goleadores','amonestados','expulsados'].forEach(campo => {
-    const valor = p[campo.charAt(0).toUpperCase()+campo.slice(1)] || p[campo] || 'No disponible';
-    const el = document.getElementById('modal-'+campo);
-    el.textContent = valor;
-    el.style.display = 'none';
+    const raw = p[campo.charAt(0).toUpperCase()+campo.slice(1)] || p[campo] || '';
+    const datos = splitDato(raw, local, visita);
+    document.getElementById('modal-'+campo+'-local-label').textContent = local;
+    document.getElementById('modal-'+campo+'-visita-label').textContent = visita;
+    document.getElementById('modal-'+campo+'-local').textContent = datos.local;
+    document.getElementById('modal-'+campo+'-visita').textContent = datos.visita;
+    // Cerrar desplegable por defecto
+    document.getElementById('modal-'+campo).style.display = 'none';
     document.getElementById('arrow-'+campo).style.transform = 'rotate(0deg)';
   });
 
