@@ -487,6 +487,7 @@ td { padding: 10px 16px; font-size: 14px; color: var(--texto-1); vertical-align:
   padding: 20px;
 }
 .modal-overlay.visible { display: flex; }
+#modal-jugador { z-index: 500; }
 .modal-box {
   background: var(--fondo-2);
   border: 1px solid var(--borde-hover);
@@ -528,17 +529,71 @@ td { padding: 10px 16px; font-size: 14px; color: var(--texto-1); vertical-align:
   .filtros-grid { grid-template-columns: 1fr 1fr; }
   .btn-limpiar { grid-column: span 2; }
 }
+
 @media (max-width: 600px) {
-  .header-inner { padding: 16px; }
-  .stats-bar-inner { padding: 0 16px; }
-  .main { padding: 16px; }
+  /* Layout */
+  .header-inner { padding: 12px 16px; }
+  .main { padding: 12px; }
+
+  /* Header logo más compacto en mobile */
+  .header-inner img { height: 40px; }
+
+  /* Tabs */
+  .tabs-barra { width: 100%; overflow-x: auto; gap: 3px; padding: 4px; }
+  .tab-btn { flex: 1; justify-content: center; font-size: 12px; padding: 7px 10px; white-space: nowrap; }
+
+  /* Filtros */
   .filtros-grid { grid-template-columns: 1fr; }
   .btn-limpiar { grid-column: span 1; }
-  .equipos-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+  .filtros-panel { padding: 14px; }
+
+  /* Grilla de equipos más compacta */
+  .equipos-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
+  .equipo-card { padding: 14px 10px; gap: 8px; }
+  .equipo-card-escudo { width: 44px; height: 44px; }
+  .equipo-card-nombre { font-size: 13px; }
+
+  /* Modal */
+  .modal-overlay { padding: 10px; }
+  .modal-box { padding: 18px; border-radius: 16px; max-height: 95vh; }
   .modal-grid { grid-template-columns: 1fr; }
   .modal-dato.full { grid-column: span 1; }
-  .tabs-barra { width: 100%; }
-  .tab-btn { flex: 1; justify-content: center; }
+  .modal-resultado-num { font-size: 40px; }
+  .modal-equipos { font-size: 17px; }
+
+  /* Ficha jugador */
+  #modal-jugador .modal-box { padding: 16px; }
+  #ficha-foto { width: 100px !important; height: 100px !important; }
+  #ficha-stats { gap: 6px; }
+  #ficha-stats > div { min-width: 58px; padding: 8px 6px; }
+
+  /* Stat pills */
+  .stat-pill { min-width: 56px; padding: 10px 8px; }
+  .stat-pill-num { font-size: 22px; }
+
+  /* Tabla */
+  .tabla-wrapper { border-radius: 12px; }
+  .tabla-header { padding: 12px 14px; }
+  td, th { padding: 9px 10px; font-size: 13px; }
+  .td-resultado { font-size: 16px; }
+  .td-escudo { width: 18px; height: 18px; }
+
+  /* Detalle equipo */
+  .detalle-header { flex-wrap: wrap; gap: 10px; }
+  .detalle-equipo-nombre { font-size: 22px; }
+  .detalle-filtro { flex-direction: column; align-items: stretch; }
+  .detalle-filtro select { width: 100%; }
+
+  /* Stats bar */
+  .stats-bar-inner { gap: 0; }
+  .stat-item { padding: 10px 16px 10px 0; margin-right: 16px; }
+  .stat-num { font-size: 22px; }
+}
+
+@media (max-width: 380px) {
+  .tabs-barra { flex-wrap: nowrap; }
+  .tab-btn { font-size: 11px; padding: 6px 8px; }
+  .equipos-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
 .modal-desplegable { cursor: pointer; transition: border-color 0.2s; }
@@ -566,8 +621,7 @@ select option { background: #0C1A30; color: #F5F7FA; }
 <div class="sidebar" id="sidebar">
   <div class="sidebar-header">
     <div class="sidebar-logo">
-      <div class="sidebar-logo-icon">⚽</div>
-      <span class="sidebar-logo-text">Fútbol <span>AR</span></span>
+      <img src="logo.png" alt="Logo" style="height:36px;width:auto;object-fit:contain;">
     </div>
     <button class="sidebar-close" onclick="cerrarSidebar()">✕</button>
   </div>
@@ -597,11 +651,7 @@ select option { background: #0C1A30; color: #F5F7FA; }
   <div class="header-inner">
     <button class="btn-menu" onclick="abrirSidebar()">☰</button>
     <div class="header-brand">
-      <div class="header-icon">⚽</div>
-      <div class="header-text">
-        <h1>Fútbol <span>Argentino</span></h1>
-        <p>La base de datos más completa del fútbol nacional</p>
-      </div>
+      <img src="logo.png" alt="Base de Datos del Fútbol Argentino" style="height:52px;width:auto;object-fit:contain;">
     </div>
   </div>
 </header>
