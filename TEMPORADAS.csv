@@ -1,4 +1,4 @@
-ID_Temporada,A�o,Competencia
+ID_Temporada,Año,Competencia
 1,2025,Copa De La Liga Apertura 2025
 2,2025,Copa De La Liga Clausura 2025
 3,2024,Copa De La Liga 2024
@@ -16,9 +16,9 @@ ID_Temporada,A�o,Competencia
 15,2019,Copa De La Superliga 2019
 16,2017/18,Superliga Argentina 2017/2018
 17,2016/17,Superliga Argentina 2016/2017
-18,2016,Torneo Transición 2016
-19,2015,Primera División 2015
-20,2014,Torneo Transición 2014
+18,2016,Torneo TransiciÃ³n 2016
+19,2015,Primera DivisiÃ³n 2015
+20,2014,Torneo TransiciÃ³n 2014
 21,2014,Torneo Final 2014
 22,2013,Torneo Inicial 2013
 23,2013,Torneo Final 2013
@@ -38,3 +38,4 @@ ID_Temporada,A�o,Competencia
 37,2006,Torneo Clausura 2006
 38,2005,Torneo Apertura 2005
 39,2005,Torneo Clausura 2005
+40,2004,Torneo Apertura 2004
