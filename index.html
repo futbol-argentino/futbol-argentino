@@ -594,21 +594,6 @@ select option { background: #0C1A30; color: #F5F7FA; }
   </div>
 </header>
 
-<!-- STATS BAR -->
-<div class="stats-bar">
-  <div class="stats-bar-inner">
-    <div class="stat-item">
-      <div><div class="stat-num" id="total-partidos">-</div><div class="stat-label">Partidos</div></div>
-    </div>
-    <div class="stat-item">
-      <div><div class="stat-num" id="total-equipos">-</div><div class="stat-label">Equipos</div></div>
-    </div>
-    <div class="stat-item">
-      <div><div class="stat-num" id="total-temporadas">-</div><div class="stat-label">Temporadas</div></div>
-    </div>
-  </div>
-</div>
-
 <!-- MAIN -->
 <div class="main">
 
@@ -695,7 +680,12 @@ select option { background: #0C1A30; color: #F5F7FA; }
     <div class="tabla-wrapper">
       <div class="tabla-header">
         <div class="tabla-titulo">Partidos</div>
-        <div class="tabla-count" id="tabla-count">Cargando...</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button id="btn-orden" onclick="toggleOrden()" style="background:var(--fondo-3);border:1px solid var(--borde);border-radius:8px;color:var(--texto-2);font-family:var(--fuente-cuerpo);font-size:12px;padding:5px 12px;cursor:pointer;transition:var(--trans);">
+            📅 Más recientes
+          </button>
+          <div class="tabla-count" id="tabla-count">Cargando...</div>
+        </div>
       </div>
       <div class="tabla-scroll">
         <table>
@@ -846,7 +836,7 @@ const ESCUDOS = {
   'Deportivo Riestra':'escudos/deportivo_riestra.png','Estudiantes LP':'escudos/estudiantes_lp.png',
   'Gimnasia de Jujuy':'escudos/gimnasia_de_jujuy.png','Gimnasia LP':'escudos/gimnasia_lp.png',
   'Godoy Cruz':'escudos/godoy_cruz.png','Huracan':'escudos/huracan.png',
-  'Huracan de Tres Arroyos':'escudos/huracan-de_tres_arroyos.png','Independiente':'escudos/independiente.png',
+  'Huracan de Tres Arroyos':'escudos/huracan_de_tres_arroyos.png','Independiente':'escudos/independiente.png',
   'Independiente Rivadavia':'escudos/independiente_rivadavia.png','Instituto':'escudos/instituto.png',
   'Lanus':'escudos/lanus.png','Newells':'escudos/newells.png',
   'Nueva Chicago':'escudos/nueva_chicago.png','Olimpo':'escudos/olimpo.png',
@@ -863,6 +853,7 @@ const ESCUDOS = {
 let partidos = [], equipos = {}, temporadas = {};
 let equiposArr = [];
 let equipoDetalleID = null;
+let ordenDesc = true;
 
 // ── CSV ──
 function csvToArray(csv) {
@@ -961,6 +952,14 @@ function filaPartido(p) {
   </tr>`;
 }
 
+// ── ORDEN ──
+function toggleOrden() {
+  ordenDesc = !ordenDesc;
+  const btn = document.getElementById('btn-orden');
+  btn.textContent = ordenDesc ? '📅 Más recientes' : '📅 Más antiguos';
+  filtrar();
+}
+
 // ── BUSCADOR ──
 function limpiarFiltros() {
   ['buscar','filtro-equipo','filtro-equipo2','filtro-resultado'].forEach(id => {
@@ -993,6 +992,12 @@ function filtrar() {
 
   const tbody = document.getElementById('tabla-partidos');
   document.getElementById('tabla-count').textContent = filtrados.length.toLocaleString() + ' partidos';
+
+  // Ordenar por fecha
+  filtrados.sort((a, b) => {
+    const fa = new Date(a.Fecha||0), fb = new Date(b.Fecha||0);
+    return ordenDesc ? fb - fa : fa - fb;
+  });
 
   tbody.innerHTML = filtrados.length === 0
     ? '<tr class="loading-row"><td colspan="5">No se encontraron partidos.</td></tr>'
