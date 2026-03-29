@@ -139,9 +139,9 @@ header {
 
 .header-banner {
   width: 100%;
-  height: 90px;
+  height: 110px;
   object-fit: cover;
-  object-position: left center;
+  object-position: center center;
   display: block;
 }
 
@@ -155,7 +155,7 @@ header {
 }
 
 .btn-menu {
-  background: rgba(6,14,30,0.7);
+  background: rgba(6,14,30,0.65);
   border: 1px solid var(--borde-activo);
   border-radius: 10px;
   color: var(--celeste);
@@ -163,9 +163,16 @@ header {
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; font-size: 18px;
   transition: var(--trans); flex-shrink: 0;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(6px);
 }
 .btn-menu:hover { background: rgba(0,87,168,0.5); }
+
+@media (min-width: 1200px) {
+  .header-banner { height: 130px; object-position: center 30%; }
+}
+@media (min-width: 1600px) {
+  .header-banner { height: 150px; }
+}
 
 /* ── STATS BAR ── */
 .stats-bar {
@@ -588,6 +595,21 @@ td { padding: 10px 16px; font-size: 14px; color: var(--texto-1); vertical-align:
   border-top: 1px solid var(--borde);
 }
 
+.paginacion {
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; padding: 14px;
+  border-top: 1px solid var(--borde);
+}
+.pag-btn {
+  background: var(--fondo-3); border: 1px solid var(--borde);
+  border-radius: 8px; color: var(--texto-2);
+  font-family: var(--fuente-cuerpo); font-size: 13px;
+  padding: 6px 14px; cursor: pointer; transition: var(--trans);
+}
+.pag-btn:hover { border-color: var(--celeste); color: var(--celeste); }
+.pag-btn:disabled { opacity: 0.3; cursor: default; }
+.pag-info { font-size: 13px; color: var(--texto-2); }
+
 @media (max-width: 900px) {
   #stats-general > div { grid-template-columns: 1fr; }
 }
@@ -877,6 +899,7 @@ select option { background: #0C1A30; color: #F5F7FA; }
             <tbody id="tabla-goleadores-stats"></tbody>
           </table>
           </div>
+          <div class="paginacion" id="pag-goleadores"></div>
         </div>
 
         <!-- GOLES EN CONTRA -->
@@ -895,6 +918,7 @@ select option { background: #0C1A30; color: #F5F7FA; }
             <tbody id="tabla-gc-stats"></tbody>
           </table>
           </div>
+          <div class="paginacion" id="pag-gc"></div>
         </div>
 
         <!-- TOP AMONESTADOS -->
@@ -913,6 +937,7 @@ select option { background: #0C1A30; color: #F5F7FA; }
             <tbody id="tabla-amonestados-stats"></tbody>
           </table>
           </div>
+          <div class="paginacion" id="pag-amonestados"></div>
         </div>
 
         <!-- TOP EXPULSADOS -->
@@ -931,6 +956,7 @@ select option { background: #0C1A30; color: #F5F7FA; }
             <tbody id="tabla-expulsados-stats"></tbody>
           </table>
           </div>
+          <div class="paginacion" id="pag-expulsados"></div>
         </div>
 
       </div>
@@ -1103,7 +1129,7 @@ const ESCUDOS = {
   'Talleres':'escudos/talleres.png','Temperley':'escudos/temperley.png',
   'Tigre':'escudos/tigre.png','Tiro Federal':'escudos/tiro_federal.png',
   'Union':'escudos/union.png','Velez Sarsfield':'escudos/velez_sarsfield.png',
-  'San Martin de Mendoza':'escudos/san_martin_de_mendoza.png'
+  'San Martin Mendoza':'escudos/san_martin_de_mendoza.png'
 };
 
 let partidos = [], equipos = {}, temporadas = {};
@@ -1732,7 +1758,121 @@ function parsearTarjetas(campo, equipoId) {
       });
     });
   });
-  return { datos: Object.entries(conteo).sort((a, b) => b[1] - a[1]).slice(0, 30), nacionalidades };
+  return { datos: Object.entries(conteo).sort((a, b) => b[1] - a[1]), nacionalidades };
+}
+
+// Estado de paginación
+const paginas = { goleadores:1, gc:1, amonestados:1, expulsados:1 };
+const POR_PAG = 30;
+let datosStats = { goleadores:[], gc:[], amonestados:[], expulsados:[], nacGoleadores:{}, nacGC:{}, nacAmon:{}, nacExpu:{} };
+
+function filaJugador(i, nombre, nac, cols) {
+  const bandera = nac ? `${getBandera(nac)}` : '';
+  const nameCell = `<td style="font-size:14px;font-weight:500;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')">
+    <div style="display:flex;align-items:center;gap:6px;">${bandera}${nombre}</div>
+  </td>`;
+  return `<tr><td style="color:var(--texto-2);font-size:13px;width:40px;">${i+1}</td>${nameCell}${cols}</tr>`;
+}
+
+function renderPaginacion(id, total, pagActual, onChange) {
+  const el = document.getElementById('pag-' + id);
+  if (!el) return;
+  const totalPags = Math.ceil(total / POR_PAG);
+  if (totalPags <= 1) { el.innerHTML = ''; return; }
+  el.innerHTML = `
+    <button class="pag-btn" onclick="${onChange}(${pagActual-1},'${id}')" ${pagActual===1?'disabled':''}>← Anterior</button>
+    <span class="pag-info">Página ${pagActual} de ${totalPags}</span>
+    <button class="pag-btn" onclick="${onChange}(${pagActual+1},'${id}')" ${pagActual===totalPags?'disabled':''}>Siguiente →</button>
+  `;
+}
+
+function cambiarPaginaStats(pag, tipo) {
+  paginas[tipo] = pag;
+  renderTablaStat(tipo);
+  document.getElementById('tabla-'+tipo+'-stats').closest('.tabla-wrapper').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function renderTablaStat(tipo) {
+  const inicio = (paginas[tipo] - 1) * POR_PAG;
+  const fin = inicio + POR_PAG;
+
+  if (tipo === 'goleadores') {
+    const slice = datosStats.goleadores.slice(inicio, fin);
+    const tbody = document.getElementById('tabla-goleadores-stats');
+    tbody.innerHTML = slice.length === 0
+      ? '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>'
+      : slice.map(([nombre, d], i) => {
+          const total = d.normales + d.penales;
+          return filaJugador(inicio+i, nombre, datosStats.nacGoleadores[nombre],
+            `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--celeste);">${total}</td>
+             <td style="text-align:center;font-size:13px;color:var(--texto-2);">${d.normales > 0 ? d.normales : '—'}</td>
+             <td style="text-align:center;font-size:13px;color:var(--amarillo);">${d.penales > 0 ? d.penales : '—'}</td>`);
+        }).join('');
+    document.getElementById('count-goleadores').textContent = datosStats.goleadores.length + ' jugadores';
+    renderPaginacion('goleadores', datosStats.goleadores.length, paginas.goleadores, 'cambiarPaginaStats');
+  }
+
+  else if (tipo === 'gc') {
+    const slice = datosStats.gc.slice(inicio, fin);
+    const tbody = document.getElementById('tabla-gc-stats');
+    tbody.innerHTML = slice.length === 0
+      ? '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>'
+      : slice.map(([nombre, cant], i) =>
+          filaJugador(inicio+i, nombre, datosStats.nacGC[nombre],
+            `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--rojo);">${cant}</td>`)
+        ).join('');
+    document.getElementById('count-gc').textContent = datosStats.gc.length + ' jugadores';
+    renderPaginacion('gc', datosStats.gc.length, paginas.gc, 'cambiarPaginaStats');
+  }
+
+  else if (tipo === 'amonestados') {
+    const slice = datosStats.amonestados.slice(inicio, fin);
+    const tbody = document.getElementById('tabla-amonestados-stats');
+    tbody.innerHTML = slice.length === 0
+      ? '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>'
+      : slice.map(([nombre, cant], i) =>
+          filaJugador(inicio+i, nombre, datosStats.nacAmon[nombre],
+            `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--amarillo);">${cant}</td>`)
+        ).join('');
+    document.getElementById('count-amonestados').textContent = datosStats.amonestados.length + ' jugadores';
+    renderPaginacion('amonestados', datosStats.amonestados.length, paginas.amonestados, 'cambiarPaginaStats');
+  }
+
+  else if (tipo === 'expulsados') {
+    const slice = datosStats.expulsados.slice(inicio, fin);
+    const tbody = document.getElementById('tabla-expulsados-stats');
+    tbody.innerHTML = slice.length === 0
+      ? '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>'
+      : slice.map(([nombre, cant], i) =>
+          filaJugador(inicio+i, nombre, datosStats.nacExpu[nombre],
+            `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--rojo);">${cant}</td>`)
+        ).join('');
+    document.getElementById('count-expulsados').textContent = datosStats.expulsados.length + ' jugadores';
+    renderPaginacion('expulsados', datosStats.expulsados.length, paginas.expulsados, 'cambiarPaginaStats');
+  }
+}
+
+function renderEstadisticas() {
+  const equipoId = document.getElementById('stats-filtro-equipo').value || null;
+  const { goles, ec, nacionalidades } = parsearGoleadores(equipoId);
+
+  // Resetear páginas al cambiar filtro
+  paginas.goleadores = 1; paginas.gc = 1; paginas.amonestados = 1; paginas.expulsados = 1;
+
+  datosStats.goleadores = Object.entries(goles)
+    .sort((a, b) => (b[1].normales + b[1].penales) - (a[1].normales + a[1].penales));
+  datosStats.gc = Object.entries(ec).sort((a,b) => b[1]-a[1]);
+  datosStats.nacGoleadores = nacionalidades;
+  datosStats.nacGC = nacionalidades;
+
+  const { datos: amon, nacionalidades: nacAmon } = parsearTarjetas('Amonestados', equipoId);
+  const { datos: expu, nacionalidades: nacExpu } = parsearTarjetas('Expulsados', equipoId);
+  datosStats.amonestados = amon;
+  datosStats.expulsados = expu;
+  datosStats.nacAmon = nacAmon;
+  datosStats.nacExpu = nacExpu;
+
+  ['goleadores','gc','amonestados','expulsados'].forEach(renderTablaStat);
 }
 
 function filaJugador(i, nombre, nac, cols) {
@@ -1741,57 +1881,6 @@ function filaJugador(i, nombre, nac, cols) {
     <div style="display:flex;align-items:center;gap:4px;">${bandera}${nombre}</div>
   </td>`;
   return `<tr><td style="color:var(--texto-2);font-size:13px;width:40px;">${i+1}</td>${nameCell}${cols}</tr>`;
-}
-
-function renderEstadisticas() {
-  const equipoId = document.getElementById('stats-filtro-equipo').value || null;
-  const { goles, ec, nacionalidades } = parsearGoleadores(equipoId);
-
-  const golesOrdenados = Object.entries(goles)
-    .sort((a, b) => (b[1].normales + b[1].penales) - (a[1].normales + a[1].penales))
-    .slice(0, 30);
-
-  const tbodyG = document.getElementById('tabla-goleadores-stats');
-  document.getElementById('count-goleadores').textContent = golesOrdenados.length + ' jugadores';
-  tbodyG.innerHTML = golesOrdenados.length === 0
-    ? '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>'
-    : golesOrdenados.map(([nombre, d], i) => {
-        const total = d.normales + d.penales;
-        return filaJugador(i, nombre, nacionalidades[nombre],
-          `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--celeste);">${total}</td>
-           <td style="text-align:center;font-size:13px;color:var(--texto-2);">${d.normales > 0 ? d.normales : '—'}</td>
-           <td style="text-align:center;font-size:13px;color:var(--amarillo);">${d.penales > 0 ? d.penales : '—'}</td>`);
-      }).join('');
-
-  const ecOrdenados = Object.entries(ec).sort((a,b) => b[1]-a[1]).slice(0, 30);
-  const tbodyEC = document.getElementById('tabla-gc-stats');
-  document.getElementById('count-gc').textContent = ecOrdenados.length + ' jugadores';
-  tbodyEC.innerHTML = ecOrdenados.length === 0
-    ? '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>'
-    : ecOrdenados.map(([nombre, cant], i) =>
-        filaJugador(i, nombre, nacionalidades[nombre],
-          `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--rojo);">${cant}</td>`)
-      ).join('');
-
-  const { datos: amon, nacionalidades: nacAmon } = parsearTarjetas('Amonestados', equipoId);
-  const tbodyA = document.getElementById('tabla-amonestados-stats');
-  document.getElementById('count-amonestados').textContent = amon.length + ' jugadores';
-  tbodyA.innerHTML = amon.length === 0
-    ? '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>'
-    : amon.map(([nombre, cant], i) =>
-        filaJugador(i, nombre, nacAmon[nombre],
-          `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--amarillo);">${cant}</td>`)
-      ).join('');
-
-  const { datos: expu, nacionalidades: nacExpu } = parsearTarjetas('Expulsados', equipoId);
-  const tbodyE = document.getElementById('tabla-expulsados-stats');
-  document.getElementById('count-expulsados').textContent = expu.length + ' jugadores';
-  tbodyE.innerHTML = expu.length === 0
-    ? '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>'
-    : expu.map(([nombre, cant], i) =>
-        filaJugador(i, nombre, nacExpu[nombre],
-          `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--rojo);">${cant}</td>`)
-      ).join('');
 }
 
 // ── FICHA JUGADOR ──
