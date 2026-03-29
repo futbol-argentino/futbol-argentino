@@ -1102,7 +1102,8 @@ const ESCUDOS = {
   'San Martin Tucuman':'escudos/san_martin_tucuman.png','Sarmiento':'escudos/sarmiento.png',
   'Talleres':'escudos/talleres.png','Temperley':'escudos/temperley.png',
   'Tigre':'escudos/tigre.png','Tiro Federal':'escudos/tiro_federal.png',
-  'Union':'escudos/union.png','Velez Sarsfield':'escudos/velez_sarsfield.png','San Martin de Mendoza':'escudos/san_martin_de_mendoza.png'
+  'Union':'escudos/union.png','Velez Sarsfield':'escudos/velez_sarsfield.png',
+  'San Martin Mendoza':'escudos/san_martin_de_mendoza.png'
 };
 
 let partidos = [], equipos = {}, temporadas = {};
@@ -1134,7 +1135,10 @@ async function cargarDatos() {
     const csvT = await resT.text();
 
     equiposArr = csvToArray(csvE);
-    equiposArr.forEach(e => equipos[e.ID_Equipo] = e.Nombre_Equipo);
+    equiposArr.forEach(e => {
+      e.Nombre_Equipo = (e.Nombre_Equipo||'').trim().replace(/^"+|"+$/g,'');
+      equipos[e.ID_Equipo] = e.Nombre_Equipo;
+    });
 
     const tempArr = csvToArray(csvT);
     tempArr.forEach(t => temporadas[t.ID_Temporada] = t.Competencia);
@@ -1328,13 +1332,14 @@ function renderizarEquipos(filtro='') {
     .sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo));
 
   grid.innerHTML = lista.map(e => {
-    const esc = ESCUDOS[e.Nombre_Equipo];
+    const nombreLimpio = (e.Nombre_Equipo||'').trim().replace(/^"+|"+$/g,'');
+    const esc = ESCUDOS[nombreLimpio];
     const imgHtml = esc
-      ? `<img src="${esc}" class="equipo-card-escudo" alt="${e.Nombre_Equipo}" onerror="this.style.display='none'">`
+      ? `<img src="${esc}" class="equipo-card-escudo" alt="${nombreLimpio}" onerror="this.style.display='none'">`
       : `<div style="width:56px;height:56px;background:var(--fondo-3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;">⚽</div>`;
     return `<div class="equipo-card" onclick="verDetalleEquipo('${e.ID_Equipo}')">
       ${imgHtml}
-      <div class="equipo-card-nombre">${e.Nombre_Equipo}</div>
+      <div class="equipo-card-nombre">${nombreLimpio}</div>
     </div>`;
   }).join('');
 }
