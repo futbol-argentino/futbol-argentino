@@ -595,6 +595,80 @@ td { padding: 10px 16px; font-size: 14px; color: var(--texto-1); vertical-align:
   border-top: 1px solid var(--borde);
 }
 
+.camp-card {
+  background: var(--fondo-2);
+  border: 1px solid var(--borde);
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: var(--trans);
+  display: flex;
+  flex-direction: column;
+}
+.camp-card:hover {
+  border-color: var(--borde-hover);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
+.camp-foto-wrap {
+  background: var(--fondo-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  min-height: 200px;
+}
+.camp-foto {
+  width: 160px;
+  height: 160px;
+  object-fit: contain;
+}
+.camp-info {
+  padding: 16px;
+  border-top: 1px solid var(--borde);
+  text-align: center;
+}
+.camp-nombre {
+  font-family: var(--fuente-titulo);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--texto-1);
+  margin-bottom: 6px;
+}
+.camp-campeon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--celeste);
+  font-weight: 600;
+}
+.camp-campeon img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+.camp-año {
+  font-size: 11px;
+  color: var(--texto-3);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+@media (max-width: 900px) {
+  #campeones-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .camp-foto { width: 120px; height: 120px; }
+  .camp-foto-wrap { min-height: 160px; padding: 16px; }
+}
+@media (max-width: 500px) {
+  #campeones-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .camp-foto { width: 90px; height: 90px; }
+  .camp-foto-wrap { min-height: 130px; padding: 12px; }
+  .camp-nombre { font-size: 14px; }
+}
+
 .paginacion {
   display: flex; align-items: center; justify-content: center;
   gap: 8px; padding: 14px;
@@ -966,11 +1040,23 @@ select option { background: #0C1A30; color: #F5F7FA; }
 
   <!-- ══ TAB CAMPEONES ══ -->
   <div class="tab-panel" id="panel-campeones">
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;text-align:center;">
-      <div style="font-size:64px;margin-bottom:20px;">🥇</div>
-      <div style="font-family:var(--fuente-titulo);font-size:28px;font-weight:800;color:var(--texto-1);margin-bottom:10px;">Campeones</div>
-      <div style="font-size:15px;color:var(--texto-2);max-width:400px;line-height:1.6;">Esta sección estará disponible próximamente. Aquí se listarán todos los torneos disputados y sus campeones históricos.</div>
+
+    <!-- Selector de división -->
+    <div class="filtros-panel" style="margin-bottom:20px;">
+      <div class="filtros-titulo">🏆 Campeones Históricos</div>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <div class="filtro-grupo" style="flex:1;min-width:200px;">
+          <label class="filtro-label">División</label>
+          <select id="camp-filtro-division" class="filtro-select" onchange="filtrarCampeones()">
+            <option value="">Todas las divisiones</option>
+          </select>
+        </div>
+      </div>
     </div>
+
+    <!-- Grid de torneos -->
+    <div id="campeones-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;"></div>
+
   </div><!-- fin panel-campeones -->
 
 </div><!-- fin main -->
@@ -1104,6 +1190,9 @@ select option { background: #0C1A30; color: #F5F7FA; }
 const URL_PARTIDOS   = 'Partidos.csv';
 const URL_EQUIPOS    = 'Equipos.csv';
 const URL_TEMPORADAS = 'TEMPORADAS.csv';
+const URL_CAMPEONES  = 'Campeones.csv';
+
+let campeones = [];
 
 const ESCUDOS = {
   'Aldosivi':'escudos/aldosivi.png','All Boys':'escudos/all_boys.png',
@@ -1203,6 +1292,16 @@ async function cargarDatos() {
 
     renderizarEquipos();
     filtrar();
+
+    // Cargar campeones (silencioso si no existe aún)
+    try {
+      const resC = await fetch(URL_CAMPEONES);
+      if (resC.ok) {
+        const csvC = await resC.text();
+        campeones = csvToArray(csvC).filter(c => c.Nombre_Torneo);
+        cargarCampeones();
+      }
+    } catch(e) { /* CSV de campeones no disponible aún */ }
 
     // Llenar select de estadísticas
     const selStats = document.getElementById('stats-filtro-equipo');
@@ -1977,6 +2076,51 @@ function verFichaJugador(nombre) {
 
 function cerrarFichaJugador() {
   document.getElementById('modal-jugador').classList.remove('visible');
+}
+
+// ── CAMPEONES ──
+function cargarCampeones() {
+  const selDiv = document.getElementById('camp-filtro-division');
+  const divActual = selDiv.value;
+  selDiv.innerHTML = '<option value="">Todas las divisiones</option>';
+  const divisiones = [...new Set(campeones.map(c => c.Division).filter(Boolean))].sort();
+  divisiones.forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d; opt.textContent = d;
+    selDiv.appendChild(opt);
+  });
+  selDiv.value = divActual;
+  filtrarCampeones();
+}
+
+function filtrarCampeones() {
+  const division = document.getElementById('camp-filtro-division').value;
+  const lista = division ? campeones.filter(c => c.Division === division) : campeones;
+  const grid = document.getElementById('campeones-grid');
+
+  if (lista.length === 0) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--texto-3);">
+      <div style="font-size:48px;margin-bottom:16px;">🏆</div>
+      <div style="font-size:15px;">No hay torneos cargados aún</div>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = lista.map(c => {
+    const foto = c.Foto_Trofeo ? `trofeos/${c.Foto_Trofeo}` : '';
+    const escCampeon = ESCUDOS[c.Campeon] ? `<img src="${ESCUDOS[c.Campeon]}" onerror="this.style.display='none'">` : '';
+    const imgTrofeo = foto
+      ? `<img src="${foto}" class="camp-foto" alt="${c.Nombre_Torneo}" onerror="this.src='';this.style.display='none';">`
+      : `<div style="font-size:72px;">🏆</div>`;
+    return `<div class="camp-card">
+      <div class="camp-foto-wrap">${imgTrofeo}</div>
+      <div class="camp-info">
+        <div class="camp-año">${c.Division || ''}</div>
+        <div class="camp-nombre">${c.Nombre_Torneo} ${c.Año || ''}</div>
+        <div class="camp-campeon">${escCampeon}${c.Campeon}</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 cargarDatos();
