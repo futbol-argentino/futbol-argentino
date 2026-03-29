@@ -1115,13 +1115,32 @@ let ordenDetalleDesc = true;
 // ── CSV ──
 function csvToArray(csv) {
   const lines = csv.trim().split('\n');
-  const headers = lines[0].split(',');
+  const headers = parseCSVLine(lines[0]);
   return lines.slice(1).map(line => {
-    const vals = line.split(',');
+    const vals = parseCSVLine(line);
     let obj = {};
-    headers.forEach((h, i) => obj[h.trim()] = (vals[i] || '').trim());
+    headers.forEach((h, i) => obj[h] = vals[i] || '');
     return obj;
   });
+}
+
+function parseCSVLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      inQuotes = !inQuotes;
+    } else if (ch === ',' && !inQuotes) {
+      result.push(current.trim().replace(/^"+|"+$/g, ''));
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  result.push(current.trim().replace(/^"+|"+$/g, ''));
+  return result;
 }
 
 // ── CARGAR ──
