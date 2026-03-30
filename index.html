@@ -7,36 +7,40 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --azul:          #0EA5E9;
+:root {
+  --azul:          #0284C7;
   --azul-oscuro:   #0369A1;
-  --azul-deep:     #082F49;
-  --celeste:       #38BDF8;
-  --celeste-claro: #BAE6FD;
-  --fondo:         #050B1A;
-  --fondo-2:       #080F20;
-  --fondo-3:       #0D1628;
-  --fondo-4:       #111E35;
-  --texto-1:       #F0F6FF;
-  --texto-2:       #7A94B8;
-  --texto-3:       #3A526B;
-  --verde:         #10B981;
-  --verde-glow:    rgba(16,185,129,0.25);
-  --rojo:          #F43F5E;
-  --rojo-glow:     rgba(244,63,94,0.25);
-  --amarillo:      #F59E0B;
-  --oro:           #FBBF24;
-  --oro-glow:      rgba(251,191,36,0.2);
-  --borde:         rgba(56,189,248,0.08);
-  --borde-hover:   rgba(56,189,248,0.25);
-  --borde-activo:  rgba(56,189,248,0.5);
+  --azul-deep:     #E0F2FE;
+  --celeste:       #0EA5E9;
+  --celeste-claro: #F0F9FF;
+  /* Fondos claros */
+  --fondo:         #F8FAFC;
+  --fondo-2:       #FFFFFF;
+  --fondo-3:       #F1F5F9;
+  --fondo-4:       #E2E8F0;
+  /* Textos oscuros para contraste */
+  --texto-1:       #1E293B;
+  --texto-2:       #475569;
+  --texto-3:       #64748B;
+  /* Estados */
+  --verde:         #059669;
+  --verde-glow:    rgba(16,185,129,0.1);
+  --rojo:          #E11D48;
+  --rojo-glow:     rgba(244,63,94,0.1);
+  --amarillo:      #D97706;
+  --oro:           #B45309;
+  --oro-glow:      rgba(251,191,36,0.1);
+  /* Bordes y Sombras */
+  --borde:         rgba(0,0,0,0.08);
+  --borde-hover:   rgba(0,0,0,0.15);
+  --borde-activo:  rgba(14,165,233,0.3);
   --fuente-titulo: 'Bebas Neue', sans-serif;
   --fuente-cuerpo: 'DM Sans', sans-serif;
   --fuente-mono:   'DM Mono', monospace;
   --trans:         all 0.2s cubic-bezier(0.4,0,0.2,1);
-  --sombra-azul:   0 4px 24px rgba(14,165,233,0.2);
-  --sombra-card:   0 2px 16px rgba(0,0,0,0.4);
+  --sombra-azul:   0 4px 12px rgba(14,165,233,0.1);
+  --sombra-card:   0 2px 10px rgba(0,0,0,0.05);
 }
-
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{
@@ -46,7 +50,7 @@ body{
   overflow-x:hidden;
   background-image:
     radial-gradient(ellipse 80% 50% at 50% -20%,rgba(14,165,233,0.06) 0%,transparent 60%),
-    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%2338bdf8' fill-opacity='0.018'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%2338bdf8' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
 img{max-width:100%;display:block}
 
@@ -251,7 +255,7 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 ::-webkit-scrollbar-thumb{background:rgba(56,189,248,0.2);border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:rgba(56,189,248,0.4)}
 
-select option{background:#080F20;color:#F0F6FF}
+select option { background: #FFFFFF; color: #1E293B; }
 </style>
 </head>
 <body>
