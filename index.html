@@ -4,37 +4,37 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Base de Datos del Fútbol Argentino</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Oswald:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --azul:          #0EA5E9;
-  --azul-oscuro:   #0369A1;
-  --azul-deep:     #082F49;
-  --celeste:       #38BDF8;
-  --celeste-claro: #BAE6FD;
-  --fondo:         #050B1A;
-  --fondo-2:       #080F20;
-  --fondo-3:       #0D1628;
-  --fondo-4:       #111E35;
-  --texto-1:       #F0F6FF;
-  --texto-2:       #7A94B8;
-  --texto-3:       #3A526B;
-  --verde:         #10B981;
-  --verde-glow:    rgba(16,185,129,0.25);
+  --azul:          #15803D;
+  --azul-oscuro:   #166534;
+  --azul-deep:     #14532D;
+  --celeste:       #22C55E;
+  --celeste-claro: #86EFAC;
+  --fondo:         #0A0F0A;
+  --fondo-2:       #0F160F;
+  --fondo-3:       #141C14;
+  --fondo-4:       #1A2A1A;
+  --texto-1:       #F0FFF4;
+  --texto-2:       #86A892;
+  --texto-3:       #4A6B52;
+  --verde:         #4ADE80;
+  --verde-glow:    rgba(74,222,128,0.25);
   --rojo:          #F43F5E;
   --rojo-glow:     rgba(244,63,94,0.25);
   --amarillo:      #F59E0B;
   --oro:           #FBBF24;
   --oro-glow:      rgba(251,191,36,0.2);
-  --borde:         rgba(56,189,248,0.08);
-  --borde-hover:   rgba(56,189,248,0.25);
-  --borde-activo:  rgba(56,189,248,0.5);
-  --fuente-titulo: 'Bebas Neue', sans-serif;
-  --fuente-cuerpo: 'DM Sans', sans-serif;
+  --borde:         rgba(34,197,94,0.1);
+  --borde-hover:   rgba(34,197,94,0.28);
+  --borde-activo:  rgba(34,197,94,0.55);
+  --fuente-titulo: 'Oswald', sans-serif;
+  --fuente-cuerpo: 'Plus Jakarta Sans', sans-serif;
   --fuente-mono:   'DM Mono', monospace;
   --trans:         all 0.2s cubic-bezier(0.4,0,0.2,1);
-  --sombra-azul:   0 4px 24px rgba(14,165,233,0.2);
-  --sombra-card:   0 2px 16px rgba(0,0,0,0.4);
+  --sombra-azul:   0 4px 24px rgba(21,128,61,0.25);
+  --sombra-card:   0 2px 16px rgba(0,0,0,0.5);
 }
 
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -45,8 +45,8 @@ body{
   color:var(--texto-1);
   overflow-x:hidden;
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -20%,rgba(14,165,233,0.06) 0%,transparent 60%),
-    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%2338bdf8' fill-opacity='0.018'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    radial-gradient(ellipse 80% 50% at 50% -20%,rgba(21,128,61,0.07) 0%,transparent 60%),
+    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%2322c55e' fill-opacity='0.018'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
 img{max-width:100%;display:block}
 
@@ -86,7 +86,7 @@ header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;ba
 .main{max-width:1440px;margin:0 auto;padding:24px 28px}
 
 /* TABS */
-.tabs-barra{display:flex;gap:2px;background:var(--fondo-2);border:1px solid var(--borde);border-radius:12px;padding:5px;margin-bottom:22px;width:fit-content}
+.tabs-barra{display:flex;gap:2px;background:var(--fondo-2);border:1px solid var(--borde);border-radius:12px;padding:5px;margin-bottom:22px;width:fit-content;max-width:100%}
 .tab-btn{font-family:var(--fuente-cuerpo);font-size:13px;font-weight:500;letter-spacing:0.3px;padding:8px 18px;border-radius:8px;border:none;background:transparent;color:var(--texto-2);cursor:pointer;transition:var(--trans);display:flex;align-items:center;gap:7px}
 .tab-btn:hover{color:var(--texto-1)}
 .tab-btn.activo{background:linear-gradient(135deg,var(--azul-oscuro),var(--azul-deep));color:var(--celeste-claro);font-weight:600;box-shadow:0 2px 12px rgba(14,165,233,0.3),inset 0 1px 0 rgba(56,189,248,0.2);border:1px solid rgba(56,189,248,0.3)}
@@ -139,7 +139,7 @@ th{padding:10px 16px;text-align:left;font-family:var(--fuente-cuerpo);font-size:
 th.center{text-align:center}
 tbody tr{border-bottom:1px solid var(--borde);transition:background 0.15s,box-shadow 0.15s;cursor:pointer}
 tbody tr:last-child{border-bottom:none}
-tbody tr:hover{background:rgba(14,165,233,0.04);box-shadow:inset 3px 0 0 var(--azul)}
+tbody tr:hover{background:rgba(14,165,233,0.04);box-shadow:inset 3px 0 0 var(--celeste)}
 td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 .td-fecha{color:var(--texto-3);font-size:12px;white-space:nowrap;font-family:var(--fuente-mono)}
 .td-equipo{display:flex;align-items:center;gap:10px;white-space:nowrap}
@@ -235,7 +235,7 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
   .modal-grid{grid-template-columns:1fr}.modal-dato.full{grid-column:span 1}
   .modal-resultado-num{font-size:46px}.modal-equipos{font-size:17px}
   #modal-jugador .modal-box{padding:16px}
-  #ficha-foto{width:160px!important;height:160px!important}
+  #ficha-foto{width:160px!important;height:160px!important;object-position:top!important}
   #ficha-stats{gap:6px}#ficha-stats>div{min-width:58px;padding:8px 6px}
   .stat-pill{min-width:56px;padding:10px 8px}.stat-pill-num{font-size:24px}
   .tabla-wrapper{border-radius:12px}.tabla-header{padding:12px 14px}
@@ -302,6 +302,7 @@ select option{background:#080F20;color:#F0F6FF}
     <button class="tab-btn activo" id="tab-buscador" onclick="cambiarTab('buscador')">🔍 Buscador</button>
     <button class="tab-btn" id="tab-equipos" onclick="cambiarTab('equipos')">🏆 Equipos</button>
     <button class="tab-btn" id="tab-estadisticas" onclick="cambiarTab('estadisticas')">📊 Estadísticas</button>
+    <button class="tab-btn" id="tab-campeones" onclick="cambiarTab('campeones')">🥇 Campeones</button>
   </div>
 
   <!-- ══ TAB BUSCADOR ══ -->
@@ -647,11 +648,14 @@ select option{background:#080F20;color:#F0F6FF}
     <!-- Foto + datos básicos -->
     <div style="display:flex;flex-direction:column;align-items:center;gap:16px;margin-bottom:20px;">
       <div style="flex-shrink:0;">
-        <img id="ficha-foto" src="" alt="" style="width:200px;height:200px;object-fit:cover;border-radius:16px;border:2px solid var(--borde-activo);flex-shrink:0;" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22><rect width=%22200%22 height=%22200%22 fill=%22%230F2040%22 rx=%2216%22/><text x=%22100%22 y=%22115%22 font-size=%2272%22 text-anchor=%22middle%22>👤</text></svg>'">
+        <img id="ficha-foto" src="" alt="" style="width:200px;height:200px;object-fit:cover;object-position:top;border-radius:16px;border:2px solid var(--borde-activo);flex-shrink:0;" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22><rect width=%22200%22 height=%22200%22 fill=%22%230F2040%22 rx=%2216%22/><text x=%22100%22 y=%22115%22 font-size=%2272%22 text-anchor=%22middle%22>👤</text></svg>'">
       </div>
       <div style="text-align:center;">
-        <div id="ficha-nombre" style="font-family:var(--fuente-titulo);font-size:26px;font-weight:800;margin-bottom:6px;"></div>
-        <div id="ficha-nacionalidad" style="font-size:15px;color:var(--texto-2);margin-bottom:4px;"></div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:6px;">
+          <span id="ficha-bandera"></span>
+          <span id="ficha-nombre" style="font-family:var(--fuente-titulo);font-size:26px;font-weight:400;letter-spacing:1px;"></span>
+        </div>
+        <div id="ficha-nacionalidad" style="font-size:14px;color:var(--texto-2);margin-bottom:4px;"></div>
         <div id="ficha-equipos-lista" style="font-size:13px;color:var(--texto-3);"></div>
       </div>
     </div>
@@ -1063,6 +1067,7 @@ function verDetalleEquipo(id) {
 
   document.getElementById('vista-equipos').style.display = 'none';
   document.getElementById('vista-detalle').classList.add('visible');
+  aplicarColorEquipo(nombre);
 
   document.getElementById('detalle-nombre').textContent = nombre;
   const escEl = document.getElementById('detalle-escudo');
@@ -1210,7 +1215,10 @@ function toggleRivales() {
 
 function volverEquipos() {
   document.getElementById('vista-equipos').style.display = 'block';
-  document.getElementById('vista-detalle').classList.remove('visible');
+  const det = document.getElementById('vista-detalle');
+  det.classList.remove('visible');
+  det.style.background = '';
+  document.getElementById('detalle-nombre').style.color = '';
   equipoDetalleID = null;
 }
 
@@ -1346,8 +1354,8 @@ const PAISES = {
 function getBandera(codigo) {
   if (!codigo) return '';
   const p = PAISES[codigo.toUpperCase()];
-  if (!p) return `<span style="font-size:11px;color:var(--texto-3);">${codigo}</span>`;
-  return `<img src="https://flagcdn.com/20x15/${p.codigo}.png" alt="${p.nombre}" style="width:20px;height:15px;border-radius:2px;vertical-align:middle;margin-right:4px;" title="${p.nombre}">`;
+  if (!p) return `<span style="font-size:11px;color:var(--texto-3);vertical-align:middle;">${codigo}</span>`;
+  return `<img src="https://flagcdn.com/20x15/${p.codigo}.png" alt="${p.nombre}" style="width:20px;height:15px;border-radius:2px;vertical-align:middle;display:inline-block;flex-shrink:0;" title="${p.nombre}">`;
 }
 
 function getNombrePais(codigo) {
@@ -1363,9 +1371,12 @@ function extraerNacionalidad(texto) {
 
 function limpiarNombre(texto) {
   return texto
-    .replace(/\d+[''`´]?/g, '')
+    .replace(/\d+\s*\+\s*\d+\s*[''`´'′]?/g, '') // "45+6'" o "45 + 6'"
+    .replace(/\d+\s*[''`´'′]?/g, '')              // "90'" o "23"
+    .replace(/\s*\+\s*/g, ' ')                     // "+" sobrante
     .replace(/\([^)]*\)/g, '')
     .replace(/\[[^\]]*\]/g, '')
+    .replace(/\s{2,}/g, ' ')
     .trim();
 }
 
@@ -1391,7 +1402,11 @@ function parsearGoleadores(equipoId) {
         if (!nombre || nombre.length < 2) return;
         if (nac) nacionalidades[nombre] = nac;
         if (esEC) {
-          ec[nombre] = (ec[nombre] || 0) + 1;
+          // EC = own goal: counts for the OPPOSING team filter, not the player's team
+          // For stats purposes, we always count it regardless of equipoId filter
+          // (show EC regardless of which team filter is active)
+          if (!equipoId) ec[nombre] = (ec[nombre] || 0) + 1;
+          else ec[nombre] = (ec[nombre] || 0) + 1; // always show EC in global
         } else {
           if (!goles[nombre]) goles[nombre] = { normales: 0, penales: 0 };
           if (esP) goles[nombre].penales++;
@@ -1431,9 +1446,9 @@ const POR_PAG = 30;
 let datosStats = { goleadores:[], gc:[], amonestados:[], expulsados:[], nacGoleadores:{}, nacGC:{}, nacAmon:{}, nacExpu:{} };
 
 function filaJugador(i, nombre, nac, cols) {
-  const bandera = nac ? `${getBandera(nac)}` : '';
+  const bandera = nac ? `<span style="display:inline-flex;align-items:center;flex-shrink:0;">${getBandera(nac)}</span>` : '';
   const nameCell = `<td style="font-size:14px;font-weight:500;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')">
-    <div style="display:flex;align-items:center;gap:6px;">${bandera}${nombre}</div>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;">${bandera}<span>${nombre}</span></div>
   </td>`;
   return `<tr><td style="color:var(--texto-2);font-size:13px;width:40px;">${i+1}</td>${nameCell}${cols}</tr>`;
 }
@@ -1573,13 +1588,17 @@ function verFichaJugador(nombre) {
       const partes = raw.split('/');
       partes.forEach((parte, idx) => {
         const equipoId = idx === 0 ? p.Local_ID : p.Visitante_ID;
+        const equipoRival = idx === 0 ? p.Visitante_ID : p.Local_ID;
         parte.split('-').forEach(entrada => {
           const nac = extraerNacionalidad(entrada);
           const n = limpiarNombre(entrada);
           if (n.toLowerCase() !== nombre.toLowerCase()) return;
           if (nac && !nacionalidad) nacionalidad = nac;
-          if (!porEquipo[equipoId]) porEquipo[equipoId] = { goles:0, penales:0, ec:0, amonestados:0, expulsados:0, anios: new Set() };
-          const r = porEquipo[equipoId];
+          // EC goal: player belongs to equipoId but the goal credited to equipoRival
+          // For team attribution in the card, use the player's OWN team (equipoId)
+          const teamId = equipoId;
+          if (!porEquipo[teamId]) porEquipo[teamId] = { goles:0, penales:0, ec:0, amonestados:0, expulsados:0, anios: new Set() };
+          const r = porEquipo[teamId];
           if (anio) r.anios.add(anio);
           if (campo === 'Goleadores') {
             if (/\(EC\)/i.test(entrada)) r.ec++;
@@ -1603,8 +1622,8 @@ function verFichaJugador(nombre) {
   document.getElementById('ficha-foto').src = `jugadores/${fotoKey}.jpg`;
   document.getElementById('ficha-titulo').textContent = nombre;
   document.getElementById('ficha-nombre').textContent = nombre;
-  document.getElementById('ficha-nacionalidad').innerHTML = nacionalidad
-    ? `${getBandera(nacionalidad)} ${getNombrePais(nacionalidad)}` : 'Nacionalidad no registrada';
+  document.getElementById('ficha-bandera').innerHTML = nacionalidad ? getBandera(nacionalidad) : '';
+  document.getElementById('ficha-nacionalidad').textContent = nacionalidad ? getNombrePais(nacionalidad) : 'Nacionalidad no registrada';
   document.getElementById('ficha-equipos-lista').textContent = `Equipos: ${equiposNombres.join(', ')}`;
 
   document.getElementById('ficha-stats').innerHTML = [
@@ -1734,8 +1753,24 @@ function verTorneo(idTemporada) {
     return;
   }
 
-  container.innerHTML = Object.entries(grupos).map(([grupoNombre, grupo]) => {
-    // Agrupar los partidos del grupo por fecha calendario
+  // Sort grupos: Fecha 1, Fecha 2... then knockout phases in order
+  const faseOrder = ['Fase Clasificatoria','Fase Complementación','Fase Campeonato','Fase Campeonato Final','Octavos de Final','Cuartos de Final','Semifinal','Desempate Descenso','Final'];
+  const gruposOrdenados = Object.entries(grupos).sort(([a], [b]) => {
+    const aNum = a.match(/^Fecha (\d+)$/);
+    const bNum = b.match(/^Fecha (\d+)$/);
+    if (aNum && bNum) return parseInt(aNum[1]) - parseInt(bNum[1]);
+    if (aNum) return -1;
+    if (bNum) return 1;
+    const ai = faseOrder.indexOf(a), bi = faseOrder.indexOf(b);
+    if (ai !== -1 && bi !== -1) return ai - bi;
+    return a.localeCompare(b);
+  });
+
+  const uid = () => Math.random().toString(36).slice(2,8);
+
+  container.innerHTML = gruposOrdenados.map(([grupoNombre, grupo], gi) => {
+    const gid = 'g_' + gi;
+    // Group by calendar date
     const porFecha = {};
     grupo.partidos.forEach(p => {
       const f = p.Fecha ? p.Fecha.split('T')[0] : 'Sin fecha';
@@ -1752,50 +1787,46 @@ function verTorneo(idTemporada) {
         const rc = resClase(p.Goles_Local, p.Goles_Visitante);
         const esJugado = p.Goles_Local !== '' && p.Goles_Visitante !== '';
         const resultado = esJugado
-          ? `<span class="${rc}" style="font-family:var(--fuente-titulo);font-size:17px;font-weight:700;">${p.Goles_Local} - ${p.Goles_Visitante}</span>`
+          ? `<span class="${rc}" style="font-family:var(--fuente-titulo);font-size:17px;">${p.Goles_Local} - ${p.Goles_Visitante}</span>`
           : `<span style="color:var(--texto-2);font-size:13px;">${p.Fecha ? p.Fecha.split('T')[0] : '—'}</span>`;
-        // Penales
         const penales = p.Tipo_Definicion === '1' && p.Penales
           ? `<div style="font-size:11px;color:var(--amarillo);text-align:center;">(${p.Penales})</div>` : '';
-        const faseLabel = p.Fase !== 'Fase Regular'
-          ? `<div style="font-size:10px;color:var(--texto-3);text-align:center;margin-bottom:2px;">${p.Fase}</div>` : '';
-
         return `<tr onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
-          <td style="padding:8px 12px;">
-            <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;">
-              <span style="font-size:13px;font-weight:500;text-align:right;">${local}</span>
-              ${escL}
-            </div>
-          </td>
-          <td style="padding:8px 6px;text-align:center;white-space:nowrap;min-width:60px;">
-            ${faseLabel}${resultado}${penales}
-          </td>
-          <td style="padding:8px 12px;">
-            <div style="display:flex;align-items:center;gap:6px;">
-              ${escV}
-              <span style="font-size:13px;font-weight:500;">${visita}</span>
-            </div>
-          </td>
+          <td style="padding:8px 12px;"><div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;"><span style="font-size:13px;font-weight:500;text-align:right;">${local}</span>${escL}</div></td>
+          <td style="padding:8px 6px;text-align:center;white-space:nowrap;min-width:60px;">${resultado}${penales}</td>
+          <td style="padding:8px 12px;"><div style="display:flex;align-items:center;gap:6px;">${escV}<span style="font-size:13px;font-weight:500;">${visita}</span></div></td>
         </tr>`;
       }).join('');
-
       const diaFormateado = formatearFechaDia(fecha);
-      return `<tr><td colspan="3" style="padding:6px 12px;background:var(--fondo-3);color:var(--texto-2);font-size:12px;font-weight:600;letter-spacing:0.5px;border-top:1px solid var(--borde);border-bottom:1px solid var(--borde);">${diaFormateado}</td></tr>
-      ${filas}`;
+      return `<tr><td colspan="3" style="padding:6px 12px;background:var(--fondo-3);color:var(--texto-2);font-size:12px;font-weight:600;letter-spacing:0.5px;border-top:1px solid var(--borde);border-bottom:1px solid var(--borde);">${diaFormateado}</td></tr>${filas}`;
     }).join('');
 
-    return `<div class="tabla-wrapper" style="margin-bottom:16px;">
-      <div class="tabla-header">
-        <div class="tabla-titulo">${grupoNombre}</div>
-        <div class="tabla-count">${grupo.partidos.length} partidos</div>
+    const esFinal = !grupoNombre.startsWith('Fecha');
+    return `<div style="margin-bottom:10px;border:1px solid var(--borde);border-radius:12px;overflow:hidden;">
+      <div onclick="toggleGrupo('${gid}')" style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:var(--fondo-3);cursor:pointer;user-select:none;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-family:var(--fuente-titulo);font-size:17px;letter-spacing:1px;color:${esFinal ? 'var(--oro)' : 'var(--texto-1)'};">${grupoNombre}</span>
+          <span style="font-size:11px;color:var(--texto-3);background:var(--fondo-4);padding:2px 8px;border-radius:10px;border:1px solid var(--borde);">${grupo.partidos.length} partidos</span>
+        </div>
+        <span id="arr_${gid}" style="color:var(--texto-2);font-size:13px;transition:transform 0.2s;">▼</span>
       </div>
-      <div class="tabla-scroll">
-        <table style="width:100%;border-collapse:collapse;min-width:300px;">
-          <tbody>${fechasHTML}</tbody>
-        </table>
+      <div id="${gid}" style="display:none;">
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;min-width:300px;">
+            <tbody>${fechasHTML}</tbody>
+          </table>
+        </div>
       </div>
     </div>`;
   }).join('');
+}
+
+function toggleGrupo(id) {
+  const el = document.getElementById(id);
+  const arr = document.getElementById('arr_' + id);
+  const abierto = el.style.display === 'block';
+  el.style.display = abierto ? 'none' : 'block';
+  arr.style.transform = abierto ? 'rotate(0deg)' : 'rotate(180deg)';
 }
 
 function formatearFechaDia(fecha) {
@@ -1812,6 +1843,51 @@ function formatearFechaDia(fecha) {
 function volverCampeones() {
   document.getElementById('vista-torneo').style.display = 'none';
   document.getElementById('vista-campeones').style.display = 'block';
+}
+
+
+// ── COLORES POR EQUIPO ──
+const COLORES_EQUIPOS = {
+  'Boca Juniors':            { bg1:'#003087', bg2:'#1a1a00', accent:'#F5C518', text:'#F5C518' },
+  'River Plate':             { bg1:'#C8102E', bg2:'#0a0a0a', accent:'#C8102E', text:'#fff' },
+  'Racing Club':             { bg1:'#1A3A8F', bg2:'#0a0a0a', accent:'#6BB5E8', text:'#6BB5E8' },
+  'Independiente':           { bg1:'#C8102E', bg2:'#1a0000', accent:'#C8102E', text:'#fff' },
+  'San Lorenzo':             { bg1:'#C8102E', bg2:'#00008B', accent:'#4169E1', text:'#A8CAFF' },
+  'Huracan':                 { bg1:'#8B0000', bg2:'#1a1a00', accent:'#FFFFFF', text:'#fff' },
+  'Belgrano':                { bg1:'00008B', bg2:'#0a0a20', accent:'#4169E1', text:'#87CEEB' },
+  'Estudiantes LP':          { bg1:'#C8102E', bg2:'#1a0000', accent:'#C8102E', text:'#fff' },
+  'Velez Sarsfield':         { bg1:'#003087', bg2:'#0a0a1a', accent:'#FFFFFF', text:'#fff' },
+  'Newells':                 { bg1:'#C8102E', bg2:'#1a0800', accent:'#FF6B00', text:'#FFA040' },
+  'Rosario Central':         { bg1:'#FFD700', bg2:'#1a1000', accent:'#003087', text:'#FFD700' },
+  'Talleres':                { bg1:'#003087', bg2:'#0a0a1a', accent:'#6BB5E8', text:'#6BB5E8' },
+  'Colon':                   { bg1:'#C8102E', bg2:'#1a0000', accent:'#000000', text:'#fff' },
+  'Union':                   { bg1:'#C8102E', bg2:'#1a0000', accent:'#FFFFFF', text:'#fff' },
+  'Atletico Tucuman':        { bg1:'#003087', bg2:'#0a0a1a', accent:'#FFFFFF', text:'#fff' },
+  'Godoy Cruz':              { bg1:'#006400', bg2:'#001a00', accent:'#FFFFFF', text:'#90EE90' },
+  'Lanus':                   { bg1:'#8B0000', bg2:'#1a0000', accent:'#FFFFFF', text:'#fff' },
+  'Banfield':                { bg1:'#006400', bg2:'#001a00', accent:'#FFFFFF', text:'#90EE90' },
+  'Tigre':                   { bg1:'#FF6B00', bg2:'#1a0800', accent:'#003087', text:'#FFA040' },
+  'Arsenal':                 { bg1:'#C8102E', bg2:'#0a001a', accent:'#003087', text:'#C8A2C8' },
+  'Platense':                { bg1:'#003087', bg2:'#0a0a20', accent:'#FFFFFF', text:'#87CEEB' },
+  'Deportivo Riestra':       { bg1:'#003087', bg2:'#0a0a20', accent:'#C8102E', text:'#87CEEB' },
+  'Barracas Central':        { bg1:'#C8102E', bg2:'#1a0000', accent:'#FFD700', text:'#FFD700' },
+  'Defensa y Justicia':      { bg1:'#FFD700', bg2:'#1a1000', accent:'#006400', text:'#FFD700' },
+  'Sarmiento':               { bg1:'#006400', bg2:'#001a00', accent:'#FFFFFF', text:'#90EE90' },
+};
+
+function aplicarColorEquipo(equipoNombre) {
+  const c = COLORES_EQUIPOS[equipoNombre];
+  const el = document.getElementById('vista-detalle');
+  if (c) {
+    el.style.setProperty('--eq-bg1', c.bg1);
+    el.style.setProperty('--eq-accent', c.accent);
+    el.style.setProperty('--eq-text', c.text);
+    el.style.background = `linear-gradient(160deg, ${c.bg1}22 0%, transparent 40%)`;
+    document.getElementById('detalle-nombre').style.color = c.text;
+  } else {
+    el.style.background = '';
+    document.getElementById('detalle-nombre').style.color = '';
+  }
 }
 
 cargarDatos();
