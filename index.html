@@ -189,7 +189,7 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 .modal-cerrar{background:var(--fondo-3);border:1px solid var(--borde);color:var(--texto-2);font-size:18px;cursor:pointer;padding:4px 8px;border-radius:8px;transition:var(--trans);flex-shrink:0;line-height:1}
 .modal-cerrar:hover{color:var(--rojo);border-color:var(--rojo);background:rgba(244,63,94,0.1)}
 .modal-resultado-num{font-family:var(--fuente-titulo);font-size:58px;font-weight:400;color:var(--celeste);text-align:center;line-height:1;letter-spacing:4px;text-shadow:0 0 30px rgba(56,189,248,0.4)}
-.modal-fecha-txt{text-align:center;color:var(--texto-3);font-size:12px;margin-top:4px;margin-bottom:20px;font-family:var(--fuente-mono);letter-spacing:0.5px}
+.modal-fecha-txt{text-align:center;color:var(--texto-3);font-size:12px;margin-top:4px;margin-bottom:20px;letter-spacing:0.5px}
 .modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .modal-dato{background:rgba(5,11,26,0.7);border:1px solid var(--borde);border-radius:10px;padding:12px;transition:var(--trans)}
 .modal-dato:hover{border-color:var(--borde-hover)}
@@ -623,12 +623,12 @@ select option{background:#080F20;color:#F0F6FF}
 
     <!-- Vista detalle de un torneo -->
     <div id="vista-torneo" style="display:none;">
-      <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap;">
         <button class="btn-volver" onclick="volverCampeones()">← Volver</button>
         <img id="torneo-trofeo-mini" src="" alt="" style="width:40px;height:40px;object-fit:contain;" onerror="this.style.display='none'">
-        <div>
-          <div id="torneo-nombre" style="font-family:var(--fuente-titulo);font-size:24px;font-weight:800;"></div>
-          <div id="torneo-campeon-txt" style="font-size:13px;color:var(--celeste);margin-top:2px;"></div>
+        <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;">
+          <span id="torneo-nombre" style="font-family:var(--fuente-titulo);font-size:26px;letter-spacing:1px;"></span>
+          <span id="torneo-campeon-txt" style="font-size:14px;color:var(--oro);font-weight:600;white-space:nowrap;"></span>
         </div>
       </div>
       <div id="torneo-partidos-container"></div>
@@ -1067,7 +1067,6 @@ function verDetalleEquipo(id) {
 
   document.getElementById('vista-equipos').style.display = 'none';
   document.getElementById('vista-detalle').classList.add('visible');
-  aplicarColorEquipo(nombre);
 
   document.getElementById('detalle-nombre').textContent = nombre;
   const escEl = document.getElementById('detalle-escudo');
@@ -1215,10 +1214,7 @@ function toggleRivales() {
 
 function volverEquipos() {
   document.getElementById('vista-equipos').style.display = 'block';
-  const det = document.getElementById('vista-detalle');
-  det.classList.remove('visible');
-  det.style.background = '';
-  document.getElementById('detalle-nombre').style.color = '';
+  document.getElementById('vista-detalle').classList.remove('visible');
   equipoDetalleID = null;
 }
 
@@ -1594,14 +1590,15 @@ function verFichaJugador(nombre) {
           const n = limpiarNombre(entrada);
           if (n.toLowerCase() !== nombre.toLowerCase()) return;
           if (nac && !nacionalidad) nacionalidad = nac;
-          // EC goal: player belongs to equipoId but the goal credited to equipoRival
-          // For team attribution in the card, use the player's OWN team (equipoId)
-          const teamId = equipoId;
+          const esEC = /\(EC\)/i.test(entrada);
+          // EC convention: EC goals are listed under the BENEFICIARY team.
+          // So the player who scored EC actually plays for the OPPOSING team.
+          const teamId = esEC ? equipoRival : equipoId;
           if (!porEquipo[teamId]) porEquipo[teamId] = { goles:0, penales:0, ec:0, amonestados:0, expulsados:0, anios: new Set() };
           const r = porEquipo[teamId];
           if (anio) r.anios.add(anio);
           if (campo === 'Goleadores') {
-            if (/\(EC\)/i.test(entrada)) r.ec++;
+            if (esEC) r.ec++;
             else if (/\(P\)/i.test(entrada)) { r.goles++; r.penales++; }
             else r.goles++;
           }
@@ -1719,7 +1716,7 @@ function verTorneo(idTemporada) {
   document.getElementById('torneo-nombre').textContent = temp.Competencia;
 
   const escCampeon = ESCUDOS[temp.Campeon]
-    ? `<img src="${ESCUDOS[temp.Campeon]}" style="width:16px;height:16px;object-fit:contain;margin-right:4px;" onerror="this.style.display='none'">` : '';
+    ? `<img src="${ESCUDOS[temp.Campeon]}" style="width:16px;height:16px;object-fit:contain;margin-right:4px;vertical-align:middle;" onerror="this.style.display='none'">` : '';
   document.getElementById('torneo-campeon-txt').innerHTML = temp.Campeon
     ? `🏆 Campeón: ${escCampeon}${temp.Campeon}` : '';
 
@@ -1845,50 +1842,6 @@ function volverCampeones() {
   document.getElementById('vista-campeones').style.display = 'block';
 }
 
-
-// ── COLORES POR EQUIPO ──
-const COLORES_EQUIPOS = {
-  'Boca Juniors':            { bg1:'#003087', bg2:'#1a1a00', accent:'#F5C518', text:'#F5C518' },
-  'River Plate':             { bg1:'#C8102E', bg2:'#0a0a0a', accent:'#C8102E', text:'#fff' },
-  'Racing Club':             { bg1:'#1A3A8F', bg2:'#0a0a0a', accent:'#6BB5E8', text:'#6BB5E8' },
-  'Independiente':           { bg1:'#C8102E', bg2:'#1a0000', accent:'#C8102E', text:'#fff' },
-  'San Lorenzo':             { bg1:'#C8102E', bg2:'#00008B', accent:'#4169E1', text:'#A8CAFF' },
-  'Huracan':                 { bg1:'#8B0000', bg2:'#1a1a00', accent:'#FFFFFF', text:'#fff' },
-  'Belgrano':                { bg1:'00008B', bg2:'#0a0a20', accent:'#4169E1', text:'#87CEEB' },
-  'Estudiantes LP':          { bg1:'#C8102E', bg2:'#1a0000', accent:'#C8102E', text:'#fff' },
-  'Velez Sarsfield':         { bg1:'#003087', bg2:'#0a0a1a', accent:'#FFFFFF', text:'#fff' },
-  'Newells':                 { bg1:'#C8102E', bg2:'#1a0800', accent:'#FF6B00', text:'#FFA040' },
-  'Rosario Central':         { bg1:'#FFD700', bg2:'#1a1000', accent:'#003087', text:'#FFD700' },
-  'Talleres':                { bg1:'#003087', bg2:'#0a0a1a', accent:'#6BB5E8', text:'#6BB5E8' },
-  'Colon':                   { bg1:'#C8102E', bg2:'#1a0000', accent:'#000000', text:'#fff' },
-  'Union':                   { bg1:'#C8102E', bg2:'#1a0000', accent:'#FFFFFF', text:'#fff' },
-  'Atletico Tucuman':        { bg1:'#003087', bg2:'#0a0a1a', accent:'#FFFFFF', text:'#fff' },
-  'Godoy Cruz':              { bg1:'#006400', bg2:'#001a00', accent:'#FFFFFF', text:'#90EE90' },
-  'Lanus':                   { bg1:'#8B0000', bg2:'#1a0000', accent:'#FFFFFF', text:'#fff' },
-  'Banfield':                { bg1:'#006400', bg2:'#001a00', accent:'#FFFFFF', text:'#90EE90' },
-  'Tigre':                   { bg1:'#FF6B00', bg2:'#1a0800', accent:'#003087', text:'#FFA040' },
-  'Arsenal':                 { bg1:'#C8102E', bg2:'#0a001a', accent:'#003087', text:'#C8A2C8' },
-  'Platense':                { bg1:'#003087', bg2:'#0a0a20', accent:'#FFFFFF', text:'#87CEEB' },
-  'Deportivo Riestra':       { bg1:'#003087', bg2:'#0a0a20', accent:'#C8102E', text:'#87CEEB' },
-  'Barracas Central':        { bg1:'#C8102E', bg2:'#1a0000', accent:'#FFD700', text:'#FFD700' },
-  'Defensa y Justicia':      { bg1:'#FFD700', bg2:'#1a1000', accent:'#006400', text:'#FFD700' },
-  'Sarmiento':               { bg1:'#006400', bg2:'#001a00', accent:'#FFFFFF', text:'#90EE90' },
-};
-
-function aplicarColorEquipo(equipoNombre) {
-  const c = COLORES_EQUIPOS[equipoNombre];
-  const el = document.getElementById('vista-detalle');
-  if (c) {
-    el.style.setProperty('--eq-bg1', c.bg1);
-    el.style.setProperty('--eq-accent', c.accent);
-    el.style.setProperty('--eq-text', c.text);
-    el.style.background = `linear-gradient(160deg, ${c.bg1}22 0%, transparent 40%)`;
-    document.getElementById('detalle-nombre').style.color = c.text;
-  } else {
-    el.style.background = '';
-    document.getElementById('detalle-nombre').style.color = '';
-  }
-}
 
 cargarDatos();
 </script>
