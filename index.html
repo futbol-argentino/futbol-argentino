@@ -1041,21 +1041,34 @@ select option { background: #0C1A30; color: #F5F7FA; }
   <!-- ══ TAB CAMPEONES ══ -->
   <div class="tab-panel" id="panel-campeones">
 
-    <!-- Selector de división -->
-    <div class="filtros-panel" style="margin-bottom:20px;">
-      <div class="filtros-titulo">🏆 Campeones Históricos</div>
-      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-        <div class="filtro-grupo" style="flex:1;min-width:200px;">
-          <label class="filtro-label">División</label>
-          <select id="camp-filtro-division" class="filtro-select" onchange="filtrarCampeones()">
-            <option value="">Todas las divisiones</option>
-          </select>
+    <!-- Vista grilla de torneos -->
+    <div id="vista-campeones">
+      <div class="filtros-panel" style="margin-bottom:20px;">
+        <div class="filtros-titulo">🏆 Campeones Históricos</div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+          <div class="filtro-grupo" style="flex:1;min-width:200px;">
+            <label class="filtro-label">División</label>
+            <select id="camp-filtro-division" class="filtro-select" onchange="filtrarCampeones()">
+              <option value="">Todas las divisiones</option>
+            </select>
+          </div>
         </div>
       </div>
+      <div id="campeones-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;"></div>
     </div>
 
-    <!-- Grid de torneos -->
-    <div id="campeones-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;"></div>
+    <!-- Vista detalle de un torneo -->
+    <div id="vista-torneo" style="display:none;">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+        <button class="btn-volver" onclick="volverCampeones()">← Volver</button>
+        <img id="torneo-trofeo-mini" src="" alt="" style="width:40px;height:40px;object-fit:contain;" onerror="this.style.display='none'">
+        <div>
+          <div id="torneo-nombre" style="font-family:var(--fuente-titulo);font-size:24px;font-weight:800;"></div>
+          <div id="torneo-campeon-txt" style="font-size:13px;color:var(--celeste);margin-top:2px;"></div>
+        </div>
+      </div>
+      <div id="torneo-partidos-container"></div>
+    </div>
 
   </div><!-- fin panel-campeones -->
 
@@ -1190,9 +1203,6 @@ select option { background: #0C1A30; color: #F5F7FA; }
 const URL_PARTIDOS   = 'Partidos.csv';
 const URL_EQUIPOS    = 'Equipos.csv';
 const URL_TEMPORADAS = 'TEMPORADAS.csv';
-const URL_CAMPEONES  = 'Campeones.csv';
-
-let campeones = [];
 
 const ESCUDOS = {
   'Aldosivi':'escudos/aldosivi.png','All Boys':'escudos/all_boys.png',
@@ -1222,7 +1232,7 @@ const ESCUDOS = {
 };
 
 let partidos = [], equipos = {}, temporadas = {};
-let equiposArr = [];
+let equiposArr = [], temporadasArr = [];
 let equipoDetalleID = null;
 let ordenDesc = true;
 let ordenDetalleDesc = true;
@@ -1276,6 +1286,8 @@ async function cargarDatos() {
 
     const tempArr = csvToArray(csvT);
     tempArr.forEach(t => temporadas[t.ID_Temporada] = t.Competencia);
+    temporadasArr = tempArr;
+    cargarCampeones();
 
     partidos = csvToArray(csvP).filter(p => p.ID_Partido);
 
@@ -1292,16 +1304,6 @@ async function cargarDatos() {
 
     renderizarEquipos();
     filtrar();
-
-    // Cargar campeones (silencioso si no existe aún)
-    try {
-      const resC = await fetch(URL_CAMPEONES);
-      if (resC.ok) {
-        const csvC = await resC.text();
-        campeones = csvToArray(csvC).filter(c => c.Nombre_Torneo);
-        cargarCampeones();
-      }
-    } catch(e) { /* CSV de campeones no disponible aún */ }
 
     // Llenar select de estadísticas
     const selStats = document.getElementById('stats-filtro-equipo');
@@ -2079,11 +2081,12 @@ function cerrarFichaJugador() {
 }
 
 // ── CAMPEONES ──
+// ── CAMPEONES ──
 function cargarCampeones() {
   const selDiv = document.getElementById('camp-filtro-division');
   const divActual = selDiv.value;
   selDiv.innerHTML = '<option value="">Todas las divisiones</option>';
-  const divisiones = [...new Set(campeones.map(c => c.Division).filter(Boolean))].sort();
+  const divisiones = [...new Set(temporadasArr.map(t => t.Division).filter(Boolean))].sort();
   divisiones.forEach(d => {
     const opt = document.createElement('option');
     opt.value = d; opt.textContent = d;
@@ -2095,32 +2098,157 @@ function cargarCampeones() {
 
 function filtrarCampeones() {
   const division = document.getElementById('camp-filtro-division').value;
-  const lista = division ? campeones.filter(c => c.Division === division) : campeones;
+  // Solo mostrar temporadas que tengan campeón cargado
+  const lista = temporadasArr.filter(t => t.Campeon && (!division || t.Division === division));
   const grid = document.getElementById('campeones-grid');
 
   if (lista.length === 0) {
     grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--texto-3);">
       <div style="font-size:48px;margin-bottom:16px;">🏆</div>
-      <div style="font-size:15px;">No hay torneos cargados aún</div>
+      <div style="font-size:15px;">No hay torneos cargados aún.<br>Agregá las columnas Division, Campeon y Foto_Trofeo a tu hoja Temporadas.</div>
     </div>`;
     return;
   }
 
-  grid.innerHTML = lista.map(c => {
-    const foto = c.Foto_Trofeo ? `trofeos/${c.Foto_Trofeo}` : '';
-    const escCampeon = ESCUDOS[c.Campeon] ? `<img src="${ESCUDOS[c.Campeon]}" onerror="this.style.display='none'">` : '';
+  grid.innerHTML = lista.map(t => {
+    const foto = t.Foto_Trofeo ? `trofeos/${t.Foto_Trofeo}` : '';
+    const escCampeon = ESCUDOS[t.Campeon] ? `<img src="${ESCUDOS[t.Campeon]}" style="width:22px;height:22px;object-fit:contain;" onerror="this.style.display='none'">` : '';
     const imgTrofeo = foto
-      ? `<img src="${foto}" class="camp-foto" alt="${c.Nombre_Torneo}" onerror="this.src='';this.style.display='none';">`
+      ? `<img src="${foto}" class="camp-foto" alt="${t.Competencia}" onerror="this.innerHTML='<div style=font-size:72px>🏆</div>';this.style.display='none';">`
       : `<div style="font-size:72px;">🏆</div>`;
-    return `<div class="camp-card">
+    return `<div class="camp-card" onclick="verTorneo('${t.ID_Temporada}')">
       <div class="camp-foto-wrap">${imgTrofeo}</div>
       <div class="camp-info">
-        <div class="camp-año">${c.Division || ''}</div>
-        <div class="camp-nombre">${c.Nombre_Torneo} ${c.Año || ''}</div>
-        <div class="camp-campeon">${escCampeon}${c.Campeon}</div>
+        <div class="camp-año">${t.Division || t.Año || ''}</div>
+        <div class="camp-nombre">${t.Competencia}</div>
+        <div class="camp-campeon">${escCampeon}${t.Campeon}</div>
       </div>
     </div>`;
   }).join('');
+}
+
+function verTorneo(idTemporada) {
+  const temp = temporadasArr.find(t => t.ID_Temporada == idTemporada);
+  if (!temp) return;
+
+  document.getElementById('vista-campeones').style.display = 'none';
+  document.getElementById('vista-torneo').style.display = 'block';
+
+  document.getElementById('torneo-nombre').textContent = temp.Competencia;
+
+  const escCampeon = ESCUDOS[temp.Campeon]
+    ? `<img src="${ESCUDOS[temp.Campeon]}" style="width:16px;height:16px;object-fit:contain;margin-right:4px;" onerror="this.style.display='none'">` : '';
+  document.getElementById('torneo-campeon-txt').innerHTML = temp.Campeon
+    ? `🏆 Campeón: ${escCampeon}${temp.Campeon}` : '';
+
+  const mini = document.getElementById('torneo-trofeo-mini');
+  if (temp.Foto_Trofeo) { mini.src = `trofeos/${temp.Foto_Trofeo}`; mini.style.display = 'block'; }
+  else mini.style.display = 'none';
+
+  // Partidos del torneo ordenados por fecha y numero_fecha
+  const pts = partidos
+    .filter(p => p.ID_Temporada == idTemporada)
+    .sort((a, b) => {
+      const fa = a.Fecha ? a.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/,'$3-$2-$1') : '0';
+      const fb = b.Fecha ? b.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/,'$3-$2-$1') : '0';
+      if (fa !== fb) return fa.localeCompare(fb);
+      return (parseInt(a.Numero_Fecha)||0) - (parseInt(b.Numero_Fecha)||0);
+    });
+
+  // Agrupar por Numero_Fecha + Fase
+  const grupos = {};
+  pts.forEach(p => {
+    const esFaseRegular = p.Fase === 'Fase Regular';
+    const clave = esFaseRegular ? `Fecha ${p.Numero_Fecha}` : (p.Fase || 'Sin fase');
+    if (!grupos[clave]) grupos[clave] = { partidos: [], primeraFecha: p.Fecha };
+    grupos[clave].partidos.push(p);
+  });
+
+  const container = document.getElementById('torneo-partidos-container');
+
+  if (pts.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">No hay partidos cargados para este torneo.</div>';
+    return;
+  }
+
+  container.innerHTML = Object.entries(grupos).map(([grupoNombre, grupo]) => {
+    // Agrupar los partidos del grupo por fecha calendario
+    const porFecha = {};
+    grupo.partidos.forEach(p => {
+      const f = p.Fecha ? p.Fecha.split('T')[0] : 'Sin fecha';
+      if (!porFecha[f]) porFecha[f] = [];
+      porFecha[f].push(p);
+    });
+
+    const fechasHTML = Object.entries(porFecha).map(([fecha, pFecha]) => {
+      const filas = pFecha.map(p => {
+        const local = equipos[p.Local_ID] || p.Local_ID;
+        const visita = equipos[p.Visitante_ID] || p.Visitante_ID;
+        const escL = ESCUDOS[local] ? `<img src="${ESCUDOS[local]}" style="width:18px;height:18px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">` : '';
+        const escV = ESCUDOS[visita] ? `<img src="${ESCUDOS[visita]}" style="width:18px;height:18px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">` : '';
+        const rc = resClase(p.Goles_Local, p.Goles_Visitante);
+        const esJugado = p.Goles_Local !== '' && p.Goles_Visitante !== '';
+        const resultado = esJugado
+          ? `<span class="${rc}" style="font-family:var(--fuente-titulo);font-size:17px;font-weight:700;">${p.Goles_Local} - ${p.Goles_Visitante}</span>`
+          : `<span style="color:var(--texto-2);font-size:13px;">${p.Fecha ? p.Fecha.split('T')[0] : '—'}</span>`;
+        // Penales
+        const penales = p.Tipo_Definicion === '1' && p.Penales
+          ? `<div style="font-size:11px;color:var(--amarillo);text-align:center;">(${p.Penales})</div>` : '';
+        const faseLabel = p.Fase !== 'Fase Regular'
+          ? `<div style="font-size:10px;color:var(--texto-3);text-align:center;margin-bottom:2px;">${p.Fase}</div>` : '';
+
+        return `<tr onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
+          <td style="padding:8px 12px;">
+            <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;">
+              <span style="font-size:13px;font-weight:500;text-align:right;">${local}</span>
+              ${escL}
+            </div>
+          </td>
+          <td style="padding:8px 6px;text-align:center;white-space:nowrap;min-width:60px;">
+            ${faseLabel}${resultado}${penales}
+          </td>
+          <td style="padding:8px 12px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              ${escV}
+              <span style="font-size:13px;font-weight:500;">${visita}</span>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+
+      const diaFormateado = formatearFechaDia(fecha);
+      return `<tr><td colspan="3" style="padding:6px 12px;background:var(--fondo-3);color:var(--texto-2);font-size:12px;font-weight:600;letter-spacing:0.5px;border-top:1px solid var(--borde);border-bottom:1px solid var(--borde);">${diaFormateado}</td></tr>
+      ${filas}`;
+    }).join('');
+
+    return `<div class="tabla-wrapper" style="margin-bottom:16px;">
+      <div class="tabla-header">
+        <div class="tabla-titulo">${grupoNombre}</div>
+        <div class="tabla-count">${grupo.partidos.length} partidos</div>
+      </div>
+      <div class="tabla-scroll">
+        <table style="width:100%;border-collapse:collapse;min-width:300px;">
+          <tbody>${fechasHTML}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function formatearFechaDia(fecha) {
+  if (!fecha || fecha === 'Sin fecha') return fecha;
+  try {
+    const [d, m, a] = fecha.includes('/') ? fecha.split('/') : fecha.split('-').reverse();
+    const dias = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    const dt = new Date(parseInt(a), parseInt(m)-1, parseInt(d));
+    return `${dias[dt.getDay()]} ${d}/${meses[parseInt(m)-1]}`;
+  } catch(e) { return fecha; }
+}
+
+function volverCampeones() {
+  document.getElementById('vista-torneo').style.display = 'none';
+  document.getElementById('vista-campeones').style.display = 'block';
 }
 
 cargarDatos();
