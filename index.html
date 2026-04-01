@@ -245,6 +245,30 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 }
 @media(max-width:380px){.equipos-grid{grid-template-columns:repeat(3,1fr)}}
 
+/* ── ÁLBUM JUGADORES ── */
+.album-card {
+  background:var(--fondo-2); border:1px solid var(--borde);
+  border-radius:14px; overflow:hidden; text-align:center;
+  transition:var(--trans); cursor:pointer;
+}
+.album-card:hover {
+  border-color:var(--borde-hover); transform:translateY(-3px);
+  box-shadow:0 10px 24px rgba(0,0,0,0.4);
+}
+.album-card-foto {
+  width:100%; aspect-ratio:1/1; object-fit:cover;
+  object-position:top; display:block;
+  background:var(--fondo-3);
+}
+.album-card-info { padding:10px 8px; }
+.album-card-nombre { font-size:13px; font-weight:600; color:var(--texto-1); line-height:1.3; margin-bottom:3px; }
+.album-card-anios { font-size:11px; color:var(--texto-3); }
+.album-avatar {
+  width:100%; aspect-ratio:1/1; background:var(--fondo-3);
+  display:flex; align-items:center; justify-content:center;
+  font-size:40px;
+}
+
 /* ── TORNEO TABS ── */
 .torneo-tab-btn{font-family:var(--fuente-cuerpo);font-size:13px;font-weight:500;padding:7px 16px;border-radius:7px;border:none;background:transparent;color:var(--texto-2);cursor:pointer;transition:var(--trans);}
 .torneo-tab-btn:hover{color:var(--texto-1);}
@@ -299,6 +323,14 @@ select option{background:#080F20;color:#F0F6FF}
     <div class="sidebar-nav-item" onclick="cambiarTab('campeones'); cerrarSidebar();" id="menu-campeones">
       <span class="sidebar-nav-icon">🥇</span>
       <span class="sidebar-nav-texto">Campeones</span>
+    </div>
+    <div class="sidebar-nav-item" onclick="cambiarTab('buscador-jugadores'); cerrarSidebar();" id="menu-buscador-jugadores">
+      <span class="sidebar-nav-icon">👤</span>
+      <span class="sidebar-nav-texto">Jugadores</span>
+    </div>
+    <div class="sidebar-nav-item" onclick="cambiarTab('album'); cerrarSidebar();" id="menu-album">
+      <span class="sidebar-nav-icon">📸</span>
+      <span class="sidebar-nav-texto">Álbum de Jugadores</span>
     </div>
   </nav>
   <div class="sidebar-footer">Base de Datos del Fútbol Argentino</div>
@@ -675,6 +707,42 @@ select option{background:#080F20;color:#F0F6FF}
 
   </div><!-- fin panel-campeones -->
 
+  <!-- ══ TAB BUSCADOR JUGADORES ══ -->
+  <div class="tab-panel" id="panel-buscador-jugadores">
+    <div class="filtros-panel" style="margin-bottom:20px;">
+      <div class="filtros-titulo">👤 Buscar Jugador</div>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <div class="filtro-grupo" style="flex:2;min-width:200px;">
+          <label class="filtro-label">Nombre del jugador</label>
+          <input type="text" id="jugador-buscar-input" class="filtro-input" placeholder="Ej: Copetti, Russo, Ávalos..." oninput="buscarJugador()">
+        </div>
+        <div class="filtro-grupo" style="flex:1;min-width:160px;">
+          <label class="filtro-label">Equipo (opcional)</label>
+          <select id="jugador-buscar-equipo" class="filtro-select" onchange="buscarJugador()">
+            <option value="">Todos los equipos</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div id="jugador-resultados"></div>
+  </div><!-- fin panel-buscador-jugadores -->
+
+  <!-- ══ TAB ÁLBUM ══ -->
+  <div class="tab-panel" id="panel-album">
+    <div class="filtros-panel" style="margin-bottom:20px;">
+      <div class="filtros-titulo">📸 Álbum de Jugadores</div>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <div class="filtro-grupo" style="flex:1;min-width:200px;">
+          <label class="filtro-label">Equipo</label>
+          <select id="album-equipo" class="filtro-select" onchange="renderAlbum()">
+            <option value="">Seleccioná un equipo...</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div id="album-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:16px;"></div>
+  </div><!-- fin panel-album -->
+
 </div><!-- fin main -->
 
 <!-- MODAL FICHA JUGADOR -->
@@ -903,6 +971,7 @@ async function cargarDatos() {
     tempArr.forEach(t => temporadas[t.ID_Temporada] = t.Competencia);
     temporadasArr = tempArr;
     cargarCampeones();
+    inicializarBuscadorJugadores();
 
     // Cargar posiciones (silencioso si no existe)
     try {
@@ -959,8 +1028,10 @@ function cambiarTab(tab) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('activo'));
   document.querySelectorAll('.sidebar-nav-item').forEach(i => i.classList.remove('activo'));
   document.getElementById('panel-' + tab).classList.add('activo');
-  document.getElementById('tab-' + tab).classList.add('activo');
-  document.getElementById('menu-' + tab).classList.add('activo');
+  const btn = document.getElementById('tab-' + tab);
+  if (btn) btn.classList.add('activo');
+  const menu = document.getElementById('menu-' + tab);
+  if (menu) menu.classList.add('activo');
 }
 
 // ── HELPERS ──
@@ -1944,9 +2015,19 @@ function verTorneo(idTemporada) {
 
   const grupos = {};
   pts.forEach(p => {
-    const esFaseRegular = p.Fase === 'Fase Regular';
-    const clave = esFaseRegular ? `Fecha ${p.Numero_Fecha}` : (p.Fase || 'Sin fase');
-    if (!grupos[clave]) grupos[clave] = { partidos: [], primeraFecha: p.Fecha };
+    const fase = p.Fase || 'Sin fase';
+    const esFaseRegular = fase === 'Fase Regular';
+    // Fases numeradas (Clasificatoria, Complementación, Campeonato) usan Numero_Fecha
+    const esFaseNumerada = ['Fase Clasificatoria','Fase Complementación','Fase Complementacion','Fase Campeonato'].includes(fase);
+    let clave;
+    if (esFaseRegular) {
+      clave = `Fecha ${p.Numero_Fecha}`;
+    } else if (esFaseNumerada && p.Numero_Fecha) {
+      clave = `${fase} — Fecha ${p.Numero_Fecha}`;
+    } else {
+      clave = fase;
+    }
+    if (!grupos[clave]) grupos[clave] = { partidos:[], fase, numero: parseInt(p.Numero_Fecha)||0 };
     grupos[clave].partidos.push(p);
   });
 
@@ -1955,15 +2036,36 @@ function verTorneo(idTemporada) {
   if (pts.length === 0) {
     container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">No hay partidos cargados para este torneo.</div>';
   } else {
-    const faseOrder = ['Fase Clasificatoria','Fase Complementación','Fase Campeonato','Fase Campeonato Final','Octavos de Final','Cuartos de Final','Semifinal','Desempate Descenso','Final'];
-    const gruposOrdenados = Object.entries(grupos).sort(([a], [b]) => {
-      const aNum = a.match(/^Fecha (\d+)$/);
-      const bNum = b.match(/^Fecha (\d+)$/);
-      if (aNum && bNum) return parseInt(aNum[1]) - parseInt(bNum[1]);
-      if (aNum) return -1;
-      if (bNum) return 1;
+    const faseOrder = [
+      'Fase Clasificatoria','Fase Complementación','Fase Complementacion',
+      'Fase Campeonato','Fase Campeonato Final',
+      'Primera Fase','Segunda Fase','Tercera Fase',
+      'Octavos de Final','Cuartos de Final','Semifinal',
+      'Desempate Descenso','Final'
+    ];
+    const gruposOrdenados = Object.entries(grupos).sort(([a, ga], [b, gb]) => {
+      const aFecha = a.match(/^Fecha (\d+)$/);
+      const bFecha = b.match(/^Fecha (\d+)$/);
+      // "Fecha X" van primero ordenadas numéricamente
+      if (aFecha && bFecha) return parseInt(aFecha[1]) - parseInt(bFecha[1]);
+      if (aFecha) return -1;
+      if (bFecha) return 1;
+      // Fases numeradas (ej: "Fase Clasificatoria — Fecha 3")
+      const aFaseNum = a.match(/^(.+) — Fecha (\d+)$/);
+      const bFaseNum = b.match(/^(.+) — Fecha (\d+)$/);
+      if (aFaseNum && bFaseNum) {
+        const faseA = faseOrder.indexOf(aFaseNum[1]);
+        const faseB = faseOrder.indexOf(bFaseNum[1]);
+        if (faseA !== faseB) return (faseA === -1 ? 999 : faseA) - (faseB === -1 ? 999 : faseB);
+        return parseInt(aFaseNum[2]) - parseInt(bFaseNum[2]);
+      }
+      if (aFaseNum) return -1;
+      if (bFaseNum) return 1;
+      // Resto por faseOrder
       const ai = faseOrder.indexOf(a), bi = faseOrder.indexOf(b);
       if (ai !== -1 && bi !== -1) return ai - bi;
+      if (ai !== -1) return -1;
+      if (bi !== -1) return 1;
       return a.localeCompare(b);
     });
 
@@ -2152,6 +2254,131 @@ function volverCampeones() {
   document.getElementById('vista-campeones').style.display = 'block';
 }
 
+
+// ── BUSCADOR DE JUGADORES ──
+function recopilarJugadores() {
+  const jugadoresMap = {}; // nombre → { equipos: { equipoId: { anios, goles, penales, ec, amonestados, expulsados } }, nac }
+  partidos.forEach(p => {
+    const anio = p.Fecha ? parseInt(p.Fecha.split('/')[2] || p.Fecha.split('-')[0]) : null;
+    ['Goleadores','Amonestados','Expulsados'].forEach(campo => {
+      const raw = p[campo] || '';
+      if (!raw) return;
+      raw.split('/').forEach((parte, idx) => {
+        const equipoId = idx === 0 ? p.Local_ID : p.Visitante_ID;
+        const equipoRival = idx === 0 ? p.Visitante_ID : p.Local_ID;
+        parte.split('-').forEach(entrada => {
+          const nac = extraerNacionalidad(entrada);
+          const nombre = limpiarNombre(entrada);
+          if (!nombre || nombre.length < 2 || nombre.toLowerCase() === 'ninguno') return;
+          if (!jugadoresMap[nombre]) jugadoresMap[nombre] = { equipos:{}, nac:null };
+          if (nac) jugadoresMap[nombre].nac = nac;
+          const esEC = /\(EC\)/i.test(entrada);
+          const teamId = (campo === 'Goleadores' && esEC) ? equipoRival : equipoId;
+          if (!jugadoresMap[nombre].equipos[teamId]) jugadoresMap[nombre].equipos[teamId] = { anios:new Set(), goles:0, penales:0, ec:0, amonestados:0, expulsados:0 };
+          const r = jugadoresMap[nombre].equipos[teamId];
+          if (anio) r.anios.add(anio);
+          if (campo === 'Goleadores') { if (esEC) r.ec++; else if (/\(P\)/i.test(entrada)) { r.goles++; r.penales++; } else r.goles++; }
+          if (campo === 'Amonestados') r.amonestados++;
+          if (campo === 'Expulsados') r.expulsados++;
+        });
+      });
+    });
+  });
+  return jugadoresMap;
+}
+
+function buscarJugador() {
+  const q = (document.getElementById('jugador-buscar-input')?.value || '').toLowerCase().trim();
+  const eqFiltro = document.getElementById('jugador-buscar-equipo')?.value || '';
+  const container = document.getElementById('jugador-resultados');
+  if (!q && !eqFiltro) { container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">Escribí un nombre para buscar jugadores.</div>'; return; }
+
+  const todos = recopilarJugadores();
+  const resultados = Object.entries(todos).filter(([nombre, data]) => {
+    if (q && !nombre.toLowerCase().includes(q)) return false;
+    if (eqFiltro && !Object.keys(data.equipos).includes(eqFiltro)) return false;
+    return true;
+  }).sort(([a],[b]) => a.localeCompare(b));
+
+  if (resultados.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">No se encontraron jugadores.</div>';
+    return;
+  }
+
+  container.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;">` +
+    resultados.slice(0,60).map(([nombre, data]) => {
+      const fotoKey = nombre.toLowerCase().replace(/\s+/g,'_').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+      const bandera = data.nac ? getBandera(data.nac) : '';
+      const totGoles = Object.values(data.equipos).reduce((s,r)=>s+r.goles,0);
+      const totAmon  = Object.values(data.equipos).reduce((s,r)=>s+r.amonestados,0);
+      const totExp   = Object.values(data.equipos).reduce((s,r)=>s+r.expulsados,0);
+      const equiposList = Object.keys(data.equipos).map(id => {
+        const anios = formatearAnios(data.equipos[id].anios);
+        return `<span style="font-size:11px;color:var(--texto-2);">${equipos[id]||id} <span style="color:var(--texto-3);">(${anios})</span></span>`;
+      }).join(' · ');
+      return `<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:12px;padding:14px;display:flex;gap:14px;align-items:flex-start;cursor:pointer;transition:var(--trans);" onmouseenter="this.style.borderColor='var(--borde-hover)'" onmouseleave="this.style.borderColor='var(--borde)'" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')">
+        <img src="jugadores/${fotoKey}.jpg" style="width:56px;height:56px;object-fit:cover;object-position:top;border-radius:10px;flex-shrink:0;background:var(--fondo-3);" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2256%22 height=%2256%22><rect width=%2256%22 height=%2256%22 fill=%22%230D1628%22 rx=%2210%22/><text x=%2228%22 y=%2234%22 font-size=%2224%22 text-anchor=%22middle%22>👤</text></svg>'">
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <span style="display:inline-flex;">${bandera}</span>
+            <span style="font-size:15px;font-weight:600;">${nombre}</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">
+            ${totGoles ? `<span style="font-size:11px;background:rgba(34,197,94,0.1);color:var(--celeste);padding:2px 7px;border-radius:6px;border:1px solid var(--borde);">⚽ ${totGoles}</span>` : ''}
+            ${totAmon  ? `<span style="font-size:11px;background:rgba(245,158,11,0.1);color:var(--amarillo);padding:2px 7px;border-radius:6px;border:1px solid var(--borde);">🟨 ${totAmon}</span>` : ''}
+            ${totExp   ? `<span style="font-size:11px;background:rgba(244,63,94,0.1);color:var(--rojo);padding:2px 7px;border-radius:6px;border:1px solid var(--borde);">🟥 ${totExp}</span>` : ''}
+          </div>
+          <div style="line-height:1.6;">${equiposList}</div>
+        </div>
+      </div>`;
+    }).join('') + '</div>' +
+    (resultados.length > 60 ? `<div style="text-align:center;padding:16px;color:var(--texto-3);font-size:13px;">Mostrando 60 de ${resultados.length} resultados. Refiná la búsqueda.</div>` : '');
+}
+
+// ── ÁLBUM DE JUGADORES ──
+function renderAlbum() {
+  const equipoId = document.getElementById('album-equipo').value;
+  const grid = document.getElementById('album-grid');
+  if (!equipoId) { grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);grid-column:1/-1;">Seleccioná un equipo para ver el álbum.</div>'; return; }
+
+  const todos = recopilarJugadores();
+  const jugadoresEquipo = Object.entries(todos)
+    .filter(([, data]) => data.equipos[equipoId])
+    .sort(([a],[b]) => a.localeCompare(b));
+
+  if (jugadoresEquipo.length === 0) {
+    grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);grid-column:1/-1;">Sin jugadores registrados para este equipo.</div>';
+    return;
+  }
+
+  grid.innerHTML = jugadoresEquipo.map(([nombre, data]) => {
+    const fotoKey = nombre.toLowerCase().replace(/\s+/g,'_').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    const anios = formatearAnios(data.equipos[equipoId].anios);
+    const bandera = data.nac ? `<span style="margin-right:4px;">${getBandera(data.nac)}</span>` : '';
+    return `<div class="album-card" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')">
+      <img src="jugadores/${fotoKey}.jpg" class="album-card-foto"
+        onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+      <div class="album-avatar" style="display:none;">👤</div>
+      <div class="album-card-info">
+        <div class="album-card-nombre">${bandera}${nombre}</div>
+        <div class="album-card-anios">${anios}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function inicializarBuscadorJugadores() {
+  const sel = document.getElementById('jugador-buscar-equipo');
+  const selAlbum = document.getElementById('album-equipo');
+  equiposArr.sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo)).forEach(e => {
+    [sel, selAlbum].forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = e.ID_Equipo; opt.textContent = e.Nombre_Equipo;
+      s.appendChild(opt);
+    });
+  });
+  document.getElementById('jugador-resultados').innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">Escribí un nombre para buscar jugadores.</div>';
+}
 
 cargarDatos();
 </script>
