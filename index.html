@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Base de Datos del Fútbol Argentino</title>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Oswald:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Barlow+Condensed:wght@500;600;700&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
   --azul:          #15803D;
@@ -29,8 +29,8 @@
   --borde:         rgba(34,197,94,0.1);
   --borde-hover:   rgba(34,197,94,0.28);
   --borde-activo:  rgba(34,197,94,0.55);
-  --fuente-titulo: 'Oswald', sans-serif;
-  --fuente-cuerpo: 'Plus Jakarta Sans', sans-serif;
+  --fuente-titulo: 'Barlow Condensed', sans-serif;
+  --fuente-cuerpo: 'Inter', sans-serif;
   --fuente-mono:   'DM Mono', monospace;
   --trans:         all 0.2s cubic-bezier(0.4,0,0.2,1);
   --sombra-azul:   0 4px 24px rgba(21,128,61,0.25);
@@ -610,11 +610,15 @@ select option{background:#080F20;color:#F0F6FF}
       <div class="filtros-panel" style="margin-bottom:20px;">
         <div class="filtros-titulo">🏆 Campeones Históricos</div>
         <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-          <div class="filtro-grupo" style="flex:1;min-width:200px;">
+          <div class="filtro-grupo" style="flex:1;min-width:180px;">
             <label class="filtro-label">División</label>
             <select id="camp-filtro-division" class="filtro-select" onchange="filtrarCampeones()">
               <option value="">Todas las divisiones</option>
             </select>
+          </div>
+          <div class="filtro-grupo" style="flex:2;min-width:200px;">
+            <label class="filtro-label">Buscar torneo</label>
+            <input type="text" id="camp-buscar" class="filtro-input" placeholder="Ej: Apertura, Copa de la Liga..." oninput="filtrarCampeones()">
           </div>
         </div>
       </div>
@@ -625,8 +629,8 @@ select option{background:#080F20;color:#F0F6FF}
     <div id="vista-torneo" style="display:none;">
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap;">
         <button class="btn-volver" onclick="volverCampeones()">← Volver</button>
-        <img id="torneo-trofeo-mini" src="" alt="" style="width:40px;height:40px;object-fit:contain;" onerror="this.style.display='none'">
-        <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <img id="torneo-trofeo-mini" src="" alt="" style="width:36px;height:36px;object-fit:contain;" onerror="this.style.display='none'">
           <span id="torneo-nombre" style="font-family:var(--fuente-titulo);font-size:26px;letter-spacing:1px;"></span>
           <span id="torneo-campeon-txt" style="font-size:14px;color:var(--oro);font-weight:600;white-space:nowrap;"></span>
         </div>
@@ -795,7 +799,8 @@ const ESCUDOS = {
   'Talleres':'escudos/talleres.png','Temperley':'escudos/temperley.png',
   'Tigre':'escudos/tigre.png','Tiro Federal':'escudos/tiro_federal.png',
   'Union':'escudos/union.png','Velez Sarsfield':'escudos/velez_sarsfield.png',
-  'San Martin de Mendoza':'escudos/san_martin_de_mendoza.png'
+  'San Martin de Mendoza':'escudos/san_martin_de_mendoza.png',
+  'Gimnasia de Concepcion del Uruguay':'escudos/Gimnasia_de_Concepcion_del_Uruguay.png'
 };
 
 let partidos = [], equipos = {}, temporadas = {};
@@ -1345,6 +1350,7 @@ const PAISES = {
   'GUA':{ nombre:'Guatemala', codigo:'gt' },
   'NIC':{ nombre:'Nicaragua', codigo:'ni' },
   'ESL':{ nombre:'Eslovenia', codigo:'si' },
+  'ARM':{ nombre:'Armenia', codigo:'am' },
 };
 
 function getBandera(codigo) {
@@ -1677,8 +1683,13 @@ function cargarCampeones() {
 
 function filtrarCampeones() {
   const division = document.getElementById('camp-filtro-division').value;
-  // Solo mostrar temporadas que tengan campeón cargado
-  const lista = temporadasArr.filter(t => t.Campeon && (!division || t.Division === division));
+  const buscar = (document.getElementById('camp-buscar')?.value || '').toLowerCase().trim();
+  const lista = temporadasArr.filter(t => {
+    if (!t.Campeon) return false;
+    if (division && t.Division !== division) return false;
+    if (buscar && !(t.Competencia||'').toLowerCase().includes(buscar) && !(t.Campeon||'').toLowerCase().includes(buscar)) return false;
+    return true;
+  });
   const grid = document.getElementById('campeones-grid');
 
   if (lista.length === 0) {
