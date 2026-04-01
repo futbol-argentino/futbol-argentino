@@ -245,6 +245,19 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 }
 @media(max-width:380px){.equipos-grid{grid-template-columns:repeat(3,1fr)}}
 
+/* ── TABLA POSICIONES ── */
+.pos-campeon    { background:rgba(251,191,36,0.12)!important; box-shadow:inset 3px 0 0 var(--oro)!important; }
+.pos-libertad   { background:rgba(74,222,128,0.10)!important; box-shadow:inset 3px 0 0 #4ADE80!important; }
+.pos-sudamerica { background:rgba(56,189,248,0.10)!important; box-shadow:inset 3px 0 0 #38BDF8!important; }
+.pos-clasifica  { background:rgba(34,197,94,0.07)!important;  box-shadow:inset 3px 0 0 #22C55E!important; }
+.pos-playoff    { background:rgba(251,146,60,0.10)!important; box-shadow:inset 3px 0 0 #FB923C!important; }
+.pos-descenso   { background:rgba(244,63,94,0.10)!important;  box-shadow:inset 3px 0 0 var(--rojo)!important; }
+.pos-descalif   { background:rgba(120,40,60,0.12)!important;  box-shadow:inset 3px 0 0 #7B2D3E!important; }
+.pos-num { font-weight:700; width:32px; text-align:center; }
+.pos-legend { display:flex; flex-wrap:wrap; gap:10px; padding:12px 16px; border-top:1px solid var(--borde); }
+.pos-legend-item { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--texto-2); }
+.pos-legend-dot { width:10px; height:10px; border-radius:2px; flex-shrink:0; }
+
 /* SCROLLBAR */
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:var(--fondo-2)}
@@ -635,6 +648,7 @@ select option{background:#080F20;color:#F0F6FF}
           <span id="torneo-campeon-txt" style="font-size:14px;color:var(--oro);font-weight:600;white-space:nowrap;"></span>
         </div>
       </div>
+      <div id="torneo-posiciones-container" style="margin-bottom:20px;"></div>
       <div id="torneo-partidos-container"></div>
     </div>
 
@@ -774,6 +788,7 @@ select option{background:#080F20;color:#F0F6FF}
 const URL_PARTIDOS   = 'Partidos.csv';
 const URL_EQUIPOS    = 'Equipos.csv';
 const URL_TEMPORADAS = 'TEMPORADAS.csv';
+const URL_POSICIONES = 'Posiciones.csv';
 
 const ESCUDOS = {
   'Aldosivi':'escudos/aldosivi.png','All Boys':'escudos/all_boys.png',
@@ -805,6 +820,7 @@ const ESCUDOS = {
 
 let partidos = [], equipos = {}, temporadas = {};
 let equiposArr = [], temporadasArr = [];
+let posicionesData = [];
 let equipoDetalleID = null;
 let ordenDesc = true;
 let ordenDetalleDesc = true;
@@ -860,6 +876,15 @@ async function cargarDatos() {
     tempArr.forEach(t => temporadas[t.ID_Temporada] = t.Competencia);
     temporadasArr = tempArr;
     cargarCampeones();
+
+    // Cargar posiciones (silencioso si no existe)
+    try {
+      const resPos = await fetch(URL_POSICIONES);
+      if (resPos.ok) {
+        const csvPos = await resPos.text();
+        posicionesData = csvToArray(csvPos).filter(r => r.ID_Temporada);
+      }
+    } catch(e) { /* sin posiciones aún */ }
 
     partidos = csvToArray(csvP).filter(p => p.ID_Partido);
 
@@ -1665,7 +1690,88 @@ function cerrarFichaJugador() {
   document.getElementById('modal-jugador').classList.remove('visible');
 }
 
-// ── CAMPEONES ──
+// ── TABLA DE POSICIONES ──
+const CLASIFICACION_CONFIG = {
+  'E': { clase:'pos-campeon',   label:'Campeón',                   color:'#FBBF24', emoji:'⭐' },
+  'V': { clase:'pos-clasifica', label:'Clasificó a siguiente fase', color:'#22C55E', emoji:null },
+  'M': { clase:'pos-libertad',  label:'Copa Libertadores',         color:'#4ADE80', emoji:null },
+  'C': { clase:'pos-sudamerica',label:'Copa Sudamericana',         color:'#38BDF8', emoji:null },
+  'P': { clase:'pos-playoff',   label:'Playoff',                   color:'#FB923C', emoji:null },
+  'R': { clase:'pos-descenso',  label:'Descendió',                 color:'#F43F5E', emoji:null },
+  'D': { clase:'pos-descalif',  label:'Descalificado',             color:'#7B2D3E', emoji:null },
+};
+
+function parsearClasifCode(nombreRaw) {
+  const m = (nombreRaw||'').match(/\(([A-Z])\)\s*$/);
+  return m ? m[1] : null;
+}
+function limpiarNombreEquipo(nombreRaw) {
+  return (nombreRaw||'').replace(/\s*\([A-Z]\)\s*$/, '').trim();
+}
+
+function renderTablasPosiciones(idTemporada) {
+  const filas = posicionesData.filter(r => r.ID_Temporada == idTemporada);
+  if (filas.length === 0) { document.getElementById('torneo-posiciones-container').innerHTML = ''; return; }
+
+  const grupos = {};
+  filas.forEach(r => { const g = r.Grupo || 'General'; if (!grupos[g]) grupos[g] = []; grupos[g].push(r); });
+
+  const clasifUsados = new Set();
+  filas.forEach(r => { const c = parsearClasifCode(r.Equipo); if (c && CLASIFICACION_CONFIG[c]) clasifUsados.add(c); });
+
+  const legendaHTML = clasifUsados.size > 0
+    ? `<div class="pos-legend">${[...clasifUsados].map(c => {
+        const cfg = CLASIFICACION_CONFIG[c];
+        return `<div class="pos-legend-item"><div class="pos-legend-dot" style="background:${cfg.color};"></div><span>${cfg.label}</span></div>`;
+      }).join('')}</div>` : '';
+
+  const tablasHTML = Object.entries(grupos).map(([grupo, rows]) => {
+    const sorted = rows.sort((a,b) => parseInt(a.Pos||99) - parseInt(b.Pos||99));
+    const filasHTML = sorted.map(r => {
+      const nombreRaw = r.Equipo || '';
+      const code = parsearClasifCode(nombreRaw);
+      const nombre = limpiarNombreEquipo(nombreRaw);
+      const cfg = code ? CLASIFICACION_CONFIG[code] : null;
+      const esc = ESCUDOS[nombre] ? `<img src="${ESCUDOS[nombre]}" style="width:18px;height:18px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">` : '';
+      const estrella = cfg?.emoji ? `<span style="margin-left:4px;font-size:12px;">${cfg.emoji}</span>` : '';
+      const gf = parseInt(r.GF)||0, gc = parseInt(r.GC)||0;
+      const dg = r.DG || ((gf-gc >= 0 ? '+':'') + (gf-gc));
+      return `<tr class="${cfg ? cfg.clase : ''}">
+        <td class="pos-num" style="color:var(--texto-2);font-size:13px;text-align:center;padding:8px 6px;">${r.Pos||''}</td>
+        <td style="padding:8px 12px;"><div style="display:flex;align-items:center;gap:8px;">${esc}<span style="font-size:13px;font-weight:600;">${nombre}</span>${estrella}</div></td>
+        <td style="text-align:center;font-size:13px;color:var(--texto-2);">${r.PJ||0}</td>
+        <td style="text-align:center;font-size:13px;color:var(--verde);">${r.PG||0}</td>
+        <td style="text-align:center;font-size:13px;color:var(--amarillo);">${r.PE||0}</td>
+        <td style="text-align:center;font-size:13px;color:var(--rojo);">${r.PP||0}</td>
+        <td style="text-align:center;font-size:13px;">${r.GF||0}</td>
+        <td style="text-align:center;font-size:13px;">${r.GC||0}</td>
+        <td style="text-align:center;font-size:13px;color:var(--texto-2);">${dg}</td>
+        <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;color:var(--celeste);font-weight:600;">${r.Pts||0}</td>
+      </tr>`;
+    }).join('');
+    return `<div class="tabla-wrapper" style="margin-bottom:14px;">
+      <div class="tabla-header">
+        <div class="tabla-titulo">📋 ${grupo === 'General' ? 'Tabla de Posiciones' : grupo}</div>
+        <div class="tabla-count">${sorted.length} equipos</div>
+      </div>
+      <div class="tabla-scroll">
+        <table style="min-width:500px;">
+          <thead><tr>
+            <th style="width:36px;text-align:center;">#</th><th>Equipo</th>
+            <th style="text-align:center;width:38px;">PJ</th><th style="text-align:center;width:38px;">PG</th>
+            <th style="text-align:center;width:38px;">PE</th><th style="text-align:center;width:38px;">PP</th>
+            <th style="text-align:center;width:38px;">GF</th><th style="text-align:center;width:38px;">GC</th>
+            <th style="text-align:center;width:38px;">DG</th><th style="text-align:center;width:46px;">Pts</th>
+          </tr></thead>
+          <tbody>${filasHTML}</tbody>
+        </table>
+      </div>${legendaHTML}
+    </div>`;
+  }).join('');
+
+  document.getElementById('torneo-posiciones-container').innerHTML = tablasHTML;
+}
+
 // ── CAMPEONES ──
 function cargarCampeones() {
   const selDiv = document.getElementById('camp-filtro-division');
@@ -1734,6 +1840,8 @@ function verTorneo(idTemporada) {
   const mini = document.getElementById('torneo-trofeo-mini');
   if (temp.Foto_Trofeo) { mini.src = `trofeos/${temp.Foto_Trofeo}`; mini.style.display = 'block'; }
   else mini.style.display = 'none';
+
+  renderTablasPosiciones(idTemporada);
 
   // Partidos del torneo ordenados por fecha y numero_fecha
   const pts = partidos
