@@ -2026,55 +2026,113 @@ function toggleGrupo(id) {
   arr.style.transform = abierto ? 'rotate(0deg)' : 'rotate(180deg)';
 }
 
+// Páginas para stats del torneo
+const paginasTorneo = { goleadores:1, ec:1, amonestados:1, expulsados:1 };
+let datosStatsTorneo = {};
+
+function cambiarPaginaTorneo(pag, tipo) {
+  paginasTorneo[tipo] = pag;
+  renderTablaTorneo(tipo);
+  document.getElementById('ts-wrap-'+tipo)?.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function renderTablaTorneo(tipo) {
+  const POR_PAG = 30;
+  const d = datosStatsTorneo[tipo];
+  if (!d) return;
+  const { datos, headers, color, colSpan } = d;
+  const pag = paginasTorneo[tipo];
+  const total = datos.length;
+  const totalPags = Math.ceil(total / POR_PAG);
+  const inicio = (pag - 1) * POR_PAG;
+  const slice = datos.slice(inicio, inicio + POR_PAG);
+
+  const nacG = datosStatsTorneo.nacGoleadores || {};
+  const nacA = datosStatsTorneo.nacAmon || {};
+  const nacE = datosStatsTorneo.nacExpu || {};
+  const nac = { ...nacG, ...nacA, ...nacE };
+
+  const filas = slice.map(([nombre, val], i) => {
+    const nacCode = nac[nombre];
+    const bandera = nacCode ? `<span style="display:inline-flex;align-items:center;flex-shrink:0;">${getBandera(nacCode)}</span>` : '';
+    if (tipo === 'goleadores') {
+      const total2 = val.normales + val.penales;
+      return `<tr>
+        <td style="color:var(--texto-2);font-size:13px;width:36px;padding:8px 12px;">${inicio+i+1}</td>
+        <td style="padding:8px 12px;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')"><div style="display:flex;align-items:center;gap:6px;">${bandera}<span>${nombre}</span></div></td>
+        <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;color:var(--celeste);">${total2}</td>
+        <td style="text-align:center;font-size:13px;color:var(--texto-2);">${val.normales||'—'}</td>
+        <td style="text-align:center;font-size:13px;color:var(--amarillo);">${val.penales||'—'}</td>
+      </tr>`;
+    } else {
+      return `<tr>
+        <td style="color:var(--texto-2);font-size:13px;width:36px;padding:8px 12px;">${inicio+i+1}</td>
+        <td style="padding:8px 12px;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')"><div style="display:flex;align-items:center;gap:6px;">${bandera}<span>${nombre}</span></div></td>
+        <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;color:${color};">${val}</td>
+      </tr>`;
+    }
+  }).join('');
+
+  const bodyEl = document.getElementById('ts-body-'+tipo);
+  if (bodyEl) bodyEl.innerHTML = filas.length ? filas
+    : `<tr><td colspan="${colSpan}" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos</td></tr>`;
+
+  const countEl = document.getElementById('ts-count-'+tipo);
+  if (countEl) countEl.textContent = total + ' jugadores';
+
+  const pagEl = document.getElementById('ts-pag-'+tipo);
+  if (pagEl) {
+    if (totalPags <= 1) { pagEl.innerHTML = ''; return; }
+    pagEl.innerHTML = `
+      <button class="pag-btn" onclick="cambiarPaginaTorneo(${pag-1},'${tipo}')" ${pag===1?'disabled':''}>← Anterior</button>
+      <span class="pag-info">Página ${pag} de ${totalPags}</span>
+      <button class="pag-btn" onclick="cambiarPaginaTorneo(${pag+1},'${tipo}')" ${pag===totalPags?'disabled':''}>Siguiente →</button>`;
+  }
+}
+
 function renderStatsTorneo(idTemporada) {
   const container = document.getElementById('torneo-stats-container');
+
+  // Reset páginas
+  paginasTorneo.goleadores = 1; paginasTorneo.ec = 1;
+  paginasTorneo.amonestados = 1; paginasTorneo.expulsados = 1;
+
   const { goles, ec, nacionalidades } = parsearGoleadores(null, idTemporada);
   const { datos: amon, nacionalidades: nacAmon } = parsearTarjetas('Amonestados', null, idTemporada);
   const { datos: expu, nacionalidades: nacExpu } = parsearTarjetas('Expulsados', null, idTemporada);
+  const ecDatos = Object.entries(ec).sort((a,b)=>b[1]-a[1]);
+  const golesDatos = Object.entries(goles).sort((a,b)=>(b[1].normales+b[1].penales)-(a[1].normales+a[1].penales));
 
-  const golesOrdenados = Object.entries(goles).sort((a,b)=>(b[1].normales+b[1].penales)-(a[1].normales+a[1].penales)).slice(0,30);
-  const ecOrdenados = Object.entries(ec).sort((a,b)=>b[1]-a[1]).slice(0,20);
+  datosStatsTorneo = {
+    goleadores: { datos: golesDatos, headers: ['#','Jugador','Total','Norm.','Pen.'], color:'var(--celeste)', colSpan:5 },
+    ec:          { datos: ecDatos,   headers: ['#','Jugador','Cant.'],               color:'var(--rojo)',   colSpan:3 },
+    amonestados: { datos: amon,      headers: ['#','Jugador','Amarillas'],           color:'var(--amarillo)',colSpan:3 },
+    expulsados:  { datos: expu,      headers: ['#','Jugador','Rojas'],               color:'var(--rojo)',   colSpan:3 },
+    nacGoleadores: nacionalidades, nacAmon, nacExpu,
+  };
 
-  const makeTabla = (titulo, headers, rows) => `
-    <div class="tabla-wrapper" style="margin-bottom:16px;">
-      <div class="tabla-header"><div class="tabla-titulo">${titulo}</div><div class="tabla-count">${rows.length} jugadores</div></div>
-      <div class="tabla-scroll"><table style="width:100%;border-collapse:collapse;">
-        <thead><tr>${headers.map(h=>`<th style="text-align:${h.center?'center':'left'};width:${h.w||'auto'};">${h.label}</th>`).join('')}</tr></thead>
-        <tbody>${rows.length===0?`<tr><td colspan="${headers.length}" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos</td></tr>`:rows.join('')}</tbody>
-      </table></div>
+  const makeTabla = (tipo, titulo, headers) => `
+    <div class="tabla-wrapper" style="margin-bottom:16px;" id="ts-wrap-${tipo}">
+      <div class="tabla-header">
+        <div class="tabla-titulo">${titulo}</div>
+        <div class="tabla-count" id="ts-count-${tipo}"></div>
+      </div>
+      <div class="tabla-scroll">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead><tr>${headers.map((h,i)=>`<th style="text-align:${i>1?'center':'left'};${i===0?'width:36px;':''}">${h}</th>`).join('')}</tr></thead>
+          <tbody id="ts-body-${tipo}"></tbody>
+        </table>
+      </div>
+      <div class="paginacion" id="ts-pag-${tipo}"></div>
     </div>`;
 
-  const gRow = ([nombre, d], i) => {
-    const total = d.normales+d.penales;
-    const nac = nacionalidades[nombre];
-    const bandera = nac ? `<span style="display:inline-flex;align-items:center;flex-shrink:0;">${getBandera(nac)}</span>` : '';
-    return `<tr><td style="color:var(--texto-2);font-size:13px;width:36px;padding:8px 12px;">${i+1}</td>
-      <td style="padding:8px 12px;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')"><div style="display:flex;align-items:center;gap:6px;">${bandera}<span>${nombre}</span></div></td>
-      <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;color:var(--celeste);">${total}</td>
-      <td style="text-align:center;font-size:13px;color:var(--texto-2);">${d.normales||'—'}</td>
-      <td style="text-align:center;font-size:13px;color:var(--amarillo);">${d.penales||'—'}</td></tr>`;
-  };
-  const sRow = (color) => ([nombre, cant], i) => {
-    const nac = nacAmon[nombre] || nacExpu[nombre] || nacionalidades[nombre];
-    const bandera = nac ? `<span style="display:inline-flex;align-items:center;flex-shrink:0;">${getBandera(nac)}</span>` : '';
-    return `<tr><td style="color:var(--texto-2);font-size:13px;width:36px;padding:8px 12px;">${i+1}</td>
-      <td style="padding:8px 12px;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')"><div style="display:flex;align-items:center;gap:6px;">${bandera}<span>${nombre}</span></div></td>
-      <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;color:${color};">${cant}</td></tr>`;
-  };
-
   container.innerHTML =
-    makeTabla('⚽ Goleadores',
-      [{label:'#',w:'36px'},{label:'Jugador'},{label:'Total',center:true,w:'70px'},{label:'Norm.',center:true,w:'70px'},{label:'Pen.',center:true,w:'70px'}],
-      golesOrdenados.map(gRow)) +
-    makeTabla('↩️ Goles en Contra',
-      [{label:'#',w:'36px'},{label:'Jugador'},{label:'Cant.',center:true,w:'80px'}],
-      ecOrdenados.map(sRow('var(--rojo)'))) +
-    makeTabla('🟨 Amonestados',
-      [{label:'#',w:'36px'},{label:'Jugador'},{label:'Amarillas',center:true,w:'90px'}],
-      amon.slice(0,30).map(sRow('var(--amarillo)'))) +
-    makeTabla('🟥 Expulsados',
-      [{label:'#',w:'36px'},{label:'Jugador'},{label:'Rojas',center:true,w:'80px'}],
-      expu.slice(0,30).map(sRow('var(--rojo)')));
+    makeTabla('goleadores',  '⚽ Goleadores',      ['#','Jugador','Total','Norm.','Pen.']) +
+    makeTabla('ec',          '↩️ Goles en Contra', ['#','Jugador','Cant.']) +
+    makeTabla('amonestados', '🟨 Amonestados',     ['#','Jugador','Amarillas']) +
+    makeTabla('expulsados',  '🟥 Expulsados',      ['#','Jugador','Rojas']);
+
+  ['goleadores','ec','amonestados','expulsados'].forEach(renderTablaTorneo);
 }
 
 function formatearFechaDia(fecha) {
