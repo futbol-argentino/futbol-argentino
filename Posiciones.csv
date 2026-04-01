@@ -1,0 +1,31 @@
+ID_Temporada,Grupo,Pos,Equipo,PJ,PG,PE,PP,GF,GC,DG,Pts
+1,Zona A,1,Argentinos Juniors (V),16,9,6,1,24,9,15,33
+1,Zona A,2,Boca Juniors (V),16,10,3,3,24,11,13,33
+1,Zona A,3,Racing Club (V),16,9,1,6,26,16,10,28
+1,Zona A,4,Huracan (V),16,7,6,3,19,12,7,27
+1,Zona A,5,Tigre (V),16,8,3,5,18,12,6,27
+1,Zona A,6,Independiente Rivadavia (V),16,7,6,3,20,17,3,27
+1,Zona A,7,Barracas Central (V),16,7,5,4,20,18,2,26
+1,Zona A,8,Estudiantes LP (V),16,5,6,5,18,19,-1,21
+1,Zona A,9,Newells,16,5,4,7,12,15,-3,19
+1,Zona A,10,Defensa y Justicia,16,5,4,7,18,22,-4,19
+1,Zona A,11,Central Cordoba SdE,16,5,3,8,21,22,-1,18
+1,Zona A,12,Belgrano,16,3,8,5,13,23,-10,17
+1,Zona A,13,Aldosivi,16,4,3,9,18,28,-10,15
+1,Zona A,14,Banfield,16,3,5,8,14,19,-5,14
+1,Zona A,15,Union,16,3,5,8,11,17,-6,14
+1,Zona B,1,Rosario Central (V),16,10,5,1,22,8,14,35
+1,Zona B,2,River Plate (V),16,8,7,1,21,9,14,31
+1,Zona B,3,Independiente (V),16,8,5,3,23,12,11,29
+1,Zona B,4,San Lorenzo (V),16,7,6,3,14,10,4,27
+1,Zona B,5,Deportivo Riestra (V),16,5,9,2,13,7,6,24
+1,Zona B,6,Platense (V) (C),16,6,5,5,13,11,2,23
+1,Zona B,7,Lanus (V),16,4,8,4,13,11,2,20
+1,Zona B,8,Instituto (V),16,5,3,8,16,20,-4,18
+1,Zona B,9,Godoy Cruz,16,3,8,5,8,18,-10,17
+1,Zona B,10,Atletico Tucuman,16,5,1,10,17,21,-4,16
+1,Zona B,11,Gimnasia LP,16,4,4,8,9,18,-9,16
+1,Zona B,12,Sarmiento,16,2,9,5,11,19,-8,15
+1,Zona B,13,Velez Sarsfield,16,4,2,10,7,22,-15,14
+1,Zona B,14,Talleres,16,2,7,7,11,15,-4,13
+1,Zona B,15,San Martin SJ,16,2,3,11,5,18,-13,9
