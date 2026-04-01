@@ -1462,7 +1462,7 @@ function getBandera(codigo) {
   if (!codigo) return '';
   const p = PAISES[codigo.toUpperCase()];
   if (!p) return `<span style="font-size:11px;color:var(--texto-3);vertical-align:middle;">${codigo}</span>`;
-  return `<img src="https://flagcdn.com/20x15/${p.codigo}.png" alt="${p.nombre}" style="width:20px;height:15px;border-radius:2px;vertical-align:middle;display:inline-block;flex-shrink:0;" title="${p.nombre}">`;
+  return `<img src="https://flagcdn.com/16x12/${p.codigo}.png" alt="${p.nombre}" style="width:16px;height:12px;border-radius:2px;vertical-align:middle;display:inline-block;flex-shrink:0;" title="${p.nombre}">`;
 }
 
 function getNombrePais(codigo) {
@@ -1552,9 +1552,9 @@ let datosStats = { goleadores:[], gc:[], amonestados:[], expulsados:[], nacGolea
 function filaJugador(i, nombre, nac, cols) {
   const bandera = nac ? `<span style="display:inline-flex;align-items:center;flex-shrink:0;">${getBandera(nac)}</span>` : '';
   const nameCell = `<td style="font-size:14px;font-weight:500;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')">
-    <div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;">${bandera}<span>${nombre}</span></div>
+    <div style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap;min-width:0;">${bandera}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${nombre}</span></div>
   </td>`;
-  return `<tr><td style="color:var(--texto-2);font-size:13px;width:40px;">${i+1}</td>${nameCell}${cols}</tr>`;
+  return `<tr><td style="color:var(--texto-2);font-size:13px;width:36px;padding:8px 10px;">${i+1}</td>${nameCell}${cols}</tr>`;
 }
 
 function renderPaginacion(id, total, pagActual, onChange) {
@@ -1659,11 +1659,11 @@ function renderEstadisticas() {
 }
 
 function filaJugador(i, nombre, nac, cols) {
-  const bandera = nac ? `<span style="font-size:16px;margin-right:6px;">${getBandera(nac)}</span>` : '';
+  const bandera = nac ? `<span style="display:inline-flex;align-items:center;flex-shrink:0;">${getBandera(nac)}</span>` : '';
   const nameCell = `<td style="font-size:14px;font-weight:500;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')">
-    <div style="display:flex;align-items:center;gap:4px;">${bandera}${nombre}</div>
+    <div style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap;min-width:0;">${bandera}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${nombre}</span></div>
   </td>`;
-  return `<tr><td style="color:var(--texto-2);font-size:13px;width:40px;">${i+1}</td>${nameCell}${cols}</tr>`;
+  return `<tr><td style="color:var(--texto-2);font-size:13px;width:36px;padding:8px 10px;">${i+1}</td>${nameCell}${cols}</tr>`;
 }
 
 // ── FICHA JUGADOR ──
