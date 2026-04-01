@@ -245,6 +245,11 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 }
 @media(max-width:380px){.equipos-grid{grid-template-columns:repeat(3,1fr)}}
 
+/* ── TORNEO TABS ── */
+.torneo-tab-btn{font-family:var(--fuente-cuerpo);font-size:13px;font-weight:500;padding:7px 16px;border-radius:7px;border:none;background:transparent;color:var(--texto-2);cursor:pointer;transition:var(--trans);}
+.torneo-tab-btn:hover{color:var(--texto-1);}
+.torneo-tab-btn.activo{background:var(--azul);color:white;font-weight:600;box-shadow:0 2px 10px rgba(21,128,61,0.35);}
+
 /* ── TABLA POSICIONES ── */
 .pos-campeon    { background:rgba(251,191,36,0.12)!important; box-shadow:inset 3px 0 0 var(--oro)!important; }
 .pos-libertad   { background:rgba(74,222,128,0.10)!important; box-shadow:inset 3px 0 0 #4ADE80!important; }
@@ -484,6 +489,9 @@ select option{background:#080F20;color:#F0F6FF}
         </select>
       </div>
 
+      <!-- Stats vs rival específico -->
+      <div id="detalle-stats-rival" class="stats-card" style="display:none;"></div>
+
       <!-- Tabla detalle -->
       <div class="tabla-wrapper">
         <div class="tabla-header">
@@ -640,16 +648,29 @@ select option{background:#080F20;color:#F0F6FF}
 
     <!-- Vista detalle de un torneo -->
     <div id="vista-torneo" style="display:none;">
-      <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap;">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap;">
         <button class="btn-volver" onclick="volverCampeones()">← Volver</button>
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:12px;">
           <img id="torneo-trofeo-mini" src="" alt="" style="width:36px;height:36px;object-fit:contain;" onerror="this.style.display='none'">
           <span id="torneo-nombre" style="font-family:var(--fuente-titulo);font-size:26px;letter-spacing:1px;"></span>
-          <span id="torneo-campeon-txt" style="font-size:14px;color:var(--oro);font-weight:600;white-space:nowrap;"></span>
         </div>
       </div>
-      <div id="torneo-posiciones-container" style="margin-bottom:20px;"></div>
-      <div id="torneo-partidos-container"></div>
+      <!-- Tabs internas -->
+      <div class="torneo-tabs" style="display:flex;gap:2px;background:var(--fondo-3);border:1px solid var(--borde);border-radius:10px;padding:4px;margin-bottom:18px;width:fit-content;">
+        <button class="torneo-tab-btn activo" id="ttab-tablas"   onclick="cambiarTorneoTab('tablas')">📋 Tablas</button>
+        <button class="torneo-tab-btn"         id="ttab-partidos" onclick="cambiarTorneoTab('partidos')">📅 Partidos</button>
+        <button class="torneo-tab-btn"         id="ttab-stats"    onclick="cambiarTorneoTab('stats')">📊 Estadísticas</button>
+      </div>
+      <div id="torneo-panel-tablas">
+        <div id="torneo-posiciones-container"></div>
+      </div>
+      <div id="torneo-panel-partidos" style="display:none;">
+        <div id="torneo-partidos-container"></div>
+      </div>
+      <div id="torneo-panel-stats" style="display:none;">
+        <div id="torneo-stats-container"></div>
+      </div>
     </div>
 
   </div><!-- fin panel-campeones -->
@@ -719,6 +740,12 @@ select option{background:#080F20;color:#F0F6FF}
       <div class="modal-dato"><div class="modal-dato-label">Torneo</div><div class="modal-dato-valor" id="modal-torneo"></div></div>
       <div class="modal-dato"><div class="modal-dato-label">Fase</div><div class="modal-dato-valor" id="modal-fase"></div></div>
       <div class="modal-dato full"><div class="modal-dato-label">Estadio</div><div class="modal-dato-valor" id="modal-estadio"></div></div>
+
+      <!-- NOTAS -->
+      <div class="modal-dato full" id="modal-notas-wrap" style="display:none;border-left:3px solid var(--celeste);">
+        <div class="modal-dato-label">📌 Nota</div>
+        <div class="modal-dato-valor" id="modal-notas" style="color:var(--celeste-claro);font-style:italic;line-height:1.5;"></div>
+      </div>
 
       <!-- DESPLEGABLE GOLEADORES -->
       <div class="modal-dato full modal-desplegable" onclick="toggleDesplegable('goleadores')">
@@ -1204,7 +1231,6 @@ function filtrarDetalle() {
   const rival = document.getElementById('detalle-filtro-rival').value;
   const res = document.getElementById('detalle-filtro-resultado').value;
 
-  // Actualizar opciones del select cuando cambia el rival
   const nombre = equipos[id];
   actualizarSelectResultado(id, nombre);
   document.getElementById('detalle-filtro-resultado').value = res;
@@ -1220,6 +1246,50 @@ function filtrarDetalle() {
   if (res === 'victoria-rival') lista = lista.filter(p=>p.Tipo_Definicion==='0'&&p.ID_Ganador===rival);
   if (res === 'derrota') lista = lista.filter(p=>p.Tipo_Definicion==='0'&&p.ID_Ganador!==id&&p.ID_Ganador!=='');
   if (res === 'empate') lista = lista.filter(p=>p.Goles_Local===p.Goles_Visitante&&p.Tipo_Definicion==='0');
+
+  // Mostrar stats vs rival cuando está seleccionado
+  const rivalCard = document.getElementById('detalle-stats-rival');
+  if (rival) {
+    const nombreRival = equipos[rival] || rival;
+    const lisAll = partidos.filter(p =>
+      (p.Local_ID===id&&p.Visitante_ID===rival)||(p.Local_ID===rival&&p.Visitante_ID===id));
+    const pj = lisAll.length;
+    let pg=0, pe=0, pp=0, gf=0, gc=0;
+    lisAll.forEach(p => {
+      const esLocal = p.Local_ID === id;
+      gf += parseInt(esLocal ? p.Goles_Local : p.Goles_Visitante)||0;
+      gc += parseInt(esLocal ? p.Goles_Visitante : p.Goles_Local)||0;
+      if (p.Tipo_Definicion==='0') {
+        if (p.ID_Ganador===id) pg++;
+        else if (p.ID_Ganador===rival) pp++;
+        else pe++;
+      } else { pe++; }
+    });
+    const dg = gf - gc;
+    const escRival = ESCUDOS[nombreRival]
+      ? `<img src="${ESCUDOS[nombreRival]}" style="width:28px;height:28px;object-fit:contain;" onerror="this.style.display='none'">`:'';
+    rivalCard.style.display = 'block';
+    rivalCard.innerHTML = `
+      <div class="stats-card-header">
+        <div style="display:flex;align-items:center;gap:10px;">${escRival}
+          <div>
+            <div class="stats-card-nombre">${nombre} vs ${nombreRival}</div>
+            <div class="stats-card-sub">Historial de enfrentamientos</div>
+          </div>
+        </div>
+      </div>
+      <div class="stats-nums">
+        <div class="stat-pill"><span class="stat-pill-num num-celeste">${pj}</span><span class="stat-pill-label">Partidos</span></div>
+        <div class="stat-pill"><span class="stat-pill-num num-verde">${pg}</span><span class="stat-pill-label">Victorias</span></div>
+        <div class="stat-pill"><span class="stat-pill-num num-amarillo">${pe}</span><span class="stat-pill-label">Empates</span></div>
+        <div class="stat-pill"><span class="stat-pill-num num-rojo">${pp}</span><span class="stat-pill-label">Derrotas</span></div>
+        <div class="stat-pill"><span class="stat-pill-num num-celeste">${gf}</span><span class="stat-pill-label">Goles a favor</span></div>
+        <div class="stat-pill"><span class="stat-pill-num num-celeste">${gc}</span><span class="stat-pill-label">Goles en contra</span></div>
+        <div class="stat-pill"><span class="stat-pill-num ${dg>=0?'num-verde':'num-rojo'}">${dg>=0?'+'+dg:dg}</span><span class="stat-pill-label">Diferencia</span></div>
+      </div>`;
+  } else {
+    rivalCard.style.display = 'none';
+  }
 
   document.getElementById('detalle-count').textContent = lista.length + ' partidos';
 
@@ -1299,6 +1369,16 @@ function verPartido(id) {
     : (p.Fase || '');
   document.getElementById('modal-fase').textContent = faseTexto;
   document.getElementById('modal-estadio').textContent = p.Estadio||'No disponible';
+
+  // Notas del partido
+  const notasWrap = document.getElementById('modal-notas-wrap');
+  const nota = (p.Notas || p.Nota || '').trim();
+  if (nota) {
+    document.getElementById('modal-notas').textContent = nota;
+    notasWrap.style.display = 'block';
+  } else {
+    notasWrap.style.display = 'none';
+  }
 
   // Escudos
   const escLocal = document.getElementById('modal-escudo-local');
@@ -1821,6 +1901,13 @@ function filtrarCampeones() {
       </div>
     </div>`;
   }).join('');
+}
+
+function cambiarTorneoTab(tab) {
+  ['tablas','partidos','stats'].forEach(t => {
+    document.getElementById('torneo-panel-'+t).style.display = t===tab ? 'block' : 'none';
+    document.getElementById('ttab-'+t).classList.toggle('activo', t===tab);
+  });
 }
 
 function verTorneo(idTemporada) {
