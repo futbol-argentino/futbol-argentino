@@ -461,9 +461,23 @@ select option{background:#080F20;color:#F0F6FF}
     <!-- Vista portadas de divisiones -->
     <div id="vista-divisiones">
       <div class="filtros-panel" style="margin-bottom:20px;">
-        <div class="filtros-titulo">🏟️ Divisiones</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <div class="filtros-titulo" style="margin-bottom:0;">🏟️ Equipos</div>
+          <div style="display:flex;gap:3px;background:var(--fondo-3);border:1px solid var(--borde);border-radius:9px;padding:3px;">
+            <button id="btn-ver-divisiones" onclick="setVistaEquipos('divisiones')" style="font-family:var(--fuente-cuerpo);font-size:12px;font-weight:500;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;background:var(--azul);color:white;transition:var(--trans);">🏟️ Por División</button>
+            <button id="btn-ver-todos" onclick="setVistaEquipos('todos')" style="font-family:var(--fuente-cuerpo);font-size:12px;font-weight:500;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;background:transparent;color:var(--texto-2);transition:var(--trans);">⊞ Todos</button>
+          </div>
+        </div>
       </div>
       <div id="divisiones-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:20px;"></div>
+      <!-- Vista todos los equipos directamente -->
+      <div id="todos-equipos-wrap" style="display:none;">
+        <div class="equipos-buscar" style="margin-bottom:16px;">
+          <span class="equipos-buscar-icon">🔍</span>
+          <input type="text" id="buscar-equipo-todos" placeholder="Buscar equipo..." oninput="filtrarEquiposTodos()">
+        </div>
+        <div class="equipos-grid" id="equipos-grid-todos"></div>
+      </div>
     </div>
 
     <!-- Vista grilla de equipos de una división -->
@@ -1998,9 +2012,14 @@ function cambiarTorneoTab(tab) {
   }
 }
 
+let scrollCampeones = 0;
+
 function verTorneo(idTemporada) {
   const temp = temporadasArr.find(t => t.ID_Temporada == idTemporada);
   if (!temp) return;
+
+  // Guardar posición de scroll antes de entrar
+  scrollCampeones = window.scrollY;
 
   torneoActualId = idTemporada;
   document.getElementById('torneo-stats-container').innerHTML = '';
@@ -2008,6 +2027,7 @@ function verTorneo(idTemporada) {
   document.getElementById('vista-campeones').style.display = 'none';
   document.getElementById('vista-torneo').style.display = 'block';
   cambiarTorneoTab('tablas');
+  window.scrollTo(0, 0);
 
   document.getElementById('torneo-nombre').textContent = temp.Competencia;
 
@@ -2277,6 +2297,7 @@ function volverCampeones() {
   torneoActualId = null;
   document.getElementById('vista-torneo').style.display = 'none';
   document.getElementById('vista-campeones').style.display = 'block';
+  requestAnimationFrame(() => window.scrollTo(0, scrollCampeones));
 }
 
 
@@ -2409,6 +2430,52 @@ function setModoJugadores(modo) {
   document.getElementById('jugador-modo-album').style.background = modo==='album' ? 'var(--azul)' : 'transparent';
   document.getElementById('jugador-modo-album').style.color = modo==='album' ? 'white' : 'var(--texto-2)';
   buscarJugador();
+}
+
+let vistaEquiposModo = 'divisiones';
+
+function setVistaEquipos(modo) {
+  vistaEquiposModo = modo;
+  const btnDiv = document.getElementById('btn-ver-divisiones');
+  const btnTodos = document.getElementById('btn-ver-todos');
+  const gridDiv = document.getElementById('divisiones-grid');
+  const gridTodos = document.getElementById('todos-equipos-wrap');
+
+  btnDiv.style.background = modo === 'divisiones' ? 'var(--azul)' : 'transparent';
+  btnDiv.style.color = modo === 'divisiones' ? 'white' : 'var(--texto-2)';
+  btnTodos.style.background = modo === 'todos' ? 'var(--azul)' : 'transparent';
+  btnTodos.style.color = modo === 'todos' ? 'white' : 'var(--texto-2)';
+
+  if (modo === 'divisiones') {
+    gridDiv.style.display = 'grid';
+    gridTodos.style.display = 'none';
+  } else {
+    gridDiv.style.display = 'none';
+    gridTodos.style.display = 'block';
+    renderizarEquiposTodos('');
+  }
+}
+
+function renderizarEquiposTodos(filtro) {
+  const grid = document.getElementById('equipos-grid-todos');
+  const lista = equiposArr
+    .filter(e => e.Nombre_Equipo.toLowerCase().includes(filtro.toLowerCase()))
+    .sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo));
+  grid.innerHTML = lista.map(e => {
+    const n = (e.Nombre_Equipo||'').trim().replace(/^"+|"+$/g,'');
+    const esc = ESCUDOS[n];
+    const imgHtml = esc
+      ? `<img src="${esc}" class="equipo-card-escudo" alt="${n}" onerror="this.style.display='none'">`
+      : `<div style="width:56px;height:56px;background:var(--fondo-3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;">⚽</div>`;
+    return `<div class="equipo-card" onclick="verDetalleEquipo('${e.ID_Equipo}')">
+      ${imgHtml}
+      <div class="equipo-card-nombre">${n}</div>
+    </div>`;
+  }).join('');
+}
+
+function filtrarEquiposTodos() {
+  renderizarEquiposTodos(document.getElementById('buscar-equipo-todos').value);
 }
 
 // ── DIVISIONES ──
