@@ -117,11 +117,11 @@ header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;ba
 .stats-card-escudo{width:36px;height:36px;object-fit:contain}
 .stats-card-nombre{font-family:var(--fuente-titulo);font-size:24px;font-weight:400;letter-spacing:1px}
 .stats-card-sub{font-size:10px;color:var(--texto-3);text-transform:uppercase;letter-spacing:1px;margin-top:2px;font-weight:500}
-.stats-nums{display:flex;gap:8px;flex-wrap:wrap}
-.stat-pill{flex:1;min-width:68px;background:var(--fondo-3);border-radius:10px;padding:12px 10px;text-align:center;border:1px solid var(--borde);transition:var(--trans)}
+.stats-nums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.stat-pill{background:var(--fondo-3);border-radius:10px;padding:12px 10px;text-align:center;border:1px solid var(--borde);transition:var(--trans);}
 .stat-pill:hover{border-color:var(--borde-hover);transform:translateY(-2px)}
 .stat-pill-num{font-family:var(--fuente-titulo);font-size:28px;font-weight:400;line-height:1;display:block;letter-spacing:1px}
-.stat-pill-label{font-size:9px;color:var(--texto-3);text-transform:uppercase;letter-spacing:1px;margin-top:4px;font-weight:600;display:block}
+.stat-pill-label{font-size:9px;color:var(--texto-3);text-transform:uppercase;letter-spacing:0.8px;margin-top:4px;font-weight:600;display:block;line-height:1.3;}
 .num-verde{color:var(--verde);text-shadow:0 0 16px rgba(16,185,129,0.3)}
 .num-rojo{color:var(--rojo);text-shadow:0 0 16px rgba(244,63,94,0.3)}
 .num-amarillo{color:var(--amarillo)}
@@ -228,7 +228,8 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
   .header-banner{height:65px}.header-inner{padding:0 12px}.main{padding:12px}
   .tabs-barra{width:100%;overflow-x:auto;gap:2px;padding:4px}
   .tab-btn{flex:1;justify-content:center;font-size:11px;padding:7px 8px;white-space:nowrap}
-  .filtros-grid{grid-template-columns:1fr}.btn-limpiar{grid-column:span 1}.filtros-panel{padding:14px}
+  .filtros-grid{grid-template-columns:1fr 1fr}.btn-limpiar{grid-column:span 2}
+  @media(max-width:480px){.filtros-grid{grid-template-columns:1fr}.btn-limpiar{grid-column:span 1}}
   .equipos-grid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px}
   .equipo-card{padding:14px 10px;gap:8px}.equipo-card-escudo{width:44px;height:44px}.equipo-card-nombre{font-size:12px}
   .modal-overlay{padding:10px}.modal-box{padding:18px;border-radius:14px;max-height:95vh}
@@ -237,7 +238,7 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
   #modal-jugador .modal-box{padding:16px}
   #ficha-foto{width:160px!important;height:160px!important;object-position:top!important}
   #ficha-stats{gap:6px}#ficha-stats>div{min-width:58px;padding:8px 6px}
-  .stat-pill{min-width:56px;padding:10px 8px}.stat-pill-num{font-size:24px}
+  .stat-pill{padding:10px 6px}.stat-pill-num{font-size:22px}
   .tabla-wrapper{border-radius:12px}.tabla-header{padding:12px 14px}
   td,th{padding:9px 10px;font-size:13px}.td-resultado{font-size:17px}.td-escudo{width:18px;height:18px}
   .detalle-header{flex-wrap:wrap;gap:10px}.detalle-equipo-nombre{font-size:26px}
@@ -324,13 +325,9 @@ select option{background:#080F20;color:#F0F6FF}
       <span class="sidebar-nav-icon">🥇</span>
       <span class="sidebar-nav-texto">Campeones</span>
     </div>
-    <div class="sidebar-nav-item" onclick="cambiarTab('buscador-jugadores'); cerrarSidebar();" id="menu-buscador-jugadores">
+    <div class="sidebar-nav-item" onclick="cambiarTab('jugadores'); cerrarSidebar();" id="menu-jugadores">
       <span class="sidebar-nav-icon">👤</span>
       <span class="sidebar-nav-texto">Jugadores</span>
-    </div>
-    <div class="sidebar-nav-item" onclick="cambiarTab('album'); cerrarSidebar();" id="menu-album">
-      <span class="sidebar-nav-icon">📸</span>
-      <span class="sidebar-nav-texto">Álbum de Jugadores</span>
     </div>
   </nav>
   <div class="sidebar-footer">Base de Datos del Fútbol Argentino</div>
@@ -460,8 +457,20 @@ select option{background:#080F20;color:#F0F6FF}
   <!-- ══ TAB EQUIPOS ══ -->
   <div class="tab-panel" id="panel-equipos">
 
-    <!-- Vista grilla de equipos -->
-    <div id="vista-equipos">
+    <!-- Vista portadas de divisiones -->
+    <div id="vista-divisiones">
+      <div class="filtros-panel" style="margin-bottom:20px;">
+        <div class="filtros-titulo">🏟️ Divisiones</div>
+      </div>
+      <div id="divisiones-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:20px;"></div>
+    </div>
+
+    <!-- Vista grilla de equipos de una división -->
+    <div id="vista-equipos" style="display:none;">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+        <button class="btn-volver" onclick="volverDivisiones()">← Volver</button>
+        <div id="division-titulo" style="font-family:var(--fuente-titulo);font-size:24px;letter-spacing:1px;"></div>
+      </div>
       <div class="equipos-buscar">
         <span class="equipos-buscar-icon">🔍</span>
         <input type="text" id="buscar-equipo" placeholder="Buscar equipo..." oninput="filtrarEquipos()">
@@ -675,7 +684,7 @@ select option{background:#080F20;color:#F0F6FF}
           </div>
         </div>
       </div>
-      <div id="campeones-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;"></div>
+      <div id="campeones-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:18px;"></div>
     </div>
 
     <!-- Vista detalle de un torneo -->
@@ -708,40 +717,33 @@ select option{background:#080F20;color:#F0F6FF}
   </div><!-- fin panel-campeones -->
 
   <!-- ══ TAB BUSCADOR JUGADORES ══ -->
-  <div class="tab-panel" id="panel-buscador-jugadores">
+  <!-- ══ TAB JUGADORES (buscador + álbum) ══ -->
+  <div class="tab-panel" id="panel-jugadores">
+    <!-- Filtros -->
     <div class="filtros-panel" style="margin-bottom:20px;">
-      <div class="filtros-titulo">👤 Buscar Jugador</div>
-      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+      <div class="filtros-titulo">👤 Jugadores</div>
+      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
         <div class="filtro-grupo" style="flex:2;min-width:200px;">
-          <label class="filtro-label">Nombre del jugador</label>
+          <label class="filtro-label">Buscar por nombre</label>
           <input type="text" id="jugador-buscar-input" class="filtro-input" placeholder="Ej: Copetti, Russo, Ávalos..." oninput="buscarJugador()">
         </div>
         <div class="filtro-grupo" style="flex:1;min-width:160px;">
-          <label class="filtro-label">Equipo (opcional)</label>
+          <label class="filtro-label">Filtrar por equipo</label>
           <select id="jugador-buscar-equipo" class="filtro-select" onchange="buscarJugador()">
             <option value="">Todos los equipos</option>
           </select>
         </div>
-      </div>
-    </div>
-    <div id="jugador-resultados"></div>
-  </div><!-- fin panel-buscador-jugadores -->
-
-  <!-- ══ TAB ÁLBUM ══ -->
-  <div class="tab-panel" id="panel-album">
-    <div class="filtros-panel" style="margin-bottom:20px;">
-      <div class="filtros-titulo">📸 Álbum de Jugadores</div>
-      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-        <div class="filtro-grupo" style="flex:1;min-width:200px;">
-          <label class="filtro-label">Equipo</label>
-          <select id="album-equipo" class="filtro-select" onchange="renderAlbum()">
-            <option value="">Seleccioná un equipo...</option>
-          </select>
+        <div class="filtro-grupo" style="flex:0;white-space:nowrap;">
+          <label class="filtro-label" style="opacity:0;">-</label>
+          <div style="display:flex;gap:4px;background:var(--fondo-3);border:1px solid var(--borde);border-radius:9px;padding:4px;">
+            <button id="jugador-modo-lista" onclick="setModoJugadores('lista')" style="font-family:var(--fuente-cuerpo);font-size:12px;font-weight:500;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;background:var(--azul);color:white;transition:var(--trans);">☰ Lista</button>
+            <button id="jugador-modo-album" onclick="setModoJugadores('album')" style="font-family:var(--fuente-cuerpo);font-size:12px;font-weight:500;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;background:transparent;color:var(--texto-2);transition:var(--trans);">⊞ Álbum</button>
+          </div>
         </div>
       </div>
     </div>
-    <div id="album-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:16px;"></div>
-  </div><!-- fin panel-album -->
+    <div id="jugador-resultados"></div>
+  </div><!-- fin panel-jugadores -->
 
 </div><!-- fin main -->
 
@@ -972,6 +974,7 @@ async function cargarDatos() {
     temporadasArr = tempArr;
     cargarCampeones();
     inicializarBuscadorJugadores();
+    renderDivisiones();
 
     // Cargar posiciones (silencioso si no existe)
     try {
@@ -1133,11 +1136,12 @@ function filtrar() {
     document.getElementById('stats-equipo').classList.remove('visible');
     document.getElementById('enf-titulo').textContent = n1+' vs '+n2;
     document.getElementById('enf-pj').textContent = pj;
-    document.getElementById('enf-g1').textContent = g1; document.getElementById('enf-g1-nombre').textContent = n1;
+    const short = n => n.length > 10 ? n.slice(0,10)+'.' : n;
+    document.getElementById('enf-g1').textContent = g1; document.getElementById('enf-g1-nombre').textContent = short(n1);
     document.getElementById('enf-emp').textContent = emp;
-    document.getElementById('enf-g2').textContent = g2; document.getElementById('enf-g2-nombre').textContent = n2;
-    document.getElementById('enf-gf1').textContent = gf1; document.getElementById('enf-gf1-nombre').textContent = 'Goles '+n1;
-    document.getElementById('enf-gf2').textContent = gf2; document.getElementById('enf-gf2-nombre').textContent = 'Goles '+n2;
+    document.getElementById('enf-g2').textContent = g2; document.getElementById('enf-g2-nombre').textContent = short(n2);
+    document.getElementById('enf-gf1').textContent = gf1; document.getElementById('enf-gf1-nombre').textContent = '⚽ '+short(n1);
+    document.getElementById('enf-gf2').textContent = gf2; document.getElementById('enf-gf2-nombre').textContent = '⚽ '+short(n2);
   } else if (eq1) {
     const nombre = equipos[eq1];
     const pe = partidos.filter(p=>p.Local_ID===eq1||p.Visitante_ID===eq1);
@@ -1168,8 +1172,11 @@ function filtrar() {
 // ── PESTAÑA EQUIPOS ──
 function renderizarEquipos(filtro='') {
   const grid = document.getElementById('equipos-grid');
-  const lista = equiposArr
-    .filter(e => e.Nombre_Equipo.toLowerCase().includes(filtro.toLowerCase()))
+  let lista = equiposArr
+    .filter(e => {
+      if (equiposDivision && e.Division !== equiposDivision) return false;
+      return e.Nombre_Equipo.toLowerCase().includes(filtro.toLowerCase());
+    })
     .sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo));
 
   grid.innerHTML = lista.map(e => {
@@ -1384,9 +1391,15 @@ function toggleRivales() {
 }
 
 function volverEquipos() {
-  document.getElementById('vista-equipos').style.display = 'block';
   document.getElementById('vista-detalle').classList.remove('visible');
   equipoDetalleID = null;
+  // If we came from a division, go back to teams list; else go to divisions
+  if (equiposDivision !== null) {
+    document.getElementById('vista-equipos').style.display = 'block';
+  } else {
+    document.getElementById('vista-equipos').style.display = 'none';
+    document.getElementById('vista-divisiones').style.display = 'block';
+  }
 }
 
 // ── MODAL ──
@@ -2291,7 +2304,11 @@ function buscarJugador() {
   const q = (document.getElementById('jugador-buscar-input')?.value || '').toLowerCase().trim();
   const eqFiltro = document.getElementById('jugador-buscar-equipo')?.value || '';
   const container = document.getElementById('jugador-resultados');
-  if (!q && !eqFiltro) { container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">Escribí un nombre para buscar jugadores.</div>'; return; }
+
+  if (!q && !eqFiltro) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">Escribí un nombre o elegí un equipo para buscar jugadores.</div>';
+    return;
+  }
 
   const todos = recopilarJugadores();
   const resultados = Object.entries(todos).filter(([nombre, data]) => {
@@ -2305,79 +2322,159 @@ function buscarJugador() {
     return;
   }
 
-  container.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;">` +
-    resultados.slice(0,60).map(([nombre, data]) => {
-      const fotoKey = nombre.toLowerCase().replace(/\s+/g,'_').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-      const bandera = data.nac ? getBandera(data.nac) : '';
-      const totGoles = Object.values(data.equipos).reduce((s,r)=>s+r.goles,0);
-      const totAmon  = Object.values(data.equipos).reduce((s,r)=>s+r.amonestados,0);
-      const totExp   = Object.values(data.equipos).reduce((s,r)=>s+r.expulsados,0);
-      const equiposList = Object.keys(data.equipos).map(id => {
-        const anios = formatearAnios(data.equipos[id].anios);
-        return `<span style="font-size:11px;color:var(--texto-2);">${equipos[id]||id} <span style="color:var(--texto-3);">(${anios})</span></span>`;
-      }).join(' · ');
-      return `<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:12px;padding:14px;display:flex;gap:14px;align-items:flex-start;cursor:pointer;transition:var(--trans);" onmouseenter="this.style.borderColor='var(--borde-hover)'" onmouseleave="this.style.borderColor='var(--borde)'" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')">
-        <img src="jugadores/${fotoKey}.jpg" style="width:56px;height:56px;object-fit:cover;object-position:top;border-radius:10px;flex-shrink:0;background:var(--fondo-3);" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2256%22 height=%2256%22><rect width=%2256%22 height=%2256%22 fill=%22%230D1628%22 rx=%2210%22/><text x=%2228%22 y=%2234%22 font-size=%2224%22 text-anchor=%22middle%22>👤</text></svg>'">
-        <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-            <span style="display:inline-flex;">${bandera}</span>
-            <span style="font-size:15px;font-weight:600;">${nombre}</span>
+  if (modoJugadores === 'album') {
+    // ÁLBUM: grilla de fotos
+    container.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:16px;">` +
+      resultados.slice(0,120).map(([nombre, data]) => {
+        const fotoKey = nombre.toLowerCase().replace(/\s+/g,'_').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+        const bandera = data.nac ? getBandera(data.nac) : '';
+        // Get years for filtered equipo or all
+        const aniosSet = eqFiltro && data.equipos[eqFiltro]
+          ? data.equipos[eqFiltro].anios
+          : Object.values(data.equipos).reduce((s,r) => { r.anios.forEach(a=>s.add(a)); return s; }, new Set());
+        const aniosStr = formatearAnios(aniosSet);
+        return `<div class="album-card" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')">
+          <img src="jugadores/${fotoKey}.jpg" class="album-card-foto"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+          <div class="album-avatar" style="display:none;">👤</div>
+          <div class="album-card-info">
+            <div class="album-card-nombre"><span style="display:inline-flex;">${bandera}</span> ${nombre}</div>
+            <div class="album-card-anios">${aniosStr}</div>
           </div>
-          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">
-            ${totGoles ? `<span style="font-size:11px;background:rgba(34,197,94,0.1);color:var(--celeste);padding:2px 7px;border-radius:6px;border:1px solid var(--borde);">⚽ ${totGoles}</span>` : ''}
-            ${totAmon  ? `<span style="font-size:11px;background:rgba(245,158,11,0.1);color:var(--amarillo);padding:2px 7px;border-radius:6px;border:1px solid var(--borde);">🟨 ${totAmon}</span>` : ''}
-            ${totExp   ? `<span style="font-size:11px;background:rgba(244,63,94,0.1);color:var(--rojo);padding:2px 7px;border-radius:6px;border:1px solid var(--borde);">🟥 ${totExp}</span>` : ''}
+        </div>`;
+      }).join('') + '</div>' +
+      (resultados.length > 120 ? `<div style="text-align:center;padding:16px;color:var(--texto-3);font-size:13px;">Mostrando 120 de ${resultados.length}. Refiná la búsqueda.</div>` : '');
+  } else {
+    // LISTA: tarjetas con estadísticas
+    container.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;">` +
+      resultados.slice(0,60).map(([nombre, data]) => {
+        const fotoKey = nombre.toLowerCase().replace(/\s+/g,'_').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+        const bandera = data.nac ? getBandera(data.nac) : '';
+        const totGoles = Object.values(data.equipos).reduce((s,r)=>s+r.goles,0);
+        const totAmon  = Object.values(data.equipos).reduce((s,r)=>s+r.amonestados,0);
+        const totExp   = Object.values(data.equipos).reduce((s,r)=>s+r.expulsados,0);
+        const equiposList = Object.keys(data.equipos).map(id => {
+          const anios = formatearAnios(data.equipos[id].anios);
+          return `<span style="font-size:11px;color:var(--texto-2);">${equipos[id]||id} <span style="color:var(--texto-3);">(${anios})</span></span>`;
+        }).join(' · ');
+        return `<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:12px;padding:14px;display:flex;gap:14px;align-items:flex-start;cursor:pointer;transition:var(--trans);" onmouseenter="this.style.borderColor='var(--borde-hover)'" onmouseleave="this.style.borderColor='var(--borde)'" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')">
+          <img src="jugadores/${fotoKey}.jpg" style="width:56px;height:56px;object-fit:cover;object-position:top;border-radius:10px;flex-shrink:0;background:var(--fondo-3);" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2256%22 height=%2256%22><rect width=%2256%22 height=%2256%22 fill=%22%230D1628%22 rx=%2210%22/><text x=%2228%22 y=%2234%22 font-size=%2224%22 text-anchor=%22middle%22>👤</text></svg>'">
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+              <span style="display:inline-flex;">${bandera}</span>
+              <span style="font-size:15px;font-weight:600;">${nombre}</span>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">
+              ${totGoles ? `<span style="font-size:11px;background:rgba(34,197,94,0.1);color:var(--celeste);padding:2px 7px;border-radius:6px;border:1px solid var(--borde);">⚽ ${totGoles}</span>` : ''}
+              ${totAmon  ? `<span style="font-size:11px;background:rgba(245,158,11,0.1);color:var(--amarillo);padding:2px 7px;border-radius:6px;border:1px solid var(--borde);">🟨 ${totAmon}</span>` : ''}
+              ${totExp   ? `<span style="font-size:11px;background:rgba(244,63,94,0.1);color:var(--rojo);padding:2px 7px;border-radius:6px;border:1px solid var(--borde);">🟥 ${totExp}</span>` : ''}
+            </div>
+            <div style="line-height:1.6;">${equiposList}</div>
           </div>
-          <div style="line-height:1.6;">${equiposList}</div>
-        </div>
-      </div>`;
-    }).join('') + '</div>' +
-    (resultados.length > 60 ? `<div style="text-align:center;padding:16px;color:var(--texto-3);font-size:13px;">Mostrando 60 de ${resultados.length} resultados. Refiná la búsqueda.</div>` : '');
+        </div>`;
+      }).join('') + '</div>' +
+      (resultados.length > 60 ? `<div style="text-align:center;padding:16px;color:var(--texto-3);font-size:13px;">Mostrando 60 de ${resultados.length}. Refiná la búsqueda.</div>` : '');
+  }
 }
 
-// ── ÁLBUM DE JUGADORES ──
-function renderAlbum() {
-  const equipoId = document.getElementById('album-equipo').value;
-  const grid = document.getElementById('album-grid');
-  if (!equipoId) { grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);grid-column:1/-1;">Seleccioná un equipo para ver el álbum.</div>'; return; }
+// ── INICIALIZACIÓN JUGADORES ──
+function inicializarBuscadorJugadores() {
+  const sel = document.getElementById('jugador-buscar-equipo');
+  equiposArr.sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo)).forEach(e => {
+    const opt = document.createElement('option');
+    opt.value = e.ID_Equipo; opt.textContent = e.Nombre_Equipo;
+    sel.appendChild(opt);
+  });
+  document.getElementById('jugador-resultados').innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">Escribí un nombre o elegí un equipo para buscar jugadores.</div>';
+}
 
-  const todos = recopilarJugadores();
-  const jugadoresEquipo = Object.entries(todos)
-    .filter(([, data]) => data.equipos[equipoId])
-    .sort(([a],[b]) => a.localeCompare(b));
+// ── MODO JUGADORES (lista / álbum) ──
+let modoJugadores = 'lista';
+function setModoJugadores(modo) {
+  modoJugadores = modo;
+  document.getElementById('jugador-modo-lista').style.background = modo==='lista' ? 'var(--azul)' : 'transparent';
+  document.getElementById('jugador-modo-lista').style.color = modo==='lista' ? 'white' : 'var(--texto-2)';
+  document.getElementById('jugador-modo-album').style.background = modo==='album' ? 'var(--azul)' : 'transparent';
+  document.getElementById('jugador-modo-album').style.color = modo==='album' ? 'white' : 'var(--texto-2)';
+  buscarJugador();
+}
 
-  if (jugadoresEquipo.length === 0) {
-    grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);grid-column:1/-1;">Sin jugadores registrados para este equipo.</div>';
+// ── DIVISIONES ──
+const DIVISIONES_CONFIG = {
+  'Liga Profesional':              { logo:'div_liga_profesional.png',  label:'Liga Profesional' },
+  'Primera Nacional':              { logo:'div_primera_nacional.png',  label:'Primera Nacional' },
+  'Primera B Metropolitana':       { logo:'div_primera_b.png',         label:'Primera B Metropolitana' },
+  'Federal A':                     { logo:'div_federal_a.png',         label:'Torneo Federal A' },
+  'Primera C':                     { logo:'div_primera_c.png',         label:'Primera C' },
+  'Promocional Amateur':           { logo:'div_promocional.png',       label:'Promocional Amateur' },
+  'Torneo Regional Federal Amateur':{ logo:'div_regional_federal.png', label:'Torneo Regional Federal Amateur' },
+};
+
+// Orden fijo de divisiones
+const DIVISIONES_ORDEN = [
+  'Liga Profesional',
+  'Primera Nacional',
+  'Primera B Metropolitana',
+  'Federal A',
+  'Primera C',
+  'Promocional Amateur',
+  'Torneo Regional Federal Amateur',
+];
+
+let divisionActual = null;
+let equiposDivision = null; // all teams if no division filter
+
+function renderDivisiones() {
+  const divsEnCSV = new Set(equiposArr.map(e => e.Division).filter(Boolean));
+  const grid = document.getElementById('divisiones-grid');
+
+  if (divsEnCSV.size === 0) {
+    // Sin columna Division — mostrar todos directamente
+    document.getElementById('vista-divisiones').style.display = 'none';
+    document.getElementById('vista-equipos').style.display = 'block';
+    document.getElementById('division-titulo').textContent = '';
+    equiposDivision = null;
+    renderizarEquipos();
     return;
   }
 
-  grid.innerHTML = jugadoresEquipo.map(([nombre, data]) => {
-    const fotoKey = nombre.toLowerCase().replace(/\s+/g,'_').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-    const anios = formatearAnios(data.equipos[equipoId].anios);
-    const bandera = data.nac ? `<span style="margin-right:4px;">${getBandera(data.nac)}</span>` : '';
-    return `<div class="album-card" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')">
-      <img src="jugadores/${fotoKey}.jpg" class="album-card-foto"
-        onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-      <div class="album-avatar" style="display:none;">👤</div>
-      <div class="album-card-info">
-        <div class="album-card-nombre">${bandera}${nombre}</div>
-        <div class="album-card-anios">${anios}</div>
+  // Mostrar en el orden fijo, solo las que tienen equipos en el CSV
+  const divsOrdenadas = DIVISIONES_ORDEN.filter(d => divsEnCSV.has(d));
+  // Agregar las que no están en DIVISIONES_ORDEN al final
+  divsEnCSV.forEach(d => { if (!DIVISIONES_ORDEN.includes(d)) divsOrdenadas.push(d); });
+
+  grid.innerHTML = divsOrdenadas.map(div => {
+    const cfg = DIVISIONES_CONFIG[div] || {};
+    const count = equiposArr.filter(e => e.Division === div).length;
+    const logoHtml = cfg.logo
+      ? `<img src="${cfg.logo}" style="width:120px;height:120px;object-fit:contain;filter:drop-shadow(0 4px 16px rgba(0,0,0,0.5));" onerror="this.style.display='none'">`
+      : `<div style="font-size:64px;">🏟️</div>`;
+    return `<div class="camp-card" onclick="verDivision('${div.replace(/'/g,"\\'")}')">
+      <div class="camp-foto-wrap">${logoHtml}</div>
+      <div class="camp-info">
+        <div class="camp-nombre">${cfg.label || div}</div>
+        <div class="camp-campeon" style="color:var(--texto-2);">${count} equipos</div>
       </div>
     </div>`;
   }).join('');
 }
 
-function inicializarBuscadorJugadores() {
-  const sel = document.getElementById('jugador-buscar-equipo');
-  const selAlbum = document.getElementById('album-equipo');
-  equiposArr.sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo)).forEach(e => {
-    [sel, selAlbum].forEach(s => {
-      const opt = document.createElement('option');
-      opt.value = e.ID_Equipo; opt.textContent = e.Nombre_Equipo;
-      s.appendChild(opt);
-    });
-  });
-  document.getElementById('jugador-resultados').innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">Escribí un nombre para buscar jugadores.</div>';
+function verDivision(division) {
+  divisionActual = division;
+  const cfg = DIVISIONES_CONFIG[division] || {};
+  document.getElementById('vista-divisiones').style.display = 'none';
+  document.getElementById('vista-equipos').style.display = 'block';
+  document.getElementById('division-titulo').textContent = cfg.label || division;
+  equiposDivision = division;
+  renderizarEquipos();
+}
+
+function volverDivisiones() {
+  divisionActual = null;
+  equiposDivision = null;
+  document.getElementById('vista-equipos').style.display = 'none';
+  document.getElementById('vista-divisiones').style.display = 'block';
+  document.getElementById('buscar-equipo').value = '';
 }
 
 cargarDatos();
