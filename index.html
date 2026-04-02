@@ -117,8 +117,8 @@ header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;ba
 .stats-card-escudo{width:36px;height:36px;object-fit:contain}
 .stats-card-nombre{font-family:var(--fuente-titulo);font-size:24px;font-weight:400;letter-spacing:1px}
 .stats-card-sub{font-size:10px;color:var(--texto-3);text-transform:uppercase;letter-spacing:1px;margin-top:2px;font-weight:500}
-.stats-nums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
-.stat-pill{background:var(--fondo-3);border-radius:10px;padding:12px 10px;text-align:center;border:1px solid var(--borde);transition:var(--trans);}
+.stats-nums{display:flex;gap:8px;flex-wrap:wrap;}
+.stat-pill{flex:1;min-width:68px;background:var(--fondo-3);border-radius:10px;padding:12px 10px;text-align:center;border:1px solid var(--borde);transition:var(--trans);}
 .stat-pill:hover{border-color:var(--borde-hover);transform:translateY(-2px)}
 .stat-pill-num{font-family:var(--fuente-titulo);font-size:28px;font-weight:400;line-height:1;display:block;letter-spacing:1px}
 .stat-pill-label{font-size:9px;color:var(--texto-3);text-transform:uppercase;letter-spacing:0.8px;margin-top:4px;font-weight:600;display:block;line-height:1.3;}
@@ -239,6 +239,7 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
   #ficha-foto{width:160px!important;height:160px!important;object-position:top!important}
   #ficha-stats{gap:6px}#ficha-stats>div{min-width:58px;padding:8px 6px}
   .stat-pill{padding:10px 6px}.stat-pill-num{font-size:22px}
+  .stats-nums{display:grid;grid-template-columns:repeat(3,1fr);}
   .tabla-wrapper{border-radius:12px}.tabla-header{padding:12px 14px}
   td,th{padding:9px 10px;font-size:13px}.td-resultado{font-size:17px}.td-escudo{width:18px;height:18px}
   .detalle-header{flex-wrap:wrap;gap:10px}.detalle-equipo-nombre{font-size:26px}
@@ -912,7 +913,7 @@ const ESCUDOS = {
   'Tigre':'escudos/tigre.png','Tiro Federal':'escudos/tiro_federal.png',
   'Union':'escudos/union.png','Velez Sarsfield':'escudos/velez_sarsfield.png',
   'San Martin de Mendoza':'escudos/san_martin_de_mendoza.png',
-  'Gimnasia de Concepcion del Uruguay':'escudos/Gimnasia_de_Concepcion_del_Uruguay.png', 'Los Andes' : 'escudos/los_andes.png'
+  'Gimnasia de Concepcion del Uruguay':'escudos/Gimnasia_de_Concepcion_del_Uruguay.png'
 };
 
 let partidos = [], equipos = {}, temporadas = {};
@@ -2050,11 +2051,19 @@ function verTorneo(idTemporada) {
     container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">No hay partidos cargados para este torneo.</div>';
   } else {
     const faseOrder = [
+      // Copa Maradona / fases numeradas
       'Fase Clasificatoria','Fase Complementación','Fase Complementacion',
       'Fase Campeonato','Fase Campeonato Final',
+      // Rondas generales
       'Primera Fase','Segunda Fase','Tercera Fase',
-      'Octavos de Final','Cuartos de Final','Semifinal',
-      'Desempate Descenso','Final'
+      // Copa Superliga 2019 y similares (ida/vuelta)
+      'Octavos de Final Ida','Octavos de Final Vuelta','Octavos de Final',
+      'Cuartos de Final Ida','Cuartos de Final Vuelta','Cuartos de Final',
+      'Semifinal Ida','Semifinal Vuelta','Semifinal',
+      'Desempate Descenso',
+      'Final Ida','Final Vuelta','Final',
+      // Copa Maradona - última fase
+      'Clasificatorio Sudamericana 2022',
     ];
     const gruposOrdenados = Object.entries(grupos).sort(([a, ga], [b, gb]) => {
       const aFecha = a.match(/^Fecha (\d+)$/);
