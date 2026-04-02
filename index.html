@@ -913,7 +913,8 @@ const ESCUDOS = {
   'Tigre':'escudos/tigre.png','Tiro Federal':'escudos/tiro_federal.png',
   'Union':'escudos/union.png','Velez Sarsfield':'escudos/velez_sarsfield.png',
   'San Martin de Mendoza':'escudos/san_martin_de_mendoza.png',
-  'Gimnasia de Concepcion del Uruguay':'escudos/Gimnasia_de_Concepcion_del_Uruguay.png'
+  'Gimnasia de Concepción del Uruguay':'escudos/Gimnasia_de_Concepcion_del_Uruguay.png',
+  'Los Andes':'escudos/los_andes.png'
 };
 
 let partidos = [], equipos = {}, temporadas = {};
@@ -2051,28 +2052,29 @@ function verTorneo(idTemporada) {
     container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">No hay partidos cargados para este torneo.</div>';
   } else {
     const faseOrder = [
-      // Copa Maradona / fases numeradas
+      // Fases numeradas de Copa Maradona
       'Fase Clasificatoria','Fase Complementación','Fase Complementacion',
       'Fase Campeonato','Fase Campeonato Final',
-      // Rondas generales
-      'Primera Fase','Segunda Fase','Tercera Fase',
-      // Copa Superliga 2019 y similares (ida/vuelta)
+      // Copa Superliga 2019: fases ordenadas correctamente
+      'Primera Fase Ida','Primera Fase Vuelta','Primera Fase',
+      'Segunda Fase Ida','Segunda Fase Vuelta','Segunda Fase',
+      'Tercera Fase Ida','Tercera Fase Vuelta','Tercera Fase',
       'Octavos de Final Ida','Octavos de Final Vuelta','Octavos de Final',
       'Cuartos de Final Ida','Cuartos de Final Vuelta','Cuartos de Final',
       'Semifinal Ida','Semifinal Vuelta','Semifinal',
       'Desempate Descenso',
       'Final Ida','Final Vuelta','Final',
-      // Copa Maradona - última fase
+      // Copa Maradona - siempre al final
       'Clasificatorio Sudamericana 2022',
     ];
-    const gruposOrdenados = Object.entries(grupos).sort(([a, ga], [b, gb]) => {
+    const gruposOrdenados = Object.entries(grupos).sort(([a], [b]) => {
+      // "Fecha X" primero, ordenadas numéricamente
       const aFecha = a.match(/^Fecha (\d+)$/);
       const bFecha = b.match(/^Fecha (\d+)$/);
-      // "Fecha X" van primero ordenadas numéricamente
       if (aFecha && bFecha) return parseInt(aFecha[1]) - parseInt(bFecha[1]);
       if (aFecha) return -1;
       if (bFecha) return 1;
-      // Fases numeradas (ej: "Fase Clasificatoria — Fecha 3")
+      // "Fase X — Fecha Y" (fases numeradas)
       const aFaseNum = a.match(/^(.+) — Fecha (\d+)$/);
       const bFaseNum = b.match(/^(.+) — Fecha (\d+)$/);
       if (aFaseNum && bFaseNum) {
@@ -2081,13 +2083,14 @@ function verTorneo(idTemporada) {
         if (faseA !== faseB) return (faseA === -1 ? 999 : faseA) - (faseB === -1 ? 999 : faseB);
         return parseInt(aFaseNum[2]) - parseInt(bFaseNum[2]);
       }
-      if (aFaseNum) return -1;
-      if (bFaseNum) return 1;
-      // Resto por faseOrder
-      const ai = faseOrder.indexOf(a), bi = faseOrder.indexOf(b);
-      if (ai !== -1 && bi !== -1) return ai - bi;
-      if (ai !== -1) return -1;
-      if (bi !== -1) return 1;
+      if (aFaseNum && !bFaseNum) return -1;
+      if (!aFaseNum && bFaseNum) return 1;
+      // Resto: ordenar por posición en faseOrder; si no está, va al final
+      const ai = faseOrder.indexOf(a);
+      const bi = faseOrder.indexOf(b);
+      const av = ai === -1 ? 9999 : ai;
+      const bv = bi === -1 ? 9999 : bi;
+      if (av !== bv) return av - bv;
       return a.localeCompare(b);
     });
 
