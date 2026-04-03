@@ -1,47 +1,50 @@
 ID_Temporada,Año,Competencia,Division,Campeon,Foto_Trofeo
-2,2025,Copa De La Liga Clausura 2025,Primera Division,Estudiantes LP,clausura_2025.jpg
-1,2025,Copa De La Liga Apertura 2025,Primera Division,Platense,apertura_2025.jpg
-4,2024,Liga Profesional 2024,Primera Division,Velez Sarsfield,liga_2024.jpg
+1,2025,Copa De La Liga Apertura,Primera Division,Platense,apertura_2025.jpg
+2,2025,Copa De La Liga Clausura,Primera Division,Estudiantes LP,clausura_2025.jpg
 3,2024,Copa De La Liga 2024,Primera Division,Estudiantes LP,copa_2024.jpg
+4,2024,Liga Profesional 2024,Primera Division,Velez Sarsfield,liga_2024.jpg
 5,2023,Copa De La Liga 2023,Primera Division,Rosario Central,copa_2023.jpg
 6,2023,Liga Profesional 2023,Primera Division,River Plate,liga_2023.jpg
-8,2022,Liga Profesional 2022,Primera Division,Boca Juniors,liga_2022.jpg
 7,2022,Copa De La Liga 2022,Primera Division,Boca Juniors,copa_2022.jpg
-10,2021,Liga Profesional 2021,Primera Division,River Plate,liga_2021.jpg
+8,2022,Liga Profesional 2022,Primera Division,Boca Juniors,liga_2022.jpg
 9,2021,Copa De La Liga 2021,Primera Division,Colon,copa_2021.jpg
+10,2021,Liga Profesional 2021,Primera Division,River Plate,liga_2021.jpg
 11,2020,Copa Diego Armando Maradona 2020,Primera Division,Boca Juniors,copa_2020.jpg
 12,2019/20,Superliga Argentina 2019/2020,Primera Division,Boca Juniors,superliga_2020.jpg
 13,2020,Copa De La Superliga 2020,,,
-15,2019,Copa De La Superliga 2019,Primera Division,Tigre,copa_2019.jpg
 14,2018/19,Superliga Argentina 2018/2019,Primera Division,Racing Club,superliga_2019.jpg
+15,2019,Copa De La Superliga 2019,Primera Division,Tigre,copa_2019.jpg
 16,2017/18,Superliga Argentina 2017/2018,Primera Division,Boca Juniors,superliga_2018.jpg
 17,2016/17,Superliga Argentina 2016/2017,Primera Division,Boca Juniors,superliga_2017.jpg
 18,2016,Torneo Transición 2016,Primera Division,Lanus,transicion_2016.jpg
-19,2015,Primera División 2015,,,
-20,2014,Torneo Transición 2014,,,
-21,2014,Torneo Final 2014,,,
-22,2013,Torneo Inicial 2013,,,
-23,2013,Torneo Final 2013,,,
-24,2012,Torneo Inicial 2012,,,
-25,2012,Torneo Clausura 2012,,,
-26,2011,Torneo Apertura 2011,,,
-27,2011,Torneo Clausura 2011,,,
-28,2010,Torneo Apertura 2010,,,
-29,2010,Torneo Clausura 2010,,,
-30,2009,Torneo Apertura 2009,,,
-31,2009,Torneo Clausura 2009,,,
-32,2008,Torneo Apertura 2008,,,
-33,2008,Torneo Clausura 2008,,,
-34,2007,Torneo Apertura 2007,,,
-35,2007,Torneo Clausura 2007,,,
-36,2006,Torneo Apertura 2006,,,
-37,2006,Torneo Clausura 2006,,,
-38,2005,Torneo Apertura 2005,,,
-39,2005,Torneo Clausura 2005,,,
-40,2004,Torneo Apertura 2004,,,
-41,2004,Torneo Clausura 2004,,,
-42,2003,Torneo Apertura 2003,,,
-43,2003,Torneo Clausura 2003,,,
-44,2002,Torneo Apertura 2002,,,
-45,2002,Torneo Clausura 2002,,,
-46,2001,Torneo Apertura 2001,,,
+19,2015,Primera División 2015,Primera Division,Boca Juniors,
+20,2014,Torneo Transición 2014,Primera Division,Racing Club,
+21,2014,Torneo Final 2014,Primera Division,River Plate,
+22,2013,Torneo Inicial 2013,Primera Division,San Lorenzo,
+23,2013,Torneo Final 2013,Primera Division,Newells,
+24,2012,Torneo Inicial 2012,Primera Division,Velez Sarsfield,
+25,2012,Torneo Clausura 2012,Primera Division,Arsenal,
+26,2011,Torneo Apertura 2011,Primera Division,Boca Juniors,
+27,2011,Torneo Clausura 2011,Primera Division,Velez Sarsfield,
+28,2010,Torneo Apertura 2010,Primera Division,Estudiantes LP,
+29,2010,Torneo Clausura 2010,Primera Division,Argentinos Juniors,
+30,2009,Torneo Apertura 2009,Primera Division,Banfield,
+31,2009,Torneo Clausura 2009,Primera Division,Velez Sarsfield,
+32,2008,Torneo Apertura 2008,Primera Division,Boca Juniors,
+33,2008,Torneo Clausura 2008,Primera Division,River Plate,
+34,2007,Torneo Apertura 2007,Primera Division,Lanus,
+35,2007,Torneo Clausura 2007,Primera Division,San Lorenzo,
+36,2006,Torneo Apertura 2006,Primera Division,Estudiantes LP,
+37,2006,Torneo Clausura 2006,Primera Division,Boca Juniors,
+38,2005,Torneo Apertura 2005,Primera Division,Boca Juniors,
+39,2005,Torneo Clausura 2005,Primera Division,Velez Sarsfield,
+40,2004,Torneo Apertura 2004,Primera Division,Newells,
+41,2004,Torneo Clausura 2004,Primera Division,River Plate,
+42,2003,Torneo Apertura 2003,Primera Division,Boca Juniors,
+43,2003,Torneo Clausura 2003,Primera Division,River Plate,
+44,2002,Torneo Apertura 2002,Primera Division,Independiente,
+45,2002,Torneo Clausura 2002,Primera Division,River Plate,
+46,2001,Torneo Apertura 2001,Primera Division,Racing Club,
+47,2001,Torneo Clausura 2001,Primera Division,San Lorenzo,
+48,2000,Torneo Apertura 2000,Primera Division,Boca Juniors,
+49,2000,Torneo Clausura 2000,Primera Division,Ferro Carril Oeste,
