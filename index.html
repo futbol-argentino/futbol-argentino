@@ -1216,8 +1216,11 @@ function verDetalleEquipo(id) {
   equipoDetalleID = id;
   const nombre = equipos[id];
 
+  // Hide whichever view is currently active
+  document.getElementById('vista-divisiones').style.display = 'none';
   document.getElementById('vista-equipos').style.display = 'none';
   document.getElementById('vista-detalle').classList.add('visible');
+  window.scrollTo(0, 0);
 
   document.getElementById('detalle-nombre').textContent = nombre;
   const escEl = document.getElementById('detalle-escudo');
@@ -1409,12 +1412,22 @@ function toggleRivales() {
 function volverEquipos() {
   document.getElementById('vista-detalle').classList.remove('visible');
   equipoDetalleID = null;
-  // If we came from a division, go back to teams list; else go to divisions
+  document.getElementById('vista-divisiones').style.display = 'block';
   if (equiposDivision !== null) {
+    // Came from a division list
     document.getElementById('vista-equipos').style.display = 'block';
-  } else {
+    document.getElementById('divisiones-grid').style.display = 'none';
+    document.getElementById('todos-equipos-wrap').style.display = 'none';
+  } else if (vistaEquiposModo === 'todos') {
+    // Came from "todos"
+    document.getElementById('todos-equipos-wrap').style.display = 'block';
+    document.getElementById('divisiones-grid').style.display = 'none';
     document.getElementById('vista-equipos').style.display = 'none';
-    document.getElementById('vista-divisiones').style.display = 'block';
+  } else {
+    // Came from divisions grid
+    document.getElementById('divisiones-grid').style.display = 'grid';
+    document.getElementById('todos-equipos-wrap').style.display = 'none';
+    document.getElementById('vista-equipos').style.display = 'none';
   }
 }
 
