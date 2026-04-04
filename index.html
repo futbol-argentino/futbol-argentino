@@ -585,10 +585,19 @@ select option{background:#080F20;color:#F0F6FF}
       </div>
     </div>
 
+    <!-- Vista portada de provincias (para divisiones con provincias) -->
+    <div id="vista-provincias" style="display:none;">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+        <button class="btn-volver" onclick="volverDivisiones()">← Volver</button>
+        <div id="provincias-titulo" style="font-family:var(--fuente-titulo);font-size:24px;letter-spacing:1px;"></div>
+      </div>
+      <div id="provincias-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:20px;"></div>
+    </div>
+
     <!-- Vista grilla de equipos de una división -->
     <div id="vista-equipos" style="display:none;">
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
-        <button class="btn-volver" onclick="volverDivisiones()">← Volver</button>
+        <button class="btn-volver" id="btn-volver-division" onclick="volverADivision()">← Volver</button>
         <div id="division-titulo" style="font-family:var(--fuente-titulo);font-size:24px;letter-spacing:1px;"></div>
       </div>
       <div class="equipos-buscar">
@@ -830,7 +839,13 @@ select option{background:#080F20;color:#F0F6FF}
         <div id="torneo-partidos-container"></div>
       </div>
       <div id="torneo-panel-stats" style="display:none;">
+        <!-- Sub-tabs jugadores / equipos -->
+        <div style="display:flex;gap:2px;background:var(--fondo-3);border:1px solid var(--borde);border-radius:9px;padding:3px;width:fit-content;margin-bottom:16px;">
+          <button id="tstab-jugadores" onclick="cambiarStatsSubTab('jugadores')" style="font-family:var(--fuente-cuerpo);font-size:13px;font-weight:500;padding:6px 16px;border-radius:6px;border:none;cursor:pointer;background:var(--azul);color:white;transition:var(--trans);">👤 Jugadores</button>
+          <button id="tstab-equipos"   onclick="cambiarStatsSubTab('equipos')"   style="font-family:var(--fuente-cuerpo);font-size:13px;font-weight:500;padding:6px 16px;border-radius:6px;border:none;cursor:pointer;background:transparent;color:var(--texto-2);transition:var(--trans);">🏆 Equipos</button>
+        </div>
         <div id="torneo-stats-container"></div>
+        <div id="torneo-stats-equipos-container" style="display:none;"></div>
       </div>
     </div>
 
@@ -1299,6 +1314,7 @@ function renderizarEquipos(filtro='') {
   let lista = equiposArr
     .filter(e => {
       if (equiposDivision && e.Division !== equiposDivision) return false;
+      if (provinciaActual && e.Provincia !== provinciaActual) return false;
       return e.Nombre_Equipo.toLowerCase().includes(filtro.toLowerCase());
     })
     .sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo));
@@ -1521,18 +1537,21 @@ function volverEquipos() {
   document.getElementById('vista-detalle').classList.remove('visible');
   equipoDetalleID = null;
   document.getElementById('vista-divisiones').style.display = 'block';
-  if (equiposDivision !== null) {
-    // Came from a division list
+  if (provinciaActual !== null) {
+    // Vino desde una provincia
+    document.getElementById('vista-provincias').style.display = 'block';
+    document.getElementById('divisiones-grid').style.display = 'none';
+    document.getElementById('todos-equipos-wrap').style.display = 'none';
+    document.getElementById('vista-equipos').style.display = 'none';
+  } else if (equiposDivision !== null) {
     document.getElementById('vista-equipos').style.display = 'block';
     document.getElementById('divisiones-grid').style.display = 'none';
     document.getElementById('todos-equipos-wrap').style.display = 'none';
   } else if (vistaEquiposModo === 'todos') {
-    // Came from "todos"
     document.getElementById('todos-equipos-wrap').style.display = 'block';
     document.getElementById('divisiones-grid').style.display = 'none';
     document.getElementById('vista-equipos').style.display = 'none';
   } else {
-    // Came from divisions grid
     document.getElementById('divisiones-grid').style.display = 'grid';
     document.getElementById('todos-equipos-wrap').style.display = 'none';
     document.getElementById('vista-equipos').style.display = 'none';
@@ -2150,6 +2169,10 @@ function verTorneo(idTemporada) {
 
   torneoActualId = idTemporada;
   document.getElementById('torneo-stats-container').innerHTML = '';
+  const eqC = document.getElementById('torneo-stats-equipos-container');
+  eqC.innerHTML = ''; eqC.dataset.loaded = '';
+  // Reset sub-tabs
+  cambiarStatsSubTab('jugadores');
 
   document.getElementById('vista-campeones').style.display = 'none';
   document.getElementById('vista-torneo').style.display = 'block';
@@ -2605,6 +2628,109 @@ function filtrarEquiposTodos() {
   renderizarEquiposTodos(document.getElementById('buscar-equipo-todos').value);
 }
 
+function cambiarStatsSubTab(tab) {
+  const isJug = tab === 'jugadores';
+  document.getElementById('tstab-jugadores').style.background = isJug ? 'var(--azul)' : 'transparent';
+  document.getElementById('tstab-jugadores').style.color = isJug ? 'white' : 'var(--texto-2)';
+  document.getElementById('tstab-equipos').style.background = !isJug ? 'var(--azul)' : 'transparent';
+  document.getElementById('tstab-equipos').style.color = !isJug ? 'white' : 'var(--texto-2)';
+  document.getElementById('torneo-stats-container').style.display = isJug ? 'block' : 'none';
+  const eqContainer = document.getElementById('torneo-stats-equipos-container');
+  eqContainer.style.display = isJug ? 'none' : 'block';
+  if (!isJug && torneoActualId && !eqContainer.dataset.loaded) {
+    renderStatsEquiposTorneo(torneoActualId);
+    eqContainer.dataset.loaded = '1';
+  }
+}
+
+function renderStatsEquiposTorneo(idTemporada) {
+  const container = document.getElementById('torneo-stats-equipos-container');
+  const pts = partidos.filter(p => p.ID_Temporada == idTemporada);
+
+  if (pts.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">Sin datos de partidos.</div>';
+    return;
+  }
+
+  // Calcular stats por equipo
+  const stats = {};
+  const iniciar = (id) => {
+    if (!stats[id]) stats[id] = { pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, amon:0, expu:0, gcEq:0 };
+  };
+
+  pts.forEach(p => {
+    const l = p.Local_ID, v = p.Visitante_ID;
+    if (!l || !v) return;
+    iniciar(l); iniciar(v);
+    const gl = parseInt(p.Goles_Local)||0, gv = parseInt(p.Goles_Visitante)||0;
+    stats[l].pj++; stats[v].pj++;
+    stats[l].gf += gl; stats[l].gc += gv;
+    stats[v].gf += gv; stats[v].gc += gl;
+    if (p.Tipo_Definicion === '0') {
+      if (p.ID_Ganador === l) { stats[l].pg++; stats[v].pp++; }
+      else if (p.ID_Ganador === v) { stats[v].pg++; stats[l].pp++; }
+      else { stats[l].pe++; stats[v].pe++; }
+    } else { stats[l].pe++; stats[v].pe++; }
+    // Goles en contra (contados para el equipo que los recibió)
+    const rawG = p.Goleadores || '';
+    rawG.split('/').forEach((parte, idx) => {
+      const benefId = idx === 0 ? l : v;
+      parte.split('-').forEach(entrada => {
+        if (/\(EC\)/i.test(entrada)) stats[benefId].gcEq = (stats[benefId].gcEq||0) + 1;
+      });
+    });
+    // Tarjetas
+    [['Amonestados','amon'],['Expulsados','expu']].forEach(([campo, key]) => {
+      const raw = p[campo] || '';
+      raw.split('/').forEach((parte, idx) => {
+        const teamId = idx === 0 ? l : v;
+        parte.split('-').forEach(e => {
+          const n = limpiarNombre(e);
+          if (n && n.length > 1 && n.toLowerCase() !== 'ninguno') stats[teamId][key]++;
+        });
+      });
+    });
+  });
+
+  const makeTablaEq = (titulo, datos, colVal, colorVal, extraCols) => {
+    const rows = datos.map(([id, val], i) => {
+      const nombre = equipos[id] || id;
+      const esc = ESCUDOS[nombre] ? `<img src="${ESCUDOS[nombre]}" style="width:18px;height:18px;object-fit:contain;" onerror="this.style.display='none'">` : '';
+      const extra = extraCols ? extraCols(id) : '';
+      return `<tr>
+        <td style="padding:8px 12px;color:var(--texto-3);font-size:13px;width:36px;">${i+1}</td>
+        <td style="padding:8px 12px;"><div style="display:flex;align-items:center;gap:8px;">${esc}<span style="font-size:13px;font-weight:600;">${nombre}</span></div></td>
+        <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;color:${colorVal};">${val}</td>
+        ${extra}
+      </tr>`;
+    }).join('');
+    return `<div class="tabla-wrapper" style="margin-bottom:16px;">
+      <div class="tabla-header"><div class="tabla-titulo">${titulo}</div><div class="tabla-count">${datos.length} equipos</div></div>
+      <div class="tabla-scroll"><table style="width:100%;border-collapse:collapse;">
+        <thead><tr><th style="width:36px;">#</th><th>Equipo</th><th style="text-align:center;width:80px;">${colVal}</th>${extraCols ? '<th style="text-align:center;width:60px;">PJ</th>' : ''}</tr></thead>
+        <tbody>${rows || '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos</td></tr>'}</tbody>
+      </table></div>
+    </div>`;
+  };
+
+  const sorted = (key, desc=true) => Object.entries(stats)
+    .filter(([,v]) => v.pj > 0)
+    .sort((a,b) => desc ? b[1][key]-a[1][key] : a[1][key]-b[1][key])
+    .map(([id,v]) => [id, v[key]]);
+
+  container.innerHTML =
+    makeTablaEq('⚽ Más Goleadores', sorted('gf'), 'GF', 'var(--verde)',
+      id => `<td style="text-align:center;font-size:12px;color:var(--texto-3);">${stats[id].pj}</td>`) +
+    makeTablaEq('🥅 Más Goles Recibidos', sorted('gc'), 'GC', 'var(--rojo)',
+      id => `<td style="text-align:center;font-size:12px;color:var(--texto-3);">${stats[id].pj}</td>`) +
+    makeTablaEq('💪 Mejor Diferencia de Gol',
+      Object.entries(stats).filter(([,v])=>v.pj>0).sort((a,b)=>(b[1].gf-b[1].gc)-(a[1].gf-a[1].gc)).map(([id,v])=>[id,v.gf-v.gc]),
+      'DG', 'var(--celeste)') +
+    makeTablaEq('🟨 Más Amonestados', sorted('amon'), 'Amarillas', 'var(--amarillo)') +
+    makeTablaEq('🟥 Más Expulsados', sorted('expu'), 'Rojas', 'var(--rojo)') +
+    makeTablaEq('↩️ Más Goles en Contra', sorted('gcEq'), 'EC', 'var(--rojo)');
+}
+
 // ── DIVISIONES ──
 const DIVISIONES_CONFIG = {
   'Liga Profesional':              { logo:'div_liga_profesional.png',  label:'Liga Profesional' },
@@ -2665,20 +2791,111 @@ function renderDivisiones() {
   }).join('');
 }
 
+// Divisiones que muestran provincias en lugar de equipos directamente
+const DIVISIONES_CON_PROVINCIAS = ['Torneo Regional Federal Amateur'];
+
+const PROVINCIAS_CONFIG = {
+  'Buenos Aires':     { logo:'prov_buenos_aires.png' },
+  'Córdoba':          { logo:'prov_cordoba.png' },
+  'Santa Fe':         { logo:'prov_santa_fe.png' },
+  'Entre Ríos':       { logo:'prov_entre_rios.png' },
+  'Corrientes':       { logo:'prov_corrientes.png' },
+  'Misiones':         { logo:'prov_misiones.png' },
+  'Chaco':            { logo:'prov_chaco.png' },
+  'Formosa':          { logo:'prov_formosa.png' },
+  'Santiago del Estero': { logo:'prov_santiago.png' },
+  'Tucumán':          { logo:'prov_tucuman.png' },
+  'Salta':            { logo:'prov_salta.png' },
+  'Jujuy':            { logo:'prov_jujuy.png' },
+  'Catamarca':        { logo:'prov_catamarca.png' },
+  'La Rioja':         { logo:'prov_la_rioja.png' },
+  'San Juan':         { logo:'prov_san_juan.png' },
+  'Mendoza':          { logo:'prov_mendoza.png' },
+  'San Luis':         { logo:'prov_san_luis.png' },
+  'Neuquén':          { logo:'prov_neuquen.png' },
+  'Río Negro':        { logo:'prov_rio_negro.png' },
+  'Chubut':           { logo:'prov_chubut.png' },
+  'Santa Cruz':       { logo:'prov_santa_cruz.png' },
+  'Tierra del Fuego': { logo:'prov_tierra_del_fuego.png' },
+  'La Pampa':         { logo:'prov_la_pampa.png' },
+  'CABA':             { logo:'prov_caba.png' },
+};
+
+let provinciaActual = null;
+
 function verDivision(division) {
   divisionActual = division;
   const cfg = DIVISIONES_CONFIG[division] || {};
   document.getElementById('vista-divisiones').style.display = 'none';
-  document.getElementById('vista-equipos').style.display = 'block';
-  document.getElementById('division-titulo').textContent = cfg.label || division;
   equiposDivision = division;
+
+  // ¿Esta división usa provincias?
+  if (DIVISIONES_CON_PROVINCIAS.includes(division)) {
+    const provincias = [...new Set(
+      equiposArr.filter(e => e.Division === division && e.Provincia).map(e => e.Provincia)
+    )].sort();
+
+    if (provincias.length > 0) {
+      document.getElementById('provincias-titulo').textContent = cfg.label || division;
+      document.getElementById('vista-provincias').style.display = 'block';
+
+      document.getElementById('provincias-grid').innerHTML = provincias.map(prov => {
+        const pcfg = PROVINCIAS_CONFIG[prov] || {};
+        const count = equiposArr.filter(e => e.Division === division && e.Provincia === prov).length;
+        const logoHtml = pcfg.logo
+          ? `<img src="${pcfg.logo}" style="width:120px;height:120px;object-fit:contain;filter:drop-shadow(0 4px 16px rgba(0,0,0,0.4));" onerror="this.style.display='none'">`
+          : `<div style="font-size:56px;">🗺️</div>`;
+        return `<div class="camp-card" onclick="verProvincia('${prov.replace(/'/g,"\\'")}')">
+          <div class="camp-foto-wrap">${logoHtml}</div>
+          <div class="camp-info">
+            <div class="camp-nombre">${prov}</div>
+            <div class="camp-campeon" style="color:var(--texto-2);">${count} equipos</div>
+          </div>
+        </div>`;
+      }).join('');
+      return;
+    }
+  }
+
+  // Sin provincias → ir directo a equipos
+  document.getElementById('division-titulo').textContent = cfg.label || division;
+  document.getElementById('btn-volver-division').onclick = volverDivisiones;
+  document.getElementById('vista-equipos').style.display = 'block';
+  provinciaActual = null;
   renderizarEquipos();
+}
+
+function verProvincia(provincia) {
+  provinciaActual = provincia;
+  document.getElementById('vista-provincias').style.display = 'none';
+  document.getElementById('division-titulo').textContent = provincia;
+  document.getElementById('btn-volver-division').onclick = volverAProvincias;
+  document.getElementById('vista-equipos').style.display = 'block';
+  document.getElementById('buscar-equipo').value = '';
+  renderizarEquipos();
+}
+
+function volverAProvincias() {
+  provinciaActual = null;
+  document.getElementById('vista-equipos').style.display = 'none';
+  document.getElementById('vista-provincias').style.display = 'block';
+  document.getElementById('buscar-equipo').value = '';
+}
+
+function volverADivision() {
+  if (provinciaActual !== null) {
+    volverAProvincias();
+  } else {
+    volverDivisiones();
+  }
 }
 
 function volverDivisiones() {
   divisionActual = null;
+  provinciaActual = null;
   equiposDivision = null;
   document.getElementById('vista-equipos').style.display = 'none';
+  document.getElementById('vista-provincias').style.display = 'none';
   document.getElementById('vista-divisiones').style.display = 'block';
   document.getElementById('buscar-equipo').value = '';
 }
