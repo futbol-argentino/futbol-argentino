@@ -952,7 +952,7 @@ select option{background:#080F20;color:#F0F6FF}
 <div class="modal-overlay" id="modal-jugador" onclick="cerrarFichaJugador()">
   <div class="modal-box" onclick="event.stopPropagation()">
     <div class="modal-top">
-      <div class="modal-equipos" id="ficha-titulo"></div>
+      <div></div>
       <button class="modal-cerrar" onclick="cerrarFichaJugador()">✕</button>
     </div>
     <!-- Header: foto + info -->
@@ -1090,26 +1090,6 @@ select option{background:#080F20;color:#F0F6FF}
             <div>
               <div style="font-size:10px;color:var(--celeste);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;font-weight:600;" id="modal-alin-visita-label"></div>
               <div id="modal-alin-visita"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- DESPLEGABLE DT -->
-      <div class="modal-dato full modal-desplegable" id="modal-dt-wrap" style="display:none;" onclick="toggleDesplegable('dt')">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div class="modal-dato-label">🧑‍💼 Directores Técnicos</div>
-          <span id="arrow-dt" style="color:var(--texto-2);font-size:12px;transition:transform 0.2s;">▼</span>
-        </div>
-        <div id="modal-dt" class="modal-desplegable-contenido">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;">
-            <div>
-              <div style="font-size:10px;color:var(--celeste);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;font-weight:600;" id="modal-dt-local-label"></div>
-              <div id="modal-dt-local" style="font-size:14px;color:var(--texto-1);"></div>
-            </div>
-            <div>
-              <div style="font-size:10px;color:var(--celeste);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;font-weight:600;" id="modal-dt-visita-label"></div>
-              <div id="modal-dt-visita" style="font-size:14px;color:var(--texto-1);"></div>
             </div>
           </div>
         </div>
@@ -1748,23 +1728,7 @@ function verPartido(id) {
   document.getElementById('modal-fase').textContent = faseTexto;
   document.getElementById('modal-estadio').textContent = p.Estadio||'No disponible';
 
-  // DT
-  const dtWrap = document.getElementById('modal-dt-wrap');
-  const dtRaw = p.DT || '';
-  if (dtRaw && dtRaw.trim()) {
-    const dtPartes = dtRaw.split('/');
-    document.getElementById('modal-dt-local-label').textContent = local;
-    document.getElementById('modal-dt-visita-label').textContent = visita;
-    document.getElementById('modal-dt-local').textContent = (dtPartes[0]||'').trim() || '—';
-    document.getElementById('modal-dt-visita').textContent = (dtPartes[1]||'').trim() || '—';
-    dtWrap.style.display = 'block';
-    document.getElementById('modal-dt').style.display = 'none';
-    document.getElementById('arrow-dt').style.transform = 'rotate(0deg)';
-  } else {
-    dtWrap.style.display = 'none';
-  }
-
-  // Notas (ahora desplegable al final)
+  // Notas (desplegable al final)
   const notasWrap = document.getElementById('modal-notas-wrap');
   const nota = (p.Notas || p.Nota || '').trim();
   if (nota) {
@@ -1961,9 +1925,16 @@ function limpiarNombre(texto) {
     .trim();
 }
 
-// Normaliza un nombre para comparación (ignora tildes, mayúsculas, espacios extra)
+// Normaliza un nombre para comparación (ignora tildes, mayúsculas, espacios extra, apóstrofes)
 function normalizarNombre(n) {
-  return n.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+  return n
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')       // quita tildes/acentos
+    .replace(/[\u00B4\u0060\u2018\u2019\u02BC\u2032\u02B9\u0027]/g, '') // quita apóstrofes varios
+    .replace(/[\u00A0\u200B\u202F\u2009\u2060\uFEFF]/g, ' ') // espacios raros → espacio
+    .replace(/\s+/g, ' ')
+    .toLowerCase()
+    .trim();
 }
 
 // Map from normalized name → canonical (first seen) name
@@ -2248,7 +2219,6 @@ function verFichaJugador(nombre) {
   const POSICIONES_LABEL = { ARQ:'Arquero', DEF:'Defensor', MED:'Mediocampista', DEL:'Delantero', SUP:'Suplente' };
 
   document.getElementById('ficha-foto').src = `jugadores/${fotoKey}.jpg`;
-  document.getElementById('ficha-titulo').textContent = nombre;
   document.getElementById('ficha-nombre').textContent = nombre;
   document.getElementById('ficha-bandera').innerHTML = nacionalidad ? getBandera(nacionalidad) : '';
   document.getElementById('ficha-nacionalidad').textContent = nacionalidad ? getNombrePais(nacionalidad) : 'Nacionalidad no registrada';
