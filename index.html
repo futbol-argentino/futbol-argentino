@@ -337,6 +337,72 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
   .hoy-detalle { padding:12px 14px; }
 }
 
+/* ── ALINEACIÓN ── */
+.alin-bloque { margin-bottom:12px; }
+.alin-pos-titulo {
+  font-size:9px; font-weight:700; letter-spacing:1.5px;
+  text-transform:uppercase; color:var(--texto-3);
+  padding:4px 0 6px; border-bottom:1px solid var(--borde);
+  margin-bottom:6px;
+}
+.alin-jugador {
+  display:flex; align-items:center; gap:6px;
+  padding:4px 0; font-size:13px; color:var(--texto-1);
+  cursor:pointer; transition:color 0.15s;
+}
+.alin-jugador:hover { color:var(--celeste); }
+.alin-num { font-size:11px; color:var(--texto-3); width:18px; text-align:right; flex-shrink:0; }
+.alin-nombre { flex:1; font-weight:500; }
+.alin-suplente-arrow { color:#4ADE80; font-size:13px; flex-shrink:0; }
+.alin-dt { margin-top:10px; padding-top:8px; border-top:1px solid var(--borde); font-size:12px; color:var(--texto-2); }
+.alin-dt strong { color:var(--texto-1); }
+
+/* ── FICHA JUGADOR (redesign) ── */
+#modal-jugador .modal-box {
+  max-width:760px !important;
+  padding:32px !important;
+}
+.ficha-header {
+  display:flex; gap:24px; align-items:flex-start; margin-bottom:28px;
+}
+.ficha-foto-wrap { flex-shrink:0; }
+#ficha-foto {
+  width:180px; height:180px; object-fit:cover; object-position:top;
+  border-radius:16px; border:2px solid var(--borde-activo); display:block;
+}
+.ficha-info { flex:1; min-width:0; }
+.ficha-nombre-row {
+  display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap;
+}
+#ficha-bandera img { width:24px !important; height:18px !important; }
+#ficha-nombre { font-family:var(--fuente-titulo); font-size:32px; letter-spacing:1px; line-height:1; }
+#ficha-nacionalidad { font-size:14px; color:var(--texto-2); margin-bottom:6px; }
+#ficha-posicion { font-size:12px; color:var(--celeste); font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
+#ficha-equipos-lista { font-size:13px; color:var(--texto-3); line-height:1.5; }
+.ficha-stats-grid {
+  display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:24px;
+}
+.ficha-stat-pill {
+  background:var(--fondo-3); border:1px solid var(--borde); border-radius:12px;
+  padding:14px 10px; text-align:center;
+}
+.ficha-stat-num { font-family:var(--fuente-titulo); font-size:32px; display:block; line-height:1; }
+.ficha-stat-label { font-size:9px; color:var(--texto-3); text-transform:uppercase; letter-spacing:1px; margin-top:5px; display:block; }
+.ficha-seccion-titulo {
+  font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase;
+  color:var(--texto-3); margin-bottom:12px; padding-bottom:6px;
+  border-bottom:1px solid var(--borde);
+}
+
+@media(max-width:600px){
+  .ficha-header { flex-direction:column; align-items:center; gap:16px; }
+  #ficha-foto { width:140px !important; height:140px !important; }
+  .ficha-info { text-align:center; }
+  .ficha-nombre-row { justify-content:center; }
+  .ficha-stats-grid { grid-template-columns:repeat(3,1fr); }
+  #modal-jugador .modal-box { padding:18px !important; }
+}
+
 /* ── ÁLBUM JUGADORES ── */
 .album-card {
   background:var(--fondo-2); border:1px solid var(--borde);
@@ -884,37 +950,40 @@ select option{background:#080F20;color:#F0F6FF}
 
 <!-- MODAL FICHA JUGADOR -->
 <div class="modal-overlay" id="modal-jugador" onclick="cerrarFichaJugador()">
-  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:640px;">
+  <div class="modal-box" onclick="event.stopPropagation()">
     <div class="modal-top">
       <div class="modal-equipos" id="ficha-titulo"></div>
       <button class="modal-cerrar" onclick="cerrarFichaJugador()">✕</button>
     </div>
-    <!-- Foto + datos básicos -->
-    <div style="display:flex;flex-direction:column;align-items:center;gap:16px;margin-bottom:20px;">
-      <div style="flex-shrink:0;">
-        <img id="ficha-foto" src="" alt="" style="width:200px;height:200px;object-fit:cover;object-position:top;border-radius:16px;border:2px solid var(--borde-activo);flex-shrink:0;" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22><rect width=%22200%22 height=%22200%22 fill=%22%230F2040%22 rx=%2216%22/><text x=%22100%22 y=%22115%22 font-size=%2272%22 text-anchor=%22middle%22>👤</text></svg>'">
+    <!-- Header: foto + info -->
+    <div class="ficha-header">
+      <div class="ficha-foto-wrap">
+        <img id="ficha-foto" src="" alt="" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22180%22 height=%22180%22><rect width=%22180%22 height=%22180%22 fill=%22%230D1628%22 rx=%2216%22/><text x=%2290%22 y=%22105%22 font-size=%2264%22 text-anchor=%22middle%22>👤</text></svg>'">
       </div>
-      <div style="text-align:center;">
-        <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:6px;">
+      <div class="ficha-info">
+        <div class="ficha-nombre-row">
           <span id="ficha-bandera"></span>
-          <span id="ficha-nombre" style="font-family:var(--fuente-titulo);font-size:26px;font-weight:400;letter-spacing:1px;"></span>
+          <span id="ficha-nombre"></span>
         </div>
-        <div id="ficha-nacionalidad" style="font-size:14px;color:var(--texto-2);margin-bottom:4px;"></div>
-        <div id="ficha-equipos-lista" style="font-size:13px;color:var(--texto-3);"></div>
+        <div id="ficha-posicion"></div>
+        <div id="ficha-nacionalidad"></div>
+        <div id="ficha-equipos-lista"></div>
       </div>
     </div>
     <!-- Stats globales -->
-    <div id="ficha-stats" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;"></div>
+    <div class="ficha-seccion-titulo">Estadísticas totales</div>
+    <div class="ficha-stats-grid" id="ficha-stats"></div>
     <!-- Desglose por equipo -->
-    <div style="font-size:11px;color:var(--texto-2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;font-weight:600;">Estadísticas por equipo</div>
+    <div class="ficha-seccion-titulo">Por equipo</div>
     <div class="tabla-scroll">
-      <table style="width:100%;border-collapse:collapse;min-width:400px;">
+      <table style="width:100%;border-collapse:collapse;min-width:420px;">
         <thead><tr>
           <th>Equipo</th>
-          <th style="text-align:center;width:70px;">⚽ Goles</th>
-          <th style="text-align:center;width:70px;">🅿️ Pen.</th>
-          <th style="text-align:center;width:70px;">🟨 Amon.</th>
-          <th style="text-align:center;width:70px;">🟥 Exp.</th>
+          <th style="text-align:center;width:55px;">PJ</th>
+          <th style="text-align:center;width:55px;">⚽</th>
+          <th style="text-align:center;width:55px;">🅿️</th>
+          <th style="text-align:center;width:55px;">🟨</th>
+          <th style="text-align:center;width:55px;">🟥</th>
         </tr></thead>
         <tbody id="ficha-tabla-equipos"></tbody>
       </table>
@@ -945,12 +1014,6 @@ select option{background:#080F20;color:#F0F6FF}
       <div class="modal-dato"><div class="modal-dato-label">Torneo</div><div class="modal-dato-valor" id="modal-torneo"></div></div>
       <div class="modal-dato"><div class="modal-dato-label">Fase</div><div class="modal-dato-valor" id="modal-fase"></div></div>
       <div class="modal-dato full"><div class="modal-dato-label">Estadio</div><div class="modal-dato-valor" id="modal-estadio"></div></div>
-
-      <!-- NOTAS -->
-      <div class="modal-dato full" id="modal-notas-wrap" style="display:none;border-left:3px solid var(--celeste);">
-        <div class="modal-dato-label">📌 Nota</div>
-        <div class="modal-dato-valor" id="modal-notas" style="color:var(--celeste-claro);font-style:italic;line-height:1.5;"></div>
-      </div>
 
       <!-- DESPLEGABLE GOLEADORES -->
       <div class="modal-dato full modal-desplegable" onclick="toggleDesplegable('goleadores')">
@@ -1012,6 +1075,55 @@ select option{background:#080F20;color:#F0F6FF}
         </div>
       </div>
 
+      <!-- DESPLEGABLE ALINEACIONES -->
+      <div class="modal-dato full modal-desplegable" id="modal-alin-wrap" style="display:none;" onclick="toggleDesplegable('alineaciones')">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="modal-dato-label">📋 Alineaciones</div>
+          <span id="arrow-alineaciones" style="color:var(--texto-2);font-size:12px;transition:transform 0.2s;">▼</span>
+        </div>
+        <div id="modal-alineaciones" class="modal-desplegable-contenido">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;">
+            <div>
+              <div style="font-size:10px;color:var(--celeste);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;font-weight:600;" id="modal-alin-local-label"></div>
+              <div id="modal-alin-local"></div>
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--celeste);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;font-weight:600;" id="modal-alin-visita-label"></div>
+              <div id="modal-alin-visita"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DESPLEGABLE DT -->
+      <div class="modal-dato full modal-desplegable" id="modal-dt-wrap" style="display:none;" onclick="toggleDesplegable('dt')">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="modal-dato-label">🧑‍💼 Directores Técnicos</div>
+          <span id="arrow-dt" style="color:var(--texto-2);font-size:12px;transition:transform 0.2s;">▼</span>
+        </div>
+        <div id="modal-dt" class="modal-desplegable-contenido">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;">
+            <div>
+              <div style="font-size:10px;color:var(--celeste);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;font-weight:600;" id="modal-dt-local-label"></div>
+              <div id="modal-dt-local" style="font-size:14px;color:var(--texto-1);"></div>
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--celeste);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;font-weight:600;" id="modal-dt-visita-label"></div>
+              <div id="modal-dt-visita" style="font-size:14px;color:var(--texto-1);"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DESPLEGABLE NOTAS (al final) -->
+      <div class="modal-dato full modal-desplegable" id="modal-notas-wrap" style="display:none;" onclick="toggleDesplegable('notas')">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="modal-dato-label">📌 Nota del partido</div>
+          <span id="arrow-notas" style="color:var(--texto-2);font-size:12px;transition:transform 0.2s;">▼</span>
+        </div>
+        <div id="modal-notas" class="modal-desplegable-contenido" style="color:var(--celeste-claro);font-style:italic;line-height:1.6;"></div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -1022,6 +1134,7 @@ const URL_EQUIPOS    = 'Equipos.csv';
 const URL_TEMPORADAS = 'TEMPORADAS.csv';
 const URL_POSICIONES = 'Posiciones.csv';
 const URL_HOY        = 'Hoy.csv';
+const URL_JUGADORES  = 'Jugadores.csv';
 
 const ESCUDOS = {
   'Aldosivi':'escudos/aldosivi.png','All Boys':'escudos/all_boys.png',
@@ -1056,6 +1169,7 @@ const ESCUDOS = {
 };
 
 let partidos = [], equipos = {}, temporadas = {};
+let jugadoresData = {}; // nombre → { equipoId → Set(ID_Partido) }
 let equiposArr = [], temporadasArr = [];
 let posicionesData = [];
 let equipoDetalleID = null;
@@ -1116,6 +1230,28 @@ async function cargarDatos() {
     inicializarBuscadorJugadores();
     renderDivisiones();
     cargarHoy();
+    // Cargar Jugadores.csv (partidos jugados)
+    try {
+      const resJ = await fetch(URL_JUGADORES);
+      if (resJ.ok) {
+        const csvJ = await resJ.text();
+        const rows = csvToArray(csvJ).filter(r => r.ID_Partido);
+        rows.forEach(r => {
+          ['Jugadores_Local','Jugadores_Visitante'].forEach((col, idx) => {
+            const raw = r[col] || r['Jugadores'] || '';
+            if (!raw) return;
+            const equipoId = idx === 0 ? r.Local_ID : r.Visitante_ID;
+            raw.split('-').forEach(entrada => {
+              const n = nombreCanonico(limpiarNombre(entrada));
+              if (!n || n.length < 2 || n.toLowerCase() === 'ninguno') return;
+              if (!jugadoresData[n]) jugadoresData[n] = {};
+              if (!jugadoresData[n][equipoId]) jugadoresData[n][equipoId] = new Set();
+              jugadoresData[n][equipoId].add(r.ID_Partido);
+            });
+          });
+        });
+      }
+    } catch(e) { /* sin Jugadores.csv */ }
 
     // Cargar posiciones (silencioso si no existe)
     try {
@@ -1612,12 +1748,30 @@ function verPartido(id) {
   document.getElementById('modal-fase').textContent = faseTexto;
   document.getElementById('modal-estadio').textContent = p.Estadio||'No disponible';
 
-  // Notas del partido
+  // DT
+  const dtWrap = document.getElementById('modal-dt-wrap');
+  const dtRaw = p.DT || '';
+  if (dtRaw && dtRaw.trim()) {
+    const dtPartes = dtRaw.split('/');
+    document.getElementById('modal-dt-local-label').textContent = local;
+    document.getElementById('modal-dt-visita-label').textContent = visita;
+    document.getElementById('modal-dt-local').textContent = (dtPartes[0]||'').trim() || '—';
+    document.getElementById('modal-dt-visita').textContent = (dtPartes[1]||'').trim() || '—';
+    dtWrap.style.display = 'block';
+    document.getElementById('modal-dt').style.display = 'none';
+    document.getElementById('arrow-dt').style.transform = 'rotate(0deg)';
+  } else {
+    dtWrap.style.display = 'none';
+  }
+
+  // Notas (ahora desplegable al final)
   const notasWrap = document.getElementById('modal-notas-wrap');
   const nota = (p.Notas || p.Nota || '').trim();
   if (nota) {
     document.getElementById('modal-notas').textContent = nota;
     notasWrap.style.display = 'block';
+    document.getElementById('modal-notas').style.display = 'none';
+    document.getElementById('arrow-notas').style.transform = 'rotate(0deg)';
   } else {
     notasWrap.style.display = 'none';
   }
@@ -1644,15 +1798,91 @@ function verPartido(id) {
     document.getElementById('arrow-'+campo).style.transform = 'rotate(0deg)';
   });
 
+  // Alineaciones
+  const alinWrap = document.getElementById('modal-alin-wrap');
+  const rawJug = p.Jugadores || '';
+  if (rawJug && rawJug.trim()) {
+    const partes = rawJug.split('/');
+    document.getElementById('modal-alin-local-label').textContent = local;
+    document.getElementById('modal-alin-visita-label').textContent = visita;
+    document.getElementById('modal-alin-local').innerHTML  = renderAlineacion(partes[0]||'', p.DT ? p.DT.split('/')[0] : '');
+    document.getElementById('modal-alin-visita').innerHTML = renderAlineacion(partes[1]||'', p.DT ? p.DT.split('/')[1] : '');
+    alinWrap.style.display = 'block';
+    document.getElementById('modal-alineaciones').style.display = 'none';
+    document.getElementById('arrow-alineaciones').style.transform = 'rotate(0deg)';
+  } else {
+    alinWrap.style.display = 'none';
+  }
+
   document.getElementById('modal').classList.add('visible');
 }
 
 function toggleDesplegable(campo) {
   const el = document.getElementById('modal-'+campo);
   const arrow = document.getElementById('arrow-'+campo);
+  if (!el || !arrow) return;
   const abierto = el.style.display === 'block';
   el.style.display = abierto ? 'none' : 'block';
   arrow.style.transform = abierto ? 'rotate(0deg)' : 'rotate(180deg)';
+}
+
+function parsearJugadorAlin(entrada) {
+  entrada = entrada.trim();
+  if (!entrada || entrada.toLowerCase() === 'ninguno') return null;
+  const numMatch   = entrada.match(/^\((\d+)\)/);
+  const posMatch   = entrada.match(/\(([A-Z]{2,4})\)/g);
+  const nacMatch   = entrada.match(/\[([A-Z]{2,3})\]/);
+  const esSuplente = /\(SUP\)/i.test(entrada);
+  const num        = numMatch ? parseInt(numMatch[1]) : 99;
+  // La posición es el paréntesis que NO es el número inicial
+  let pos = 'MED';
+  if (posMatch) {
+    const posCandidatos = posMatch.filter(m => !m.match(/^\(\d+\)$/));
+    if (posCandidatos.length) pos = posCandidatos[0].replace(/[()]/g,'');
+  }
+  const nac    = nacMatch ? nacMatch[1] : null;
+  const nombre = limpiarNombre(entrada);
+  if (!nombre || nombre.length < 2) return null;
+  return { num, pos, nac, nombre, suplente: esSuplente };
+}
+
+const POS_ORDER = { ARQ:0, DEF:1, MED:2, DEL:3 };
+const POS_LABEL = { ARQ:'Arquero', DEF:'Defensa', MED:'Mediocampo', DEL:'Delantera' };
+
+function renderAlineacion(raw, dtRaw) {
+  if (!raw || !raw.trim()) return '<div style="color:var(--texto-3);font-size:12px;padding:4px 0;">Sin datos</div>';
+  const entradas = raw.split('-').map(e => parsearJugadorAlin(e)).filter(Boolean);
+  const titulares = entradas.filter(j => !j.suplente).sort((a,b) => {
+    const pa = POS_ORDER[a.pos]??2, pb = POS_ORDER[b.pos]??2;
+    return pa !== pb ? pa - pb : a.num - b.num;
+  });
+  const suplentes = entradas.filter(j => j.suplente).sort((a,b) => a.num - b.num);
+
+  const renderJ = (j, esSup) => {
+    const nac   = j.nac ? `<span style="display:inline-flex;margin-right:3px;">${getBandera(j.nac)}</span>` : '';
+    const arrow = esSup ? '<span class="alin-suplente-arrow">↗</span> ' : '';
+    return `<div class="alin-jugador" onclick="verFichaJugador('${j.nombre.replace(/'/g,"\\'")}')">
+      <span class="alin-num">${j.num < 99 ? j.num : ''}</span>
+      <span class="alin-nombre">${arrow}${nac}${j.nombre}</span>
+    </div>`;
+  };
+
+  let html = '';
+  const posGrupos = {};
+  titulares.forEach(j => {
+    const g = POS_LABEL[j.pos] || j.pos;
+    if (!posGrupos[g]) posGrupos[g] = [];
+    posGrupos[g].push(j);
+  });
+  Object.entries(posGrupos).forEach(([label, jugs]) => {
+    html += `<div class="alin-bloque"><div class="alin-pos-titulo">${label}</div>${jugs.map(j=>renderJ(j,false)).join('')}</div>`;
+  });
+  if (suplentes.length) {
+    html += `<div class="alin-bloque"><div class="alin-pos-titulo">Suplentes</div>${suplentes.map(j=>renderJ(j,true)).join('')}</div>`;
+  }
+  const dt = (dtRaw||'').trim();
+  if (dt) html += `<div class="alin-dt">🧑‍💼 DT: <strong>${dt}</strong></div>`;
+  return html || '<div style="color:var(--texto-3);font-size:12px;">Sin datos</div>';
 }
 
 function cerrarModal() {
@@ -1721,13 +1951,27 @@ function extraerNacionalidad(texto) {
 
 function limpiarNombre(texto) {
   return texto
-    .replace(/\d+\s*\+\s*\d+\s*[''`´'′]?/g, '') // "45+6'" o "45 + 6'"
-    .replace(/\d+\s*[''`´'′]?/g, '')              // "90'" o "23"
+    .replace(/\d+\s*\+\s*\d+\s*[''`´'′]?/g, '') // "45+6'"
+    .replace(/\d+\s*[''`´'′]?/g, '')              // "90'"
     .replace(/\s*\+\s*/g, ' ')                     // "+" sobrante
     .replace(/\([^)]*\)/g, '')
     .replace(/\[[^\]]*\]/g, '')
     .replace(/\s{2,}/g, ' ')
+    .normalize('NFC')   // unifica combinaciones unicode idénticas
     .trim();
+}
+
+// Normaliza un nombre para comparación (ignora tildes, mayúsculas, espacios extra)
+function normalizarNombre(n) {
+  return n.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+}
+
+// Map from normalized name → canonical (first seen) name
+const nombreCanonicoCache = {};
+function nombreCanonico(n) {
+  const key = normalizarNombre(n);
+  if (!nombreCanonicoCache[key]) nombreCanonicoCache[key] = n;
+  return nombreCanonicoCache[key];
 }
 
 function parsearGoleadores(equipoId, torneoId) {
@@ -1750,7 +1994,7 @@ function parsearGoleadores(equipoId, torneoId) {
         const esEC = /\(EC\)/i.test(entrada);
         const esP  = /\(P\)/i.test(entrada);
         const nac  = extraerNacionalidad(entrada);
-        const nombre = limpiarNombre(entrada);
+        const nombre = nombreCanonico(limpiarNombre(entrada));
         if (!nombre || nombre.length < 2) return;
         if (nac) nacionalidades[nombre] = nac;
         if (esEC) {
@@ -1785,7 +2029,7 @@ function parsearTarjetas(campo, equipoId, torneoId) {
       if (equipoId && idEquipo !== equipoId) return;
       parte.split('-').forEach(entrada => {
         const nac = extraerNacionalidad(entrada);
-        const nombre = limpiarNombre(entrada);
+        const nombre = nombreCanonico(limpiarNombre(entrada));
         if (!nombre || nombre.toLowerCase() === 'ninguno' || nombre.length < 2) return;
         if (nac) nacionalidades[nombre] = nac;
         conteo[nombre] = (conteo[nombre] || 0) + 1;
@@ -1932,28 +2176,28 @@ function formatearAnios(aniosSet) {
 }
 
 function verFichaJugador(nombre) {
+  // Use normalized name to merge duplicates
+  const nombreNorm = normalizarNombre(nombre);
   const porEquipo = {};
   let nacionalidad = null;
+  let posicion = null;
 
   partidos.forEach(p => {
     const anio = p.Fecha ? parseInt(p.Fecha.split('/')[2] || p.Fecha.split('-')[0]) : null;
     ['Goleadores','Amonestados','Expulsados'].forEach(campo => {
       const raw = p[campo] || '';
       if (!raw) return;
-      const partes = raw.split('/');
-      partes.forEach((parte, idx) => {
-        const equipoId = idx === 0 ? p.Local_ID : p.Visitante_ID;
-        const equipoRival = idx === 0 ? p.Visitante_ID : p.Local_ID;
+      raw.split('/').forEach((parte, idx) => {
+        const equipoId   = idx === 0 ? p.Local_ID   : p.Visitante_ID;
+        const equipoRival= idx === 0 ? p.Visitante_ID: p.Local_ID;
         parte.split('-').forEach(entrada => {
           const nac = extraerNacionalidad(entrada);
-          const n = limpiarNombre(entrada);
-          if (n.toLowerCase() !== nombre.toLowerCase()) return;
+          const n   = limpiarNombre(entrada);
+          if (normalizarNombre(n) !== nombreNorm) return;
           if (nac && !nacionalidad) nacionalidad = nac;
           const esEC = /\(EC\)/i.test(entrada);
-          // EC convention: EC goals are listed under the BENEFICIARY team.
-          // So the player who scored EC actually plays for the OPPOSING team.
           const teamId = esEC ? equipoRival : equipoId;
-          if (!porEquipo[teamId]) porEquipo[teamId] = { goles:0, penales:0, ec:0, amonestados:0, expulsados:0, anios: new Set() };
+          if (!porEquipo[teamId]) porEquipo[teamId] = { goles:0, penales:0, ec:0, amonestados:0, expulsados:0, anios:new Set() };
           const r = porEquipo[teamId];
           if (anio) r.anios.add(anio);
           if (campo === 'Goleadores') {
@@ -1962,48 +2206,80 @@ function verFichaJugador(nombre) {
             else r.goles++;
           }
           if (campo === 'Amonestados') r.amonestados++;
-          if (campo === 'Expulsados') r.expulsados++;
+          if (campo === 'Expulsados')  r.expulsados++;
         });
       });
     });
+
+    // Extraer posición y PJ desde columna Jugadores
+    const rawJ = p.Jugadores || '';
+    if (rawJ) {
+      rawJ.split('/').forEach((parte, idx) => {
+        const equipoId = idx === 0 ? p.Local_ID : p.Visitante_ID;
+        parte.split('-').forEach(entrada => {
+          const n = limpiarNombre(entrada);
+          if (normalizarNombre(n) !== nombreNorm) return;
+          // Extraer posición (ARQ/DEF/MED/DEL/SUP)
+          const posMatch = entrada.match(/\(([A-Z]{2,4})\)/);
+          if (posMatch && !posicion && !['ARG','BRA','URU','PAR','BOL','CHI','COL','PER','ECU','VEN','MEX','ESP','POR','ITA','FRA','ALE','ING','HOL','BEL','CRO','SER','USA'].includes(posMatch[1])) {
+            posicion = posMatch[1];
+          }
+          // Contar PJ
+          if (!porEquipo[equipoId]) porEquipo[equipoId] = { goles:0, penales:0, ec:0, amonestados:0, expulsados:0, anios:new Set() };
+          if (!porEquipo[equipoId].pj) porEquipo[equipoId].pj = 0;
+          porEquipo[equipoId].pj++;
+          const anio = p.Fecha ? parseInt(p.Fecha.split('/')[2] || p.Fecha.split('-')[0]) : null;
+          if (anio) porEquipo[equipoId].anios.add(anio);
+        });
+      });
+    }
   });
 
-  const equiposNombres = Object.keys(porEquipo).map(id => equipos[id] || id);
   const totales = Object.values(porEquipo).reduce((a, r) => ({
-    goles: a.goles + r.goles, penales: a.penales + r.penales,
-    ec: a.ec + r.ec, amonestados: a.amonestados + r.amonestados, expulsados: a.expulsados + r.expulsados
-  }), { goles:0, penales:0, ec:0, amonestados:0, expulsados:0 });
+    goles: a.goles+r.goles, penales: a.penales+r.penales,
+    ec: a.ec+r.ec, amonestados: a.amonestados+r.amonestados,
+    expulsados: a.expulsados+r.expulsados,
+    pj: a.pj+(r.pj||0)
+  }), { goles:0, penales:0, ec:0, amonestados:0, expulsados:0, pj:0 });
 
+  const equiposNombres = Object.keys(porEquipo).map(id => equipos[id]||id);
   const fotoKey = nombre.toLowerCase().replace(/\s+/g,'_').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+
+  const POSICIONES_LABEL = { ARQ:'Arquero', DEF:'Defensor', MED:'Mediocampista', DEL:'Delantero', SUP:'Suplente' };
+
   document.getElementById('ficha-foto').src = `jugadores/${fotoKey}.jpg`;
   document.getElementById('ficha-titulo').textContent = nombre;
   document.getElementById('ficha-nombre').textContent = nombre;
   document.getElementById('ficha-bandera').innerHTML = nacionalidad ? getBandera(nacionalidad) : '';
   document.getElementById('ficha-nacionalidad').textContent = nacionalidad ? getNombrePais(nacionalidad) : 'Nacionalidad no registrada';
-  document.getElementById('ficha-equipos-lista').textContent = `Equipos: ${equiposNombres.join(', ')}`;
+  document.getElementById('ficha-posicion').textContent = posicion ? (POSICIONES_LABEL[posicion] || posicion) : '';
+  document.getElementById('ficha-equipos-lista').textContent = equiposNombres.length ? `${equiposNombres.join(' · ')}` : '';
 
-  document.getElementById('ficha-stats').innerHTML = [
+  const stats = [
+    ['PJ', totales.pj, 'var(--texto-1)'],
     ['⚽ Goles', totales.goles, 'var(--celeste)'],
-    ['🅿️ Penales', totales.penales, 'var(--amarillo)'],
-    ['↩️ E.C.', totales.ec, 'var(--rojo)'],
+    ['🅿️ Pen.', totales.penales, 'var(--amarillo)'],
     ['🟨 Amarillas', totales.amonestados, 'var(--amarillo)'],
     ['🟥 Rojas', totales.expulsados, 'var(--rojo)'],
-  ].map(([label, val, color]) => `
-    <div style="background:var(--fondo-3);border:1px solid var(--borde);border-radius:10px;padding:10px 14px;text-align:center;flex:1;min-width:70px;">
-      <div style="font-family:var(--fuente-titulo);font-size:24px;font-weight:700;color:${color};">${val}</div>
-      <div style="font-size:10px;color:var(--texto-2);text-transform:uppercase;letter-spacing:0.8px;margin-top:3px;">${label}</div>
+  ];
+  document.getElementById('ficha-stats').innerHTML = stats.map(([label, val, color]) => `
+    <div class="ficha-stat-pill">
+      <span class="ficha-stat-num" style="color:${color};">${val}</span>
+      <span class="ficha-stat-label">${label}</span>
     </div>`).join('');
 
   document.getElementById('ficha-tabla-equipos').innerHTML = Object.entries(porEquipo)
-    .sort((a,b) => b[1].goles - a[1].goles)
+    .sort((a,b) => (b[1].pj||0) - (a[1].pj||0))
     .map(([eid, r]) => {
-      const esc = ESCUDOS[equipos[eid]] ? `<img src="${ESCUDOS[equipos[eid]]}" style="width:18px;height:18px;object-fit:contain;margin-right:6px;" onerror="this.style.display='none'">` : '';
+      const nm = equipos[eid]||eid;
+      const esc = ESCUDOS[nm] ? `<img src="${ESCUDOS[nm]}" style="width:18px;height:18px;object-fit:contain;margin-right:6px;" onerror="this.style.display='none'">` : '';
       const aniosStr = formatearAnios(r.anios);
       return `<tr>
-        <td>
-          <div style="display:flex;align-items:center;">${esc}${equipos[eid]||eid}</div>
+        <td style="padding:10px 12px;">
+          <div style="display:flex;align-items:center;">${esc}<strong>${nm}</strong></div>
           <div style="font-size:11px;color:var(--texto-3);margin-top:2px;">${aniosStr}</div>
         </td>
+        <td style="text-align:center;font-weight:700;font-size:15px;color:var(--texto-1);">${r.pj||'—'}</td>
         <td style="text-align:center;font-weight:600;color:var(--celeste);">${r.goles||'—'}</td>
         <td style="text-align:center;color:var(--amarillo);">${r.penales||'—'}</td>
         <td style="text-align:center;color:var(--amarillo);">${r.amonestados||'—'}</td>
