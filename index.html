@@ -920,30 +920,56 @@ select option{background:#080F20;color:#F0F6FF}
   <!-- ══ TAB BUSCADOR JUGADORES ══ -->
   <!-- ══ TAB JUGADORES (buscador + álbum) ══ -->
   <div class="tab-panel" id="panel-jugadores">
-    <!-- Filtros -->
-    <div class="filtros-panel" style="margin-bottom:20px;">
-      <div class="filtros-titulo">👤 Jugadores</div>
-      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
-        <div class="filtro-grupo" style="flex:2;min-width:200px;">
-          <label class="filtro-label">Buscar por nombre</label>
-          <input type="text" id="jugador-buscar-input" class="filtro-input" placeholder="Ej: Copetti, Russo, Ávalos..." oninput="buscarJugador()">
-        </div>
-        <div class="filtro-grupo" style="flex:1;min-width:160px;">
-          <label class="filtro-label">Filtrar por equipo</label>
-          <select id="jugador-buscar-equipo" class="filtro-select" onchange="buscarJugador()">
-            <option value="">Todos los equipos</option>
-          </select>
-        </div>
-        <div class="filtro-grupo" style="flex:0;white-space:nowrap;">
-          <label class="filtro-label" style="opacity:0;">-</label>
-          <div style="display:flex;gap:4px;background:var(--fondo-3);border:1px solid var(--borde);border-radius:9px;padding:4px;">
-            <button id="jugador-modo-lista" onclick="setModoJugadores('lista')" style="font-family:var(--fuente-cuerpo);font-size:12px;font-weight:500;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;background:var(--azul);color:white;transition:var(--trans);">☰ Lista</button>
-            <button id="jugador-modo-album" onclick="setModoJugadores('album')" style="font-family:var(--fuente-cuerpo);font-size:12px;font-weight:500;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;background:transparent;color:var(--texto-2);transition:var(--trans);">⊞ Álbum</button>
+    <!-- Sub-tabs Jugadores / DTs -->
+    <div style="display:flex;gap:2px;background:var(--fondo-3);border:1px solid var(--borde);border-radius:10px;padding:4px;width:fit-content;margin-bottom:20px;">
+      <button id="subtab-jugadores" onclick="cambiarSubtabJugadores('jugadores')" style="font-family:var(--fuente-cuerpo);font-size:13px;font-weight:500;padding:7px 18px;border-radius:7px;border:none;cursor:pointer;background:var(--azul);color:white;transition:var(--trans);">👤 Jugadores</button>
+      <button id="subtab-dts"       onclick="cambiarSubtabJugadores('dts')"       style="font-family:var(--fuente-cuerpo);font-size:13px;font-weight:500;padding:7px 18px;border-radius:7px;border:none;cursor:pointer;background:transparent;color:var(--texto-2);transition:var(--trans);">🧑‍💼 Directores Técnicos</button>
+    </div>
+
+    <!-- Sección Jugadores -->
+    <div id="seccion-jugadores">
+      <div class="filtros-panel" style="margin-bottom:20px;">
+        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+          <div class="filtro-grupo" style="flex:2;min-width:200px;">
+            <label class="filtro-label">Buscar por nombre</label>
+            <input type="text" id="jugador-buscar-input" class="filtro-input" placeholder="Ej: Copetti, Russo, Ávalos..." oninput="buscarJugador()">
+          </div>
+          <div class="filtro-grupo" style="flex:1;min-width:160px;">
+            <label class="filtro-label">Filtrar por equipo</label>
+            <select id="jugador-buscar-equipo" class="filtro-select" onchange="buscarJugador()">
+              <option value="">Todos los equipos</option>
+            </select>
+          </div>
+          <div class="filtro-grupo" style="flex:0;white-space:nowrap;">
+            <label class="filtro-label" style="opacity:0;">-</label>
+            <div style="display:flex;gap:4px;background:var(--fondo-3);border:1px solid var(--borde);border-radius:9px;padding:4px;">
+              <button id="jugador-modo-lista" onclick="setModoJugadores('lista')" style="font-family:var(--fuente-cuerpo);font-size:12px;font-weight:500;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;background:var(--azul);color:white;transition:var(--trans);">☰ Lista</button>
+              <button id="jugador-modo-album" onclick="setModoJugadores('album')" style="font-family:var(--fuente-cuerpo);font-size:12px;font-weight:500;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;background:transparent;color:var(--texto-2);transition:var(--trans);">⊞ Álbum</button>
+            </div>
           </div>
         </div>
       </div>
+      <div id="jugador-resultados"></div>
     </div>
-    <div id="jugador-resultados"></div>
+
+    <!-- Sección DTs -->
+    <div id="seccion-dts" style="display:none;">
+      <div class="filtros-panel" style="margin-bottom:20px;">
+        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+          <div class="filtro-grupo" style="flex:2;min-width:200px;">
+            <label class="filtro-label">Buscar por nombre</label>
+            <input type="text" id="dt-buscar-input" class="filtro-input" placeholder="Ej: Tevez, Demichelis..." oninput="buscarDT()">
+          </div>
+          <div class="filtro-grupo" style="flex:1;min-width:160px;">
+            <label class="filtro-label">Filtrar por equipo</label>
+            <select id="dt-buscar-equipo" class="filtro-select" onchange="buscarDT()">
+              <option value="">Todos los equipos</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div id="dt-resultados"></div>
+    </div>
   </div><!-- fin panel-jugadores -->
 
 </div><!-- fin main -->
@@ -986,6 +1012,54 @@ select option{background:#080F20;color:#F0F6FF}
           <th style="text-align:center;width:55px;">🟥</th>
         </tr></thead>
         <tbody id="ficha-tabla-equipos"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FICHA DT -->
+<div class="modal-overlay" id="modal-dt" onclick="cerrarFichaDT()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-top">
+      <div></div>
+      <button class="modal-cerrar" onclick="cerrarFichaDT()">✕</button>
+    </div>
+    <div class="ficha-header">
+      <div class="ficha-foto-wrap">
+        <img id="dt-foto" src="" alt="" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22180%22 height=%22180%22><rect width=%22180%22 height=%22180%22 fill=%22%230D1628%22 rx=%2216%22/><text x=%2290%22 y=%22105%22 font-size=%2264%22 text-anchor=%22middle%22>🧑‍💼</text></svg>'">
+      </div>
+      <div class="ficha-info">
+        <div class="ficha-nombre-row">
+          <span id="dt-nombre" style="font-family:var(--fuente-titulo);font-size:28px;letter-spacing:1px;line-height:1;"></span>
+        </div>
+        <div style="font-size:12px;color:var(--celeste);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;margin-top:4px;">Director Técnico</div>
+        <div id="dt-equipos-lista" style="font-size:13px;color:var(--texto-3);line-height:1.5;"></div>
+      </div>
+    </div>
+    <div class="ficha-seccion-titulo">Partidos dirigidos</div>
+    <div class="tabla-scroll">
+      <table style="width:100%;border-collapse:collapse;min-width:340px;">
+        <thead><tr>
+          <th>Equipo</th>
+          <th style="text-align:center;width:60px;">PD</th>
+          <th style="text-align:center;width:60px;">PG</th>
+          <th style="text-align:center;width:60px;">PE</th>
+          <th style="text-align:center;width:60px;">PP</th>
+          <th style="text-align:center;width:60px;">%</th>
+        </tr></thead>
+        <tbody id="dt-tabla-equipos"></tbody>
+      </table>
+    </div>
+    <!-- Últimos partidos -->
+    <div class="ficha-seccion-titulo" style="margin-top:20px;">Últimos partidos dirigidos</div>
+    <div class="tabla-scroll">
+      <table style="width:100%;border-collapse:collapse;min-width:340px;">
+        <thead><tr>
+          <th>Fecha</th><th>Local</th>
+          <th style="text-align:center;">Res.</th>
+          <th>Visitante</th><th>Torneo</th>
+        </tr></thead>
+        <tbody id="dt-tabla-partidos"></tbody>
       </table>
     </div>
   </div>
@@ -2842,12 +2916,164 @@ function buscarJugador() {
 // ── INICIALIZACIÓN JUGADORES ──
 function inicializarBuscadorJugadores() {
   const sel = document.getElementById('jugador-buscar-equipo');
+  const selDT = document.getElementById('dt-buscar-equipo');
   equiposArr.sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo)).forEach(e => {
-    const opt = document.createElement('option');
-    opt.value = e.ID_Equipo; opt.textContent = e.Nombre_Equipo;
-    sel.appendChild(opt);
+    [sel, selDT].forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = e.ID_Equipo; opt.textContent = e.Nombre_Equipo;
+      s.appendChild(opt);
+    });
   });
   document.getElementById('jugador-resultados').innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">Escribí un nombre o elegí un equipo para buscar jugadores.</div>';
+  document.getElementById('dt-resultados').innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">Escribí un nombre o elegí un equipo para buscar directores técnicos.</div>';
+}
+
+function cambiarSubtabJugadores(tab) {
+  const isJug = tab === 'jugadores';
+  document.getElementById('subtab-jugadores').style.background = isJug ? 'var(--azul)' : 'transparent';
+  document.getElementById('subtab-jugadores').style.color = isJug ? 'white' : 'var(--texto-2)';
+  document.getElementById('subtab-dts').style.background = !isJug ? 'var(--azul)' : 'transparent';
+  document.getElementById('subtab-dts').style.color = !isJug ? 'white' : 'var(--texto-2)';
+  document.getElementById('seccion-jugadores').style.display = isJug ? 'block' : 'none';
+  document.getElementById('seccion-dts').style.display = isJug ? 'none' : 'block';
+}
+
+// ── DTs ──
+function recopilarDTs() {
+  const dtsMap = {}; // nombre → { equipos: { equipoId: { pd, pg, pe, pp, anios, partidos[] } } }
+  partidos.forEach(p => {
+    const dtRaw = p.DT || '';
+    if (!dtRaw.trim()) return;
+    const partes = dtRaw.split('/');
+    const anio = p.Fecha ? parseInt(p.Fecha.split('/')[2] || p.Fecha.split('-')[0]) : null;
+    partes.forEach((dtNombre, idx) => {
+      const nombre = dtNombre.trim();
+      if (!nombre || nombre.length < 2) return;
+      const clave = nombreCanonico(nombre);
+      const equipoId = idx === 0 ? p.Local_ID : p.Visitante_ID;
+      if (!dtsMap[clave]) dtsMap[clave] = { equipos:{} };
+      if (!dtsMap[clave].equipos[equipoId]) dtsMap[clave].equipos[equipoId] = { pd:0, pg:0, pe:0, pp:0, anios:new Set(), partidos:[] };
+      const r = dtsMap[clave].equipos[equipoId];
+      r.pd++;
+      if (anio) r.anios.add(anio);
+      r.partidos.push(p);
+      // Resultado
+      const esLocal = idx === 0;
+      if (p.Tipo_Definicion === '0') {
+        if (p.ID_Ganador === equipoId) r.pg++;
+        else if (p.ID_Ganador && p.ID_Ganador !== equipoId) r.pp++;
+        else r.pe++;
+      } else { r.pe++; }
+    });
+  });
+  return dtsMap;
+}
+
+function buscarDT() {
+  const q = (document.getElementById('dt-buscar-input')?.value || '').toLowerCase().trim();
+  const eqFiltro = document.getElementById('dt-buscar-equipo')?.value || '';
+  const container = document.getElementById('dt-resultados');
+
+  if (!q && !eqFiltro) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">Escribí un nombre o elegí un equipo para buscar directores técnicos.</div>';
+    return;
+  }
+
+  const todos = recopilarDTs();
+  const resultados = Object.entries(todos).filter(([nombre, data]) => {
+    if (q && !normalizarNombre(nombre).includes(normalizarNombre(q))) return false;
+    if (eqFiltro && !Object.keys(data.equipos).includes(eqFiltro)) return false;
+    return true;
+  }).sort(([a],[b]) => a.localeCompare(b));
+
+  if (!resultados.length) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">No se encontraron directores técnicos.</div>';
+    return;
+  }
+
+  container.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;">` +
+    resultados.slice(0,60).map(([nombre, data]) => {
+      const fotoKey = nombre.toLowerCase().replace(/\s+/g,'_').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+      const totalPD = Object.values(data.equipos).reduce((s,r)=>s+r.pd,0);
+      const totalPG = Object.values(data.equipos).reduce((s,r)=>s+r.pg,0);
+      const equiposList = Object.keys(data.equipos).map(id => {
+        const anios = formatearAnios(data.equipos[id].anios);
+        return `<span style="font-size:11px;color:var(--texto-2);">${equipos[id]||id} <span style="color:var(--texto-3);">(${anios})</span></span>`;
+      }).join(' · ');
+      const pct = totalPD > 0 ? Math.round((totalPG/totalPD)*100) : 0;
+      return `<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:12px;padding:14px;display:flex;gap:14px;align-items:flex-start;cursor:pointer;transition:var(--trans);" onmouseenter="this.style.borderColor='var(--borde-hover)'" onmouseleave="this.style.borderColor='var(--borde)'" onclick="verFichaDT('${nombre.replace(/'/g,"\\'")}')">
+        <img src="dts/${fotoKey}.jpg" style="width:56px;height:56px;object-fit:cover;object-position:top;border-radius:10px;flex-shrink:0;background:var(--fondo-3);" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2256%22 height=%2256%22><rect width=%2256%22 height=%2256%22 fill=%22%230D1628%22 rx=%2210%22/><text x=%2228%22 y=%2234%22 font-size=%2224%22 text-anchor=%22middle%22>🧑‍💼</text></svg>'">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:15px;font-weight:600;margin-bottom:6px;">${nombre}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">
+            <span style="font-size:11px;background:rgba(34,197,94,0.1);color:var(--celeste);padding:2px 7px;border-radius:6px;border:1px solid var(--borde);">📋 ${totalPD} PD</span>
+            <span style="font-size:11px;background:rgba(34,197,94,0.1);color:var(--verde);padding:2px 7px;border-radius:6px;border:1px solid var(--borde);">✅ ${pct}% victorias</span>
+          </div>
+          <div style="line-height:1.6;">${equiposList}</div>
+        </div>
+      </div>`;
+    }).join('') + '</div>' +
+    (resultados.length > 60 ? `<div style="text-align:center;padding:16px;color:var(--texto-3);font-size:13px;">Mostrando 60 de ${resultados.length}. Refiná la búsqueda.</div>` : '');
+}
+
+function verFichaDT(nombre) {
+  const todos = recopilarDTs();
+  const clave = nombreCanonico(nombre);
+  const data = todos[clave];
+  if (!data) return;
+
+  const fotoKey = nombre.toLowerCase().replace(/\s+/g,'_').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  document.getElementById('dt-foto').src = `dts/${fotoKey}.jpg`;
+  document.getElementById('dt-nombre').textContent = nombre;
+  document.getElementById('dt-equipos-lista').textContent = Object.keys(data.equipos).map(id => equipos[id]||id).join(' · ');
+
+  document.getElementById('dt-tabla-equipos').innerHTML = Object.entries(data.equipos)
+    .sort((a,b) => b[1].pd - a[1].pd)
+    .map(([eid, r]) => {
+      const nm = equipos[eid]||eid;
+      const esc = ESCUDOS[nm] ? `<img src="${ESCUDOS[nm]}" style="width:18px;height:18px;object-fit:contain;margin-right:6px;" onerror="this.style.display='none'">` : '';
+      const pct = r.pd > 0 ? Math.round((r.pg/r.pd)*100) : 0;
+      const aniosStr = formatearAnios(r.anios);
+      return `<tr>
+        <td style="padding:10px 12px;">
+          <div style="display:flex;align-items:center;">${esc}<strong>${nm}</strong></div>
+          <div style="font-size:11px;color:var(--texto-3);margin-top:2px;">${aniosStr}</div>
+        </td>
+        <td style="text-align:center;font-weight:700;font-size:15px;">${r.pd}</td>
+        <td style="text-align:center;color:var(--verde);">${r.pg}</td>
+        <td style="text-align:center;color:var(--amarillo);">${r.pe}</td>
+        <td style="text-align:center;color:var(--rojo);">${r.pp}</td>
+        <td style="text-align:center;color:var(--texto-2);font-size:13px;">${pct}%</td>
+      </tr>`;
+    }).join('');
+
+  // Últimos 10 partidos
+  const todosPartidos = Object.values(data.equipos).flatMap(r => r.partidos.map(p => ({...p, _equipoId: Object.keys(data.equipos).find(id => data.equipos[id].partidos.includes(p))})));
+  todosPartidos.sort((a,b) => {
+    const fa = a.Fecha ? a.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/,'$3-$2-$1') : '0';
+    const fb = b.Fecha ? b.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/,'$3-$2-$1') : '0';
+    return fb.localeCompare(fa);
+  });
+  document.getElementById('dt-tabla-partidos').innerHTML = todosPartidos.slice(0,10).map(p => {
+    const local  = equipos[p.Local_ID]||p.Local_ID;
+    const visita = equipos[p.Visitante_ID]||p.Visitante_ID;
+    const rc = resClase(p.Goles_Local, p.Goles_Visitante);
+    const torneo = temporadas[p.ID_Temporada]||'';
+    const fecha = p.Fecha ? p.Fecha.split('T')[0] : '';
+    return `<tr onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
+      <td class="td-fecha">${fecha}</td>
+      <td><div class="td-equipo">${escudoImg(local,18)}<span>${local}</span></div></td>
+      <td class="td-resultado"><span class="${rc}">${p.Goles_Local} - ${p.Goles_Visitante}</span></td>
+      <td><div class="td-equipo">${escudoImg(visita,18)}<span>${visita}</span></div></td>
+      <td style="font-size:12px;color:var(--texto-3);">${torneo}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('modal-dt').classList.add('visible');
+}
+
+function cerrarFichaDT() {
+  document.getElementById('modal-dt').classList.remove('visible');
 }
 
 // ── MODO JUGADORES (lista / álbum) ──
