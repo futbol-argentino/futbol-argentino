@@ -2190,11 +2190,13 @@ function verFichaJugador(nombre) {
         parte.split('-').forEach(entrada => {
           const n = limpiarNombre(entrada);
           if (normalizarNombre(n) !== nombreNorm) return;
-          // Extraer posición (ARQ/DEF/MED/DEL/SUP)
-          const posMatch = entrada.match(/\(([A-Z]{2,4})\)/);
-          if (posMatch && !posicion && !['ARG','BRA','URU','PAR','BOL','CHI','COL','PER','ECU','VEN','MEX','ESP','POR','ITA','FRA','ALE','ING','HOL','BEL','CRO','SER','USA'].includes(posMatch[1])) {
-            posicion = posMatch[1];
-          }
+          // Extraer posición: solo titulares (ARQ/DEF/MED/DEL), nunca SUP
+          const posMatches = [...entrada.matchAll(/\(([A-Z]{2,4})\)/g)].map(m=>m[1]);
+          const PAISES_CODIGOS = new Set(['ARG','BRA','URU','PAR','BOL','CHI','COL','PER','ECU','VEN','MEX','ESP','POR','ITA','FRA','ALE','ING','HOL','BEL','CRO','SER','USA','COS','CRI','PAN','HON','GUA','NIC','ESL','ARM']);
+          const POSICIONES_VALIDAS = new Set(['ARQ','DEF','MED','DEL']);
+          const posEncontrada = posMatches.find(p => POSICIONES_VALIDAS.has(p) && !PAISES_CODIGOS.has(p));
+          // Solo pisa la posicion si encontramos una titular (nunca SUP)
+          if (posEncontrada && !posicion) posicion = posEncontrada;
           // Contar PJ
           if (!porEquipo[equipoId]) porEquipo[equipoId] = { goles:0, penales:0, ec:0, amonestados:0, expulsados:0, anios:new Set() };
           if (!porEquipo[equipoId].pj) porEquipo[equipoId].pj = 0;
@@ -2216,13 +2218,13 @@ function verFichaJugador(nombre) {
   const equiposNombres = Object.keys(porEquipo).map(id => equipos[id]||id);
   const fotoKey = nombre.toLowerCase().replace(/\s+/g,'_').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 
-  const POSICIONES_LABEL = { ARQ:'Arquero', DEF:'Defensor', MED:'Mediocampista', DEL:'Delantero', SUP:'Suplente' };
+  const POSICIONES_LABEL = { ARQ:'Arquero', DEF:'Defensor', MED:'Mediocampista', DEL:'Delantero' };
 
   document.getElementById('ficha-foto').src = `jugadores/${fotoKey}.jpg`;
   document.getElementById('ficha-nombre').textContent = nombre;
   document.getElementById('ficha-bandera').innerHTML = nacionalidad ? getBandera(nacionalidad) : '';
   document.getElementById('ficha-nacionalidad').textContent = nacionalidad ? getNombrePais(nacionalidad) : 'Nacionalidad no registrada';
-  document.getElementById('ficha-posicion').textContent = posicion ? (POSICIONES_LABEL[posicion] || posicion) : '';
+  document.getElementById('ficha-posicion').textContent = (posicion && posicion !== 'SUP') ? (POSICIONES_LABEL[posicion] || posicion) : '';
   document.getElementById('ficha-equipos-lista').textContent = equiposNombres.length ? `${equiposNombres.join(' · ')}` : '';
 
   const stats = [
@@ -2704,32 +2706,58 @@ function volverCampeones() {
 
 // ── BUSCADOR DE JUGADORES ──
 function recopilarJugadores() {
-  const jugadoresMap = {}; // nombre → { equipos: { equipoId: { anios, goles, penales, ec, amonestados, expulsados } }, nac }
+  const jugadoresMap = {};
+  const addJugador = (nombre, equipoId, nac, anio) => {
+    const clave = nombreCanonico(nombre);
+    if (!clave || clave.length < 2 || clave.toLowerCase() === 'ninguno') return;
+    if (!jugadoresMap[clave]) jugadoresMap[clave] = { equipos:{}, nac:null };
+    if (nac) jugadoresMap[clave].nac = nac;
+    if (!jugadoresMap[clave].equipos[equipoId]) jugadoresMap[clave].equipos[equipoId] = { anios:new Set(), goles:0, penales:0, ec:0, amonestados:0, expulsados:0 };
+    if (anio) jugadoresMap[clave].equipos[equipoId].anios.add(anio);
+  };
+
   partidos.forEach(p => {
     const anio = p.Fecha ? parseInt(p.Fecha.split('/')[2] || p.Fecha.split('-')[0]) : null;
+
+    // Goleadores / Amonestados / Expulsados
     ['Goleadores','Amonestados','Expulsados'].forEach(campo => {
       const raw = p[campo] || '';
       if (!raw) return;
       raw.split('/').forEach((parte, idx) => {
-        const equipoId = idx === 0 ? p.Local_ID : p.Visitante_ID;
-        const equipoRival = idx === 0 ? p.Visitante_ID : p.Local_ID;
+        const equipoId  = idx === 0 ? p.Local_ID : p.Visitante_ID;
+        const equipoRiv = idx === 0 ? p.Visitante_ID : p.Local_ID;
         parte.split('-').forEach(entrada => {
-          const nac = extraerNacionalidad(entrada);
+          const nac    = extraerNacionalidad(entrada);
           const nombre = limpiarNombre(entrada);
           if (!nombre || nombre.length < 2 || nombre.toLowerCase() === 'ninguno') return;
-          if (!jugadoresMap[nombre]) jugadoresMap[nombre] = { equipos:{}, nac:null };
-          if (nac) jugadoresMap[nombre].nac = nac;
-          const esEC = /\(EC\)/i.test(entrada);
-          const teamId = (campo === 'Goleadores' && esEC) ? equipoRival : equipoId;
-          if (!jugadoresMap[nombre].equipos[teamId]) jugadoresMap[nombre].equipos[teamId] = { anios:new Set(), goles:0, penales:0, ec:0, amonestados:0, expulsados:0 };
-          const r = jugadoresMap[nombre].equipos[teamId];
+          const clave = nombreCanonico(nombre);
+          if (!jugadoresMap[clave]) jugadoresMap[clave] = { equipos:{}, nac:null };
+          if (nac) jugadoresMap[clave].nac = nac;
+          const esEC  = /\(EC\)/i.test(entrada);
+          const teamId = (campo === 'Goleadores' && esEC) ? equipoRiv : equipoId;
+          if (!jugadoresMap[clave].equipos[teamId]) jugadoresMap[clave].equipos[teamId] = { anios:new Set(), goles:0, penales:0, ec:0, amonestados:0, expulsados:0 };
+          const r = jugadoresMap[clave].equipos[teamId];
           if (anio) r.anios.add(anio);
           if (campo === 'Goleadores') { if (esEC) r.ec++; else if (/\(P\)/i.test(entrada)) { r.goles++; r.penales++; } else r.goles++; }
           if (campo === 'Amonestados') r.amonestados++;
-          if (campo === 'Expulsados') r.expulsados++;
+          if (campo === 'Expulsados')  r.expulsados++;
         });
       });
     });
+
+    // Columna Jugadores → incluye jugadores con solo PJ (sin goles/tarjetas)
+    const rawJ = p.Jugadores || '';
+    if (rawJ) {
+      rawJ.split('/').forEach((parte, idx) => {
+        const equipoId = idx === 0 ? p.Local_ID : p.Visitante_ID;
+        parte.split('-').forEach(entrada => {
+          const nac    = extraerNacionalidad(entrada);
+          const nombre = limpiarNombre(entrada);
+          if (!nombre || nombre.length < 2 || nombre.toLowerCase() === 'ninguno') return;
+          addJugador(nombre, equipoId, nac, anio);
+        });
+      });
+    }
   });
   return jugadoresMap;
 }
