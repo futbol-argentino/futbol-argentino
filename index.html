@@ -2864,50 +2864,45 @@ function renderBracket(idTemporada) {
     return;
   }
 
-  // ── Ordenar bracket para que los ganadores se alineen entre rondas ──
-  // Cada enfrentamiento almacena qué equipos contiene
+  // ── Ordenar bracket: mirar hacia adelante (a qué partido de la próxima ronda va cada equipo) ──
   rondasData.forEach(ronda => {
     ronda.enfrentamientos.forEach(enf => {
       const ids = new Set();
       enf.partidos.forEach(p => { ids.add(p.Local_ID); ids.add(p.Visitante_ID); });
       const [eqA, eqB] = [...ids];
       enf.eqA = eqA; enf.eqB = eqB;
-      // Ganador = el que suma más goles o que ganó por penales
       let totA = 0, totB = 0;
       enf.partidos.forEach(p => {
         const gl = parseInt(p.Goles_Local)||0, gv = parseInt(p.Goles_Visitante)||0;
         if (p.Local_ID === eqA) { totA += gl; totB += gv; } else { totA += gv; totB += gl; }
       });
-      if (enf.partidos.some(p => p.ID_Ganador)) {
-        const ultPartido = enf.partidos[enf.partidos.length-1];
-        enf.ganador = ultPartido.ID_Ganador || (totA > totB ? eqA : totB > totA ? eqB : null);
-      } else {
-        enf.ganador = totA > totB ? eqA : totB > totA ? eqB : null;
-      }
+      const ult = enf.partidos[enf.partidos.length-1];
+      enf.ganador = ult.ID_Ganador || (totA > totB ? eqA : totB > totA ? eqB : null);
     });
   });
 
-  // Ordenar round 0 por nombre
-  rondasData[0].enfrentamientos.sort((a,b) => {
-    const nA = equipos[a.eqA]||a.eqA, nB = equipos[b.eqA]||b.eqA;
-    return nA.localeCompare(nB);
-  });
+  // Ordenar de la última ronda hacia la primera
+  // Última ronda: ordenar por nombre
+  const ultima = rondasData[rondasData.length-1];
+  ultima.enfrentamientos.sort((a,b) => (equipos[a.eqA]||a.eqA).localeCompare(equipos[b.eqA]||b.eqA));
 
-  // Para rondas siguientes: ordenar por el slot que ocupa en la ronda anterior
-  for (let r = 1; r < rondasData.length; r++) {
-    // Mapa: equipoId → slot (índice * 2 o índice * 2 + 1) en ronda anterior
-    const slotMap = {};
-    rondasData[r-1].enfrentamientos.forEach((enf, i) => {
-      slotMap[enf.eqA] = i * 2;
-      slotMap[enf.eqB] = i * 2 + 1;
-      if (enf.ganador) slotMap[enf.ganador] = i; // ganador hereda slot del match
-    });
+  // Para cada ronda anterior: ordenar por qué partido de la próxima ronda involucra a sus equipos
+  for (let r = rondasData.length - 2; r >= 0; r--) {
+    const nextEnfs = rondasData[r+1].enfrentamientos;
     rondasData[r].enfrentamientos.forEach(enf => {
-      const slotA = slotMap[enf.eqA] ?? 9999;
-      const slotB = slotMap[enf.eqB] ?? 9999;
-      enf._minSlot = Math.min(slotA, slotB);
+      let found = 999;
+      for (let ni = 0; ni < nextEnfs.length; ni++) {
+        const ne = nextEnfs[ni];
+        const teamsNext = new Set([ne.eqA, ne.eqB]);
+        if (teamsNext.has(enf.eqA) || teamsNext.has(enf.eqB) ||
+            (enf.ganador && teamsNext.has(enf.ganador))) {
+          found = ni;
+          break;
+        }
+      }
+      enf._nextIdx = found;
     });
-    rondasData[r].enfrentamientos.sort((a, b) => a._minSlot - b._minSlot);
+    rondasData[r].enfrentamientos.sort((a,b) => a._nextIdx - b._nextIdx);
   }
 
   const renderEquipo = (idEq, goles, ganador, jugado) => {
