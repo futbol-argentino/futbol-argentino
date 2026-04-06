@@ -1033,6 +1033,8 @@ select option{background:#080F20;color:#F0F6FF}
         <div id="ficha-posicion"></div>
         <div id="ficha-nacionalidad"></div>
         <div id="ficha-equipos-lista"></div>
+        <!-- Miniaturas de fotos por equipo -->
+        <div id="ficha-fotos-equipos" style="display:none;flex-wrap:wrap;gap:6px;margin-top:10px;"></div>
       </div>
     </div>
     <!-- Stats globales -->
@@ -2022,6 +2024,29 @@ function getNombrePais(codigo) {
   return p ? p.nombre : codigo;
 }
 
+function toFotoKey(texto) {
+  return texto.toLowerCase().replace(/\s+/g,'_').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9_]/g,'');
+}
+
+// Returns img HTML that tries team-specific photo first, falls back to default
+function fotoJugadorImg(nombre, equipoNombre, style, placeholder) {
+  const jugKey = toFotoKey(nombre);
+  const eqKey  = equipoNombre ? toFotoKey(equipoNombre) : '';
+  const src    = eqKey ? `jugadores/${jugKey}_${eqKey}.jpg` : `jugadores/${jugKey}.jpg`;
+  const fallback = eqKey ? `jugadores/${jugKey}.jpg` : placeholder || 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22180%22 height=%22180%22><rect width=%22180%22 height=%22180%22 fill=%22%230D1628%22 rx=%2216%22/><text x=%2290%22 y=%22105%22 font-size=%2264%22 text-anchor=%22middle%22>👤</text></svg>';
+  return `<img src="${src}" style="${style}" onerror="if(this.dataset.tried){this.src='${placeholder||'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2256%22 height=%2256%22><rect width=%2256%22 height=%2256%22 fill=%22%230D1628%22 rx=%2210%22/><text x=%2228%22 y=%2234%22 font-size=%2224%22 text-anchor=%22middle%22>👤</text></svg>'}'}else{this.dataset.tried=1;this.src='${fallback}'}">`;
+}
+
+function cambiarFichaFoto(jugKey, eqKey) {
+  const foto = document.getElementById('ficha-foto');
+  foto.dataset.tried = '';
+  foto.src = `jugadores/${jugKey}_${eqKey}.jpg`;
+  foto.onerror = function() {
+    if (!this.dataset.tried) { this.dataset.tried = '1'; this.src = `jugadores/${jugKey}.jpg`; }
+    else { this.onerror = null; this.src = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22180%22 height=%22180%22><rect width=%22180%22 height=%22180%22 fill=%22%230D1628%22 rx=%2216%22/><text x=%2290%22 y=%22105%22 font-size=%2264%22 text-anchor=%22middle%22>👤</text></svg>'; }
+  };
+}
+
 function extraerNacionalidad(texto) {
   const m = texto.match(/\[([A-Z]{2,3})\]/);
   return m ? m[1] : null;
@@ -2330,16 +2355,52 @@ function verFichaJugador(nombre) {
   }), { goles:0, penales:0, ec:0, amonestados:0, expulsados:0, pj:0 });
 
   const equiposNombres = Object.keys(porEquipo).map(id => equipos[id]||id);
-  const fotoKey = nombre.toLowerCase().replace(/\s+/g,'_').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  // Equipo principal = el que más PJ tiene
+  const equipoPrincipalId = Object.entries(porEquipo).sort((a,b)=>(b[1].pj||0)-(a[1].pj||0))[0]?.[0];
+  const equipoPrincipalNombre = equipos[equipoPrincipalId]||'';
 
   const POSICIONES_LABEL = { ARQ:'Arquero', DEF:'Defensor', MED:'Mediocampista', DEL:'Delantero' };
 
-  document.getElementById('ficha-foto').src = `jugadores/${fotoKey}.jpg`;
+  // Foto principal: intenta foto del equipo principal, si no default
+  const jugKey = toFotoKey(nombre);
+  const eqKey  = toFotoKey(equipoPrincipalNombre);
+  const fichaFoto = document.getElementById('ficha-foto');
+  fichaFoto.dataset.tried = '';
+  fichaFoto.src = `jugadores/${jugKey}_${eqKey}.jpg`;
+  fichaFoto.onerror = function() {
+    if (!this.dataset.tried) { this.dataset.tried = '1'; this.src = `jugadores/${jugKey}.jpg`; }
+    else { this.onerror = null; this.src = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22180%22 height=%22180%22><rect width=%22180%22 height=%22180%22 fill=%22%230D1628%22 rx=%2216%22/><text x=%2290%22 y=%22105%22 font-size=%2264%22 text-anchor=%22middle%22>👤</text></svg>'; }
+  };
+
   document.getElementById('ficha-nombre').textContent = nombre;
   document.getElementById('ficha-bandera').innerHTML = nacionalidad ? getBandera(nacionalidad) : '';
   document.getElementById('ficha-nacionalidad').textContent = nacionalidad ? getNombrePais(nacionalidad) : 'Nacionalidad no registrada';
   document.getElementById('ficha-posicion').textContent = (posicion && posicion !== 'SUP') ? (POSICIONES_LABEL[posicion] || posicion) : '';
-  document.getElementById('ficha-equipos-lista').textContent = equiposNombres.length ? `${equiposNombres.join(' · ')}` : '';
+
+  // Equipo lista + miniaturas de fotos por equipo (si tiene más de uno)
+  const equiposOrdenados = Object.entries(porEquipo).sort((a,b)=>(b[1].pj||0)-(a[1].pj||0));
+  const todosEquiposNombres = equiposOrdenados.map(([id])=>equipos[id]||id);
+  document.getElementById('ficha-equipos-lista').textContent = todosEquiposNombres.join(' · ');
+
+  // Miniaturas por equipo (solo si hay más de 1 y la foto es diferente)
+  const fichaFotos = document.getElementById('ficha-fotos-equipos');
+  if (fichaFotos) {
+    if (equiposOrdenados.length > 1) {
+      fichaFotos.innerHTML = equiposOrdenados.map(([eid]) => {
+        const nm = equipos[eid]||eid;
+        const ek = toFotoKey(nm);
+        const esc = ESCUDOS[nm] ? `<img src="${ESCUDOS[nm]}" style="width:14px;height:14px;object-fit:contain;">` : '';
+        return `<div title="${nm}" onclick="cambiarFichaFoto('${jugKey}','${ek}')" style="cursor:pointer;border:2px solid var(--borde);border-radius:8px;overflow:hidden;width:52px;flex-shrink:0;transition:var(--trans);" onmouseenter="this.style.borderColor='var(--celeste)'" onmouseleave="this.style.borderColor='var(--borde)'">
+          <img src="jugadores/${jugKey}_${ek}.jpg" style="width:52px;height:52px;object-fit:cover;object-position:top;display:block;" onerror="this.src='jugadores/${jugKey}.jpg'" >
+          <div style="display:flex;align-items:center;justify-content:center;gap:3px;padding:2px;font-size:9px;color:var(--texto-3);background:var(--fondo-3);">${esc}</div>
+        </div>`;
+      }).join('');
+      fichaFotos.style.display = 'flex';
+    } else {
+      fichaFotos.innerHTML = '';
+      fichaFotos.style.display = 'none';
+    }
+  }
 
   const stats = [
     ['PJ', totales.pj, 'var(--texto-1)'],
@@ -2803,36 +2864,75 @@ function renderBracket(idTemporada) {
     return;
   }
 
-  const renderEquipo = (idEq, golesA, golesB, jugado) => {
+  // ── Ordenar bracket para que los ganadores se alineen entre rondas ──
+  // Cada enfrentamiento almacena qué equipos contiene
+  rondasData.forEach(ronda => {
+    ronda.enfrentamientos.forEach(enf => {
+      const ids = new Set();
+      enf.partidos.forEach(p => { ids.add(p.Local_ID); ids.add(p.Visitante_ID); });
+      const [eqA, eqB] = [...ids];
+      enf.eqA = eqA; enf.eqB = eqB;
+      // Ganador = el que suma más goles o que ganó por penales
+      let totA = 0, totB = 0;
+      enf.partidos.forEach(p => {
+        const gl = parseInt(p.Goles_Local)||0, gv = parseInt(p.Goles_Visitante)||0;
+        if (p.Local_ID === eqA) { totA += gl; totB += gv; } else { totA += gv; totB += gl; }
+      });
+      if (enf.partidos.some(p => p.ID_Ganador)) {
+        const ultPartido = enf.partidos[enf.partidos.length-1];
+        enf.ganador = ultPartido.ID_Ganador || (totA > totB ? eqA : totB > totA ? eqB : null);
+      } else {
+        enf.ganador = totA > totB ? eqA : totB > totA ? eqB : null;
+      }
+    });
+  });
+
+  // Ordenar round 0 por nombre
+  rondasData[0].enfrentamientos.sort((a,b) => {
+    const nA = equipos[a.eqA]||a.eqA, nB = equipos[b.eqA]||b.eqA;
+    return nA.localeCompare(nB);
+  });
+
+  // Para rondas siguientes: ordenar por el slot que ocupa en la ronda anterior
+  for (let r = 1; r < rondasData.length; r++) {
+    // Mapa: equipoId → slot (índice * 2 o índice * 2 + 1) en ronda anterior
+    const slotMap = {};
+    rondasData[r-1].enfrentamientos.forEach((enf, i) => {
+      slotMap[enf.eqA] = i * 2;
+      slotMap[enf.eqB] = i * 2 + 1;
+      if (enf.ganador) slotMap[enf.ganador] = i; // ganador hereda slot del match
+    });
+    rondasData[r].enfrentamientos.forEach(enf => {
+      const slotA = slotMap[enf.eqA] ?? 9999;
+      const slotB = slotMap[enf.eqB] ?? 9999;
+      enf._minSlot = Math.min(slotA, slotB);
+    });
+    rondasData[r].enfrentamientos.sort((a, b) => a._minSlot - b._minSlot);
+  }
+
+  const renderEquipo = (idEq, goles, ganador, jugado) => {
     const nombre = equipos[idEq] || idEq;
     const esc = ESCUDOS[nombre] ? `<img src="${ESCUDOS[nombre]}" onerror="this.style.display='none'">` : '';
     if (!jugado) return `<div class="bracket-equipo">${esc}<span style="flex:1;">${nombre}</span><span class="bracket-gol bracket-pendiente">—</span></div>`;
-    const gA = parseInt(golesA)||0, gB = parseInt(golesB)||0;
-    const gana = gA > gB;
+    const gana = ganador === idEq;
     const claseEq = gana ? 'ganador' : 'perdedor';
     const claseGol = gana ? 'g-win' : 'g-lose';
-    return `<div class="bracket-equipo ${claseEq}">${esc}<span style="flex:1;">${nombre}</span><span class="bracket-gol ${claseGol}">${golesA}</span></div>`;
+    return `<div class="bracket-equipo ${claseEq}">${esc}<span style="flex:1;">${nombre}</span><span class="bracket-gol ${claseGol}">${goles}</span></div>`;
   };
 
   const renderEnfrentamiento = (enf) => {
-    // Calcular marcador acumulado (ida + vuelta)
-    const jugado = enf.partidos.some(p => p.Goles_Local !== '' && p.Goles_Local !== undefined);
-    let golesA = {}, golesB = {};
-    const ids = new Set();
-    enf.partidos.forEach(p => { ids.add(p.Local_ID); ids.add(p.Visitante_ID); });
-    const [eqA, eqB] = [...ids];
+    const { eqA, eqB, ganador, partidos: ps } = enf;
+    const jugado = ps.some(p => p.Goles_Local !== '' && p.Goles_Local !== undefined);
     let totA = 0, totB = 0;
-    enf.partidos.forEach(p => {
+    ps.forEach(p => {
       const gl = parseInt(p.Goles_Local)||0, gv = parseInt(p.Goles_Visitante)||0;
-      if (p.Local_ID === eqA) { totA += gl; totB += gv; }
-      else { totA += gv; totB += gl; }
+      if (p.Local_ID === eqA) { totA += gl; totB += gv; } else { totA += gv; totB += gl; }
     });
-    const idPartido = enf.partidos[0].ID_Partido;
-    const clickable = enf.partidos.length === 1 ? `onclick="verPartido(${idPartido})"` : '';
-    return `<div class="bracket-partido" ${clickable} style="${enf.partidos.length > 1 ? 'cursor:default;' : ''}">
-      ${renderEquipo(eqA, totA, totB, jugado)}
-      ${renderEquipo(eqB, totB, totA, jugado)}
-      ${enf.partidos.length > 1 ? `<div style="padding:4px 10px;font-size:10px;color:var(--texto-3);text-align:center;">${enf.partidos.length} partidos</div>` : ''}
+    const clickable = ps.length === 1 ? `onclick="verPartido(${ps[0].ID_Partido})"` : '';
+    return `<div class="bracket-partido" ${clickable} style="${ps.length > 1 ? 'cursor:default;' : ''}">
+      ${renderEquipo(eqA, totA, ganador, jugado)}
+      ${renderEquipo(eqB, totB, ganador, jugado)}
+      ${ps.length > 1 ? `<div style="padding:4px 10px;font-size:10px;color:var(--texto-3);text-align:center;">${ps.length} partidos</div>` : ''}
     </div>`;
   };
 
@@ -3004,9 +3104,9 @@ function buscarJugador() {
           ? data.equipos[eqFiltro].anios
           : Object.values(data.equipos).reduce((s,r) => { r.anios.forEach(a=>s.add(a)); return s; }, new Set());
         const aniosStr = formatearAnios(aniosSet);
+        const equipoNombre = eqFiltro ? (equipos[eqFiltro]||'') : '';
         return `<div class="album-card" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')">
-          <img src="jugadores/${fotoKey}.jpg" class="album-card-foto"
-            onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+          ${fotoJugadorImg(nombre, equipoNombre, 'width:100%;aspect-ratio:1/1;object-fit:cover;object-position:top;display:block;background:var(--fondo-3);', '')}
           <div class="album-avatar" style="display:none;">👤</div>
           <div class="album-card-info">
             <div class="album-card-nombre"><span style="display:inline-flex;">${bandera}</span> ${nombre}</div>
