@@ -427,6 +427,41 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
   font-size:40px;
 }
 
+/* ── BRACKET ── */
+.bracket-wrap { display:flex; gap:0; min-width:max-content; padding-bottom:16px; }
+.bracket-ronda { display:flex; flex-direction:column; min-width:220px; }
+.bracket-ronda-titulo {
+  font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase;
+  color:var(--texto-3); text-align:center; padding:12px 16px;
+  border-bottom:1px solid var(--borde); margin-bottom:0;
+}
+.bracket-col { display:flex; flex-direction:column; justify-content:space-around; flex:1; padding:8px 0; }
+.bracket-partido {
+  margin:6px 12px; border:1px solid var(--borde); border-radius:10px;
+  overflow:hidden; background:var(--fondo-2); cursor:pointer;
+  transition:var(--trans); position:relative;
+}
+.bracket-partido:hover { border-color:var(--borde-hover); transform:translateY(-1px); }
+.bracket-equipo {
+  display:flex; align-items:center; gap:7px;
+  padding:8px 10px; font-size:13px; font-weight:500;
+  border-bottom:1px solid var(--borde);
+}
+.bracket-equipo:last-child { border-bottom:none; }
+.bracket-equipo.ganador { background:rgba(34,197,94,0.08); color:var(--texto-1); }
+.bracket-equipo.perdedor { color:var(--texto-3); }
+.bracket-equipo img { width:18px; height:18px; object-fit:contain; flex-shrink:0; }
+.bracket-gol {
+  font-family:var(--fuente-titulo); font-size:17px; margin-left:auto; flex-shrink:0;
+}
+.bracket-gol.g-win { color:var(--celeste); }
+.bracket-gol.g-lose { color:var(--texto-3); }
+.bracket-pendiente { color:var(--texto-3); font-style:italic; font-size:12px; }
+.bracket-conector {
+  width:20px; display:flex; align-items:center; justify-content:center;
+  flex-direction:column;
+}
+
 /* ── TORNEO TABS ── */
 .torneo-tab-btn{font-family:var(--fuente-cuerpo);font-size:13px;font-weight:500;padding:7px 16px;border-radius:7px;border:none;background:transparent;color:var(--texto-2);cursor:pointer;transition:var(--trans);}
 .torneo-tab-btn:hover{color:var(--texto-1);}
@@ -896,6 +931,7 @@ select option{background:#080F20;color:#F0F6FF}
       <div class="torneo-tabs" style="display:flex;gap:2px;background:var(--fondo-3);border:1px solid var(--borde);border-radius:10px;padding:4px;margin-bottom:18px;width:fit-content;">
         <button class="torneo-tab-btn activo" id="ttab-tablas"   onclick="cambiarTorneoTab('tablas')">📋 Tablas</button>
         <button class="torneo-tab-btn"         id="ttab-partidos" onclick="cambiarTorneoTab('partidos')">📅 Partidos</button>
+        <button class="torneo-tab-btn"         id="ttab-bracket"  onclick="cambiarTorneoTab('bracket')">🏆 Cuadro</button>
         <button class="torneo-tab-btn"         id="ttab-stats"    onclick="cambiarTorneoTab('stats')">📊 Estadísticas</button>
       </div>
       <div id="torneo-panel-tablas">
@@ -903,6 +939,9 @@ select option{background:#080F20;color:#F0F6FF}
       </div>
       <div id="torneo-panel-partidos" style="display:none;">
         <div id="torneo-partidos-container"></div>
+      </div>
+      <div id="torneo-panel-bracket" style="display:none;">
+        <div id="torneo-bracket-container" style="overflow-x:auto;"></div>
       </div>
       <div id="torneo-panel-stats" style="display:none;">
         <!-- Sub-tabs jugadores / equipos -->
@@ -1967,6 +2006,7 @@ const PAISES = {
   'NIC':{ nombre:'Nicaragua', codigo:'ni' },
   'ESL':{ nombre:'Eslovenia', codigo:'si' },
   'ARM':{ nombre:'Armenia', codigo:'am' },
+  'SYR':{ nombre:'Siria', codigo:'sy' },
 };
 
 function getBandera(codigo) {
@@ -2476,13 +2516,12 @@ function filtrarCampeones() {
 let torneoActualId = null;
 
 function cambiarTorneoTab(tab) {
-  ['tablas','partidos','stats'].forEach(t => {
+  ['tablas','partidos','bracket','stats'].forEach(t => {
     document.getElementById('torneo-panel-'+t).style.display = t===tab ? 'block' : 'none';
-    document.getElementById('ttab-'+t).classList.toggle('activo', t===tab);
+    document.getElementById('ttab-'+t)?.classList.toggle('activo', t===tab);
   });
-  if (tab === 'stats' && torneoActualId) {
-    renderStatsTorneo(torneoActualId);
-  }
+  if (tab === 'stats' && torneoActualId) renderStatsTorneo(torneoActualId);
+  if (tab === 'bracket' && torneoActualId) renderBracket(torneoActualId);
 }
 
 let scrollCampeones = 0;
@@ -2496,9 +2535,9 @@ function verTorneo(idTemporada) {
 
   torneoActualId = idTemporada;
   document.getElementById('torneo-stats-container').innerHTML = '';
+  document.getElementById('torneo-bracket-container').innerHTML = '';
   const eqC = document.getElementById('torneo-stats-equipos-container');
   eqC.innerHTML = ''; eqC.dataset.loaded = '';
-  // Reset sub-tabs
   cambiarStatsSubTab('jugadores');
 
   document.getElementById('vista-campeones').style.display = 'none';
@@ -2712,6 +2751,102 @@ function renderTablaTorneo(tipo) {
       <span class="pag-info">Página ${pag} de ${totalPags}</span>
       <button class="pag-btn" onclick="cambiarPaginaTorneo(${pag+1},'${tipo}')" ${pag===totalPags?'disabled':''}>Siguiente →</button>`;
   }
+}
+
+// ── BRACKET / CUADRO ──
+const BRACKET_FASES = [
+  // Fases con ida y vuelta se agrupan
+  ['Primera Fase Ida','Primera Fase Vuelta','Primera Fase'],
+  ['Segunda Fase Ida','Segunda Fase Vuelta','Segunda Fase'],
+  ['Tercera Fase Ida','Tercera Fase Vuelta','Tercera Fase'],
+  ['16avos de Final Ida','16avos de Final Vuelta','16avos de Final'],
+  ['Octavos de Final Ida','Octavos de Final Vuelta','Octavos de Final'],
+  ['Cuartos de Final Ida','Cuartos de Final Vuelta','Cuartos de Final'],
+  ['Semifinal Ida','Semifinal Vuelta','Semifinal'],
+  ['Desempate Descenso'],
+  ['Final Ida','Final Vuelta','Final'],
+];
+
+function renderBracket(idTemporada) {
+  const container = document.getElementById('torneo-bracket-container');
+  const FASES_EXCLUIDAS = ['Fase Regular','Fase Clasificatoria','Fase Complementación','Fase Complementacion','Fase Campeonato','Fase Campeonato Final'];
+  const pts = partidos.filter(p => p.ID_Temporada == idTemporada && !FASES_EXCLUIDAS.includes(p.Fase));
+
+  if (!pts.length) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">No hay fases eliminatorias para este torneo.</div>';
+    return;
+  }
+
+  // Agrupar por fase canónica
+  const fasesPresentes = new Set(pts.map(p => p.Fase));
+  const rondasData = [];
+  BRACKET_FASES.forEach(grupo => {
+    const matchingFases = grupo.filter(f => fasesPresentes.has(f));
+    if (!matchingFases.length) return;
+    const nombreRonda = grupo[grupo.length-1]; // nombre canónico (último del grupo)
+    const ptsRonda = pts.filter(p => grupo.includes(p.Fase));
+    if (!ptsRonda.length) return;
+
+    // Agrupar por enfrentamiento (par de equipos)
+    const enfrentamientos = {};
+    ptsRonda.forEach(p => {
+      const key = [p.Local_ID, p.Visitante_ID].sort().join('_');
+      if (!enfrentamientos[key]) enfrentamientos[key] = { partidos:[], key };
+      enfrentamientos[key].partidos.push(p);
+    });
+
+    rondasData.push({ nombre: nombreRonda, enfrentamientos: Object.values(enfrentamientos) });
+  });
+
+  if (!rondasData.length) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">No hay fases eliminatorias para este torneo.</div>';
+    return;
+  }
+
+  const renderEquipo = (idEq, golesA, golesB, jugado) => {
+    const nombre = equipos[idEq] || idEq;
+    const esc = ESCUDOS[nombre] ? `<img src="${ESCUDOS[nombre]}" onerror="this.style.display='none'">` : '';
+    if (!jugado) return `<div class="bracket-equipo">${esc}<span style="flex:1;">${nombre}</span><span class="bracket-gol bracket-pendiente">—</span></div>`;
+    const gA = parseInt(golesA)||0, gB = parseInt(golesB)||0;
+    const gana = gA > gB;
+    const claseEq = gana ? 'ganador' : 'perdedor';
+    const claseGol = gana ? 'g-win' : 'g-lose';
+    return `<div class="bracket-equipo ${claseEq}">${esc}<span style="flex:1;">${nombre}</span><span class="bracket-gol ${claseGol}">${golesA}</span></div>`;
+  };
+
+  const renderEnfrentamiento = (enf) => {
+    // Calcular marcador acumulado (ida + vuelta)
+    const jugado = enf.partidos.some(p => p.Goles_Local !== '' && p.Goles_Local !== undefined);
+    let golesA = {}, golesB = {};
+    const ids = new Set();
+    enf.partidos.forEach(p => { ids.add(p.Local_ID); ids.add(p.Visitante_ID); });
+    const [eqA, eqB] = [...ids];
+    let totA = 0, totB = 0;
+    enf.partidos.forEach(p => {
+      const gl = parseInt(p.Goles_Local)||0, gv = parseInt(p.Goles_Visitante)||0;
+      if (p.Local_ID === eqA) { totA += gl; totB += gv; }
+      else { totA += gv; totB += gl; }
+    });
+    const idPartido = enf.partidos[0].ID_Partido;
+    const clickable = enf.partidos.length === 1 ? `onclick="verPartido(${idPartido})"` : '';
+    return `<div class="bracket-partido" ${clickable} style="${enf.partidos.length > 1 ? 'cursor:default;' : ''}">
+      ${renderEquipo(eqA, totA, totB, jugado)}
+      ${renderEquipo(eqB, totB, totA, jugado)}
+      ${enf.partidos.length > 1 ? `<div style="padding:4px 10px;font-size:10px;color:var(--texto-3);text-align:center;">${enf.partidos.length} partidos</div>` : ''}
+    </div>`;
+  };
+
+  const html = `<div class="bracket-wrap">` +
+    rondasData.map(ronda => `
+      <div class="bracket-ronda">
+        <div class="bracket-ronda-titulo">${ronda.nombre}</div>
+        <div class="bracket-col">
+          ${ronda.enfrentamientos.map(e => renderEnfrentamiento(e)).join('')}
+        </div>
+      </div>`).join('') +
+    `</div>`;
+
+  container.innerHTML = html;
 }
 
 function renderStatsTorneo(idTemporada) {
