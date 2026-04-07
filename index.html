@@ -1568,22 +1568,37 @@ function parseCSVLine(line) {
 async function cargarDatos() {
   try {
     const [csvP, csvE, csvT] = await Promise.all([
-      fetchWithCache(URL_PARTIDOS), fetchWithCache(URL_EQUIPOS), fetchWithCache(URL_TEMPORADAS)
+      fetchWithCache(URL_PARTIDOS), 
+      fetchWithCache(URL_EQUIPOS), 
+      fetchWithCache(URL_TEMPORADAS)
     ]);
+
     equiposArr = csvToArray(csvE);
-    equiposArr.forEach(e => { e.Nombre_Equipo = (e.Nombre_Equipo||'').trim().replace(/^"+|"+$/g,''); equipos[e.ID_Equipo] = e.Nombre_Equipo; });
+    equiposArr.forEach(e => {
+      e.Nombre_Equipo = (e.Nombre_Equipo||'').trim().replace(/^"+|"+$/g,'');
+      equipos[e.ID_Equipo] = e.Nombre_Equipo;
+    });
+
     const tempArr = csvToArray(csvT);
-    tempArr.forEach(t => temporadas[t.ID_Temporada] = t.Competencia); temporadasArr = tempArr;
+    tempArr.forEach(t => temporadas[t.ID_Temporada] = t.Competencia);
+    temporadasArr = tempArr;
     
-    inicializarAuth(); // NUEVO: Cargar perfil de usuario
-    cargarCampeones(); inicializarBuscadorJugadores(); renderDivisiones(); cargarHoy();
+    // Iniciar sesión de usuario
+    if (typeof inicializarAuth === 'function') inicializarAuth(); 
     
+    cargarCampeones();
+    inicializarBuscadorJugadores();
+    renderDivisiones();
+    cargarHoy();
+    
+    // Cargar Jugadores
     try {
       const csvJ = await fetchWithCache(URL_JUGADORES);
       const rows = csvToArray(csvJ).filter(r => r.ID_Partido);
       rows.forEach(r => {
         ['Jugadores_Local','Jugadores_Visitante'].forEach((col, idx) => {
-          const raw = r[col] || r['Jugadores'] || ''; if (!raw) return;
+          const raw = r[col] || r['Jugadores'] || '';
+          if (!raw) return;
           const equipoId = idx === 0 ? r.Local_ID : r.Visitante_ID;
           raw.split('-').forEach(entrada => {
             const n = nombreCanonico(limpiarNombre(entrada));
@@ -1594,40 +1609,16 @@ async function cargarDatos() {
           });
         });
       });
-    } catch(e) { }
+    } catch(e) { console.warn("No se pudo cargar Jugadores.csv"); }
 
-    try { const csvPos = await fetchWithCache(URL_POSICIONES); posicionesData = csvToArray(csvPos).filter(r => r.ID_Temporada); } catch(e) { }
-
-    partidos = csvToArray(csvP).filter(p => p.ID_Partido);
-
-    const sel1 = document.getElementById('filtro-equipo'); const sel2 = document.getElementById('filtro-equipo2');
-    equiposArr.sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo)).forEach(e => {
-      [sel1, sel2].forEach(sel => { const opt = document.createElement('option'); opt.value = e.ID_Equipo; opt.textContent = e.Nombre_Equipo; sel.appendChild(opt); });
-    });
-    renderizarEquipos(); filtrar();
-
-    const selStats = document.getElementById('stats-filtro-equipo');
-    equiposArr.sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo)).forEach(e => {
-      const opt = document.createElement('option'); opt.value = e.ID_Equipo; opt.textContent = e.Nombre_Equipo; selStats.appendChild(opt);
-    });
-    renderEstadisticas();
-  } catch(err) {
-    document.getElementById('tabla-partidos').innerHTML = '<tr class="loading-row"><td colspan="5">Error cargando datos.</td></tr>';
-  }
-}
-
-    // Cargar posiciones (silencioso si no existe)
+    // Cargar posiciones
     try {
-      const resPos = await fetch(URL_POSICIONES);
-      if (resPos.ok) {
-        const csvPos = await resPos.text();
-        posicionesData = csvToArray(csvPos).filter(r => r.ID_Temporada);
-      }
-    } catch(e) { /* sin posiciones aún */ }
+      const csvPos = await fetchWithCache(URL_POSICIONES);
+      posicionesData = csvToArray(csvPos).filter(r => r.ID_Temporada);
+    } catch(e) { console.warn("No se pudo cargar Posiciones.csv"); }
 
     partidos = csvToArray(csvP).filter(p => p.ID_Partido);
 
-    // Llenar selects del buscador
     const sel1 = document.getElementById('filtro-equipo');
     const sel2 = document.getElementById('filtro-equipo2');
     equiposArr.sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo)).forEach(e => {
@@ -1641,7 +1632,6 @@ async function cargarDatos() {
     renderizarEquipos();
     filtrar();
 
-    // Llenar select de estadísticas
     const selStats = document.getElementById('stats-filtro-equipo');
     equiposArr.sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo)).forEach(e => {
       const opt = document.createElement('option');
@@ -1649,12 +1639,14 @@ async function cargarDatos() {
       selStats.appendChild(opt);
     });
     renderEstadisticas();
+    
   } catch(err) {
+    console.error(err);
     document.getElementById('tabla-partidos').innerHTML =
-      '<tr class="loading-row"><td colspan="5">Error cargando datos.</td></tr>';
+      '<tr class="loading-row"><td colspan="5">Error cargando datos. Verificá tu conexión o los archivos CSV.</td></tr>';
   }
-}
-
+}  
+  
 // ── SIDEBAR ──
 function abrirSidebar() {
   document.getElementById('sidebar').classList.add('activo');
