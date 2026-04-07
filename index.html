@@ -627,6 +627,31 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 .pos-legend-item { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--texto-2); }
 .pos-legend-dot { width:10px; height:10px; border-radius:2px; flex-shrink:0; }
 
+/* ── UI / UX Y LOGIN ── */
+thead tr { 
+  background: var(--fondo-3); 
+  border-bottom: 1px solid var(--borde);
+  position: sticky; top: 0; z-index: 10;
+}
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+.skeleton-row td {
+  background: var(--fondo-3);
+  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  height: 48px; border-bottom: 1px solid var(--fondo);
+}
+.equipo-favorito-row { background: rgba(34, 197, 94, 0.15) !important; }
+[data-tema="claro"] .equipo-favorito-row { background: rgba(22, 163, 74, 0.15) !important; }
+
+.header-actions { position: absolute; right: 20px; top: 0; height: 100%; display: flex; align-items: center; gap: 12px; z-index: 3; }
+.btn-login { background: rgba(5,11,26,0.7); border: 1px solid var(--borde-activo); border-radius: 8px; color: var(--texto-1); padding: 8px 16px; font-family: var(--fuente-cuerpo); font-size: 13px; font-weight: 600; cursor: pointer; backdrop-filter: blur(8px); transition: var(--trans); display: flex; align-items: center; gap: 8px; }
+.btn-login:hover { background: var(--azul); border-color: var(--celeste); }
+.user-profile-badge { display: none; align-items: center; gap: 8px; background: rgba(21, 128, 61, 0.2); border: 1px solid var(--celeste); border-radius: 8px; padding: 6px 12px; backdrop-filter: blur(8px); }
+.user-profile-badge.activo { display: flex; }
+.user-avatar { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
+.user-name { font-size: 13px; font-weight: 600; color: var(--texto-1); }
+.btn-logout { background: transparent; border: none; color: var(--rojo); cursor: pointer; font-size: 12px; margin-left: 8px; }
+@media(max-width:600px) { .header-actions { right: 10px; } .user-name { display: none; } }  
+  
 /* SCROLLBAR */
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:var(--fondo-2)}
@@ -685,6 +710,14 @@ select option{background:#080F20;color:#F0F6FF}
   <div class="header-inner">
     <button class="btn-menu" onclick="abrirSidebar()">☰</button>
   </div>
+  <div class="header-actions">
+    <button id="btn-show-login" class="btn-login" onclick="abrirModalAuth()">👤 Iniciar Sesión</button>
+    <div id="user-profile-badge" class="user-profile-badge">
+      <img id="user-profile-avatar" src="" class="user-avatar" alt="Avatar">
+      <span id="user-profile-name" class="user-name"></span>
+      <button class="btn-logout" onclick="cerrarSesion()" title="Cerrar sesión">✕</button>
+    </div>
+  </div>
 </header>
 
 <!-- MAIN -->
@@ -717,7 +750,7 @@ select option{background:#080F20;color:#F0F6FF}
       <div class="filtros-grid">
         <div class="filtro-grupo">
           <label class="filtro-label">Buscar equipo</label>
-          <input type="text" id="buscar" class="filtro-input" placeholder="Ej: Boca, River..." oninput="filtrar()">
+          <input type="text" id="buscar" class="filtro-input" placeholder="Ej: Boca, River..." oninput="filtrarDebounced()">
         </div>
         <div class="filtro-grupo">
           <label class="filtro-label">Equipo</label>
@@ -853,7 +886,7 @@ select option{background:#080F20;color:#F0F6FF}
       </div>
       <div class="equipos-buscar">
         <span class="equipos-buscar-icon">🔍</span>
-        <input type="text" id="buscar-equipo" placeholder="Buscar equipo..." oninput="filtrarEquipos()">
+        <input type="text" id="buscar-equipo" placeholder="Buscar equipo..." oninput="filtrarEquiposDebounced()">
       </div>
       <div class="equipos-grid" id="equipos-grid"></div>
     </div>
@@ -1054,13 +1087,13 @@ select option{background:#080F20;color:#F0F6FF}
         <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
           <div class="filtro-grupo" style="flex:1;min-width:180px;">
             <label class="filtro-label">División</label>
-            <select id="camp-filtro-division" class="filtro-select" onchange="filtrarCampeones()">
+            <select id="camp-filtro-division" class="filtro-select" onchange="filtrarCampeonesDebounced()">
               <option value="">Todas las divisiones</option>
             </select>
           </div>
           <div class="filtro-grupo" style="flex:2;min-width:200px;">
             <label class="filtro-label">Buscar torneo</label>
-            <input type="text" id="camp-buscar" class="filtro-input" placeholder="Ej: Apertura, Copa de la Liga..." oninput="filtrarCampeones()">
+            <input type="text" id="camp-buscar" class="filtro-input" placeholder="Ej: Apertura, Copa de la Liga..." oninput="filtrarCampeonesDebounced()">
           </div>
         </div>
       </div>
@@ -1121,11 +1154,11 @@ select option{background:#080F20;color:#F0F6FF}
         <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
           <div class="filtro-grupo" style="flex:2;min-width:200px;">
             <label class="filtro-label">Buscar por nombre</label>
-            <input type="text" id="jugador-buscar-input" class="filtro-input" placeholder="Ej: Copetti, Russo, Ávalos..." oninput="buscarJugador()">
+            <input type="text" id="jugador-buscar-input" class="filtro-input" placeholder="Ej: Copetti, Russo, Ávalos..." oninput="buscarJugadorDebounced()">
           </div>
           <div class="filtro-grupo" style="flex:1;min-width:160px;">
             <label class="filtro-label">Filtrar por equipo</label>
-            <select id="jugador-buscar-equipo" class="filtro-select" onchange="buscarJugador()">
+            <select id="jugador-buscar-equipo" class="filtro-select" onchange="buscarJugadorDebounced()">
               <option value="">Todos los equipos</option>
             </select>
           </div>
@@ -1147,11 +1180,11 @@ select option{background:#080F20;color:#F0F6FF}
         <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
           <div class="filtro-grupo" style="flex:2;min-width:200px;">
             <label class="filtro-label">Buscar por nombre</label>
-            <input type="text" id="dt-buscar-input" class="filtro-input" placeholder="Ej: Tevez, Demichelis..." oninput="buscarDT()">
+            <input type="text" id="dt-buscar-input" class="filtro-input" placeholder="Ej: Tevez, Demichelis..." oninput="buscarDTDebounced()">
           </div>
           <div class="filtro-grupo" style="flex:1;min-width:160px;">
             <label class="filtro-label">Filtrar por equipo</label>
-            <select id="dt-buscar-equipo" class="filtro-select" onchange="buscarDT()">
+            <select id="dt-buscar-equipo" class="filtro-select" onchange="buscarDTDebounced()">
               <option value="">Todos los equipos</option>
             </select>
           </div>
@@ -1373,6 +1406,24 @@ select option{background:#080F20;color:#F0F6FF}
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-auth" onclick="cerrarModalAuth()">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:400px; padding: 32px;">
+    <div class="modal-top" style="margin-bottom: 24px;">
+      <div class="modal-equipos">Ingresar / Crear Perfil</div>
+      <button class="modal-cerrar" onclick="cerrarModalAuth()">✕</button>
+    </div>
+    <p style="font-size:13px; color:var(--texto-2); margin-bottom:20px; line-height: 1.5;">Guardaremos tu perfil en tu navegador. Elegí tu equipo para resaltarlo en las tablas.</p>
+    <div class="filtro-grupo" style="margin-bottom: 16px;">
+      <label class="filtro-label">Tu Nombre o Apodo</label>
+      <input type="text" id="auth-username" class="filtro-input" placeholder="Ej: Bostero22, Millonario, etc.">
+    </div>
+    <div class="filtro-grupo" style="margin-bottom: 24px;">
+      <label class="filtro-label">¿De qué equipo sos hincha?</label>
+      <select id="auth-equipo" class="filtro-select"><option value="">Elegí un equipo (Opcional)</option></select>
+    </div>
+    <button onclick="guardarPerfilLocal()" style="width:100%; background:var(--celeste); color:var(--fondo-2); border:none; padding:12px; border-radius:10px; font-weight:700; cursor:pointer; font-size: 15px;">Guardar Perfil</button>
+  </div>
+</div>
 <script>
 const URL_PARTIDOS   = 'Partidos.csv';
 const URL_EQUIPOS    = 'Equipos.csv';
@@ -1420,6 +1471,67 @@ let posicionesData = [];
 let equipoDetalleID = null;
 let ordenDesc = true;
 let ordenDetalleDesc = true;
+// ── SISTEMA DE DEBOUNCE ──
+function debounce(func, wait) {
+  let timeout;
+  return function(...args) { clearTimeout(timeout); timeout = setTimeout(() => func.apply(this, args), wait); };
+}
+const filtrarDebounced = debounce(filtrar, 300);
+const buscarJugadorDebounced = debounce(buscarJugador, 300);
+const buscarDTDebounced = debounce(buscarDT, 300);
+const filtrarEquiposDebounced = debounce(filtrarEquipos, 300);
+const filtrarEquiposTodosDebounced = debounce(filtrarEquiposTodos, 300);
+const filtrarCampeonesDebounced = debounce(filtrarCampeones, 300);
+
+// ── SISTEMA DE CACHÉ ──
+async function fetchWithCache(url, bypassCache = false) {
+  if (!bypassCache) { const cachedData = sessionStorage.getItem(url); if (cachedData) return cachedData; }
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Error loading ${url}`);
+  const text = await response.text();
+  if (!bypassCache) sessionStorage.setItem(url, text);
+  return text;
+}
+
+// ── SISTEMA DE USUARIOS ──
+let usuarioActual = null;
+function inicializarAuth() {
+  const data = localStorage.getItem('usuarioDbFutbol');
+  if (data) { usuarioActual = JSON.parse(data); actualizarUIAuth(); }
+}
+function abrirModalAuth() {
+  const sel = document.getElementById('auth-equipo');
+  if (sel.options.length <= 1) {
+    equiposArr.sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo)).forEach(e => {
+      const opt = document.createElement('option'); opt.value = e.Nombre_Equipo; opt.textContent = e.Nombre_Equipo; sel.appendChild(opt);
+    });
+  }
+  if (usuarioActual) { document.getElementById('auth-username').value = usuarioActual.nombre; document.getElementById('auth-equipo').value = usuarioActual.equipo || ''; }
+  document.getElementById('modal-auth').classList.add('visible');
+}
+function cerrarModalAuth() { document.getElementById('modal-auth').classList.remove('visible'); }
+function guardarPerfilLocal() {
+  const nombre = document.getElementById('auth-username').value.trim();
+  const equipo = document.getElementById('auth-equipo').value;
+  if (!nombre) { alert("Ingresá un nombre para guardar el perfil."); return; }
+  usuarioActual = { nombre, equipo };
+  localStorage.setItem('usuarioDbFutbol', JSON.stringify(usuarioActual));
+  actualizarUIAuth(); cerrarModalAuth(); filtrar(); 
+}
+function cerrarSesion() { localStorage.removeItem('usuarioDbFutbol'); usuarioActual = null; actualizarUIAuth(); filtrar(); }
+function actualizarUIAuth() {
+  const btnLogin = document.getElementById('btn-show-login'); const badge = document.getElementById('user-profile-badge');
+  const avatar = document.getElementById('user-profile-avatar'); const nameLabel = document.getElementById('user-profile-name');
+  if (usuarioActual) {
+    btnLogin.style.display = 'none'; badge.classList.add('activo'); nameLabel.textContent = usuarioActual.nombre;
+    if (usuarioActual.equipo && ESCUDOS[usuarioActual.equipo]) { avatar.src = ESCUDOS[usuarioActual.equipo]; avatar.style.display = 'block'; } 
+    else { avatar.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23fff"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>'; }
+  } else { btnLogin.style.display = 'flex'; badge.classList.remove('activo'); }
+}
+function getClassEquipoFavorito(equipo1, equipo2) {
+  if (!usuarioActual || !usuarioActual.equipo) return '';
+  return (equipo1 === usuarioActual.equipo || equipo2 === usuarioActual.equipo) ? 'equipo-favorito-row' : '';
+}
 
 // ── CSV ──
 function csvToArray(csv) {
@@ -1455,48 +1567,54 @@ function parseCSVLine(line) {
 // ── CARGAR ──
 async function cargarDatos() {
   try {
-    const [resP, resE, resT] = await Promise.all([
-      fetch(URL_PARTIDOS), fetch(URL_EQUIPOS), fetch(URL_TEMPORADAS)
+    const [csvP, csvE, csvT] = await Promise.all([
+      fetchWithCache(URL_PARTIDOS), fetchWithCache(URL_EQUIPOS), fetchWithCache(URL_TEMPORADAS)
     ]);
-    const csvP = await resP.text();
-    const csvE = await resE.text();
-    const csvT = await resT.text();
-
     equiposArr = csvToArray(csvE);
-    equiposArr.forEach(e => {
-      e.Nombre_Equipo = (e.Nombre_Equipo||'').trim().replace(/^"+|"+$/g,'');
-      equipos[e.ID_Equipo] = e.Nombre_Equipo;
-    });
-
+    equiposArr.forEach(e => { e.Nombre_Equipo = (e.Nombre_Equipo||'').trim().replace(/^"+|"+$/g,''); equipos[e.ID_Equipo] = e.Nombre_Equipo; });
     const tempArr = csvToArray(csvT);
-    tempArr.forEach(t => temporadas[t.ID_Temporada] = t.Competencia);
-    temporadasArr = tempArr;
-    cargarCampeones();
-    inicializarBuscadorJugadores();
-    renderDivisiones();
-    cargarHoy();
-    // Cargar Jugadores.csv (partidos jugados)
+    tempArr.forEach(t => temporadas[t.ID_Temporada] = t.Competencia); temporadasArr = tempArr;
+    
+    inicializarAuth(); // NUEVO: Cargar perfil de usuario
+    cargarCampeones(); inicializarBuscadorJugadores(); renderDivisiones(); cargarHoy();
+    
     try {
-      const resJ = await fetch(URL_JUGADORES);
-      if (resJ.ok) {
-        const csvJ = await resJ.text();
-        const rows = csvToArray(csvJ).filter(r => r.ID_Partido);
-        rows.forEach(r => {
-          ['Jugadores_Local','Jugadores_Visitante'].forEach((col, idx) => {
-            const raw = r[col] || r['Jugadores'] || '';
-            if (!raw) return;
-            const equipoId = idx === 0 ? r.Local_ID : r.Visitante_ID;
-            raw.split('-').forEach(entrada => {
-              const n = nombreCanonico(limpiarNombre(entrada));
-              if (!n || n.length < 2 || n.toLowerCase() === 'ninguno') return;
-              if (!jugadoresData[n]) jugadoresData[n] = {};
-              if (!jugadoresData[n][equipoId]) jugadoresData[n][equipoId] = new Set();
-              jugadoresData[n][equipoId].add(r.ID_Partido);
-            });
+      const csvJ = await fetchWithCache(URL_JUGADORES);
+      const rows = csvToArray(csvJ).filter(r => r.ID_Partido);
+      rows.forEach(r => {
+        ['Jugadores_Local','Jugadores_Visitante'].forEach((col, idx) => {
+          const raw = r[col] || r['Jugadores'] || ''; if (!raw) return;
+          const equipoId = idx === 0 ? r.Local_ID : r.Visitante_ID;
+          raw.split('-').forEach(entrada => {
+            const n = nombreCanonico(limpiarNombre(entrada));
+            if (!n || n.length < 2 || n.toLowerCase() === 'ninguno') return;
+            if (!jugadoresData[n]) jugadoresData[n] = {};
+            if (!jugadoresData[n][equipoId]) jugadoresData[n][equipoId] = new Set();
+            jugadoresData[n][equipoId].add(r.ID_Partido);
           });
         });
-      }
-    } catch(e) { /* sin Jugadores.csv */ }
+      });
+    } catch(e) { }
+
+    try { const csvPos = await fetchWithCache(URL_POSICIONES); posicionesData = csvToArray(csvPos).filter(r => r.ID_Temporada); } catch(e) { }
+
+    partidos = csvToArray(csvP).filter(p => p.ID_Partido);
+
+    const sel1 = document.getElementById('filtro-equipo'); const sel2 = document.getElementById('filtro-equipo2');
+    equiposArr.sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo)).forEach(e => {
+      [sel1, sel2].forEach(sel => { const opt = document.createElement('option'); opt.value = e.ID_Equipo; opt.textContent = e.Nombre_Equipo; sel.appendChild(opt); });
+    });
+    renderizarEquipos(); filtrar();
+
+    const selStats = document.getElementById('stats-filtro-equipo');
+    equiposArr.sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo)).forEach(e => {
+      const opt = document.createElement('option'); opt.value = e.ID_Equipo; opt.textContent = e.Nombre_Equipo; selStats.appendChild(opt);
+    });
+    renderEstadisticas();
+  } catch(err) {
+    document.getElementById('tabla-partidos').innerHTML = '<tr class="loading-row"><td colspan="5">Error cargando datos.</td></tr>';
+  }
+}
 
     // Cargar posiciones (silencioso si no existe)
     try {
@@ -1562,7 +1680,7 @@ function cambiarTab(tab) {
 // ── HELPERS ──
 function escudoImg(nombre, size) {
   return ESCUDOS[nombre]
-    ? `<img src="${ESCUDOS[nombre]}" style="width:${size}px;height:${size}px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">`
+    ? `<img src="${ESCUDOS[nombre]}" loading="lazy" decoding="async" style="width:${size}px;height:${size}px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">`
     : '';
 }
 function resClase(gl, gv) {
@@ -1575,7 +1693,9 @@ function filaPartido(p) {
   const fecha = p.Fecha ? p.Fecha.split('T')[0] : '';
   const torneo = temporadas[p.ID_Temporada] || p.Fase || '';
   const rc = resClase(p.Goles_Local, p.Goles_Visitante);
-  return `<tr onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
+  const claseFavorito = getClassEquipoFavorito(local, visita);
+  
+  return `<tr class="${claseFavorito}" onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
     <td class="td-fecha">${fecha}</td>
     <td><div class="td-equipo">${escudoImg(local,22)}<span>${local}</span></div></td>
     <td class="td-resultado"><span class="${rc}">${p.Goles_Local} - ${p.Goles_Visitante}</span></td>
@@ -1715,7 +1835,7 @@ function renderizarEquipos(filtro='') {
   }).join('');
 }
 
-function filtrarEquipos() {
+function filtrarEquiposDebounced() {
   renderizarEquipos(document.getElementById('buscar-equipo').value);
 }
 
@@ -2184,7 +2304,7 @@ function fotoJugadorImg(nombre, equipoNombre, style, placeholder) {
   const eqKey  = equipoNombre ? toFotoKey(equipoNombre) : '';
   const src    = eqKey ? `jugadores/${jugKey}_${eqKey}.jpg` : `jugadores/${jugKey}.jpg`;
   const fallback = eqKey ? `jugadores/${jugKey}.jpg` : placeholder || 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22180%22 height=%22180%22><rect width=%22180%22 height=%22180%22 fill=%22%230D1628%22 rx=%2216%22/><text x=%2290%22 y=%22105%22 font-size=%2264%22 text-anchor=%22middle%22>👤</text></svg>';
-  return `<img src="${src}" style="${style}" onerror="if(this.dataset.tried){this.src='${placeholder||'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2256%22 height=%2256%22><rect width=%2256%22 height=%2256%22 fill=%22%230D1628%22 rx=%2210%22/><text x=%2228%22 y=%2234%22 font-size=%2224%22 text-anchor=%22middle%22>👤</text></svg>'}'}else{this.dataset.tried=1;this.src='${fallback}'}">`;
+  return `<img src="${src}" loading="lazy" decoding="async" style="${style}" onerror="if(this.dataset.tried){this.src='${placeholder||'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2256%22 height=%2256%22><rect width=%2256%22 height=%2256%22 fill=%22%230D1628%22 rx=%2210%22/><text x=%2228%22 y=%2234%22 font-size=%2224%22 text-anchor=%22middle%22>👤</text></svg>'}'}else{this.dataset.tried=1;this.src='${fallback}'}">`;
 }
 
 function cambiarFichaFoto(jugKey, eqKey) {
@@ -2688,10 +2808,10 @@ function cargarCampeones() {
     selDiv.appendChild(opt);
   });
   selDiv.value = divActual;
-  filtrarCampeones();
+  filtrarCampeonesDebounced();
 }
 
-function filtrarCampeones() {
+function filtrarCampeonesDebounced() {
   const division = document.getElementById('camp-filtro-division').value;
   const buscar = (document.getElementById('camp-buscar')?.value || '').toLowerCase().trim();
   const lista = temporadasArr.filter(t => {
@@ -3219,7 +3339,7 @@ function recopilarJugadores() {
   return jugadoresMap;
 }
 
-function buscarJugador() {
+function buscarJugadorDebounced() {
   const q = (document.getElementById('jugador-buscar-input')?.value || '').toLowerCase().trim();
   const eqFiltro = document.getElementById('jugador-buscar-equipo')?.value || '';
   const container = document.getElementById('jugador-resultados');
@@ -3352,7 +3472,7 @@ function recopilarDTs() {
   return dtsMap;
 }
 
-function buscarDT() {
+function buscarDTDebounced() {
   const q = (document.getElementById('dt-buscar-input')?.value || '').toLowerCase().trim();
   const eqFiltro = document.getElementById('dt-buscar-equipo')?.value || '';
   const container = document.getElementById('dt-resultados');
@@ -3467,7 +3587,7 @@ function setModoJugadores(modo) {
   document.getElementById('jugador-modo-lista').style.color = modo==='lista' ? 'white' : 'var(--texto-2)';
   document.getElementById('jugador-modo-album').style.background = modo==='album' ? 'var(--azul)' : 'transparent';
   document.getElementById('jugador-modo-album').style.color = modo==='album' ? 'white' : 'var(--texto-2)';
-  buscarJugador();
+  buscarJugadorDebounced();
 }
 
 let vistaEquiposModo = 'divisiones';
@@ -3794,16 +3914,14 @@ let partidosHoy = [];
 
 async function cargarHoy() {
   try {
-    const res = await fetch(URL_HOY);
-    if (!res.ok) { renderHoyVacio('No hay partidos cargados para hoy.'); return; }
-    const csv = await res.text();
+    const csv = await fetchWithCache(URL_HOY, true); // true para NO cachear el hoy
+    if (!csv) { renderHoyVacio('No hay partidos cargados para hoy.'); return; }
     partidosHoy = csvToArray(csv).filter(p => p.Local_ID || p.ID_Partido);
     renderHoy();
   } catch(e) {
     renderHoyVacio('No se pudo cargar la hoja de hoy.');
   }
 }
-
 function renderHoyVacio(msg) {
   document.getElementById('hoy-container').innerHTML = `
     <div style="text-align:center;padding:60px 20px;color:var(--texto-3);">
