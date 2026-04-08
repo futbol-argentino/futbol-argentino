@@ -1373,18 +1373,8 @@ select option{background:#080F20;color:#F0F6FF}
   </div>
 </div>
 
-<script type="module">
+<script>
 
-
-// ── SUPABASE ──
-// ── SUPABASE (opcional) ──
-// Completá SUPABASE_URL y SUPABASE_KEY para activar la base de datos en la nube.
-// Si están vacíos, la app sigue funcionando leyendo los archivos CSV locales.
-const SUPABASE_URL = 'https://lrsalgilchxobgtuuupg.supabase.co'';   // 👈 Pegá tu Project URL aquí
-const SUPABASE_KEY = 'sb_publishable_rtYR6dulqLw0KbFCcktKFA_zJrMxhJ8'';   // 👈 Pegá tu anon key aquí
-const USAR_SUPABASE = SUPABASE_URL !== '' && SUPABASE_KEY !== '';
-
-let sb = null;
 
 const ESCUDOS = {
   'Aldosivi':'escudos/aldosivi.png','All Boys':'escudos/all_boys.png',
@@ -1418,7 +1408,7 @@ const ESCUDOS = {
   'Gimnasia y Tiro':'escudos/gimnasia_y_tiro.png'
 };
 
-// ── CSV LOCALES (fallback) ──
+// ── CSV ──
 const URL_PARTIDOS   = 'Partidos.csv';
 const URL_EQUIPOS    = 'Equipos.csv';
 const URL_TEMPORADAS = 'TEMPORADAS.csv';
@@ -1440,6 +1430,7 @@ function parseCSVLine(line) {
   for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"'){inQuotes=!inQuotes;}else if(ch===','&&!inQuotes){result.push(current.trim().replace(/^"+|"+$/g,''));current='';}else{current+=ch;}}
   result.push(current.trim().replace(/^"+|"+$/g,''));return result;
 }
+
 let jugadoresData = {};
 let equiposArr = [], temporadasArr = [];
 let posicionesData = [];
@@ -1447,67 +1438,31 @@ let equipoDetalleID = null;
 let ordenDesc = true;
 let ordenDetalleDesc = true;
 
-// ── CARGAR DATOS ──
+// ── CARGAR ──
 async function cargarDatos() {
-  // Inicializar Supabase si hay credenciales
-  if (USAR_SUPABASE) {
-    try {
-      const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
-      sb = createClient(SUPABASE_URL, SUPABASE_KEY);
-    } catch(e) {
-      console.warn('No se pudo cargar Supabase, usando CSV:', e);
-    }
-  }
-
   try {
-    if (sb) {
-      // ── SUPABASE ──
-      const [{ data: eqData, error: eqErr }, { data: tmpData, error: tmpErr }, { data: ptData, error: ptErr }] =
-        await Promise.all([
-          sb.from('Equipos').select('*'),
-          sb.from('TEMPORADAS').select('*'),
-          sb.from('Partidos').select('*').order('ID_Partido', { ascending: true })
-        ]);
-      if (eqErr) throw eqErr;
-      if (tmpErr) throw tmpErr;
-      if (ptErr)  throw ptErr;
+    const [resP, resE, resT] = await Promise.all([
+      fetch(URL_PARTIDOS), fetch(URL_EQUIPOS), fetch(URL_TEMPORADAS)
+    ]);
+    equiposArr = csvToArray(await resE.text());
+    equiposArr.forEach(e => { e.Nombre_Equipo=(e.Nombre_Equipo||'').trim(); equipos[e.ID_Equipo]=e.Nombre_Equipo; });
+    temporadasArr = csvToArray(await resT.text());
+    temporadasArr.forEach(t => temporadas[t.ID_Temporada]=t.Competencia);
+    partidos = csvToArray(await resP.text()).filter(p=>p.ID_Partido);
 
-      equiposArr = eqData || [];
-      equiposArr.forEach(e => { e.Nombre_Equipo=(e.Nombre_Equipo||'').trim(); equipos[e.ID_Equipo]=e.Nombre_Equipo; });
-      temporadasArr = tmpData || [];
-      temporadasArr.forEach(t => temporadas[t.ID_Temporada]=t.Competencia);
-      partidos = ptData || [];
+    try {
+      const resPos = await fetch(URL_POSICIONES);
+      if (resPos.ok) posicionesData = csvToArray(await resPos.text()).filter(r=>r.ID_Temporada);
+    } catch(e) {}
 
-      const { data: posData } = await sb.from('Posiciones').select('*');
-      posicionesData = (posData||[]).filter(r=>r.ID_Temporada);
-
-    } else {
-      // ── CSV LOCALES ──
-      const [resP, resE, resT] = await Promise.all([
-        fetch(URL_PARTIDOS), fetch(URL_EQUIPOS), fetch(URL_TEMPORADAS)
-      ]);
-      equiposArr = csvToArray(await resE.text());
-      equiposArr.forEach(e => { e.Nombre_Equipo=(e.Nombre_Equipo||'').trim(); equipos[e.ID_Equipo]=e.Nombre_Equipo; });
-      temporadasArr = csvToArray(await resT.text());
-      temporadasArr.forEach(t => temporadas[t.ID_Temporada]=t.Competencia);
-      partidos = csvToArray(await resP.text()).filter(p=>p.ID_Partido);
-
-      try {
-        const resPos = await fetch(URL_POSICIONES);
-        if (resPos.ok) posicionesData = csvToArray(await resPos.text()).filter(r=>r.ID_Temporada);
-      } catch(e) {}
-    }
-
-    // ── UI (común) ──
     cargarCampeones();
     inicializarBuscadorJugadores();
     renderDivisiones();
     cargarHoy();
 
-    const selSort = arr => arr.slice().sort((a,b)=>a.Nombre_Equipo.localeCompare(b.Nombre_Equipo));
     const sel1=document.getElementById('filtro-equipo'), sel2=document.getElementById('filtro-equipo2');
     const selStats=document.getElementById('stats-filtro-equipo');
-    selSort(equiposArr).forEach(e=>{
+    equiposArr.slice().sort((a,b)=>a.Nombre_Equipo.localeCompare(b.Nombre_Equipo)).forEach(e=>{
       [sel1,sel2,selStats].forEach(sel=>{
         if(!sel)return; const opt=document.createElement('option');
         opt.value=e.ID_Equipo; opt.textContent=e.Nombre_Equipo; sel.appendChild(opt);
@@ -1517,11 +1472,10 @@ async function cargarDatos() {
     renderizarEquipos();
     filtrar();
     renderEstadisticas();
-
   } catch(err) {
-    console.error('Error cargando datos:', err);
+    console.error(err);
     document.getElementById('tabla-partidos').innerHTML =
-      `<tr class="loading-row"><td colspan="5">⚠️ Error cargando datos: ${err.message||err}</td></tr>`;
+      `<tr class="loading-row"><td colspan="5">Error cargando datos.</td></tr>`;
   }
 }
 
@@ -3775,45 +3729,12 @@ let partidosHoy = [];
 
 async function cargarHoy() {
   try {
-    if (sb) {
-      // ── SUPABASE + REALTIME ──
-      const { data, error } = await sb.from('Hoy').select('*');
-      if (error) throw error;
-      partidosHoy = (data||[]).filter(p=>p.Local_ID||p.ID_Partido);
-      renderHoy();
-
-      // Canal Realtime
-      sb.channel('hoy-realtime')
-        .on('postgres_changes', { event:'*', schema:'public', table:'Hoy' }, (payload) => {
-          const nuevo = payload.new;
-          if (!nuevo) return;
-          const idx = partidosHoy.findIndex(p => p.ID_Partido == nuevo.ID_Partido);
-          if (idx !== -1) {
-            partidosHoy[idx] = { ...partidosHoy[idx], ...nuevo };
-            const card = document.querySelector(`[data-partido-id="${nuevo.ID_Partido}"]`);
-            if (card) {
-              const resEl = card.querySelector('.hoy-resultado, .hoy-vs');
-              if (resEl && nuevo.Goles_Local !== '' && nuevo.Goles_Local !== null) {
-                const rc = resClase(nuevo.Goles_Local, nuevo.Goles_Visitante);
-                resEl.className = 'hoy-resultado';
-                resEl.innerHTML = `<span class="${rc}">${nuevo.Goles_Local} - ${nuevo.Goles_Visitante}</span>`;
-              }
-            }
-          } else if (payload.eventType === 'INSERT') {
-            partidosHoy.push(nuevo);
-            renderHoy();
-          }
-        })
-        .subscribe();
-    } else {
-      // ── CSV LOCAL ──
-      const res = await fetch(URL_HOY);
-      if (!res.ok) { renderHoyVacio('No hay partidos cargados para hoy.'); return; }
-      partidosHoy = csvToArray(await res.text()).filter(p=>p.Local_ID||p.ID_Partido);
-      renderHoy();
-    }
+    const res = await fetch(URL_HOY);
+    if (!res.ok) { renderHoyVacio('No hay partidos cargados para hoy.'); return; }
+    partidosHoy = csvToArray(await res.text()).filter(p=>p.Local_ID||p.ID_Partido);
+    renderHoy();
   } catch(e) {
-    renderHoyVacio('No se pudo cargar: ' + (e.message||e));
+    renderHoyVacio('No se pudo cargar la hoja de hoy.');
   }
 }
 
@@ -3983,36 +3904,6 @@ function toggleTema() {
 })();
 
 cargarDatos();
-
-// ── Exponer funciones al scope global (requerido con type="module") ──
-Object.assign(window, {
-  // Sidebar / tabs
-  abrirSidebar, cerrarSidebar, cambiarTab,
-  // Buscador
-  filtrar, limpiarFiltros, toggleOrden,
-  // Equipos
-  filtrarEquipos, filtrarEquiposTodos, verDetalleEquipo, volverEquipos,
-  volverDivisiones, volverADivision, volverAProvincias, verDivision, verProvincia,
-  setVistaEquipos, filtrarDetalle, toggleOrdenDetalle, toggleRivales,
-  actualizarSelectResultado,
-  // Estadísticas
-  renderEstadisticas,
-  // Campeones / torneo
-  filtrarCampeones, verTorneo, volverCampeones, cambiarTorneoTab, toggleGrupo,
-  cambiarStatsSubTab,
-  // Jugadores / DTs
-  buscarJugador, setModoJugadores, cambiarSubtabJugadores, buscarDT,
-  verFichaJugador, cerrarFichaJugador, cambiarFichaFoto,
-  verFichaDT, cerrarFichaDT,
-  // Paginación
-  cambiarPaginaStats, cambiarPaginaTorneo,
-  // Partido modal
-  verPartido, cerrarModal, toggleDesplegable,
-  // Hoy
-  toggleHoyDetalle,
-  // Tema
-  toggleTema,
-});
 </script>
 </body>
 </html>
