@@ -4139,6 +4139,237 @@ function renderBadgeUsuario() {
 }
 
 cargarDatos();
+
+// ════════════════════════════════════════════
+// ROUTER — History API
+// Rutas soportadas:
+//   /                  → tab hoy
+//   #buscador          → tab buscador
+//   #equipos           → tab equipos
+//   #estadisticas      → tab estadísticas
+//   #campeones         → tab campeones
+//   #jugadores         → tab jugadores
+//   #equipo-{ID}       → detalle equipo
+//   #torneo-{ID}       → detalle torneo
+//   #jugador-{nombre}  → ficha jugador
+//   #dt-{nombre}       → ficha DT
+//   #partido-{ID}      → modal partido
+// ════════════════════════════════════════════
+
+let _routerActivo = false; // evitar loops
+
+function routerNavegar(hash, pushState = true) {
+  if (pushState) {
+    const url = hash ? `${location.pathname}${hash}` : location.pathname;
+    history.pushState({ hash }, '', url);
+  }
+  routerRenderizar(hash);
+}
+
+function routerRemplazar(hash) {
+  const url = hash ? `${location.pathname}${hash}` : location.pathname;
+  history.replaceState({ hash }, '', url);
+}
+
+function routerRenderizar(hash) {
+  _routerActivo = true;
+
+  // Cerrar modales abiertos sin añadir historia
+  document.getElementById('modal')?.classList.remove('visible');
+  document.getElementById('modal-jugador')?.classList.remove('visible');
+  document.getElementById('modal-dt')?.classList.remove('visible');
+
+  if (!hash || hash === '#' || hash === '#hoy') {
+    _cambiarTabSilencioso('hoy');
+
+  } else if (hash === '#buscador') {
+    _cambiarTabSilencioso('buscador');
+
+  } else if (hash === '#equipos') {
+    _cambiarTabSilencioso('equipos');
+    // Volver a la vista de divisiones
+    document.getElementById('vista-detalle')?.classList.remove('visible');
+    document.getElementById('vista-equipos').style.display = 'none';
+    document.getElementById('vista-provincias').style.display = 'none';
+    document.getElementById('vista-divisiones').style.display = 'block';
+    equipoDetalleID = null;
+
+  } else if (hash === '#estadisticas') {
+    _cambiarTabSilencioso('estadisticas');
+
+  } else if (hash === '#campeones') {
+    _cambiarTabSilencioso('campeones');
+    document.getElementById('vista-torneo').style.display = 'none';
+    document.getElementById('vista-campeones').style.display = 'block';
+    requestAnimationFrame(() => window.scrollTo(0, scrollCampeones));
+
+  } else if (hash === '#jugadores') {
+    _cambiarTabSilencioso('jugadores');
+
+  } else if (hash.startsWith('#equipo-')) {
+    const id = hash.replace('#equipo-', '');
+    _cambiarTabSilencioso('equipos');
+    if (equipos[id]) {
+      // Silently call verDetalleEquipo without pushing history
+      _verDetalleEquipoSilencioso(id);
+    }
+
+  } else if (hash.startsWith('#torneo-')) {
+    const id = hash.replace('#torneo-', '');
+    _cambiarTabSilencioso('campeones');
+    if (temporadasArr.find(t => t.ID_Temporada == id)) {
+      _verTorneoSilencioso(id);
+    }
+
+  } else if (hash.startsWith('#jugador-')) {
+    const nombre = decodeURIComponent(hash.replace('#jugador-', ''));
+    // Abrir ficha sobre la tab actual (no cambiar tab)
+    _verFichaJugadorSilencioso(nombre);
+
+  } else if (hash.startsWith('#dt-')) {
+    const nombre = decodeURIComponent(hash.replace('#dt-', ''));
+    _verFichaDTSilencioso(nombre);
+
+  } else if (hash.startsWith('#partido-')) {
+    const id = hash.replace('#partido-', '');
+    _verPartidoSilencioso(id);
+  }
+
+  _routerActivo = false;
+}
+
+// ── Helpers silenciosos (ejecutan lógica sin pushState) ──
+function _cambiarTabSilencioso(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('activo'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('activo'));
+  document.querySelectorAll('.sidebar-nav-item').forEach(i => i.classList.remove('activo'));
+  const panel = document.getElementById('panel-' + tab);
+  if (panel) panel.classList.add('activo');
+  const btn = document.getElementById('tab-' + tab);
+  if (btn) btn.classList.add('activo');
+  const menu = document.getElementById('menu-' + tab);
+  if (menu) menu.classList.add('activo');
+}
+
+function _verDetalleEquipoSilencioso(id) {
+  equipoDetalleID = id;
+  document.getElementById('vista-divisiones').style.display = 'none';
+  document.getElementById('vista-equipos').style.display = 'none';
+  document.getElementById('vista-detalle').classList.add('visible');
+  window.scrollTo(0, 0);
+  // Re-usar lógica de renderizado del detalle (sin pushState)
+  const _orig = history.pushState.bind(history);
+  history.pushState = () => {};
+  verDetalleEquipo(id);
+  history.pushState = _orig;
+}
+
+function _verTorneoSilencioso(id) {
+  verTorneo(id); // verTorneo ya no hace pushState por su cuenta
+}
+
+function _verFichaJugadorSilencioso(nombre) {
+  verFichaJugador(nombre);
+}
+
+function _verFichaDTSilencioso(nombre) {
+  verFichaDT(nombre);
+}
+
+function _verPartidoSilencioso(id) {
+  verPartido(id);
+}
+
+// ── Parchear funciones de navegación para que actualicen la URL ──
+const _cambiarTabOriginal = cambiarTab;
+cambiarTab = function(tab) {
+  _cambiarTabOriginal(tab);
+  if (!_routerActivo) routerRemplazar('#' + tab);
+};
+
+const _verDetalleEquipoOriginal = verDetalleEquipo;
+verDetalleEquipo = function(id) {
+  _verDetalleEquipoOriginal(id);
+  if (!_routerActivo) routerNavegar('#equipo-' + id);
+};
+
+const _verTorneoOriginal = verTorneo;
+verTorneo = function(id) {
+  _verTorneoOriginal(id);
+  if (!_routerActivo) routerNavegar('#torneo-' + id);
+};
+
+const _verFichaJugadorOriginal = verFichaJugador;
+verFichaJugador = function(nombre) {
+  _verFichaJugadorOriginal(nombre);
+  if (!_routerActivo) routerNavegar('#jugador-' + encodeURIComponent(nombre));
+};
+
+const _verFichaDTOriginal = verFichaDT;
+verFichaDT = function(nombre) {
+  _verFichaDTOriginal(nombre);
+  if (!_routerActivo) routerNavegar('#dt-' + encodeURIComponent(nombre));
+};
+
+const _verPartidoOriginal = verPartido;
+verPartido = function(id) {
+  _verPartidoOriginal(id);
+  if (!_routerActivo) routerNavegar('#partido-' + id);
+};
+
+// Cerrar modales → volver atrás en historia
+const _cerrarModalOriginal = cerrarModal;
+cerrarModal = function() {
+  _cerrarModalOriginal();
+  if (!_routerActivo) history.back();
+};
+
+const _cerrarFichaJugadorOriginal = cerrarFichaJugador;
+cerrarFichaJugador = function() {
+  _cerrarFichaJugadorOriginal();
+  if (!_routerActivo) history.back();
+};
+
+const _cerrarFichaDTOriginal = cerrarFichaDT;
+cerrarFichaDT = function() {
+  _cerrarFichaDTOriginal();
+  if (!_routerActivo) history.back();
+};
+
+const _volverCampeonesOriginal = volverCampeones;
+volverCampeones = function() {
+  _volverCampeonesOriginal();
+  if (!_routerActivo) history.back();
+};
+
+const _volverEquiposOriginal = volverEquipos;
+volverEquipos = function() {
+  _volverEquiposOriginal();
+  if (!_routerActivo) history.back();
+};
+
+// ── popstate: usuario presiona Atrás/Adelante ──
+window.addEventListener('popstate', (e) => {
+  const hash = e.state?.hash || location.hash || '';
+  routerRenderizar(hash);
+});
+
+// ── Inicializar router con la URL actual ──
+(function initRouter() {
+  const hash = location.hash || '';
+  // Registrar estado inicial
+  history.replaceState({ hash }, '', location.href);
+  if (hash && hash !== '#hoy') {
+    // Esperar a que los datos carguen antes de renderizar la ruta inicial
+    const intentar = setInterval(() => {
+      if (partidos.length > 0 || temporadasArr.length > 0) {
+        clearInterval(intentar);
+        routerRenderizar(hash);
+      }
+    }, 100);
+    setTimeout(() => clearInterval(intentar), 5000); // timeout 5s
+  }
+})();
 </script>
 </body>
 </html>
