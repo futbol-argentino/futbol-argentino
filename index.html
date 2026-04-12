@@ -997,12 +997,23 @@ select option{background:#080F20;color:#F0F6FF}
 
     <!-- Filtro por equipo -->
     <div class="filtros-panel" style="margin-bottom:20px;">
-      <div class="filtros-titulo">📊 Filtrar por equipo</div>
-      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-        <div class="filtro-grupo" style="flex:1;min-width:200px;">
+      <div class="filtros-titulo">📊 Filtros</div>
+      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="filtro-grupo" style="flex:1;min-width:160px;">
+          <label class="filtro-label">Buscar jugador</label>
+          <input type="text" id="stats-filtro-nombre" class="filtro-input" placeholder="Nombre..." oninput="renderEstadisticasDebounced()">
+        </div>
+        <div class="filtro-grupo" style="flex:1;min-width:180px;position:relative;">
           <label class="filtro-label">Equipo</label>
-          <select id="stats-filtro-equipo" class="filtro-select" onchange="renderEstadisticas()">
-            <option value="">Todos los equipos (ranking general)</option>
+          <input type="text" id="stats-equipo-input" class="filtro-input" placeholder="Escribí el equipo..." autocomplete="off"
+            oninput="filtrarEquipoDropdown('stats')" onfocus="mostrarDropdown('stats')" onblur="setTimeout(()=>ocultarDropdown('stats'),200)">
+          <input type="hidden" id="stats-filtro-equipo" value="">
+          <div id="stats-equipo-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:200;background:var(--fondo-2);border:1px solid var(--borde-activo);border-radius:10px;max-height:220px;overflow-y:auto;box-shadow:var(--sombra-card);margin-top:3px;"></div>
+        </div>
+        <div class="filtro-grupo" style="flex:1;min-width:160px;">
+          <label class="filtro-label">Nacionalidad</label>
+          <select id="stats-filtro-nac" class="filtro-select" onchange="renderEstadisticas()">
+            <option value="">Todas las nacionalidades</option>
           </select>
         </div>
       </div>
@@ -1174,11 +1185,12 @@ select option{background:#080F20;color:#F0F6FF}
             <label class="filtro-label">Buscar por nombre</label>
             <input type="text" id="jugador-buscar-input" class="filtro-input" placeholder="Ej: Copetti, Russo, Ávalos..." oninput="buscarJugadorDebounced()">
           </div>
-          <div class="filtro-grupo" style="flex:1;min-width:160px;">
+          <div class="filtro-grupo" style="flex:1;min-width:160px;position:relative;">
             <label class="filtro-label">Filtrar por equipo</label>
-            <select id="jugador-buscar-equipo" class="filtro-select" onchange="buscarJugador()">
-              <option value="">Todos los equipos</option>
-            </select>
+            <input type="text" id="jugador-equipo-input" class="filtro-input" placeholder="Escribí el equipo..." autocomplete="off"
+              oninput="filtrarEquipoDropdown('jugador')" onfocus="mostrarDropdown('jugador')" onblur="setTimeout(()=>ocultarDropdown('jugador'),200)">
+            <input type="hidden" id="jugador-buscar-equipo" value="">
+            <div id="jugador-equipo-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:200;background:var(--fondo-2);border:1px solid var(--borde-activo);border-radius:10px;max-height:220px;overflow-y:auto;box-shadow:var(--sombra-card);margin-top:3px;"></div>
           </div>
           <div class="filtro-grupo" style="flex:0;white-space:nowrap;">
             <label class="filtro-label" style="opacity:0;">-</label>
@@ -1200,11 +1212,12 @@ select option{background:#080F20;color:#F0F6FF}
             <label class="filtro-label">Buscar por nombre</label>
             <input type="text" id="dt-buscar-input" class="filtro-input" placeholder="Ej: Tevez, Demichelis..." oninput="buscarDTDebounced()">
           </div>
-          <div class="filtro-grupo" style="flex:1;min-width:160px;">
+          <div class="filtro-grupo" style="flex:1;min-width:160px;position:relative;">
             <label class="filtro-label">Filtrar por equipo</label>
-            <select id="dt-buscar-equipo" class="filtro-select" onchange="buscarDT()">
-              <option value="">Todos los equipos</option>
-            </select>
+            <input type="text" id="dt-equipo-input" class="filtro-input" placeholder="Escribí el equipo..." autocomplete="off"
+              oninput="filtrarEquipoDropdown('dt')" onfocus="mostrarDropdown('dt')" onblur="setTimeout(()=>ocultarDropdown('dt'),200)">
+            <input type="hidden" id="dt-buscar-equipo" value="">
+            <div id="dt-equipo-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:200;background:var(--fondo-2);border:1px solid var(--borde-activo);border-radius:10px;max-height:220px;overflow-y:auto;box-shadow:var(--sombra-card);margin-top:3px;"></div>
           </div>
         </div>
       </div>
@@ -1255,6 +1268,25 @@ select option{background:#080F20;color:#F0F6FF}
         </tr></thead>
         <tbody id="ficha-tabla-equipos"></tbody>
       </table>
+    </div>
+    <!-- Sección DT (solo si también fue DT) -->
+    <div id="ficha-dt-seccion" style="display:none;">
+      <div class="ficha-seccion-titulo" style="margin-top:24px;border-top:1px solid var(--borde);padding-top:16px;">🧑‍💼 También como Director Técnico</div>
+      <div class="tabla-scroll">
+        <table style="width:100%;border-collapse:collapse;min-width:340px;">
+          <thead><tr>
+            <th>Equipo</th>
+            <th style="text-align:center;width:55px;">PD</th>
+            <th style="text-align:center;width:55px;">PG</th>
+            <th style="text-align:center;width:55px;">PE</th>
+            <th style="text-align:center;width:55px;">PP</th>
+            <th style="text-align:center;width:55px;">%</th>
+          </tr></thead>
+          <tbody id="ficha-dt-tabla"></tbody>
+        </table>
+      </div>
+    </div>
+
     </div>
   </div>
 </div>
@@ -1596,14 +1628,6 @@ async function cargarDatos() {
 
     renderizarEquipos();
     filtrar();
-
-    // Llenar select de estadísticas
-    const selStats = document.getElementById('stats-filtro-equipo');
-    equiposArr.sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo)).forEach(e => {
-      const opt = document.createElement('option');
-      opt.value = e.ID_Equipo; opt.textContent = e.Nombre_Equipo;
-      selStats.appendChild(opt);
-    });
     renderEstadisticas();
 
     // Llenar select de usuario con equipos
@@ -2474,23 +2498,41 @@ function renderTablaStat(tipo) {
   }
 }
 
+function renderEstadisticasDebounced() {
+  clearTimeout(renderEstadisticasDebounced._t);
+  renderEstadisticasDebounced._t = setTimeout(renderEstadisticas, 280);
+}
+
 function renderEstadisticas() {
-  const equipoId = document.getElementById('stats-filtro-equipo').value || null;
+  const equipoId  = document.getElementById('stats-filtro-equipo')?.value || null;
+  const filtroNom = (document.getElementById('stats-filtro-nombre')?.value || '').toLowerCase().trim();
+  const filtroNac = document.getElementById('stats-filtro-nac')?.value || '';
+
   const { goles, ec, nacionalidades } = parsearGoleadores(equipoId);
+  const { datos: amon, nacionalidades: nacAmon } = parsearTarjetas('Amonestados', equipoId);
+  const { datos: expu, nacionalidades: nacExpu } = parsearTarjetas('Expulsados', equipoId);
+
+  // Combinar todos los diccionarios de nac para filtrar
+  const todosNac = { ...nacionalidades, ...nacAmon, ...nacExpu };
+
+  // Función que filtra un array [nombre, valor] por nombre y/o nac
+  const aplicarFiltros = (arr) => arr.filter(([nombre]) => {
+    if (filtroNom && !normalizarNombre(nombre).includes(normalizarNombre(filtroNom))) return false;
+    if (filtroNac && todosNac[nombre] !== filtroNac) return false;
+    return true;
+  });
 
   // Resetear páginas al cambiar filtro
   paginas.goleadores = 1; paginas.gc = 1; paginas.amonestados = 1; paginas.expulsados = 1;
 
-  datosStats.goleadores = Object.entries(goles)
-    .sort((a, b) => (b[1].normales + b[1].penales) - (a[1].normales + a[1].penales));
-  datosStats.gc = Object.entries(ec).sort((a,b) => b[1]-a[1]);
+  datosStats.goleadores = aplicarFiltros(Object.entries(goles)
+    .sort((a, b) => (b[1].normales + b[1].penales) - (a[1].normales + a[1].penales)));
+  datosStats.gc = aplicarFiltros(Object.entries(ec).sort((a,b) => b[1]-a[1]));
   datosStats.nacGoleadores = nacionalidades;
   datosStats.nacGC = nacionalidades;
 
-  const { datos: amon, nacionalidades: nacAmon } = parsearTarjetas('Amonestados', equipoId);
-  const { datos: expu, nacionalidades: nacExpu } = parsearTarjetas('Expulsados', equipoId);
-  datosStats.amonestados = amon;
-  datosStats.expulsados = expu;
+  datosStats.amonestados = aplicarFiltros(amon);
+  datosStats.expulsados  = aplicarFiltros(expu);
   datosStats.nacAmon = nacAmon;
   datosStats.nacExpu = nacExpu;
 
@@ -2671,6 +2713,36 @@ function verFichaJugador(nombre) {
       </tr>`;
     }).join('');
 
+  // ── Sección DT (si también fue DT) ──
+  const todosDTs = recopilarDTs();
+  const claveDT = nombreCanonico(nombre);
+  const dataDT = todosDTs[claveDT];
+  const dtSeccion = document.getElementById('ficha-dt-seccion');
+  if (dataDT) {
+    dtSeccion.style.display = 'block';
+    document.getElementById('ficha-dt-tabla').innerHTML = Object.entries(dataDT.equipos)
+      .sort((a,b) => b[1].pd - a[1].pd)
+      .map(([eid, r]) => {
+        const nm = equipos[eid]||eid;
+        const esc = ESCUDOS[nm] ? `<img src="${ESCUDOS[nm]}" style="width:18px;height:18px;object-fit:contain;margin-right:6px;" onerror="this.style.display='none'">` : '';
+        const pct = r.pd > 0 ? Math.round((r.pg/r.pd)*100) : 0;
+        const aniosStr = formatearAnios(r.anios);
+        return `<tr>
+          <td style="padding:10px 12px;">
+            <div style="display:flex;align-items:center;">${esc}<strong>${nm}</strong></div>
+            <div style="font-size:11px;color:var(--texto-3);margin-top:2px;">${aniosStr}</div>
+          </td>
+          <td style="text-align:center;font-weight:700;font-size:15px;">${r.pd}</td>
+          <td style="text-align:center;color:var(--verde);">${r.pg}</td>
+          <td style="text-align:center;color:var(--amarillo);">${r.pe}</td>
+          <td style="text-align:center;color:var(--rojo);">${r.pp}</td>
+          <td style="text-align:center;color:var(--texto-2);font-size:13px;">${pct}%</td>
+        </tr>`;
+      }).join('');
+  } else {
+    dtSeccion.style.display = 'none';
+  }
+
   document.getElementById('modal-jugador').classList.add('visible');
 }
 
@@ -2783,7 +2855,7 @@ function filtrarCampeones() {
     if (division && t.Division !== division) return false;
     if (buscar && !(t.Competencia||'').toLowerCase().includes(buscar) && !(t.Campeon||'').toLowerCase().includes(buscar)) return false;
     return true;
-  }).sort((a, b) => (parseInt(b.ID_Temporada)||0) - (parseInt(a.ID_Temporada)||0));
+  }).sort((a, b) => (parseInt(a.ID_Temporada)||0) - (parseInt(b.ID_Temporada)||0));
   const grid = document.getElementById('campeones-grid');
 
   if (lista.length === 0) {
@@ -3382,17 +3454,76 @@ function buscarJugador() {
 
 // ── INICIALIZACIÓN JUGADORES ──
 function inicializarBuscadorJugadores() {
-  const sel = document.getElementById('jugador-buscar-equipo');
-  const selDT = document.getElementById('dt-buscar-equipo');
-  equiposArr.sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo)).forEach(e => {
-    [sel, selDT].forEach(s => {
+  // Llenar el dropdown con todos los equipos
+  _equiposOrdenados = equiposArr.slice().sort((a,b)=>a.Nombre_Equipo.localeCompare(b.Nombre_Equipo));
+
+  // Poblar select de nacionalidades en estadísticas
+  const nacSet = new Set();
+  Object.values(PAISES).forEach(p => nacSet.add(p.nombre));
+  const selNac = document.getElementById('stats-filtro-nac');
+  if (selNac) {
+    [...nacSet].sort().forEach(n => {
       const opt = document.createElement('option');
-      opt.value = e.ID_Equipo; opt.textContent = e.Nombre_Equipo;
-      s.appendChild(opt);
+      // Encontrar el código de esa nación
+      const cod = Object.entries(PAISES).find(([,v])=>v.nombre===n)?.[0]||'';
+      opt.value = cod; opt.textContent = n; selNac.appendChild(opt);
     });
-  });
+  }
+
   document.getElementById('jugador-resultados').innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">Escribí un nombre o elegí un equipo para buscar jugadores.</div>';
   document.getElementById('dt-resultados').innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">Escribí un nombre o elegí un equipo para buscar directores técnicos.</div>';
+}
+
+// ── Dropdown buscador de equipo ──
+let _equiposOrdenados = [];
+
+function filtrarEquipoDropdown(contexto) {
+  const inputId = contexto === 'stats' ? 'stats-equipo-input' : `${contexto}-equipo-input`;
+  const dropId  = `${contexto}-equipo-dropdown`;
+  const hidId   = contexto === 'stats' ? 'stats-filtro-equipo' : `${contexto}-buscar-equipo`;
+  const q = document.getElementById(inputId)?.value.toLowerCase().trim() || '';
+
+  // Si borraron el texto, limpiar el filtro
+  if (!q) {
+    document.getElementById(hidId).value = '';
+    if (contexto === 'jugador') buscarJugador();
+    else if (contexto === 'dt') buscarDT();
+    else renderEstadisticas();
+  }
+
+  const filtrados = _equiposOrdenados.filter(e => e.Nombre_Equipo.toLowerCase().includes(q));
+  const drop = document.getElementById(dropId);
+  if (!filtrados.length) { drop.style.display = 'none'; return; }
+
+  drop.innerHTML = filtrados.slice(0, 20).map(e => `
+    <div style="padding:9px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--borde);transition:background 0.1s;"
+      onmouseenter="this.style.background='var(--fondo-3)'" onmouseleave="this.style.background=''"
+      onclick="seleccionarEquipoDropdown('${contexto}','${e.ID_Equipo}','${e.Nombre_Equipo.replace(/'/g,"\\'")}')">
+      ${escudoImg(e.Nombre_Equipo, 16)} ${e.Nombre_Equipo}
+    </div>`).join('');
+  drop.style.display = 'block';
+}
+
+function mostrarDropdown(contexto) {
+  filtrarEquipoDropdown(contexto);
+}
+
+function ocultarDropdown(contexto) {
+  const dropId = `${contexto}-equipo-dropdown`;
+  const drop = document.getElementById(dropId);
+  if (drop) drop.style.display = 'none';
+}
+
+function seleccionarEquipoDropdown(contexto, id, nombre) {
+  const inputId = contexto === 'stats' ? 'stats-equipo-input' : `${contexto}-equipo-input`;
+  const hidId   = contexto === 'stats' ? 'stats-filtro-equipo' : `${contexto}-buscar-equipo`;
+  const dropId  = `${contexto}-equipo-dropdown`;
+  document.getElementById(inputId).value = nombre;
+  document.getElementById(hidId).value = id;
+  document.getElementById(dropId).style.display = 'none';
+  if (contexto === 'jugador') buscarJugador();
+  else if (contexto === 'dt') buscarDT();
+  else renderEstadisticas();
 }
 
 function cambiarSubtabJugadores(tab) {
@@ -3468,10 +3599,16 @@ function buscarDT() {
         return `<span style="font-size:11px;color:var(--texto-2);">${equipos[id]||id} <span style="color:var(--texto-3);">(${anios})</span></span>`;
       }).join(' · ');
       const pct = totalPD > 0 ? Math.round((totalPG/totalPD)*100) : 0;
+      const claveNom = nombreCanonico(nombre);
+      const datosJugMap = recopilarJugadores();
+      const tambienJugador = datosJugMap[claveNom] && Object.keys(datosJugMap[claveNom].equipos).length > 0;
       return `<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:12px;padding:14px;display:flex;gap:14px;align-items:flex-start;cursor:pointer;transition:var(--trans);" onmouseenter="this.style.borderColor='var(--borde-hover)'" onmouseleave="this.style.borderColor='var(--borde)'" onclick="verFichaDT('${nombre.replace(/'/g,"\\'")}')">
         <img src="dts/${fotoKey}.jpg" style="width:56px;height:56px;object-fit:cover;object-position:top;border-radius:10px;flex-shrink:0;background:var(--fondo-3);" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2256%22 height=%2256%22><rect width=%2256%22 height=%2256%22 fill=%22%230D1628%22 rx=%2210%22/><text x=%2228%22 y=%2234%22 font-size=%2224%22 text-anchor=%22middle%22>🧑‍💼</text></svg>'">
         <div style="flex:1;min-width:0;">
-          <div style="font-size:15px;font-weight:600;margin-bottom:6px;">${nombre}</div>
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;">
+            <span style="font-size:15px;font-weight:600;">${nombre}</span>
+            ${tambienJugador ? `<span style="font-size:10px;background:rgba(251,191,36,0.15);color:var(--oro);padding:2px 6px;border-radius:5px;border:1px solid rgba(251,191,36,0.3);font-weight:600;">⚽ Ex jugador</span>` : ''}
+          </div>
           <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">
             <span style="font-size:11px;background:rgba(34,197,94,0.1);color:var(--celeste);padding:2px 7px;border-radius:6px;border:1px solid var(--borde);">📋 ${totalPD} PD</span>
             <span style="font-size:11px;background:rgba(34,197,94,0.1);color:var(--verde);padding:2px 7px;border-radius:6px;border:1px solid var(--borde);">✅ ${pct}% victorias</span>
@@ -3484,8 +3621,16 @@ function buscarDT() {
 }
 
 function verFichaDT(nombre) {
-  const todos = recopilarDTs();
+  // Si también fue jugador, abrir la ficha unificada de jugador
   const clave = nombreCanonico(nombre);
+  const datosJug = recopilarJugadores();
+  if (datosJug[clave] && Object.keys(datosJug[clave].equipos).length > 0) {
+    verFichaJugador(nombre);
+    return;
+  }
+
+  // Solo fue DT → mostrar ficha de DT
+  const todos = recopilarDTs();
   const data = todos[clave];
   if (!data) return;
 
