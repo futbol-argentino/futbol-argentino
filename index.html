@@ -1729,31 +1729,31 @@ function filaPartido(p) {
     const golesL = parseGoles(partes[0], escL);
     const golesV = parseGoles(partes[1], escV);
     const todos = [...golesL, ...golesV].sort((a,b)=>a.minuto-b.minuto);
-    if (!todos.length) return { btnHtml: '', dropHtml: '' };
+    if (!todos.length) return { arrowHtml: '', dropHtml: '' };
     const uid = 'gol_' + p.ID_Partido;
-    const totalGoles = todos.length;
-    const btnHtml = `<button onclick="event.stopPropagation();var c=document.getElementById('${uid}');var a=document.getElementById('arr_${uid}');var open=c.style.display==='block';c.style.display=open?'none':'block';a.style.transform=open?'rotate(0deg)':'rotate(180deg)';"
-      style="background:rgba(74,222,128,0.08);border:1px solid var(--borde);border-radius:6px;color:var(--texto-2);font-size:11px;padding:3px 7px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;margin-top:4px;transition:border-color 0.15s;vertical-align:middle;"
+    // Flecha inline, sin pelota, sin romper el alto del renglón
+    const arrowHtml = `<span onclick="event.stopPropagation();var c=document.getElementById('${uid}');var a=document.getElementById('arr_${uid}');var open=c.style.display==='block';c.style.display=open?'none':'block';a.style.transform=open?'rotate(0deg)':'rotate(180deg)';"
+      style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border:1px solid var(--borde);border-radius:4px;cursor:pointer;margin-left:6px;flex-shrink:0;transition:border-color 0.15s;"
       onmouseover="this.style.borderColor='var(--celeste)'" onmouseout="this.style.borderColor='var(--borde)'">
-      ⚽ ${totalGoles} <span id="arr_${uid}" style="font-size:9px;transition:transform 0.2s;display:inline-block;">▼</span>
-    </button>`;
-    const dropHtml = `<tr class="fila-gol-preview"><td colspan="5" style="padding:4px 16px 8px 16px;border-bottom:1px solid var(--borde);">
+      <span id="arr_${uid}" style="font-size:8px;color:var(--texto-2);transition:transform 0.2s;display:inline-block;line-height:1;">▼</span>
+    </span>`;
+    const dropHtml = `<tr class="fila-gol-preview"><td colspan="5" style="padding:4px 20px 8px 20px;border-bottom:1px solid var(--borde);">
       <div id="${uid}" style="display:none;">
         ${todos.map(g=>g.html).join('')}
       </div>
     </td></tr>`;
-    return { btnHtml, dropHtml };
+    return { arrowHtml, dropHtml };
   })();
 
-  const golBtn = golResumen ? golResumen.btnHtml : '';
-  const golDrop = golResumen ? golResumen.dropHtml : '';
+  const golArrow = golResumen ? golResumen.arrowHtml : '';
+  const golDrop  = golResumen ? golResumen.dropHtml  : '';
 
   return `<tr${claseExtra} onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
     <td class="td-fecha">${fecha}</td>
     <td><div class="td-equipo">${escudoImg(local,22)}<span>${local}</span></div></td>
     <td class="td-resultado"><span class="${rc}">${p.Goles_Local} - ${p.Goles_Visitante}</span></td>
     <td><div class="td-equipo">${escudoImg(visita,22)}<span>${visita}</span></div></td>
-    <td><div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;"><span class="badge-torneo">${torneo}</span>${golBtn}</div></td>
+    <td><div style="display:flex;align-items:center;gap:0;"><span class="badge-torneo">${torneo}</span>${golArrow}</div></td>
   </tr>${golDrop}`;
 }
 
