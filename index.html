@@ -1729,28 +1729,32 @@ function filaPartido(p) {
     const golesL = parseGoles(partes[0], escL);
     const golesV = parseGoles(partes[1], escV);
     const todos = [...golesL, ...golesV].sort((a,b)=>a.minuto-b.minuto);
-    if (!todos.length) return '';
+    if (!todos.length) return { btnHtml: '', dropHtml: '' };
     const uid = 'gol_' + p.ID_Partido;
     const totalGoles = todos.length;
-    return `<tr class="fila-gol-preview"><td colspan="5" style="padding:0;border-bottom:1px solid var(--borde);">
-      <div onclick="event.stopPropagation();var c=document.getElementById('${uid}');var a=document.getElementById('arr_${uid}');var open=c.style.display==='block';c.style.display=open?'none':'block';a.style.transform=open?'rotate(0deg)':'rotate(180deg)';"
-        style="display:flex;align-items:center;gap:6px;padding:4px 12px 4px 44px;cursor:pointer;user-select:none;">
-        <span style="font-size:11px;color:var(--texto-3);">⚽ ${totalGoles} gol${totalGoles!==1?'es':''}</span>
-        <span id="arr_${uid}" style="color:var(--texto-3);font-size:10px;transition:transform 0.2s;margin-left:2px;">▼</span>
-      </div>
-      <div id="${uid}" style="display:none;padding:4px 12px 8px 44px;">
+    const btnHtml = `<button onclick="event.stopPropagation();var c=document.getElementById('${uid}');var a=document.getElementById('arr_${uid}');var open=c.style.display==='block';c.style.display=open?'none':'block';a.style.transform=open?'rotate(0deg)':'rotate(180deg)';"
+      style="background:rgba(74,222,128,0.08);border:1px solid var(--borde);border-radius:6px;color:var(--texto-2);font-size:11px;padding:3px 7px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;margin-top:4px;transition:border-color 0.15s;vertical-align:middle;"
+      onmouseover="this.style.borderColor='var(--celeste)'" onmouseout="this.style.borderColor='var(--borde)'">
+      ⚽ ${totalGoles} <span id="arr_${uid}" style="font-size:9px;transition:transform 0.2s;display:inline-block;">▼</span>
+    </button>`;
+    const dropHtml = `<tr class="fila-gol-preview"><td colspan="5" style="padding:4px 16px 8px 16px;border-bottom:1px solid var(--borde);">
+      <div id="${uid}" style="display:none;">
         ${todos.map(g=>g.html).join('')}
       </div>
     </td></tr>`;
+    return { btnHtml, dropHtml };
   })();
+
+  const golBtn = golResumen ? golResumen.btnHtml : '';
+  const golDrop = golResumen ? golResumen.dropHtml : '';
 
   return `<tr${claseExtra} onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
     <td class="td-fecha">${fecha}</td>
     <td><div class="td-equipo">${escudoImg(local,22)}<span>${local}</span></div></td>
     <td class="td-resultado"><span class="${rc}">${p.Goles_Local} - ${p.Goles_Visitante}</span></td>
     <td><div class="td-equipo">${escudoImg(visita,22)}<span>${visita}</span></div></td>
-    <td><span class="badge-torneo">${torneo}</span></td>
-  </tr>${golResumen}`;
+    <td><div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;"><span class="badge-torneo">${torneo}</span>${golBtn}</div></td>
+  </tr>${golDrop}`;
 }
 
 // ── ORDEN ──
@@ -2398,9 +2402,16 @@ function normalizarNombre(n) {
     .trim();
 }
 
-// Map from normalized name → canonical (first seen) name
+// Map from normalized name (+nac) → canonical name
 const nombreCanonicoCache = {};
-function nombreCanonico(n) {
+function nombreCanonico(n, nac) {
+  // Si hay nacionalidad, la incluimos en la clave para diferenciar homónimos
+  const key = normalizarNombre(n) + (nac ? '|' + nac.toUpperCase() : '');
+  if (!nombreCanonicoCache[key]) nombreCanonicoCache[key] = n + (nac ? ` [${nac.toUpperCase()}]` : '');
+  return nombreCanonicoCache[key];
+}
+// Versión sin nacionalidad (para compatibilidad cuando no se dispone de nac)
+function nombreCanonicoSimple(n) {
   const key = normalizarNombre(n);
   if (!nombreCanonicoCache[key]) nombreCanonicoCache[key] = n;
   return nombreCanonicoCache[key];
@@ -2426,7 +2437,7 @@ function parsearGoleadores(equipoId, torneoId) {
         const esEC = /\(EC\)/i.test(entrada);
         const esP  = /\(P\)/i.test(entrada);
         const nac  = extraerNacionalidad(entrada);
-        const nombre = nombreCanonico(limpiarNombre(entrada));
+        const nombre = nombreCanonico(limpiarNombre(entrada), nac);
         if (!nombre || nombre.length < 2) return;
         if (nac) nacionalidades[nombre] = nac;
         if (esEC) {
@@ -2461,7 +2472,7 @@ function parsearTarjetas(campo, equipoId, torneoId) {
       if (equipoId && idEquipo !== equipoId) return;
       parte.split('-').forEach(entrada => {
         const nac = extraerNacionalidad(entrada);
-        const nombre = nombreCanonico(limpiarNombre(entrada));
+        const nombre = nombreCanonico(limpiarNombre(entrada), nac);
         if (!nombre || nombre.toLowerCase() === 'ninguno' || nombre.length < 2) return;
         if (nac) nacionalidades[nombre] = nac;
         conteo[nombre] = (conteo[nombre] || 0) + 1;
@@ -2627,7 +2638,7 @@ function renderEstadisticas() {
       if (equipoId && eqId !== equipoId) return;
       parte.split('-').forEach(entrada => {
         const nac = extraerNacionalidad(entrada);
-        const nombre = nombreCanonico(limpiarNombre(entrada));
+        const nombre = nombreCanonico(limpiarNombre(entrada), nac);
         if (!nombre || nombre.length < 2 || nombre.toLowerCase() === 'ninguno') return;
         if (nac) todosNacPJ[nombre] = nac;
         pjConteo[nombre] = (pjConteo[nombre]||0) + 1;
@@ -3472,7 +3483,7 @@ function recopilarJugadores() {
           const nac    = extraerNacionalidad(entrada);
           const nombre = limpiarNombre(entrada);
           if (!nombre || nombre.length < 2 || nombre.toLowerCase() === 'ninguno') return;
-          const clave = nombreCanonico(nombre);
+          const clave = nombreCanonico(nombre, nac);
           if (!jugadoresMap[clave]) jugadoresMap[clave] = { equipos:{}, nac:null };
           if (nac) jugadoresMap[clave].nac = nac;
           const esEC  = /\(EC\)/i.test(entrada);
@@ -3691,7 +3702,8 @@ function renderStatsEquipoInline(equipoId) {
       const eqId = idx === 0 ? p.Local_ID : p.Visitante_ID;
       if (eqId !== equipoId) return;
       parte.split('-').forEach(entrada => {
-        const n = nombreCanonico(limpiarNombre(entrada));
+        const _nac = extraerNacionalidad(entrada);
+        const n = nombreCanonico(limpiarNombre(entrada), _nac);
         if (!n || n.length < 2 || n.toLowerCase() === 'ninguno') return;
         pjConteo[n] = (pjConteo[n]||0) + 1;
       });
