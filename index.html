@@ -1164,6 +1164,7 @@ select option{background:#080F20;color:#F0F6FF}
         <button class="torneo-tab-btn"         id="ttab-partidos" onclick="cambiarTorneoTab('partidos')">📅 Partidos</button>
         <button class="torneo-tab-btn"         id="ttab-bracket"  onclick="cambiarTorneoTab('bracket')">🏆 Cuadro</button>
         <button class="torneo-tab-btn"         id="ttab-stats"    onclick="cambiarTorneoTab('stats')">📊 Estadísticas</button>
+        <button class="torneo-tab-btn"         id="ttab-graficos" onclick="cambiarTorneoTab('graficos')">📈 Gráficos</button>
       </div>
       <div id="torneo-panel-tablas">
         <div id="torneo-posiciones-container"></div>
@@ -1182,6 +1183,9 @@ select option{background:#080F20;color:#F0F6FF}
         </div>
         <div id="torneo-stats-container"></div>
         <div id="torneo-stats-equipos-container" style="display:none;"></div>
+      </div>
+      <div id="torneo-panel-graficos" style="display:none;">
+        <div id="torneo-graficos-container"></div>
       </div>
     </div>
 
@@ -2991,12 +2995,13 @@ function filtrarCampeones() {
 let torneoActualId = null;
 
 function cambiarTorneoTab(tab) {
-  ['tablas','partidos','bracket','stats'].forEach(t => {
+  ['tablas','partidos','bracket','stats','graficos'].forEach(t => {
     document.getElementById('torneo-panel-'+t).style.display = t===tab ? 'block' : 'none';
     document.getElementById('ttab-'+t)?.classList.toggle('activo', t===tab);
   });
   if (tab === 'stats' && torneoActualId) renderStatsTorneo(torneoActualId);
   if (tab === 'bracket' && torneoActualId) renderBracket(torneoActualId);
+  if (tab === 'graficos' && torneoActualId) renderGraficosTorneo(torneoActualId);
 }
 
 function tieneFasesEliminatorias(idTemporada) {
@@ -3420,6 +3425,291 @@ function formatearFechaDia(fecha) {
     const dt = new Date(parseInt(a), parseInt(m)-1, parseInt(d));
     return `${dias[dt.getDay()]} ${d}/${meses[parseInt(m)-1]}`;
   } catch(e) { return fecha; }
+}
+
+// ── GRÁFICOS DEL TORNEO ──
+function renderGraficosTorneo(idTemporada) {
+  const container = document.getElementById('torneo-graficos-container');
+  const pts = partidos.filter(p => p.ID_Temporada == idTemporada && p.Fecha && p.Fase === 'Fase Regular');
+
+  if (pts.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">No hay datos de fase regular para graficar.</div>';
+    return;
+  }
+
+  // ── Recolectar equipos del torneo ──
+  const equiposSet = new Set();
+  pts.forEach(p => { equiposSet.add(p.Local_ID); equiposSet.add(p.Visitante_ID); });
+  const equiposTorneo = [...equiposSet].map(id => ({ id, nombre: equipos[id] || id }))
+    .sort((a,b) => a.nombre.localeCompare(b.nombre));
+
+  // ── Ordenar partidos por fecha ──
+  const ptsOrdenados = pts.slice().sort((a,b) => {
+    const fa = a.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/,'$3-$2-$1');
+    const fb = b.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/,'$3-$2-$1');
+    if (fa !== fb) return fa.localeCompare(fb);
+    return (parseInt(a.Numero_Fecha)||0) - (parseInt(b.Numero_Fecha)||0);
+  });
+
+  // Obtener fechas únicas ordenadas
+  const fechasUnicas = [...new Set(ptsOrdenados.map(p => p.Numero_Fecha || p.Fecha.split('T')[0]))];
+
+  // ── Calcular puntos acumulados por equipo por fecha ──
+  const puntosPorEquipo = {};
+  equiposTorneo.forEach(eq => { puntosPorEquipo[eq.id] = []; });
+
+  fechasUnicas.forEach((fecha, fi) => {
+    const prevPuntos = {};
+    equiposTorneo.forEach(eq => {
+      prevPuntos[eq.id] = fi === 0 ? 0 : (puntosPorEquipo[eq.id][fi-1] ?? 0);
+    });
+    const partidosFecha = ptsOrdenados.filter(p => (p.Numero_Fecha || p.Fecha.split('T')[0]) == fecha);
+    const delta = {};
+    equiposTorneo.forEach(eq => { delta[eq.id] = 0; });
+    partidosFecha.forEach(p => {
+      const gl = parseInt(p.Goles_Local)||0, gv = parseInt(p.Goles_Visitante)||0;
+      if (gl > gv) { delta[p.Local_ID] = (delta[p.Local_ID]||0)+3; }
+      else if (gl < gv) { delta[p.Visitante_ID] = (delta[p.Visitante_ID]||0)+3; }
+      else { delta[p.Local_ID] = (delta[p.Local_ID]||0)+1; delta[p.Visitante_ID] = (delta[p.Visitante_ID]||0)+1; }
+    });
+    equiposTorneo.forEach(eq => {
+      puntosPorEquipo[eq.id].push(prevPuntos[eq.id] + (delta[eq.id]||0));
+    });
+  });
+
+  // ── Colores para cada equipo ──
+  const PALETA = ['#22C55E','#3B82F6','#F59E0B','#EF4444','#A855F7','#06B6D4','#F97316','#EC4899','#84CC16','#14B8A6','#6366F1','#FB7185','#FBBF24','#34D399','#60A5FA','#C084FC','#FB923C','#4ADE80','#38BDF8','#E879F9'];
+  const colorMap = {};
+  equiposTorneo.forEach((eq, i) => { colorMap[eq.id] = PALETA[i % PALETA.length]; });
+
+  // ── Equipo seleccionado por defecto: el que más puntos tiene ──
+  const maxPts = equiposTorneo.map(eq => ({ id: eq.id, pts: puntosPorEquipo[eq.id].slice(-1)[0]||0 }))
+    .sort((a,b) => b.pts - a.pts);
+  const defaultEquipo = maxPts[0]?.id || equiposTorneo[0]?.id;
+
+  // SVG dimensions
+  const W = 700, H = 260, PAD = { top:20, right:20, bottom:36, left:44 };
+  const innerW = W - PAD.left - PAD.right;
+  const innerH = H - PAD.top - PAD.bottom;
+  const nFechas = fechasUnicas.length;
+  const maxPuntos = Math.max(...Object.values(puntosPorEquipo).map(arr => Math.max(...arr, 0)));
+
+  function xPos(i) { return PAD.left + (nFechas <= 1 ? innerW/2 : i * innerW / (nFechas-1)); }
+  function yPos(pts) { return PAD.top + innerH - (maxPuntos > 0 ? pts / maxPuntos * innerH : 0); }
+
+  // Grid lines
+  const gridStep = maxPuntos <= 10 ? 3 : maxPuntos <= 30 ? 6 : 9;
+  let gridLines = '';
+  for (let v = 0; v <= maxPuntos; v += gridStep) {
+    const y = yPos(v);
+    gridLines += `<line x1="${PAD.left}" y1="${y}" x2="${W-PAD.right}" y2="${y}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>`;
+    gridLines += `<text x="${PAD.left-6}" y="${y+4}" text-anchor="end" font-size="10" fill="rgba(255,255,255,0.3)">${v}</text>`;
+  }
+
+  // X axis labels
+  let xLabels = '';
+  const step = Math.ceil(nFechas / 12);
+  fechasUnicas.forEach((f, i) => {
+    if (i % step !== 0 && i !== nFechas-1) return;
+    xLabels += `<text x="${xPos(i)}" y="${H-PAD.bottom+16}" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.35)">${f}</text>`;
+  });
+
+  // Build polylines for all equipos (dim) + selected (bright)
+  function buildLine(eqId, highlight) {
+    const pts2 = puntosPorEquipo[eqId];
+    if (!pts2 || pts2.length < 1) return '';
+    const points = pts2.map((v,i) => `${xPos(i)},${yPos(v)}`).join(' ');
+    const col = colorMap[eqId];
+    const op = highlight ? 1 : 0.12;
+    const sw = highlight ? 2.5 : 1;
+    let circles = '';
+    if (highlight) {
+      pts2.forEach((v,i) => {
+        circles += `<circle cx="${xPos(i)}" cy="${yPos(v)}" r="3.5" fill="${col}" stroke="var(--fondo)" stroke-width="1.5"/>`;
+      });
+    }
+    return `<polyline points="${points}" fill="none" stroke="${col}" stroke-width="${sw}" stroke-opacity="${op}" stroke-linejoin="round" stroke-linecap="round"/>${circles}`;
+  }
+
+  // ── Mapa de calor ──
+  // Contar enfrentamientos y resultado promedio para cada par
+  const allEquipos = equiposTorneo;
+  const heatData = {};
+  allEquipos.forEach(a => allEquipos.forEach(b => {
+    if (a.id !== b.id) heatData[a.id+'_'+b.id] = { pj:0, gf:0, gc:0 };
+  }));
+  partidos.filter(p => p.ID_Temporada == idTemporada).forEach(p => {
+    const key = p.Local_ID+'_'+p.Visitante_ID;
+    if (heatData[key]) {
+      heatData[key].pj++;
+      heatData[key].gf += parseInt(p.Goles_Local)||0;
+      heatData[key].gc += parseInt(p.Goles_Visitante)||0;
+    }
+  });
+
+  const n = allEquipos.length;
+  const CELL = Math.min(44, Math.floor(560 / Math.max(n, 1)));
+  const LABEL_W = 90;
+  const HM_W = LABEL_W + n * CELL + 10;
+  const HM_H = LABEL_W + n * CELL + 10;
+
+  let heatCells = '';
+  let heatColLabels = '';
+  let heatRowLabels = '';
+
+  allEquipos.forEach((col, ci) => {
+    const x = LABEL_W + ci * CELL;
+    const shortName = col.nombre.length > 10 ? col.nombre.substring(0,9)+'…' : col.nombre;
+    heatColLabels += `<text x="${x + CELL/2}" y="${LABEL_W - 6}" text-anchor="end" transform="rotate(-45,${x+CELL/2},${LABEL_W-6})" font-size="10" fill="rgba(255,255,255,0.5)">${shortName}</text>`;
+  });
+
+  allEquipos.forEach((row, ri) => {
+    const y = LABEL_W + ri * CELL;
+    const shortName = row.nombre.length > 12 ? row.nombre.substring(0,11)+'…' : row.nombre;
+    heatRowLabels += `<text x="${LABEL_W - 6}" y="${y + CELL/2 + 4}" text-anchor="end" font-size="10" fill="rgba(255,255,255,0.5)">${shortName}</text>`;
+    allEquipos.forEach((col, ci) => {
+      const x = LABEL_W + ci * CELL;
+      if (row.id === col.id) {
+        heatCells += `<rect x="${x}" y="${y}" width="${CELL}" height="${CELL}" fill="rgba(255,255,255,0.04)" rx="2"/>`;
+        return;
+      }
+      const d = heatData[row.id+'_'+col.id] || { pj:0, gf:0, gc:0 };
+      if (d.pj === 0) {
+        heatCells += `<rect x="${x}" y="${y}" width="${CELL}" height="${CELL}" fill="rgba(255,255,255,0.02)" rx="2"/>`;
+        return;
+      }
+      // Color: verde = local ganó en promedio, rojo = local perdió, amarillo = empate
+      const diff = d.gf - d.gc;
+      let fill;
+      if (diff > 0) fill = `rgba(34,197,94,${Math.min(0.15 + diff*0.12, 0.75)})`;
+      else if (diff < 0) fill = `rgba(244,63,94,${Math.min(0.15 + Math.abs(diff)*0.12, 0.75)})`;
+      else fill = `rgba(245,158,11,0.4)`;
+      const label = d.pj > 1 ? `${d.gf}-${d.gc}` : `${d.gf}-${d.gc}`;
+      const fs = CELL >= 32 ? 10 : 8;
+      heatCells += `<rect x="${x}" y="${y}" width="${CELL}" height="${CELL}" fill="${fill}" rx="2"/>
+        <text x="${x+CELL/2}" y="${y+CELL/2+fs/2-1}" text-anchor="middle" font-size="${fs}" fill="rgba(255,255,255,0.85)" font-weight="600">${label}</text>`;
+    });
+  });
+
+  // ── Render ──
+  const selectId = 'sel_graf_' + idTemporada;
+  const svgId   = 'svg_graf_' + idTemporada;
+
+  const legendItems = equiposTorneo.map(eq =>
+    `<div style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:3px 6px;border-radius:5px;transition:background 0.15s;"
+      onmouseenter="this.style.background='rgba(255,255,255,0.06)'" onmouseleave="this.style.background='transparent'"
+      onclick="document.getElementById('${selectId}').value='${eq.id}';actualizarLineaGrafico('${idTemporada}','${selectId}','${svgId}')">
+      <span style="width:12px;height:3px;background:${colorMap[eq.id]};border-radius:2px;flex-shrink:0;display:inline-block;"></span>
+      <span style="font-size:11px;color:var(--texto-2);white-space:nowrap;">${eq.nombre}</span>
+    </div>`).join('');
+
+  container.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:24px;">
+
+      <!-- GRÁFICO DE LÍNEA -->
+      <div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;padding:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+          <div style="font-family:var(--fuente-titulo);font-size:18px;letter-spacing:1px;color:var(--texto-1);">📈 Rendimiento acumulado por fecha</div>
+          <select id="${selectId}" onchange="actualizarLineaGrafico('${idTemporada}','${selectId}','${svgId}')"
+            style="background:var(--fondo-3);border:1px solid var(--borde);border-radius:8px;color:var(--texto-1);font-size:13px;padding:6px 12px;cursor:pointer;outline:none;">
+            ${equiposTorneo.map(eq => `<option value="${eq.id}"${eq.id===defaultEquipo?' selected':''}>${eq.nombre}</option>`).join('')}
+          </select>
+        </div>
+        <div style="overflow-x:auto;">
+          <svg id="${svgId}" viewBox="0 0 ${W} ${H}" style="width:100%;min-width:400px;display:block;" xmlns="http://www.w3.org/2000/svg">
+            <!-- Fondo -->
+            <rect width="${W}" height="${H}" fill="transparent"/>
+            <!-- Grid -->
+            ${gridLines}
+            <!-- Ejes -->
+            <line x1="${PAD.left}" y1="${PAD.top}" x2="${PAD.left}" y2="${H-PAD.bottom}" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+            <line x1="${PAD.left}" y1="${H-PAD.bottom}" x2="${W-PAD.right}" y2="${H-PAD.bottom}" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+            <!-- X labels -->
+            ${xLabels}
+            <!-- Label eje Y -->
+            <text x="12" y="${PAD.top + innerH/2}" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.3)" transform="rotate(-90,12,${PAD.top+innerH/2})">Puntos</text>
+            <!-- Líneas dim -->
+            <g id="${svgId}_dim">${equiposTorneo.filter(eq=>eq.id!==defaultEquipo).map(eq=>buildLine(eq.id,false)).join('')}</g>
+            <!-- Línea destacada -->
+            <g id="${svgId}_hi">${buildLine(defaultEquipo,true)}</g>
+          </svg>
+        </div>
+        <!-- Leyenda -->
+        <div style="display:flex;flex-wrap:wrap;gap:2px;margin-top:12px;">${legendItems}</div>
+      </div>
+
+      <!-- MAPA DE CALOR -->
+      <div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;padding:20px;">
+        <div style="font-family:var(--fuente-titulo);font-size:18px;letter-spacing:1px;color:var(--texto-1);margin-bottom:6px;">🔥 Mapa de calor · Local (fila) vs Visitante (col)</div>
+        <div style="font-size:11px;color:var(--texto-3);margin-bottom:14px;">Goles marcados como local · <span style="color:rgba(34,197,94,0.8);">■</span> ganó <span style="color:rgba(245,158,11,0.8);">■</span> empató <span style="color:rgba(244,63,94,0.8);">■</span> perdió</div>
+        <div style="overflow-x:auto;">
+          <svg viewBox="0 0 ${HM_W} ${HM_H}" style="width:100%;min-width:${HM_W}px;max-width:${HM_W}px;display:block;" xmlns="http://www.w3.org/2000/svg">
+            <rect width="${HM_W}" height="${HM_H}" fill="transparent"/>
+            ${heatColLabels}
+            ${heatRowLabels}
+            ${heatCells}
+          </svg>
+        </div>
+      </div>
+
+    </div>`;
+}
+
+function actualizarLineaGrafico(idTemporada, selectId, svgId) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  const eqId = sel.value;
+
+  const pts = partidos.filter(p => p.ID_Temporada == idTemporada && p.Fecha && p.Fase === 'Fase Regular');
+  const equiposSet = new Set();
+  pts.forEach(p => { equiposSet.add(p.Local_ID); equiposSet.add(p.Visitante_ID); });
+  const equiposTorneo = [...equiposSet].map(id => ({ id, nombre: equipos[id]||id }));
+
+  const ptsOrdenados = pts.slice().sort((a,b) => {
+    const fa = a.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/,'$3-$2-$1');
+    const fb = b.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/,'$3-$2-$1');
+    if (fa !== fb) return fa.localeCompare(fb);
+    return (parseInt(a.Numero_Fecha)||0) - (parseInt(b.Numero_Fecha)||0);
+  });
+  const fechasUnicas = [...new Set(ptsOrdenados.map(p => p.Numero_Fecha || p.Fecha.split('T')[0]))];
+  const puntosPorEquipo = {};
+  equiposTorneo.forEach(eq => { puntosPorEquipo[eq.id] = []; });
+  fechasUnicas.forEach((fecha, fi) => {
+    const prev = {};
+    equiposTorneo.forEach(eq => { prev[eq.id] = fi===0 ? 0 : (puntosPorEquipo[eq.id][fi-1]??0); });
+    const delta = {}; equiposTorneo.forEach(eq => { delta[eq.id]=0; });
+    ptsOrdenados.filter(p=>(p.Numero_Fecha||p.Fecha.split('T')[0])==fecha).forEach(p=>{
+      const gl=parseInt(p.Goles_Local)||0,gv=parseInt(p.Goles_Visitante)||0;
+      if(gl>gv){delta[p.Local_ID]=(delta[p.Local_ID]||0)+3;}
+      else if(gl<gv){delta[p.Visitante_ID]=(delta[p.Visitante_ID]||0)+3;}
+      else{delta[p.Local_ID]=(delta[p.Local_ID]||0)+1;delta[p.Visitante_ID]=(delta[p.Visitante_ID]||0)+1;}
+    });
+    equiposTorneo.forEach(eq=>{ puntosPorEquipo[eq.id].push(prev[eq.id]+(delta[eq.id]||0)); });
+  });
+
+  const PALETA = ['#22C55E','#3B82F6','#F59E0B','#EF4444','#A855F7','#06B6D4','#F97316','#EC4899','#84CC16','#14B8A6','#6366F1','#FB7185','#FBBF24','#34D399','#60A5FA','#C084FC','#FB923C','#4ADE80','#38BDF8','#E879F9'];
+  const colorMap = {}; equiposTorneo.forEach((eq,i)=>{colorMap[eq.id]=PALETA[i%PALETA.length];});
+
+  const W=700,H=260,PAD={top:20,right:20,bottom:36,left:44};
+  const innerW=W-PAD.left-PAD.right, innerH=H-PAD.top-PAD.bottom;
+  const nFechas=fechasUnicas.length;
+  const maxPuntos=Math.max(...Object.values(puntosPorEquipo).map(arr=>Math.max(...arr,0)));
+  function xPos(i){return PAD.left+(nFechas<=1?innerW/2:i*innerW/(nFechas-1));}
+  function yPos(v){return PAD.top+innerH-(maxPuntos>0?v/maxPuntos*innerH:0);}
+
+  function buildLine(id, highlight) {
+    const pts2=puntosPorEquipo[id]; if(!pts2||!pts2.length) return '';
+    const points=pts2.map((v,i)=>`${xPos(i)},${yPos(v)}`).join(' ');
+    const col=colorMap[id]; const op=highlight?1:0.12; const sw=highlight?2.5:1;
+    let circles='';
+    if(highlight) pts2.forEach((v,i)=>{circles+=`<circle cx="${xPos(i)}" cy="${yPos(v)}" r="3.5" fill="${col}" stroke="var(--fondo)" stroke-width="1.5"/>`;});
+    return `<polyline points="${points}" fill="none" stroke="${col}" stroke-width="${sw}" stroke-opacity="${op}" stroke-linejoin="round" stroke-linecap="round"/>${circles}`;
+  }
+
+  const dimG = document.getElementById(svgId+'_dim');
+  const hiG  = document.getElementById(svgId+'_hi');
+  if (dimG) dimG.innerHTML = equiposTorneo.filter(eq=>eq.id!==eqId).map(eq=>buildLine(eq.id,false)).join('');
+  if (hiG)  hiG.innerHTML  = buildLine(eqId, true);
 }
 
 function volverCampeones() {
