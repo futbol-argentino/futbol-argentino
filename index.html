@@ -1044,6 +1044,25 @@ select option{background:#080F20;color:#F0F6FF}
           <div class="paginacion" id="pag-goleadores"></div>
         </div>
 
+        <!-- TOP PARTIDOS JUGADOS -->
+        <div class="tabla-wrapper">
+          <div class="tabla-header">
+            <div class="tabla-titulo">📋 Más Partidos Jugados</div>
+            <div class="tabla-count" id="count-pj"></div>
+          </div>
+          <div class="tabla-scroll">
+          <table style="width:100%;border-collapse:collapse;min-width:300px;">
+            <thead><tr>
+              <th style="width:40px;">#</th>
+              <th>Jugador</th>
+              <th style="text-align:center;width:100px;">PJ</th>
+            </tr></thead>
+            <tbody id="tabla-pj-stats"></tbody>
+          </table>
+          </div>
+          <div class="paginacion" id="pag-pj"></div>
+        </div>
+
         <!-- GOLES EN CONTRA -->
         <div class="tabla-wrapper">
           <div class="tabla-header">
@@ -1202,6 +1221,7 @@ select option{background:#080F20;color:#F0F6FF}
         </div>
       </div>
       <div id="jugador-resultados"></div>
+      <div id="jugador-stats-equipo" style="display:none;margin-top:24px;"></div>
     </div>
 
     <!-- Sección DTs -->
@@ -1222,6 +1242,7 @@ select option{background:#080F20;color:#F0F6FF}
         </div>
       </div>
       <div id="dt-resultados"></div>
+      <div id="dt-stats-equipo" style="display:none;margin-top:24px;"></div>
     </div>
   </div><!-- fin panel-jugadores -->
 
@@ -1683,13 +1704,29 @@ function filaPartido(p) {
   const esFav = usuario && usuario.equipoId &&
     (p.Local_ID === usuario.equipoId || p.Visitante_ID === usuario.equipoId);
   const claseExtra = esFav ? ' class="equipo-favorito-row"' : '';
+
+  // Resumen rápido de goleadores
+  const golResumen = (() => {
+    const raw = p.Goleadores || '';
+    if (!raw || raw.trim() === '' || raw.toLowerCase() === 'ninguno') return '';
+    const partes = raw.split('/');
+    const golesL = (partes[0]||'').split('-').map(e=>limpiarNombre(e)).filter(n=>n&&n.toLowerCase()!=='ninguno'&&n.length>1);
+    const golesV = (partes[1]||'').split('-').map(e=>limpiarNombre(e)).filter(n=>n&&n.toLowerCase()!=='ninguno'&&n.length>1);
+    if (!golesL.length && !golesV.length) return '';
+    let txt = '';
+    if (golesL.length) txt += `<span style="color:var(--texto-2);">${golesL.join(', ')}</span>`;
+    if (golesL.length && golesV.length) txt += ` <span style="color:var(--texto-3);">·</span> `;
+    if (golesV.length) txt += `<span style="color:var(--texto-2);">${golesV.join(', ')}</span>`;
+    return `<tr class="fila-gol-preview"><td colspan="5" style="padding:3px 12px 7px 44px;font-size:11px;color:var(--texto-3);border-bottom:1px solid var(--borde);">⚽ ${txt}</td></tr>`;
+  })();
+
   return `<tr${claseExtra} onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
     <td class="td-fecha">${fecha}</td>
     <td><div class="td-equipo">${escudoImg(local,22)}<span>${local}</span></div></td>
     <td class="td-resultado"><span class="${rc}">${p.Goles_Local} - ${p.Goles_Visitante}</span></td>
     <td><div class="td-equipo">${escudoImg(visita,22)}<span>${visita}</span></div></td>
     <td><span class="badge-torneo">${torneo}</span></td>
-  </tr>`;
+  </tr>${golResumen}`;
 }
 
 // ── ORDEN ──
@@ -2411,9 +2448,9 @@ function parsearTarjetas(campo, equipoId, torneoId) {
 }
 
 // Estado de paginación
-const paginas = { goleadores:1, gc:1, amonestados:1, expulsados:1 };
+const paginas = { goleadores:1, gc:1, amonestados:1, expulsados:1, pj:1 };
 const POR_PAG = 30;
-let datosStats = { goleadores:[], gc:[], amonestados:[], expulsados:[], nacGoleadores:{}, nacGC:{}, nacAmon:{}, nacExpu:{} };
+let datosStats = { goleadores:[], gc:[], amonestados:[], expulsados:[], pj:[], nacGoleadores:{}, nacGC:{}, nacAmon:{}, nacExpu:{} };
 
 function filaJugador(i, nombre, nac, cols) {
   const bandera = nac ? `<span style="display:inline-flex;align-items:center;flex-shrink:0;">${getBandera(nac)}</span>` : '';
@@ -2499,6 +2536,21 @@ function renderTablaStat(tipo) {
     document.getElementById('count-expulsados').textContent = datosStats.expulsados.length + ' jugadores';
     renderPaginacion('expulsados', datosStats.expulsados.length, paginas.expulsados, 'cambiarPaginaStats');
   }
+
+  else if (tipo === 'pj') {
+    const slice = datosStats.pj.slice(inicio, fin);
+    const tbody = document.getElementById('tabla-pj-stats');
+    if (!tbody) return;
+    tbody.innerHTML = slice.length === 0
+      ? '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>'
+      : slice.map(([nombre, cant], i) => {
+          const allNac = { ...datosStats.nacGoleadores, ...datosStats.nacAmon, ...datosStats.nacExpu };
+          return filaJugador(inicio+i, nombre, allNac[nombre],
+            `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--texto-1);">${cant}</td>`);
+        }).join('');
+    document.getElementById('count-pj').textContent = datosStats.pj.length + ' jugadores';
+    renderPaginacion('pj', datosStats.pj.length, paginas.pj, 'cambiarPaginaStats');
+  }
 }
 
 function renderEstadisticasDebounced() {
@@ -2526,7 +2578,7 @@ function renderEstadisticas() {
   });
 
   // Resetear páginas al cambiar filtro
-  paginas.goleadores = 1; paginas.gc = 1; paginas.amonestados = 1; paginas.expulsados = 1;
+  paginas.goleadores = 1; paginas.gc = 1; paginas.amonestados = 1; paginas.expulsados = 1; paginas.pj = 1;
 
   datosStats.goleadores = aplicarFiltros(Object.entries(goles)
     .sort((a, b) => (b[1].normales + b[1].penales) - (a[1].normales + a[1].penales)));
@@ -2539,7 +2591,36 @@ function renderEstadisticas() {
   datosStats.nacAmon = nacAmon;
   datosStats.nacExpu = nacExpu;
 
-  ['goleadores','gc','amonestados','expulsados'].forEach(renderTablaStat);
+  // Calcular PJ desde columna Jugadores de partidos
+  const pjConteo = {};
+  const todosNacPJ = {};
+  partidos.forEach(p => {
+    if (equipoId && p.Local_ID !== equipoId && p.Visitante_ID !== equipoId) return;
+    const rawJ = p.Jugadores || '';
+    if (!rawJ) return;
+    rawJ.split('/').forEach((parte, idx) => {
+      const eqId = idx === 0 ? p.Local_ID : p.Visitante_ID;
+      if (equipoId && eqId !== equipoId) return;
+      parte.split('-').forEach(entrada => {
+        const nac = extraerNacionalidad(entrada);
+        const nombre = nombreCanonico(limpiarNombre(entrada));
+        if (!nombre || nombre.length < 2 || nombre.toLowerCase() === 'ninguno') return;
+        if (nac) todosNacPJ[nombre] = nac;
+        pjConteo[nombre] = (pjConteo[nombre]||0) + 1;
+      });
+    });
+  });
+  // Aplicar filtros de nombre y nac a PJ también
+  const todosNacPJMerged = { ...todosNacPJ, ...nacionalidades, ...nacAmon, ...nacExpu };
+  datosStats.pj = Object.entries(pjConteo)
+    .sort((a,b) => b[1]-a[1])
+    .filter(([nombre]) => {
+      if (filtroNom && !normalizarNombre(nombre).includes(normalizarNombre(filtroNom))) return false;
+      if (filtroNac && todosNacPJMerged[nombre] !== filtroNac) return false;
+      return true;
+    });
+
+  ['goleadores','gc','amonestados','expulsados','pj'].forEach(renderTablaStat);
 }
 
 function filaJugador(i, nombre, nac, cols) {
@@ -3403,6 +3484,15 @@ function buscarJugador() {
     return true;
   }).sort(([a],[b]) => a.localeCompare(b));
 
+  // Si hay equipo seleccionado → mostrar tablas de stats de ese equipo
+  const statsEl = document.getElementById('jugador-stats-equipo');
+  if (eqFiltro && statsEl) {
+    statsEl.style.display = 'block';
+    statsEl.innerHTML = renderStatsEquipoInline(eqFiltro);
+  } else if (statsEl) {
+    statsEl.style.display = 'none';
+  }
+
   if (resultados.length === 0) {
     container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">No se encontraron jugadores.</div>';
     return;
@@ -3547,6 +3637,112 @@ function cambiarSubtabJugadores(tab) {
   document.getElementById('seccion-dts').style.display = isJug ? 'none' : 'block';
 }
 
+// ── STATS INLINE POR EQUIPO (sección Jugadores) ──
+function renderStatsEquipoInline(equipoId) {
+  const nmEq = equipos[equipoId] || equipoId;
+  const { goles, ec, nacionalidades } = parsearGoleadores(equipoId);
+  const { datos: amon } = parsearTarjetas('Amonestados', equipoId);
+  const { datos: expu } = parsearTarjetas('Expulsados', equipoId);
+
+  // PJ desde columna Jugadores
+  const pjConteo = {};
+  partidos.forEach(p => {
+    if (p.Local_ID !== equipoId && p.Visitante_ID !== equipoId) return;
+    const rawJ = p.Jugadores || '';
+    if (!rawJ) return;
+    rawJ.split('/').forEach((parte, idx) => {
+      const eqId = idx === 0 ? p.Local_ID : p.Visitante_ID;
+      if (eqId !== equipoId) return;
+      parte.split('-').forEach(entrada => {
+        const n = nombreCanonico(limpiarNombre(entrada));
+        if (!n || n.length < 2 || n.toLowerCase() === 'ninguno') return;
+        pjConteo[n] = (pjConteo[n]||0) + 1;
+      });
+    });
+  });
+
+  const makeTablaInline = (titulo, headers, rows) => `
+    <div class="tabla-wrapper" style="margin-bottom:14px;">
+      <div class="tabla-header"><div class="tabla-titulo">${titulo}</div><div class="tabla-count">${rows.length} jugadores</div></div>
+      <div class="tabla-scroll"><table style="width:100%;border-collapse:collapse;min-width:280px;">
+        <thead><tr>${headers.map((h,i)=>`<th style="text-align:${i>1?'center':'left'};${i===0?'width:36px;':''}">${h}</th>`).join('')}</tr></thead>
+        <tbody>${rows.slice(0,10).map(([nombre,val], i) => {
+          const nac = nacionalidades[nombre];
+          return filaJugador(i, nombre, nac,
+            `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;color:var(--celeste);">${typeof val==='object'?val.normales+val.penales:val}</td>`);
+        }).join('')}</tbody>
+      </table></div>
+    </div>`;
+
+  const golesArr = Object.entries(goles).sort((a,b)=>(b[1].normales+b[1].penales)-(a[1].normales+a[1].penales));
+  const pjArr    = Object.entries(pjConteo).sort((a,b)=>b[1]-a[1]);
+  const amonArr  = amon.slice(0,10);
+  const expuArr  = expu.slice(0,10);
+
+  const esc = ESCUDOS[nmEq] ? `<img src="${ESCUDOS[nmEq]}" style="width:24px;height:24px;object-fit:contain;">` : '';
+  return `<div style="background:var(--fondo-2);border:1px solid var(--borde-activo);border-radius:14px;padding:18px 20px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;font-family:var(--fuente-titulo);font-size:22px;letter-spacing:1px;">
+      ${esc} Estadísticas · ${nmEq}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;">
+      ${makeTablaInline('📋 Más Partidos Jugados', ['#','Jugador','PJ'], pjArr)}
+      ${makeTablaInline('⚽ Top Goleadores',        ['#','Jugador','Goles'], golesArr)}
+      ${makeTablaInline('🟨 Más Amonestados',       ['#','Jugador','Amar.'], amonArr.map(([n,v])=>[n,v]))}
+      ${makeTablaInline('🟥 Más Expulsados',        ['#','Jugador','Rojas'], expuArr.map(([n,v])=>[n,v]))}
+    </div>
+  </div>`;
+}
+
+// ── STATS DT INLINE POR EQUIPO (sección DTs) ──
+function renderStatsDTEquipoInline(equipoId) {
+  const nmEq = equipos[equipoId] || equipoId;
+  const todos = recopilarDTs();
+  const esc = ESCUDOS[nmEq] ? `<img src="${ESCUDOS[nmEq]}" style="width:24px;height:24px;object-fit:contain;">` : '';
+
+  // Filtrar DTs que dirigieron a este equipo
+  const dtsEq = Object.entries(todos)
+    .filter(([, data]) => data.equipos[equipoId])
+    .map(([nombre, data]) => ({ nombre, ...data.equipos[equipoId] }))
+    .sort((a,b) => b.pd - a.pd);
+
+  if (!dtsEq.length) return `<div style="text-align:center;padding:20px;color:var(--texto-3);">Sin datos de directores técnicos para este equipo.</div>`;
+
+  const rows = dtsEq.map((r, i) => {
+    const pct = r.pd > 0 ? Math.round((r.pg/r.pd)*100) : 0;
+    const aniosStr = formatearAnios(r.anios);
+    return `<tr style="cursor:pointer;" onclick="verFichaDT('${r.nombre.replace(/'/g,"\\'")}')">
+      <td style="padding:8px 10px;color:var(--texto-3);font-size:13px;">${i+1}</td>
+      <td style="padding:8px 10px;font-size:14px;font-weight:500;">${r.nombre}
+        <div style="font-size:11px;color:var(--texto-3);">${aniosStr}</div>
+      </td>
+      <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;">${r.pd}</td>
+      <td style="text-align:center;color:var(--verde);">${r.pg}</td>
+      <td style="text-align:center;color:var(--amarillo);">${r.pe}</td>
+      <td style="text-align:center;color:var(--rojo);">${r.pp}</td>
+      <td style="text-align:center;color:var(--texto-2);font-size:13px;">${pct}%</td>
+    </tr>`;
+  }).join('');
+
+  return `<div style="background:var(--fondo-2);border:1px solid var(--borde-activo);border-radius:14px;padding:18px 20px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;font-family:var(--fuente-titulo);font-size:22px;letter-spacing:1px;">
+      ${esc} Directores Técnicos · ${nmEq}
+    </div>
+    <div class="tabla-scroll">
+      <table style="width:100%;border-collapse:collapse;min-width:360px;">
+        <thead><tr>
+          <th style="width:36px;">#</th><th>Director Técnico</th>
+          <th style="text-align:center;width:55px;">PD</th>
+          <th style="text-align:center;width:55px;">PG</th>
+          <th style="text-align:center;width:55px;">PE</th>
+          <th style="text-align:center;width:55px;">PP</th>
+          <th style="text-align:center;width:55px;">%</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
 // ── DTs ──
 function recopilarDTs() {
   const dtsMap = {}; // nombre → { equipos: { equipoId: { pd, pg, pe, pp, anios, partidos[] } } }
@@ -3594,6 +3790,15 @@ function buscarDT() {
     if (eqFiltro && !Object.keys(data.equipos).includes(eqFiltro)) return false;
     return true;
   }).sort(([a],[b]) => a.localeCompare(b));
+
+  // Si hay equipo seleccionado → mostrar tabla de stats DT de ese equipo
+  const dtStatsEl = document.getElementById('dt-stats-equipo');
+  if (eqFiltro && dtStatsEl) {
+    dtStatsEl.style.display = 'block';
+    dtStatsEl.innerHTML = renderStatsDTEquipoInline(eqFiltro);
+  } else if (dtStatsEl) {
+    dtStatsEl.style.display = 'none';
+  }
 
   if (!resultados.length) {
     container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">No se encontraron directores técnicos.</div>';
