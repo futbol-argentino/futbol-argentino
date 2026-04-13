@@ -2404,17 +2404,14 @@ function normalizarNombre(n) {
 
 // Map from normalized name (+nac) → canonical name
 const nombreCanonicoCache = {};
+const nombreDisplayCache = {};
 function nombreCanonico(n, nac) {
-  // Si hay nacionalidad, la incluimos en la clave para diferenciar homónimos
   const key = normalizarNombre(n) + (nac ? '|' + nac.toUpperCase() : '');
-  if (!nombreCanonicoCache[key]) nombreCanonicoCache[key] = n + (nac ? ` [${nac.toUpperCase()}]` : '');
+  if (!nombreCanonicoCache[key]) { nombreCanonicoCache[key] = key; nombreDisplayCache[key] = n; }
   return nombreCanonicoCache[key];
 }
-// Versión sin nacionalidad (para compatibilidad cuando no se dispone de nac)
-function nombreCanonicoSimple(n) {
-  const key = normalizarNombre(n);
-  if (!nombreCanonicoCache[key]) nombreCanonicoCache[key] = n;
-  return nombreCanonicoCache[key];
+function nombreDisplay(key) {
+  return nombreDisplayCache[key] || key.split('|')[0];
 }
 
 function parsearGoleadores(equipoId, torneoId) {
@@ -2488,9 +2485,10 @@ const POR_PAG = 30;
 let datosStats = { goleadores:[], gc:[], amonestados:[], expulsados:[], pj:[], nacGoleadores:{}, nacGC:{}, nacAmon:{}, nacExpu:{} };
 
 function filaJugador(i, nombre, nac, cols) {
+  const display = nombreDisplay(nombre);
   const bandera = nac ? `<span style="display:inline-flex;align-items:center;flex-shrink:0;">${getBandera(nac)}</span>` : '';
-  const nameCell = `<td style="font-size:14px;font-weight:500;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')">
-    <div style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap;min-width:0;">${bandera}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${nombre}</span></div>
+  const nameCell = `<td style="font-size:14px;font-weight:500;cursor:pointer;" onclick="verFichaJugador('${display.replace(/'/g,"\\')}')">
+    <div style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap;min-width:0;">${bandera}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${display}</span></div>
   </td>`;
   return `<tr><td style="color:var(--texto-2);font-size:13px;width:36px;padding:8px 10px;">${i+1}</td>${nameCell}${cols}</tr>`;
 }
@@ -2659,9 +2657,10 @@ function renderEstadisticas() {
 }
 
 function filaJugador(i, nombre, nac, cols) {
+  const display = nombreDisplay(nombre);
   const bandera = nac ? `<span style="display:inline-flex;align-items:center;flex-shrink:0;">${getBandera(nac)}</span>` : '';
-  const nameCell = `<td style="font-size:14px;font-weight:500;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')">
-    <div style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap;min-width:0;">${bandera}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${nombre}</span></div>
+  const nameCell = `<td style="font-size:14px;font-weight:500;cursor:pointer;" onclick="verFichaJugador('${display.replace(/'/g,"\\')}')">
+    <div style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap;min-width:0;">${bandera}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${display}</span></div>
   </td>`;
   return `<tr><td style="color:var(--texto-2);font-size:13px;width:36px;padding:8px 10px;">${i+1}</td>${nameCell}${cols}</tr>`;
 }
@@ -3226,13 +3225,14 @@ function renderTablaTorneo(tipo) {
   const nac = { ...nacG, ...nacA, ...nacE };
 
   const filas = slice.map(([nombre, val], i) => {
+    const disp = nombreDisplay(nombre);
     const nacCode = nac[nombre];
     const bandera = nacCode ? `<span style="display:inline-flex;align-items:center;flex-shrink:0;">${getBandera(nacCode)}</span>` : '';
     if (tipo === 'goleadores') {
       const total2 = val.normales + val.penales;
       return `<tr>
         <td style="color:var(--texto-2);font-size:13px;width:36px;padding:8px 12px;">${inicio+i+1}</td>
-        <td style="padding:8px 12px;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')"><div style="display:flex;align-items:center;gap:6px;">${bandera}<span>${nombre}</span></div></td>
+        <td style="padding:8px 12px;cursor:pointer;" onclick="verFichaJugador('${disp.replace(/'/g,"\\'")}')"><div style="display:flex;align-items:center;gap:6px;">${bandera}<span>${disp}</span></div></td>
         <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;color:var(--celeste);">${total2}</td>
         <td style="text-align:center;font-size:13px;color:var(--texto-2);">${val.normales||'—'}</td>
         <td style="text-align:center;font-size:13px;color:var(--amarillo);">${val.penales||'—'}</td>
@@ -3240,7 +3240,7 @@ function renderTablaTorneo(tipo) {
     } else {
       return `<tr>
         <td style="color:var(--texto-2);font-size:13px;width:36px;padding:8px 12px;">${inicio+i+1}</td>
-        <td style="padding:8px 12px;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')"><div style="display:flex;align-items:center;gap:6px;">${bandera}<span>${nombre}</span></div></td>
+        <td style="padding:8px 12px;cursor:pointer;" onclick="verFichaJugador('${disp.replace(/'/g,"\\'")}')"><div style="display:flex;align-items:center;gap:6px;">${bandera}<span>${disp}</span></div></td>
         <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;color:${color};">${val}</td>
       </tr>`;
     }
@@ -3550,7 +3550,8 @@ function buscarJugador() {
     // ÁLBUM: grilla de fotos
     container.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:16px;">` +
       resultados.slice(0,120).map(([nombre, data]) => {
-        const fotoKey = nombre.toLowerCase().replace(/\s+/g,'_').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+        const disp = nombreDisplay(nombre);
+        const fotoKey = disp.toLowerCase().replace(/\s+/g,'_').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
         const bandera = data.nac ? getBandera(data.nac) : '';
         // Get years for filtered equipo or all
         const aniosSet = eqFiltro && data.equipos[eqFiltro]
@@ -3558,11 +3559,11 @@ function buscarJugador() {
           : Object.values(data.equipos).reduce((s,r) => { r.anios.forEach(a=>s.add(a)); return s; }, new Set());
         const aniosStr = formatearAnios(aniosSet);
         const equipoNombre = eqFiltro ? (equipos[eqFiltro]||'') : '';
-        return `<div class="album-card" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')">
-          ${fotoJugadorImg(nombre, equipoNombre, 'width:100%;aspect-ratio:1/1;object-fit:cover;object-position:top;display:block;background:var(--fondo-3);', '')}
+        return `<div class="album-card" onclick="verFichaJugador('${disp.replace(/'/g,"\\'")}')">
+          ${fotoJugadorImg(disp, equipoNombre, 'width:100%;aspect-ratio:1/1;object-fit:cover;object-position:top;display:block;background:var(--fondo-3);', '')}
           <div class="album-avatar" style="display:none;">👤</div>
           <div class="album-card-info">
-            <div class="album-card-nombre"><span style="display:inline-flex;">${bandera}</span> ${nombre}</div>
+            <div class="album-card-nombre"><span style="display:inline-flex;">${bandera}</span> ${disp}</div>
             <div class="album-card-anios">${aniosStr}</div>
           </div>
         </div>`;
@@ -3572,7 +3573,8 @@ function buscarJugador() {
     // LISTA: tarjetas con estadísticas
     container.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;">` +
       resultados.slice(0,60).map(([nombre, data]) => {
-        const fotoKey = nombre.toLowerCase().replace(/\s+/g,'_').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+        const disp = nombreDisplay(nombre);
+        const fotoKey = disp.toLowerCase().replace(/\s+/g,'_').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
         const bandera = data.nac ? getBandera(data.nac) : '';
         const totGoles = Object.values(data.equipos).reduce((s,r)=>s+r.goles,0);
         const totAmon  = Object.values(data.equipos).reduce((s,r)=>s+r.amonestados,0);
@@ -3581,12 +3583,12 @@ function buscarJugador() {
           const anios = formatearAnios(data.equipos[id].anios);
           return `<span style="font-size:11px;color:var(--texto-2);">${equipos[id]||id} <span style="color:var(--texto-3);">(${anios})</span></span>`;
         }).join(' · ');
-        return `<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:12px;padding:14px;display:flex;gap:14px;align-items:flex-start;cursor:pointer;transition:var(--trans);" onmouseenter="this.style.borderColor='var(--borde-hover)'" onmouseleave="this.style.borderColor='var(--borde)'" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')">
+        return `<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:12px;padding:14px;display:flex;gap:14px;align-items:flex-start;cursor:pointer;transition:var(--trans);" onmouseenter="this.style.borderColor='var(--borde-hover)'" onmouseleave="this.style.borderColor='var(--borde)'" onclick="verFichaJugador('${disp.replace(/'/g,"\\'")}')">
           <img src="jugadores/${fotoKey}.jpg" style="width:56px;height:56px;object-fit:cover;object-position:top;border-radius:10px;flex-shrink:0;background:var(--fondo-3);" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2256%22 height=%2256%22><rect width=%2256%22 height=%2256%22 fill=%22%230D1628%22 rx=%2210%22/><text x=%2228%22 y=%2234%22 font-size=%2224%22 text-anchor=%22middle%22>👤</text></svg>'">
           <div style="flex:1;min-width:0;">
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
               <span style="display:inline-flex;">${bandera}</span>
-              <span style="font-size:15px;font-weight:600;">${nombre}</span>
+              <span style="font-size:15px;font-weight:600;">${disp}</span>
             </div>
             <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">
               ${totGoles ? `<span style="font-size:11px;background:rgba(34,197,94,0.1);color:var(--celeste);padding:2px 7px;border-radius:6px;border:1px solid var(--borde);">⚽ ${totGoles}</span>` : ''}
@@ -4414,11 +4416,13 @@ function renderHoyHistorial(idL, idV, nombreL, nombreV) {
   const goleadoresHtml = topGoleadores.length ? `
     <div class="hoy-subtitulo" style="margin-top:14px;">⚽ Top Goleadores en este enfrentamiento</div>
     <div class="hoy-stats-row">
-      ${topGoleadores.map(([nombre, cant]) => `
-        <div class="hoy-stat-item" style="cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')">
+      ${topGoleadores.map(([nombre, cant]) => {
+        const disp = nombreDisplay(nombre);
+        return `
+        <div class="hoy-stat-item" style="cursor:pointer;" onclick="verFichaJugador('${disp.replace(/'/g,"\\'")}')">
           <span class="hoy-stat-num num-celeste">${cant}</span>
-          <span class="hoy-stat-label">${nombre}</span>
-        </div>`).join('')}
+          <span class="hoy-stat-label">${disp}</span>
+        </div>`;}).join('')}
     </div>` : '';
 
   const ultimosHtml = `
