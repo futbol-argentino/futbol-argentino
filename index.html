@@ -124,10 +124,64 @@
   .stat-pill-num { font-size:22px; }
   .stats-nums { display:grid; grid-template-columns:repeat(3,1fr); }
 
-  /* Tabla responsive */
-  .tabla-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
-  th, td { font-size:12px; padding:8px 8px; }
-  .td-fecha { font-size:11px; white-space:nowrap; }
+  /* Tabla responsive — sin scroll horizontal en tablas de partidos */
+  .tabla-scroll { overflow-x: visible; }
+  .tabla-scroll table { min-width: 0 !important; width: 100%; }
+  /* Tablas de stats/fichas sí necesitan scroll horizontal */
+  .tabla-scroll.scroll-forzado { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tabla-scroll.scroll-forzado table { min-width: 300px !important; }
+
+  /* Ocultar encabezados en tabla de partidos */
+  .tabla-scroll table thead { display: none; }
+
+  /* Cada fila de partido se convierte en bloque flex con 2 líneas */
+  .tabla-scroll table tbody tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--borde);
+    gap: 0;
+  }
+  /* td:1 = fecha → línea 2, izquierda */
+  .tabla-scroll table tbody tr td:nth-child(1) {
+    order: 4; width: 50%; padding: 3px 4px 0; font-size: 11px;
+  }
+  /* td:2 = local → línea 1, flex-1 */
+  .tabla-scroll table tbody tr td:nth-child(2) {
+    order: 1; flex: 1; min-width: 0; padding: 4px;
+  }
+  /* td:3 = resultado → línea 1, centro */
+  .tabla-scroll table tbody tr td:nth-child(3) {
+    order: 2; flex: 0; padding: 4px 6px;
+  }
+  /* td:4 = visitante → línea 1, flex-1 */
+  .tabla-scroll table tbody tr td:nth-child(4) {
+    order: 3; flex: 1; min-width: 0; padding: 4px;
+    justify-content: flex-end;
+  }
+  /* td:5 = torneo → línea 2, derecha */
+  .tabla-scroll table tbody tr td:nth-child(5) {
+    order: 5; width: 50%; padding: 3px 4px 0; text-align: right;
+  }
+  /* Truncar nombres de equipo en móvil */
+  .tabla-scroll table tbody tr .td-equipo {
+    white-space: nowrap; overflow: hidden;
+  }
+  .tabla-scroll table tbody tr .td-equipo span {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    max-width: 90px; display: inline-block; vertical-align: middle;
+  }
+  .tabla-scroll table tbody tr .td-equipo img {
+    width: 16px !important; height: 16px !important; flex-shrink: 0;
+  }
+  /* Resultado más compacto */
+  .td-resultado { font-size: 16px !important; letter-spacing: 1px !important; }
+  /* Fila de goleadores */
+  .fila-gol-preview { display: block; }
+  .fila-gol-preview td { display: block; padding: 3px 10px 6px !important; }
+  td { font-size: 12px; padding: 8px 8px; }
+  .td-fecha { font-size: 10px; white-space: nowrap; }
 
   /* Ficha jugador */
   .ficha-header { flex-direction:column; align-items:center; gap:14px; }
@@ -1029,7 +1083,7 @@ select option{background:#080F20;color:#F0F6FF}
             <div class="tabla-titulo">⚽ Top Goleadores</div>
             <div class="tabla-count" id="count-goleadores"></div>
           </div>
-          <div class="tabla-scroll">
+          <div class="tabla-scroll scroll-forzado">
           <table style="width:100%;border-collapse:collapse;min-width:400px;">
             <thead><tr>
               <th style="width:40px;">#</th>
@@ -1050,7 +1104,7 @@ select option{background:#080F20;color:#F0F6FF}
             <div class="tabla-titulo">📋 Más Partidos Jugados</div>
             <div class="tabla-count" id="count-pj"></div>
           </div>
-          <div class="tabla-scroll">
+          <div class="tabla-scroll scroll-forzado">
           <table style="width:100%;border-collapse:collapse;min-width:300px;">
             <thead><tr>
               <th style="width:40px;">#</th>
@@ -1069,7 +1123,7 @@ select option{background:#080F20;color:#F0F6FF}
             <div class="tabla-titulo">🔴 Goles en Contra</div>
             <div class="tabla-count" id="count-gc"></div>
           </div>
-          <div class="tabla-scroll">
+          <div class="tabla-scroll scroll-forzado">
           <table style="width:100%;border-collapse:collapse;min-width:300px;">
             <thead><tr>
               <th style="width:40px;">#</th>
@@ -1088,7 +1142,7 @@ select option{background:#080F20;color:#F0F6FF}
             <div class="tabla-titulo">🟨 Top Amonestados</div>
             <div class="tabla-count" id="count-amonestados"></div>
           </div>
-          <div class="tabla-scroll">
+          <div class="tabla-scroll scroll-forzado">
           <table style="width:100%;border-collapse:collapse;min-width:300px;">
             <thead><tr>
               <th style="width:40px;">#</th>
@@ -1107,7 +1161,7 @@ select option{background:#080F20;color:#F0F6FF}
             <div class="tabla-titulo">🟥 Top Expulsados</div>
             <div class="tabla-count" id="count-expulsados"></div>
           </div>
-          <div class="tabla-scroll">
+          <div class="tabla-scroll scroll-forzado">
           <table style="width:100%;border-collapse:collapse;min-width:300px;">
             <thead><tr>
               <th style="width:40px;">#</th>
@@ -1281,7 +1335,7 @@ select option{background:#080F20;color:#F0F6FF}
     <div class="ficha-stats-grid" id="ficha-stats"></div>
     <!-- Desglose por equipo -->
     <div class="ficha-seccion-titulo">Por equipo</div>
-    <div class="tabla-scroll">
+    <div class="tabla-scroll scroll-forzado">
       <table style="width:100%;border-collapse:collapse;min-width:420px;">
         <thead><tr>
           <th>Equipo</th>
@@ -1297,7 +1351,7 @@ select option{background:#080F20;color:#F0F6FF}
     <!-- Sección DT (solo si también fue DT) -->
     <div id="ficha-dt-seccion" style="display:none;">
       <div class="ficha-seccion-titulo" style="margin-top:24px;border-top:1px solid var(--borde);padding-top:16px;">🧑‍💼 También como Director Técnico</div>
-      <div class="tabla-scroll">
+      <div class="tabla-scroll scroll-forzado">
         <table style="width:100%;border-collapse:collapse;min-width:340px;">
           <thead><tr>
             <th>Equipo</th>
@@ -1336,7 +1390,7 @@ select option{background:#080F20;color:#F0F6FF}
       </div>
     </div>
     <div class="ficha-seccion-titulo">Partidos dirigidos</div>
-    <div class="tabla-scroll">
+    <div class="tabla-scroll scroll-forzado">
       <table style="width:100%;border-collapse:collapse;min-width:340px;">
         <thead><tr>
           <th>Equipo</th>
@@ -1351,7 +1405,7 @@ select option{background:#080F20;color:#F0F6FF}
     </div>
     <!-- Últimos partidos -->
     <div class="ficha-seccion-titulo" style="margin-top:20px;">Últimos partidos dirigidos</div>
-    <div class="tabla-scroll">
+    <div class="tabla-scroll scroll-forzado">
       <table style="width:100%;border-collapse:collapse;min-width:340px;">
         <thead><tr>
           <th>Fecha</th><th>Local</th>
