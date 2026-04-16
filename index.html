@@ -124,64 +124,84 @@
   .stat-pill-num { font-size:22px; }
   .stats-nums { display:grid; grid-template-columns:repeat(3,1fr); }
 
-  /* Tabla responsive — sin scroll horizontal en tablas de partidos */
+  /* Tabla responsive — layout tipo card, sin scroll horizontal */
   .tabla-scroll { overflow-x: visible; }
-  .tabla-scroll table { min-width: 0 !important; width: 100%; }
-  /* Tablas de stats/fichas sí necesitan scroll horizontal */
+  .tabla-scroll table { min-width: 0 !important; width: 100%; border-collapse: collapse; }
+  /* Tablas de stats/fichas mantienen scroll */
   .tabla-scroll.scroll-forzado { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .tabla-scroll.scroll-forzado table { min-width: 300px !important; }
 
-  /* Ocultar encabezados en tabla de partidos */
-  .tabla-scroll table thead { display: none; }
+  /* Ocultar thead en tablas de partidos */
+  .tabla-scroll:not(.scroll-forzado) table thead { display: none; }
 
-  /* Cada fila de partido se convierte en bloque flex con 2 líneas */
-  .tabla-scroll table tbody tr {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    padding: 8px 10px;
+  /* Cada fila de partido: layout vertical tipo card */
+  .tabla-scroll:not(.scroll-forzado) table tbody tr {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    grid-template-rows: auto auto;
+    gap: 2px 6px;
+    padding: 10px 12px;
     border-bottom: 1px solid var(--borde);
-    gap: 0;
+    align-items: center;
   }
-  /* td:1 = fecha → línea 2, izquierda */
-  .tabla-scroll table tbody tr td:nth-child(1) {
-    order: 4; width: 50%; padding: 3px 4px 0; font-size: 11px;
+
+  /* Col 1: fecha — segunda fila, primera columna */
+  .tabla-scroll:not(.scroll-forzado) table tbody tr td:nth-child(1) {
+    grid-column: 1; grid-row: 2;
+    font-size: 11px; color: var(--texto-3); font-family: var(--fuente-mono);
+    padding: 0; white-space: nowrap;
   }
-  /* td:2 = local → línea 1, flex-1 */
-  .tabla-scroll table tbody tr td:nth-child(2) {
-    order: 1; flex: 1; min-width: 0; padding: 4px;
+  /* Col 2: local — primera fila, primera columna */
+  .tabla-scroll:not(.scroll-forzado) table tbody tr td:nth-child(2) {
+    grid-column: 1; grid-row: 1;
+    padding: 0; min-width: 0;
   }
-  /* td:3 = resultado → línea 1, centro */
-  .tabla-scroll table tbody tr td:nth-child(3) {
-    order: 2; flex: 0; padding: 4px 6px;
+  /* Col 3: resultado — primera fila, centro */
+  .tabla-scroll:not(.scroll-forzado) table tbody tr td:nth-child(3) {
+    grid-column: 2; grid-row: 1;
+    padding: 0 6px; text-align: center;
   }
-  /* td:4 = visitante → línea 1, flex-1 */
-  .tabla-scroll table tbody tr td:nth-child(4) {
-    order: 3; flex: 1; min-width: 0; padding: 4px;
-    justify-content: flex-end;
+  /* Col 4: visitante — primera fila, tercera columna */
+  .tabla-scroll:not(.scroll-forzado) table tbody tr td:nth-child(4) {
+    grid-column: 3; grid-row: 1;
+    padding: 0; min-width: 0; text-align: right;
   }
-  /* td:5 = torneo → línea 2, derecha */
-  .tabla-scroll table tbody tr td:nth-child(5) {
-    order: 5; width: 50%; padding: 3px 4px 0; text-align: right;
+  /* Col 5: torneo — segunda fila, tercera columna */
+  .tabla-scroll:not(.scroll-forzado) table tbody tr td:nth-child(5) {
+    grid-column: 3; grid-row: 2;
+    padding: 0; text-align: right;
   }
-  /* Truncar nombres de equipo en móvil */
-  .tabla-scroll table tbody tr .td-equipo {
-    white-space: nowrap; overflow: hidden;
+  /* Fila de goles desplegable */
+  .tabla-scroll:not(.scroll-forzado) table tbody tr.fila-gol-preview {
+    display: block; padding: 0;
   }
-  .tabla-scroll table tbody tr .td-equipo span {
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    max-width: 90px; display: inline-block; vertical-align: middle;
+  .fila-gol-preview td { display: block; padding: 3px 12px 8px !important; }
+
+  /* Equipos: nombre completo sin truncar */
+  .tabla-scroll:not(.scroll-forzado) .td-equipo {
+    display: flex; align-items: center; gap: 6px;
+    white-space: normal; word-break: break-word;
   }
-  .tabla-scroll table tbody tr .td-equipo img {
-    width: 16px !important; height: 16px !important; flex-shrink: 0;
+  .tabla-scroll:not(.scroll-forzado) .td-equipo span {
+    font-size: 13px; line-height: 1.2; white-space: normal;
   }
-  /* Resultado más compacto */
-  .td-resultado { font-size: 16px !important; letter-spacing: 1px !important; }
-  /* Fila de goleadores */
-  .fila-gol-preview { display: block; }
-  .fila-gol-preview td { display: block; padding: 3px 10px 6px !important; }
-  td { font-size: 12px; padding: 8px 8px; }
-  .td-fecha { font-size: 10px; white-space: nowrap; }
+  .tabla-scroll:not(.scroll-forzado) .td-equipo img {
+    width: 18px !important; height: 18px !important; flex-shrink: 0;
+  }
+  /* Visitante: alinear a la derecha */
+  .tabla-scroll:not(.scroll-forzado) table tbody tr td:nth-child(4) .td-equipo {
+    justify-content: flex-end; flex-direction: row-reverse;
+  }
+  /* Resultado */
+  .tabla-scroll:not(.scroll-forzado) .td-resultado {
+    font-size: 17px !important; letter-spacing: 1px !important;
+  }
+  /* Badge torneo más pequeño */
+  .tabla-scroll:not(.scroll-forzado) .badge-torneo {
+    font-size: 10px; padding: 2px 5px;
+  }
+  td { font-size: 13px; padding: 8px 8px; }
+  .td-fecha { font-size: 11px; white-space: nowrap; }
 
   /* Ficha jugador */
   .ficha-header { flex-direction:column; align-items:center; gap:14px; }
@@ -1951,8 +1971,8 @@ function verDetalleEquipo(id) {
   if (ESCUDOS[nombre]) { escEl.src = ESCUDOS[nombre]; escEl.style.display = 'block'; }
   else escEl.style.display = 'none';
 
-  // Stats
-  const pe = partidos.filter(p => p.Local_ID===id||p.Visitante_ID===id);
+  // Stats — solo partidos jugados
+  const pe = partidos.filter(p => esPartidoJugado(p) && (p.Local_ID===id||p.Visitante_ID===id));
   const pj = pe.length;
   const pg = pe.filter(p=>p.Tipo_Definicion==='0'&&p.ID_Ganador===id).length;
   const pp = pe.filter(p=>p.Tipo_Definicion==='0'&&p.ID_Ganador!==id&&p.ID_Ganador!=='').length;
@@ -2454,12 +2474,19 @@ function nombreCanonico(n) {
   return nombreCanonicoCache[key];
 }
 
+// Determinar si un partido fue jugado (tiene resultado)
+function esPartidoJugado(p) {
+  return p.Goles_Local !== '' && p.Goles_Local !== null && p.Goles_Local !== undefined &&
+         p.Goles_Visitante !== '' && p.Goles_Visitante !== null && p.Goles_Visitante !== undefined;
+}
+
 function parsearGoleadores(equipoId, torneoId) {
   const goles = {};
   const ec = {};
   const nacionalidades = {};
 
   partidos.forEach(p => {
+    if (!esPartidoJugado(p)) return; // Fix: ignorar partidos sin resultado
     if (torneoId && p.ID_Temporada != torneoId) return;
     if (torneoId && ['Promoción Ida','Promoción Vuelta','Promocion Ida','Promocion Vuelta'].includes(p.Fase)) return;
     const raw = p['Goleadores'] || '';
@@ -2499,6 +2526,7 @@ function parsearTarjetas(campo, equipoId, torneoId) {
   const conteo = {};
   const nacionalidades = {};
   partidos.forEach(p => {
+    if (!esPartidoJugado(p)) return; // Fix: ignorar partidos sin resultado
     if (torneoId && p.ID_Temporada != torneoId) return;
     if (torneoId && ['Promoción Ida','Promoción Vuelta','Promocion Ida','Promocion Vuelta'].includes(p.Fase)) return;
     const raw = p[campo] || '';
