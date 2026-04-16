@@ -863,6 +863,45 @@ select option{background:#080F20;color:#F0F6FF}
         </div>
         <button class="btn-limpiar" onclick="limpiarFiltros()">✕ Limpiar</button>
       </div>
+
+      <!-- NAVEGADOR DE FECHAS -->
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--borde);">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <span class="filtro-label" style="margin-bottom:0;">📅 Navegar por fecha</span>
+          <button id="btn-limpiar-fecha" onclick="limpiarFiltroFecha()" style="display:none;background:transparent;border:1px solid var(--borde);border-radius:7px;color:var(--texto-2);font-family:var(--fuente-cuerpo);font-size:11px;padding:4px 10px;cursor:pointer;transition:var(--trans);" onmouseover="this.style.borderColor='var(--rojo)';this.style.color='var(--rojo)'" onmouseout="this.style.borderColor='var(--borde)';this.style.color='var(--texto-2)'">✕ Ver todos</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;">
+          <!-- Flecha izquierda -->
+          <button onclick="navegarFecha(-1)" title="Día anterior"
+            style="background:var(--fondo-3);border:1px solid var(--borde);border-radius:9px;color:var(--celeste);font-size:18px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--trans);flex-shrink:0;"
+            onmouseover="this.style.borderColor='var(--borde-hover)';this.style.background='var(--fondo-4)'"
+            onmouseout="this.style.borderColor='var(--borde)';this.style.background='var(--fondo-3)'">‹</button>
+
+          <!-- Etiqueta fecha + input calendar oculto -->
+          <div style="position:relative;flex:1;min-width:160px;max-width:300px;">
+            <div id="fecha-nav-label"
+              onclick="toggleCalendarioFecha()"
+              style="background:var(--fondo-3);border:1px solid var(--borde);border-radius:9px;color:var(--texto-1);font-family:var(--fuente-cuerpo);font-size:14px;padding:9px 14px;cursor:pointer;transition:var(--trans);display:flex;align-items:center;justify-content:space-between;gap:8px;user-select:none;"
+              onmouseover="this.style.borderColor='var(--celeste)';this.style.background='var(--fondo-4)'"
+              onmouseout="this.style.borderColor=fechaNavActiva?'var(--borde-activo)':'var(--borde)';this.style.background='var(--fondo-3)'">
+              <span id="fecha-nav-texto" style="color:var(--texto-3);">Todas las fechas</span>
+              <span style="color:var(--texto-3);font-size:12px;">📆</span>
+            </div>
+            <input type="date" id="fecha-nav-input"
+              style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2;"
+              onchange="seleccionarFechaNav(this.value)">
+          </div>
+
+          <!-- Flecha derecha -->
+          <button onclick="navegarFecha(1)" title="Día siguiente"
+            style="background:var(--fondo-3);border:1px solid var(--borde);border-radius:9px;color:var(--celeste);font-size:18px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--trans);flex-shrink:0;"
+            onmouseover="this.style.borderColor='var(--borde-hover)';this.style.background='var(--fondo-4)'"
+            onmouseout="this.style.borderColor='var(--borde)';this.style.background='var(--fondo-3)'">›</button>
+
+          <!-- Chips de fechas disponibles cercanas -->
+          <div id="fecha-nav-chips" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+        </div>
+      </div>
     </div>
 
     <!-- Stats enfrentamiento -->
@@ -1726,6 +1765,7 @@ async function cargarDatos() {
     });
 
     renderizarEquipos();
+    actualizarFechasDisponibles();
     filtrar();
     renderEstadisticas();
 
@@ -1836,13 +1876,125 @@ function toggleOrdenDetalle() {
   filtrarDetalle();
 }
 
+// ── NAVEGADOR DE FECHAS ──
+let fechaNavActiva = null; // 'DD/MM/YYYY' o null
+let fechasDisponibles = []; // array ordenado de fechas únicas en formato ISO 'YYYY-MM-DD'
+
+function normalizarFechaISO(fechaStr) {
+  if (!fechaStr) return null;
+  // Soportar DD/MM/YYYY y YYYY-MM-DD
+  const f = fechaStr.split('T')[0];
+  if (f.includes('/')) {
+    const [d, m, y] = f.split('/');
+    if (!d || !m || !y) return null;
+    return `${y.padStart(4,'0')}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+  }
+  return f;
+}
+
+function actualizarFechasDisponibles() {
+  const set = new Set();
+  partidos.forEach(p => {
+    const iso = normalizarFechaISO(p.Fecha);
+    if (iso) set.add(iso);
+  });
+  fechasDisponibles = Array.from(set).sort();
+}
+
+function formatearFechaDisplay(iso) {
+  if (!iso) return 'Todas las fechas';
+  const [y, m, d] = iso.split('-');
+  const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return `${parseInt(d)} ${meses[parseInt(m)-1]} ${y}`;
+}
+
+function seleccionarFechaNav(iso) {
+  if (!iso) { limpiarFiltroFecha(); return; }
+  fechaNavActiva = iso;
+  actualizarUIFechaNav();
+  filtrar();
+}
+
+function toggleCalendarioFecha() {
+  document.getElementById('fecha-nav-input').showPicker?.();
+  document.getElementById('fecha-nav-input').click();
+}
+
+function navegarFecha(delta) {
+  actualizarFechasDisponibles();
+  if (!fechasDisponibles.length) return;
+
+  if (!fechaNavActiva) {
+    // Si no hay fecha seleccionada, ir a la primera/última según dirección
+    fechaNavActiva = delta > 0 ? fechasDisponibles[0] : fechasDisponibles[fechasDisponibles.length - 1];
+  } else {
+    const idx = fechasDisponibles.indexOf(fechaNavActiva);
+    let nuevoIdx;
+    if (idx === -1) {
+      // Buscar la más cercana
+      nuevoIdx = delta > 0 ? 0 : fechasDisponibles.length - 1;
+    } else {
+      nuevoIdx = idx + delta;
+    }
+    if (nuevoIdx < 0 || nuevoIdx >= fechasDisponibles.length) return;
+    fechaNavActiva = fechasDisponibles[nuevoIdx];
+  }
+  actualizarUIFechaNav();
+  filtrar();
+}
+
+function limpiarFiltroFecha() {
+  fechaNavActiva = null;
+  actualizarUIFechaNav();
+  filtrar();
+}
+
+function actualizarUIFechaNav() {
+  const label = document.getElementById('fecha-nav-label');
+  const texto = document.getElementById('fecha-nav-texto');
+  const inputDate = document.getElementById('fecha-nav-input');
+  const btnLimpiar = document.getElementById('btn-limpiar-fecha');
+
+  if (fechaNavActiva) {
+    texto.textContent = formatearFechaDisplay(fechaNavActiva);
+    texto.style.color = 'var(--texto-1)';
+    label.style.borderColor = 'var(--borde-activo)';
+    inputDate.value = fechaNavActiva;
+    btnLimpiar.style.display = 'block';
+  } else {
+    texto.textContent = 'Todas las fechas';
+    texto.style.color = 'var(--texto-3)';
+    label.style.borderColor = 'var(--borde)';
+    inputDate.value = '';
+    btnLimpiar.style.display = 'none';
+  }
+
+  // Chips de fechas cercanas
+  const chips = document.getElementById('fecha-nav-chips');
+  if (!chips) return;
+  if (!fechaNavActiva || !fechasDisponibles.length) { chips.innerHTML = ''; return; }
+  const idx = fechasDisponibles.indexOf(fechaNavActiva);
+  const rango = [];
+  for (let i = Math.max(0, idx - 2); i <= Math.min(fechasDisponibles.length - 1, idx + 2); i++) {
+    if (i !== idx) rango.push(fechasDisponibles[i]);
+  }
+  chips.innerHTML = rango.map(f => {
+    const [y, m, d] = f.split('-');
+    return `<button onclick="seleccionarFechaNav('${f}')"
+      style="background:var(--fondo-3);border:1px solid var(--borde);border-radius:7px;color:var(--texto-2);font-family:var(--fuente-cuerpo);font-size:11px;padding:4px 9px;cursor:pointer;transition:var(--trans);white-space:nowrap;"
+      onmouseover="this.style.borderColor='var(--borde-hover)';this.style.color='var(--texto-1)'"
+      onmouseout="this.style.borderColor='var(--borde)';this.style.color='var(--texto-2)'"
+    >${parseInt(d)}/${parseInt(m)}/${y}</button>`;
+  }).join('');
+}
+
 // ── BUSCADOR ──
 function limpiarFiltros() {
   ['buscar','filtro-equipo','filtro-equipo2','filtro-resultado'].forEach(id => {
     const el = document.getElementById(id);
     el.value = '';
   });
-  filtrar();
+  limpiarFiltroFecha();
 }
 
 function filtrar() {
@@ -1863,7 +2015,9 @@ function filtrar() {
     if (res === 'local') okRes = parseInt(p.Goles_Local) > parseInt(p.Goles_Visitante);
     if (res === 'visitante') okRes = parseInt(p.Goles_Visitante) > parseInt(p.Goles_Local);
     if (res === 'empate') okRes = p.Goles_Local === p.Goles_Visitante;
-    return okBuscar && okEq1 && okEq2 && okRes;
+    // Filtro por fecha
+    const okFecha = !fechaNavActiva || normalizarFechaISO(p.Fecha) === fechaNavActiva;
+    return okBuscar && okEq1 && okEq2 && okRes && okFecha;
   });
 
   const tbody = document.getElementById('tabla-partidos');
