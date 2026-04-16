@@ -1561,6 +1561,26 @@ select option{background:#080F20;color:#F0F6FF}
         </div>
       </div>
 
+      <!-- DESPLEGABLE PENALES (solo si hubo definición por penales) -->
+      <div class="modal-dato full modal-desplegable" id="modal-penales-wrap" style="display:none;" onclick="toggleDesplegable('penales')">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="modal-dato-label">🥅 Definición por Penales</div>
+          <span id="arrow-penales" style="color:var(--texto-2);font-size:12px;transition:transform 0.2s;">▼</span>
+        </div>
+        <div id="modal-penales" class="modal-desplegable-contenido">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;">
+            <div>
+              <div style="font-size:10px;color:var(--amarillo);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;font-weight:600;" id="modal-penales-local-label"></div>
+              <div id="modal-penales-local"></div>
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--amarillo);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;font-weight:600;" id="modal-penales-visita-label"></div>
+              <div id="modal-penales-visita"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- DESPLEGABLE ALINEACIONES -->
       <div class="modal-dato full modal-desplegable" id="modal-alin-wrap" style="display:none;" onclick="toggleDesplegable('alineaciones')">
         <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -2369,11 +2389,45 @@ function verPartido(id) {
 
   // Mostrar resultado de penales si aplica
   const penalesTxt = document.getElementById('modal-penales-txt');
+  const penalesWrap = document.getElementById('modal-penales-wrap');
   if (p.Tipo_Definicion === '1' && p.Penales) {
-    penalesTxt.textContent = `(${p.Penales})`;
+    // Mostrar score de penales arriba
+    const scoreMatch = p.Penales.match(/(\d+)\s*[-–]\s*(\d+)/);
+    penalesTxt.textContent = scoreMatch ? `Penales: ${scoreMatch[1]} - ${scoreMatch[2]}` : `Penales: ${p.Penales}`;
     penalesTxt.style.display = 'block';
+
+    // Renderizar pateadores si están cargados
+    const partes = p.Penales.split('/');
+    const renderPateadores = (raw) => {
+      if (!raw || !raw.trim()) return '<div style="color:var(--texto-3);font-size:12px;">Sin datos</div>';
+      return raw.split('-').map(e => e.trim()).filter(Boolean).map(entrada => {
+        const metio = /\(G\)/i.test(entrada);
+        const erro  = /\(E\)/i.test(entrada) || /\(X\)/i.test(entrada);
+        const nombre = entrada.replace(/\([GEXgex]\)/gi,'').trim();
+        const icono = metio ? '✅' : erro ? '❌' : '⬜';
+        const color = metio ? 'var(--verde)' : erro ? 'var(--rojo)' : 'var(--texto-2)';
+        return `<div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px solid var(--borde);">
+          <span style="font-size:16px;flex-shrink:0;">${icono}</span>
+          <span style="font-size:13px;color:${color};font-weight:${metio||erro?'500':'400'};">${nombre}</span>
+        </div>`;
+      }).join('');
+    };
+
+    const hayDetalle = partes.length >= 1 && /\([GEXgex]\)/i.test(p.Penales);
+    if (hayDetalle) {
+      document.getElementById('modal-penales-local-label').textContent = local;
+      document.getElementById('modal-penales-visita-label').textContent = visita;
+      document.getElementById('modal-penales-local').innerHTML = renderPateadores(partes[0]||'');
+      document.getElementById('modal-penales-visita').innerHTML = renderPateadores(partes[1]||'');
+      document.getElementById('modal-penales').style.display = 'none';
+      document.getElementById('arrow-penales').style.transform = 'rotate(0deg)';
+      penalesWrap.style.display = 'block';
+    } else {
+      penalesWrap.style.display = 'none';
+    }
   } else {
     penalesTxt.style.display = 'none';
+    penalesWrap.style.display = 'none';
   }
   document.getElementById('modal-fecha').textContent = fecha;
   document.getElementById('modal-torneo').textContent = torneo;
@@ -3194,12 +3248,23 @@ function filtrarCampeones() {
     if (buscar && !(t.Competencia||'').toLowerCase().includes(buscar) && !(t.Campeon||'').toLowerCase().includes(buscar)) return false;
     return true;
   }).sort((a, b) => {
-    const ultimaFecha = (idTemp) => {
+    // Ordenar por última fecha jugada en el torneo (más reciente primero)
+    // Fallback: por ID_Temporada descendente
+    const fechaMax = (idTemp) => {
       const ps = partidos.filter(p => p.ID_Temporada == idTemp && p.Fecha);
-      if (!ps.length) return '0';
-      return ps.map(p => p.Fecha.split('T')[0].replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$2-$1')).sort().pop();
+      if (!ps.length) return '';
+      return ps.map(p => {
+        const f = p.Fecha.split('T')[0];
+        // Normalizar dd/mm/yyyy → yyyy-mm-dd para comparar
+        const m = f.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        return m ? `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}` : f;
+      }).sort().pop();
     };
-    return ultimaFecha(b.ID_Temporada).localeCompare(ultimaFecha(a.ID_Temporada));
+    const fa = fechaMax(a.ID_Temporada);
+    const fb = fechaMax(b.ID_Temporada);
+    if (fa && fb) return fb.localeCompare(fa);
+    // Si no hay fechas, usar ID descendente
+    return parseInt(b.ID_Temporada||0) - parseInt(a.ID_Temporada||0);
   });
   const grid = document.getElementById('campeones-grid');
 
