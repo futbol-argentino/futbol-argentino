@@ -1,54 +1,55 @@
-ID_Equipo,Nombre_Equipo,Division
-1,Aldosivi,Liga Profesional
-42,All Boys,Primera Nacional
-46,Almagro,Primera Nacional
-2,Argentinos Juniors,Liga Profesional
-32,Arsenal,Primera B Metropolitana
-38,Atletico Rafaela,Primera Nacional
-3,Atletico Tucuman,Liga Profesional
-4,Banfield,Liga Profesional
-5,Barracas Central,Liga Profesional
-6,Belgrano,Liga Profesional
-7,Boca Juniors,Liga Profesional
-9,Central Cordoba SdE,Liga Profesional
-35,Chacarita Juniors,Primera Nacional
-31,Colon,Primera Nacional
-40,Crucero del Norte,Torneo Regional Federal Amateur
-10,Defensa y Justicia,Liga Profesional
-11,Deportivo Riestra,Liga Profesional
-12,Estudiantes LP,Liga Profesional
-43,Gimnasia de Jujuy,Primera Nacional
-13,Gimnasia LP,Liga Profesional
-14,Godoy Cruz,Primera Nacional
-8,Huracan,Liga Profesional
-45,Huracan de Tres Arroyos,Torneo Regional Federal Amateur
-16,Independiente,Liga Profesional
-15,Independiente Rivadavia,Liga Profesional
-17,Instituto,Liga Profesional
-18,Lanus,Liga Profesional
-19,Newells,Liga Profesional
-41,Nueva Chicago,Primera Nacional
-36,Olimpo,Federal A
-33,Patronato,Primera Nacional
-20,Platense,Liga Profesional
-39,Quilmes,Primera Nacional
-21,Racing Club,Liga Profesional
-22,River Plate,Liga Profesional
-23,Rosario Central,Liga Profesional
-24,San Lorenzo,Liga Profesional
-47,San Martin de Mendoza,Federal A
-25,San Martin SJ,Primera Nacional
-34,San Martin Tucuman,Primera Nacional
-26,Sarmiento,Liga Profesional
-27,Talleres,Liga Profesional
-37,Temperley,Primera Nacional
-28,Tigre,Liga Profesional
-44,Tiro Federal,Torneo Regional Federal Amateur
-29,Union,Liga Profesional
-30,Velez Sarsfield,Liga Profesional
-48,Gimnasia de Concepción del Uruguay,Federal A
-49,Los Andes,Primera Nacional
-50,Ferro Carril Oeste,Primera Nacional
-51,Gimnasia y Tiro,Primera Nacional
-52,Deportivo Español,Primera C
-53,Estudiantes RC,Primera Nacional
+ID_Equipo,Nombre_Equipo,Division,Provincia
+1,Aldosivi,Liga Profesional,
+42,All Boys,Primera Nacional,
+46,Almagro,Primera Nacional,
+2,Argentinos Juniors,Liga Profesional,
+32,Arsenal,Primera B Metropolitana,
+38,Atletico Rafaela,Primera Nacional,
+3,Atletico Tucuman,Liga Profesional,
+4,Banfield,Liga Profesional,
+5,Barracas Central,Liga Profesional,
+6,Belgrano,Liga Profesional,
+7,Boca Juniors,Liga Profesional,
+9,Central Cordoba SdE,Liga Profesional,
+35,Chacarita Juniors,Primera Nacional,
+31,Colon,Primera Nacional,
+40,Crucero del Norte,Torneo Regional Federal Amateur,Misiones
+10,Defensa y Justicia,Liga Profesional,
+11,Deportivo Riestra,Liga Profesional,
+12,Estudiantes LP,Liga Profesional,
+43,Gimnasia de Jujuy,Primera Nacional,
+13,Gimnasia LP,Liga Profesional,
+14,Godoy Cruz,Primera Nacional,
+8,Huracan,Liga Profesional,
+45,Huracan de Tres Arroyos,Torneo Regional Federal Amateur,Buenes Aires
+16,Independiente,Liga Profesional,
+15,Independiente Rivadavia,Liga Profesional,
+17,Instituto,Liga Profesional,
+18,Lanus,Liga Profesional,
+19,Newells,Liga Profesional,
+41,Nueva Chicago,Primera Nacional,
+36,Olimpo,Federal A,
+33,Patronato,Primera Nacional,
+20,Platense,Liga Profesional,
+39,Quilmes,Primera Nacional,
+21,Racing Club,Liga Profesional,
+22,River Plate,Liga Profesional,
+23,Rosario Central,Liga Profesional,
+24,San Lorenzo,Liga Profesional,
+47,San Martin de Mendoza,Federal A,
+25,San Martin SJ,Primera Nacional,
+34,San Martin Tucuman,Primera Nacional,
+26,Sarmiento,Liga Profesional,
+27,Talleres,Liga Profesional,
+37,Temperley,Primera Nacional,
+28,Tigre,Liga Profesional,
+44,Tiro Federal,Torneo Regional Federal Amateur,Santa Fe
+29,Union,Liga Profesional,
+30,Velez Sarsfield,Liga Profesional,
+48,Gimnasia de Concepción del Uruguay,Federal A,
+49,Los Andes,Primera Nacional,
+50,Ferro Carril Oeste,Primera Nacional,
+51,Gimnasia y Tiro,Primera Nacional,
+52,Deportivo Español,Primera C,
+53,Huracán Corrientes,Torneo Regional Federal Amateur,Corrientes
+54,Deportivo Mandiyú,Torneo Regional Federal Amateur,Corrientes
