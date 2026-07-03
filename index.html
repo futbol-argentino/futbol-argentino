@@ -922,6 +922,9 @@ select option{background:#080F20;color:#F0F6FF}
       </div>
     </div>
 
+    <!-- H2H Panel (buscador) -->
+    <div id="h2h-panel-buscador" style="display:none;"></div>
+
     <!-- Stats equipo -->
     <div id="stats-equipo" class="stats-card">
       <div class="stats-card-header">
@@ -1089,6 +1092,8 @@ select option{background:#080F20;color:#F0F6FF}
 
       <!-- Stats vs rival específico -->
       <div id="detalle-stats-rival" class="stats-card" style="display:none;"></div>
+      <!-- H2H Panel (equipos) -->
+      <div id="h2h-panel-equipo" style="display:none;"></div>
 
       <!-- Tabla detalle -->
       <div class="tabla-wrapper">
@@ -2096,6 +2101,8 @@ function filtrar() {
     document.getElementById('enf-g2').textContent = g2; document.getElementById('enf-g2-nombre').textContent = short(n2);
     document.getElementById('enf-gf1').textContent = gf1; document.getElementById('enf-gf1-nombre').textContent = '⚽ '+short(n1);
     document.getElementById('enf-gf2').textContent = gf2; document.getElementById('enf-gf2-nombre').textContent = '⚽ '+short(n2);
+    // H2H dashboard
+    renderH2H(eq1, eq2, 'h2h-panel-buscador');
   } else if (eq1) {
     const nombre = equipos[eq1];
     const pe = partidos.filter(p=>p.Local_ID===eq1||p.Visitante_ID===eq1);
@@ -2117,9 +2124,11 @@ function filtrar() {
     const escEl = document.getElementById('stats-escudo');
     if (ESCUDOS[nombre]) { escEl.src = ESCUDOS[nombre]; escEl.style.display='block'; }
     else escEl.style.display='none';
+    document.getElementById('h2h-panel-buscador').style.display = 'none';
   } else {
     document.getElementById('stats-equipo').classList.remove('visible');
     document.getElementById('stats-enfrentamiento').classList.remove('visible');
+    document.getElementById('h2h-panel-buscador').style.display = 'none';
   }
 }
 
@@ -2326,8 +2335,11 @@ function filtrarDetalle() {
         <div class="stat-pill"><span class="stat-pill-num num-celeste">${gc}</span><span class="stat-pill-label">Goles en contra</span></div>
         <div class="stat-pill"><span class="stat-pill-num ${dg>=0?'num-verde':'num-rojo'}">${dg>=0?'+'+dg:dg}</span><span class="stat-pill-label">Diferencia</span></div>
       </div>`;
+    // H2H dashboard completo
+    renderH2H(id, rival, 'h2h-panel-equipo');
   } else {
     rivalCard.style.display = 'none';
+    document.getElementById('h2h-panel-equipo').style.display = 'none';
   }
 
   document.getElementById('detalle-count').textContent = lista.length + ' partidos';
@@ -5376,6 +5388,328 @@ function volverHistorialLista() {
   document.getElementById('historial-torneo').style.display = 'none';
   document.getElementById('historial-lista').style.display  = 'block';
   window.scrollTo(0,0);
+}
+
+// ════════════════════════════════════════════
+// H2H — Dashboard completo de enfrentamientos
+// ════════════════════════════════════════════
+function renderH2H(eq1, eq2, contenedorId) {
+  const el = document.getElementById(contenedorId);
+  if (!el) return;
+  if (!eq1 || !eq2) { el.style.display = 'none'; return; }
+
+  const n1 = equipos[eq1] || eq1;
+  const n2 = equipos[eq2] || eq2;
+  const esc1 = ESCUDOS[n1] ? `<img src="${ESCUDOS[n1]}" style="width:32px;height:32px;object-fit:contain;" onerror="this.style.display='none'">` : '';
+  const esc2 = ESCUDOS[n2] ? `<img src="${ESCUDOS[n2]}" style="width:32px;height:32px;object-fit:contain;" onerror="this.style.display='none'">` : '';
+
+  // Todos los enfrentamientos (incluyendo no jugados para "próximo")
+  const todos = partidos.filter(p =>
+    (p.Local_ID===eq1 && p.Visitante_ID===eq2) ||
+    (p.Local_ID===eq2 && p.Visitante_ID===eq1)
+  );
+  const jugados = todos.filter(p => esPartidoJugado(p));
+
+  if (!jugados.length) {
+    el.style.display = 'none';
+    return;
+  }
+
+  const normFecha = f => (f||'').split('T')[0].replace(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/,'$3-$2-$1');
+  jugados.sort((a,b) => normFecha(a.Fecha).localeCompare(normFecha(b.Fecha)));
+
+  // ── Stats generales ──
+  let pg1=0,pg2=0,emp=0,gf1=0,gf2=0,totGoles=0;
+  jugados.forEach(p => {
+    const gl=parseInt(p.Goles_Local)||0, gv=parseInt(p.Goles_Visitante)||0;
+    const g1 = p.Local_ID===eq1 ? gl : gv;
+    const g2 = p.Local_ID===eq1 ? gv : gl;
+    gf1+=g1; gf2+=g2; totGoles+=gl+gv;
+    if (p.Tipo_Definicion==='0') {
+      if (p.ID_Ganador===eq1) pg1++;
+      else if (p.ID_Ganador===eq2) pg2++;
+      else emp++;
+    } else { emp++; }
+  });
+  const pj = jugados.length;
+  const promGoles = pj ? (totGoles/pj).toFixed(1) : '0';
+
+  // ── Racha actual ──
+  const h2hDesc = [...jugados].sort((a,b)=>normFecha(b.Fecha).localeCompare(normFecha(a.Fecha)));
+  let rachaEq='', rachaCant=0;
+  for (const p of h2hDesc) {
+    const gano = p.Tipo_Definicion==='0' ? p.ID_Ganador : null;
+    if (!rachaEq && gano===eq1)       { rachaEq=eq1; rachaCant=1; }
+    else if (!rachaEq && gano===eq2)  { rachaEq=eq2; rachaCant=1; }
+    else if (!rachaEq && !gano)       { rachaEq='empate'; rachaCant=1; }
+    else if (rachaEq==='empate' && !gano) rachaCant++;
+    else if (rachaEq===eq1 && gano===eq1) rachaCant++;
+    else if (rachaEq===eq2 && gano===eq2) rachaCant++;
+    else break;
+  }
+  const rachaTexto = rachaCant < 2 ? '' :
+    rachaEq===eq1     ? `🔥 ${n1} lleva <strong>${rachaCant}</strong> victorias seguidas` :
+    rachaEq===eq2     ? `🔥 ${n2} lleva <strong>${rachaCant}</strong> victorias seguidas` :
+    `⚖️ Llevan <strong>${rachaCant}</strong> empates consecutivos`;
+
+  // ── Último y próximo ──
+  const ultimo = h2hDesc.find(p => esPartidoJugado(p));
+  const proximo = todos.filter(p => !esPartidoJugado(p))
+    .sort((a,b) => normFecha(a.Fecha).localeCompare(normFecha(b.Fecha)))[0];
+
+  // ── Goleadores H2H ──
+  const goles = {}, amon = {}, expu = {}, nacMap = {};
+  jugados.forEach(p => {
+    ['Goleadores','Amonestados','Expulsados'].forEach(campo => {
+      const raw = p[campo]||'';
+      if (!raw) return;
+      raw.split('/').forEach((parte) => {
+        parte.split('-').forEach(entrada => {
+          const nac = extraerNacionalidad(entrada);
+          const nombre = limpiarNombre(entrada);
+          if (!nombre || nombre.length<2 || nombre.toLowerCase()==='ninguno') return;
+          const canon = nombreCanonico(nombre);
+          if (nac) nacMap[canon]=nac;
+          if (campo==='Goleadores') {
+            if (!goles[canon]) goles[canon]={nombre,n:0};
+            goles[canon].n++;
+          } else if (campo==='Amonestados') {
+            if (!amon[canon]) amon[canon]={nombre,n:0};
+            amon[canon].n++;
+          } else {
+            if (!expu[canon]) expu[canon]={nombre,n:0};
+            expu[canon].n++;
+          }
+        });
+      });
+    });
+  });
+
+  const topSort = obj => Object.values(obj).sort((a,b)=>b.n-a.n).slice(0,8);
+  const filaH2H = ({nombre,n}, i, color) => {
+    const nac = nacMap[nombreCanonico(nombre)];
+    const flag = nac ? getBandera(nac) : '';
+    return `<tr>
+      <td style="color:var(--texto-3);font-size:12px;width:28px;">${i+1}</td>
+      <td style="font-size:13px;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')">
+        <div style="display:flex;align-items:center;gap:5px;">${flag}<span>${nombre}</span></div>
+      </td>
+      <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;font-weight:700;color:${color};">${n}</td>
+    </tr>`;
+  };
+
+  const tablaH2H = (titulo, datos, color) => {
+    const rows = topSort(datos);
+    if (!rows.length) return '';
+    return `
+      <div class="tabla-wrapper">
+        <div class="tabla-header"><div class="tabla-titulo">${titulo}</div><div class="tabla-count">${Object.keys(datos).length} jugadores</div></div>
+        <div class="tabla-scroll scroll-forzado">
+          <table style="min-width:260px;"><tbody>
+            ${rows.map((r,i)=>filaH2H(r,i,color)).join('')}
+          </tbody></table>
+        </div>
+      </div>`;
+  };
+
+  // ── Partidos con más goles ──
+  const masGoles = [...jugados]
+    .map(p=>({p, tot:(parseInt(p.Goles_Local)||0)+(parseInt(p.Goles_Visitante)||0)}))
+    .sort((a,b)=>b.tot-a.tot).slice(0,5);
+
+  // ── Mayores goleadas de cada equipo ──
+  const goleadasEq1 = [...jugados]
+    .map(p => {
+      const g1=p.Local_ID===eq1?parseInt(p.Goles_Local)||0:parseInt(p.Goles_Visitante)||0;
+      const g2=p.Local_ID===eq1?parseInt(p.Goles_Visitante)||0:parseInt(p.Goles_Local)||0;
+      return {p, g1, g2, dif:g1-g2};
+    }).filter(x=>x.dif>0).sort((a,b)=>b.dif-a.dif).slice(0,3);
+
+  const goleadasEq2 = [...jugados]
+    .map(p => {
+      const g1=p.Local_ID===eq2?parseInt(p.Goles_Local)||0:parseInt(p.Goles_Visitante)||0;
+      const g2=p.Local_ID===eq2?parseInt(p.Goles_Visitante)||0:parseInt(p.Goles_Local)||0;
+      return {p, g1, g2, dif:g1-g2};
+    }).filter(x=>x.dif>0).sort((a,b)=>b.dif-a.dif).slice(0,3);
+
+  // ── DTs con más victorias ──
+  const dtStats = {};
+  jugados.forEach(p => {
+    const raw = p.DT||'';
+    const partes = raw.split('/');
+    [[partes[0]||'', p.Local_ID],[partes[1]||'', p.Visitante_ID]].forEach(([dtRaw, eqId]) => {
+      const dt = (dtRaw||'').trim();
+      if (!dt) return;
+      if (!dtStats[dt]) dtStats[dt]={dt, eqId, pd:0, pg:0};
+      dtStats[dt].pd++;
+      if (p.Tipo_Definicion==='0' && p.ID_Ganador===eqId) dtStats[dt].pg++;
+    });
+  });
+  const topDTs = Object.values(dtStats).sort((a,b)=>b.pg-a.pg).slice(0,6);
+
+  // ── Helpers de render ──
+  const filaPartidoH2H = ({p, g1, g2, tot}) => {
+    const local = equipos[p.Local_ID]||p.Local_ID;
+    const visita = equipos[p.Visitante_ID]||p.Visitante_ID;
+    const fecha = (p.Fecha||'').split('T')[0];
+    const torneo = temporadas[p.ID_Temporada]||p.Fase||'';
+    const rc = resClase(p.Goles_Local, p.Goles_Visitante);
+    return `<tr onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
+      <td class="td-fecha">${fecha}</td>
+      <td><div class="td-equipo">${escudoImg(local,18)}<span>${local}</span></div></td>
+      <td class="td-resultado"><span class="${rc}">${p.Goles_Local} - ${p.Goles_Visitante}</span></td>
+      <td><div class="td-equipo">${escudoImg(visita,18)}<span>${visita}</span></div></td>
+      <td style="font-size:11px;color:var(--celeste);font-weight:700;">${tot!==undefined?tot+' ⚽':''}</td>
+      <td><span class="badge-torneo" style="font-size:10px;">${torneo}</span></td>
+    </tr>`;
+  };
+
+  const filaGoleada = ({p,g1,g2}) => {
+    const local=equipos[p.Local_ID]||p.Local_ID;
+    const visita=equipos[p.Visitante_ID]||p.Visitante_ID;
+    const fecha=(p.Fecha||'').split('T')[0];
+    const rc=resClase(p.Goles_Local,p.Goles_Visitante);
+    return `<tr onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
+      <td class="td-fecha">${fecha}</td>
+      <td><div class="td-equipo">${escudoImg(local,16)}<span>${local}</span></div></td>
+      <td class="td-resultado"><span class="${rc}">${p.Goles_Local}-${p.Goles_Visitante}</span></td>
+      <td><div class="td-equipo">${escudoImg(visita,16)}<span>${visita}</span></div></td>
+    </tr>`;
+  };
+
+  // ── Último / Próximo partido ──
+  const cardPartido = (p, titulo) => {
+    if (!p) return '';
+    const local=equipos[p.Local_ID]||p.Local_ID;
+    const visita=equipos[p.Visitante_ID]||p.Visitante_ID;
+    const fecha=(p.Fecha||'').split('T')[0];
+    const rc=resClase(p.Goles_Local,p.Goles_Visitante);
+    const res=esPartidoJugado(p)?`<span class="${rc}">${p.Goles_Local} - ${p.Goles_Visitante}</span>`:`<span style="color:var(--texto-3);">vs</span>`;
+    return `
+      <div class="tabla-wrapper" style="cursor:pointer;" onclick="verPartido(${p.ID_Partido})">
+        <div class="tabla-header"><div class="tabla-titulo">${titulo}</div><div class="tabla-count">${fecha}</div></div>
+        <div style="padding:14px;display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:8px;">${esc1}<span style="font-size:14px;font-weight:600;">${local}</span></div>
+          <div style="font-family:var(--fuente-titulo);font-size:26px;">${res}</div>
+          <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:14px;font-weight:600;">${visita}</span>${esc2}</div>
+        </div>
+        <div style="text-align:center;padding:0 14px 10px;font-size:11px;color:var(--celeste);">${temporadas[p.ID_Temporada]||p.Fase||''}</div>
+      </div>`;
+  };
+
+  // ── Balance visual ──
+  const pct1 = pj ? Math.round(pg1/pj*100) : 0;
+  const pctE  = pj ? Math.round(emp/pj*100) : 0;
+  const pct2  = 100-pct1-pctE;
+
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div style="margin-top:20px;">
+      <div style="font-family:var(--fuente-titulo);font-size:20px;letter-spacing:1px;color:var(--celeste);
+        margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid var(--borde);display:flex;align-items:center;gap:10px;">
+        🔍 Dashboard H2H — <span style="font-weight:400;">${n1} vs ${n2}</span>
+      </div>
+
+      ${rachaTexto ? `<div style="background:rgba(34,197,94,0.07);border:1px solid var(--borde);border-radius:10px;padding:10px 16px;margin-bottom:14px;font-size:13px;">${rachaTexto}</div>` : ''}
+
+      <!-- Barra de balance -->
+      <div style="margin-bottom:20px;">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;">
+          <div style="display:flex;align-items:center;gap:7px;">${esc1}<strong>${n1}</strong><span style="color:var(--verde);">${pg1} victorias</span></div>
+          <div style="color:var(--amarillo);">${emp} empates</div>
+          <div style="display:flex;align-items:center;gap:7px;"><span style="color:var(--rojo);">${pg2} victorias</span><strong>${n2}</strong>${esc2}</div>
+        </div>
+        <div style="height:10px;border-radius:5px;overflow:hidden;display:flex;background:var(--fondo-3);">
+          <div style="width:${pct1}%;background:var(--verde);transition:width 0.6s;"></div>
+          <div style="width:${pctE}%;background:var(--amarillo);"></div>
+          <div style="width:${pct2}%;background:var(--rojo);"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--texto-3);margin-top:4px;">
+          <span>${pct1}%</span><span>${pctE}%</span><span>${pct2}%</span>
+        </div>
+      </div>
+
+      <!-- Stats rápidas -->
+      <div class="stats-nums" style="margin-bottom:20px;">
+        <div class="stat-pill"><span class="stat-pill-num num-celeste">${pj}</span><span class="stat-pill-label">PJ</span></div>
+        <div class="stat-pill"><span class="stat-pill-num num-celeste">${gf1}</span><span class="stat-pill-label">Goles ${n1.split(' ')[0]}</span></div>
+        <div class="stat-pill"><span class="stat-pill-num num-celeste">${gf2}</span><span class="stat-pill-label">Goles ${n2.split(' ')[0]}</span></div>
+        <div class="stat-pill"><span class="stat-pill-num num-amarillo">${totGoles}</span><span class="stat-pill-label">Total goles</span></div>
+        <div class="stat-pill"><span class="stat-pill-num num-celeste">${promGoles}</span><span class="stat-pill-label">Prom/partido</span></div>
+      </div>
+
+      <!-- Último y próximo -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:20px;">
+        ${cardPartido(ultimo,'🕐 Último partido')}
+        ${proximo ? cardPartido(proximo,'📅 Próximo partido') : ''}
+      </div>
+
+      <!-- Tablas de jugadores -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:20px;">
+        ${tablaH2H('⚽ Goleadores del clásico', goles, 'var(--verde)')}
+        ${tablaH2H('🟨 Más amonestados', amon, 'var(--amarillo)')}
+        ${tablaH2H('🟥 Más expulsados', expu, 'var(--rojo)')}
+      </div>
+
+      <!-- Partidos con más goles -->
+      ${masGoles.length ? `
+      <div class="tabla-wrapper" style="margin-bottom:14px;">
+        <div class="tabla-header"><div class="tabla-titulo">🔥 Partidos con más goles</div></div>
+        <div class="tabla-scroll">
+          <table style="width:100%;border-collapse:collapse;">
+            <tbody>${masGoles.map(x=>filaPartidoH2H({...x})).join('')}</tbody>
+          </table>
+        </div>
+      </div>` : ''}
+
+      <!-- Mayores goleadas -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+        ${goleadasEq1.length ? `
+        <div class="tabla-wrapper">
+          <div class="tabla-header"><div class="tabla-titulo">💥 Goleadas de ${n1.split(' ')[0]}</div></div>
+          <div class="tabla-scroll"><table style="width:100%;border-collapse:collapse;">
+            <tbody>${goleadasEq1.map(x=>filaGoleada(x)).join('')}</tbody>
+          </table></div>
+        </div>` : ''}
+        ${goleadasEq2.length ? `
+        <div class="tabla-wrapper">
+          <div class="tabla-header"><div class="tabla-titulo">💥 Goleadas de ${n2.split(' ')[0]}</div></div>
+          <div class="tabla-scroll"><table style="width:100%;border-collapse:collapse;">
+            <tbody>${goleadasEq2.map(x=>filaGoleada(x)).join('')}</tbody>
+          </table></div>
+        </div>` : ''}
+      </div>
+
+      <!-- DTs con más victorias -->
+      ${topDTs.length ? `
+      <div class="tabla-wrapper">
+        <div class="tabla-header"><div class="tabla-titulo">🧑‍💼 DTs con más victorias en el clásico</div></div>
+        <div class="tabla-scroll scroll-forzado">
+          <table style="min-width:300px;width:100%;border-collapse:collapse;">
+            <thead><tr>
+              <th style="width:28px;">#</th><th>Director Técnico</th><th>Equipo</th>
+              <th style="text-align:center;width:50px;">PD</th>
+              <th style="text-align:center;width:50px;">PG</th>
+              <th style="text-align:center;width:50px;">%</th>
+            </tr></thead>
+            <tbody>${topDTs.map(({dt,eqId,pd,pg},i) => {
+              const nmEq = equipos[eqId]||eqId;
+              const esc = ESCUDOS[nmEq]?`<img src="${ESCUDOS[nmEq]}" style="width:18px;height:18px;object-fit:contain;margin-right:5px;" onerror="this.style.display='none'">` : '';
+              const pct = pd?Math.round(pg/pd*100):0;
+              return `<tr style="cursor:pointer;" onclick="verFichaDT('${dt.replace(/'/g,"\\'")}')">
+                <td style="color:var(--texto-3);font-size:12px;">${i+1}</td>
+                <td style="font-size:13px;font-weight:500;">${dt}</td>
+                <td><div style="display:flex;align-items:center;">${esc}${nmEq}</div></td>
+                <td style="text-align:center;">${pd}</td>
+                <td style="text-align:center;color:var(--verde);font-weight:700;">${pg}</td>
+                <td style="text-align:center;color:var(--texto-2);font-size:12px;">${pct}%</td>
+              </tr>`;
+            }).join('')}</tbody>
+          </table>
+        </div>
+      </div>` : ''}
+
+    </div>`;
 }
 
 cargarDatos();
