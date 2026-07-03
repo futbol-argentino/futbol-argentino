@@ -737,7 +737,7 @@ select option{background:#080F20;color:#F0F6FF}
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="cerrarSidebar()"></div>
 <div class="sidebar" id="sidebar">
   <div class="sidebar-header">
-    <div class="sidebar-logo">
+    <div class="sidebar-logo" onclick="irInicio(); cerrarSidebar();" style="cursor:pointer;" title="Volver al inicio">
       <img src="logo.png" alt="Logo" style="height:36px;width:auto;object-fit:contain;">
     </div>
     <button class="sidebar-close" onclick="cerrarSidebar()">✕</button>
@@ -776,7 +776,7 @@ select option{background:#080F20;color:#F0F6FF}
 
 <!-- HEADER -->
 <header>
-  <img src="banner.png" alt="Base de Datos del Fútbol Argentino" class="header-banner">
+  <img src="banner.png" alt="Base de Datos del Fútbol Argentino" class="header-banner" onclick="irInicio()" style="cursor:pointer;" title="Volver al inicio">
   <div class="header-inner" style="justify-content:space-between;">
     <button class="btn-menu" onclick="abrirSidebar()">☰</button>
     <div id="btn-usuario-wrap">
@@ -1415,38 +1415,102 @@ select option{background:#080F20;color:#F0F6FF}
         <div id="ficha-fotos-equipos" style="display:none;flex-wrap:wrap;gap:6px;margin-top:10px;"></div>
       </div>
     </div>
-    <!-- Stats globales -->
-    <div class="ficha-seccion-titulo">Estadísticas totales</div>
+    <!-- Stats globales (siempre visibles) -->
     <div class="ficha-stats-grid" id="ficha-stats"></div>
-    <!-- Desglose por equipo -->
-    <div class="ficha-seccion-titulo">Por equipo</div>
-    <div class="tabla-scroll scroll-forzado">
-      <table style="width:100%;border-collapse:collapse;min-width:420px;">
-        <thead><tr>
-          <th>Equipo</th>
-          <th style="text-align:center;width:55px;">PJ</th>
-          <th style="text-align:center;width:55px;">⚽</th>
-          <th style="text-align:center;width:55px;">🅿️</th>
-          <th style="text-align:center;width:55px;">🟨</th>
-          <th style="text-align:center;width:55px;">🟥</th>
-        </tr></thead>
-        <tbody id="ficha-tabla-equipos"></tbody>
-      </table>
+
+    <!-- Tabs internos de la ficha -->
+    <div style="display:flex;gap:6px;margin:16px 0 14px 0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
+      <button class="torneo-tab-btn activo" id="ftab-principal"   onclick="cambiarFichaTab('principal')">📋 Principal</button>
+      <button class="torneo-tab-btn"        id="ftab-goles"       onclick="cambiarFichaTab('goles')">⚽ Goles</button>
+      <button class="torneo-tab-btn"        id="ftab-disciplina"  onclick="cambiarFichaTab('disciplina')">🟨 Disciplina</button>
+      <button class="torneo-tab-btn"        id="ftab-temporadas"  onclick="cambiarFichaTab('temporadas')">📅 Temporadas</button>
     </div>
-    <!-- Sección DT (solo si también fue DT) -->
-    <div id="ficha-dt-seccion" style="display:none;">
-      <div class="ficha-seccion-titulo" style="margin-top:24px;border-top:1px solid var(--borde);padding-top:16px;">🧑‍💼 También como Director Técnico</div>
+
+    <!-- Panel PRINCIPAL -->
+    <div id="fpanel-principal" class="ficha-panel">
+      <div class="ficha-seccion-titulo">Por equipo</div>
       <div class="tabla-scroll scroll-forzado">
-        <table style="width:100%;border-collapse:collapse;min-width:340px;">
+        <table style="width:100%;border-collapse:collapse;min-width:420px;">
           <thead><tr>
             <th>Equipo</th>
-            <th style="text-align:center;width:55px;">PD</th>
-            <th style="text-align:center;width:55px;">PG</th>
-            <th style="text-align:center;width:55px;">PE</th>
-            <th style="text-align:center;width:55px;">PP</th>
-            <th style="text-align:center;width:55px;">%</th>
+            <th style="text-align:center;width:55px;">PJ</th>
+            <th style="text-align:center;width:55px;">⚽</th>
+            <th style="text-align:center;width:55px;">🅿️</th>
+            <th style="text-align:center;width:55px;">🟨</th>
+            <th style="text-align:center;width:55px;">🟥</th>
           </tr></thead>
-          <tbody id="ficha-dt-tabla"></tbody>
+          <tbody id="ficha-tabla-equipos"></tbody>
+        </table>
+      </div>
+      <!-- Sección DT (solo si también fue DT) -->
+      <div id="ficha-dt-seccion" style="display:none;">
+        <div class="ficha-seccion-titulo" style="margin-top:24px;border-top:1px solid var(--borde);padding-top:16px;">🧑‍💼 También como Director Técnico</div>
+        <div class="tabla-scroll scroll-forzado">
+          <table style="width:100%;border-collapse:collapse;min-width:340px;">
+            <thead><tr>
+              <th>Equipo</th>
+              <th style="text-align:center;width:55px;">PD</th>
+              <th style="text-align:center;width:55px;">PG</th>
+              <th style="text-align:center;width:55px;">PE</th>
+              <th style="text-align:center;width:55px;">PP</th>
+              <th style="text-align:center;width:55px;">%</th>
+            </tr></thead>
+            <tbody id="ficha-dt-tabla"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel GOLES: ranking de equipos a los que más goles le hizo -->
+    <div id="fpanel-goles" class="ficha-panel" style="display:none;">
+      <div class="ficha-seccion-titulo">⚽ Goles por rival</div>
+      <div style="font-size:12px;color:var(--texto-2);margin:-6px 0 12px 0;">Equipos rivales ordenados de mayor a menor cantidad de goles convertidos</div>
+      <div class="tabla-scroll scroll-forzado">
+        <table style="width:100%;border-collapse:collapse;min-width:460px;">
+          <thead><tr>
+            <th style="width:34px;">#</th>
+            <th>Rival</th>
+            <th style="text-align:center;width:55px;">⚽</th>
+            <th style="text-align:center;width:55px;">🅿️</th>
+            <th style="text-align:center;width:55px;">PJ</th>
+            <th style="text-align:center;width:70px;">Prom.</th>
+          </tr></thead>
+          <tbody id="ficha-tabla-goles"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Panel DISCIPLINA: tarjetas por rival -->
+    <div id="fpanel-disciplina" class="ficha-panel" style="display:none;">
+      <div class="ficha-seccion-titulo">🟨 Disciplina por rival</div>
+      <div style="font-size:12px;color:var(--texto-2);margin:-6px 0 12px 0;">Equipos rivales ordenados por tarjetas recibidas</div>
+      <div class="tabla-scroll scroll-forzado">
+        <table style="width:100%;border-collapse:collapse;min-width:420px;">
+          <thead><tr>
+            <th style="width:34px;">#</th>
+            <th>Rival</th>
+            <th style="text-align:center;width:55px;">🟨</th>
+            <th style="text-align:center;width:55px;">🟥</th>
+            <th style="text-align:center;width:55px;">PJ</th>
+          </tr></thead>
+          <tbody id="ficha-tabla-disciplina"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Panel TEMPORADAS: evolución año a año -->
+    <div id="fpanel-temporadas" class="ficha-panel" style="display:none;">
+      <div class="ficha-seccion-titulo">📅 Historial por temporada</div>
+      <div class="tabla-scroll scroll-forzado">
+        <table style="width:100%;border-collapse:collapse;min-width:420px;">
+          <thead><tr>
+            <th>Año</th>
+            <th style="text-align:center;width:55px;">PJ</th>
+            <th style="text-align:center;width:55px;">⚽</th>
+            <th style="text-align:center;width:55px;">🟨</th>
+            <th style="text-align:center;width:55px;">🟥</th>
+          </tr></thead>
+          <tbody id="ficha-tabla-temporadas"></tbody>
         </table>
       </div>
     </div>
@@ -1834,6 +1898,30 @@ function abrirSidebar() {
 function cerrarSidebar() {
   document.getElementById('sidebar').classList.remove('activo');
   document.getElementById('sidebar-overlay').classList.remove('activo');
+}
+
+// ── VOLVER AL INICIO (logo) ──
+function irInicio() {
+  // Cerrar sidebar si está abierto
+  cerrarSidebar();
+  // Cerrar cualquier modal abierto
+  const modalJugador = document.getElementById('modal-jugador');
+  if (modalJugador && modalJugador.classList.contains('visible')) cerrarFichaJugador();
+  const modalDT = document.getElementById('modal-dt');
+  if (modalDT && modalDT.classList.contains('visible')) cerrarFichaDT();
+  const modalGenerico = document.getElementById('modal');
+  if (modalGenerico && modalGenerico.classList.contains('visible')) cerrarModal();
+  const modalUsuario = document.getElementById('modal-usuario');
+  if (modalUsuario && modalUsuario.style.display !== 'none' && modalUsuario.style.display !== '') cerrarModalUsuario();
+  // Salir del detalle de equipo si está abierto
+  const vistaDetalle = document.getElementById('vista-detalle');
+  if (vistaDetalle && vistaDetalle.classList.contains('visible')) volverEquipos();
+  // Salir del detalle de torneo si está abierto
+  const vistaTorneo = document.getElementById('vista-torneo');
+  if (vistaTorneo && vistaTorneo.style.display !== 'none') volverCampeones();
+  // Ir a la pestaña principal
+  cambiarTab('hoy');
+  window.scrollTo(0, 0);
 }
 
 // ── TABS ──
@@ -2993,6 +3081,7 @@ function verFichaJugador(nombre) {
   // Use normalized name to merge duplicates
   const nombreNorm = normalizarNombre(nombre);
   const porEquipo = {};
+  const porAnio = {};
   let nacionalidad = null;
   let posicion = null;
 
@@ -3014,13 +3103,17 @@ function verFichaJugador(nombre) {
           if (!porEquipo[teamId]) porEquipo[teamId] = { goles:0, penales:0, ec:0, amonestados:0, expulsados:0, anios:new Set() };
           const r = porEquipo[teamId];
           if (anio) r.anios.add(anio);
+          if (anio) {
+            if (!porAnio[anio]) porAnio[anio] = { pj:0, goles:0, amonestados:0, expulsados:0 };
+          }
           if (campo === 'Goleadores') {
             if (esEC) r.ec++;
             else if (/\(P\)/i.test(entrada)) { r.goles++; r.penales++; }
             else r.goles++;
+            if (anio && !esEC) porAnio[anio].goles++;
           }
-          if (campo === 'Amonestados') r.amonestados++;
-          if (campo === 'Expulsados')  r.expulsados++;
+          if (campo === 'Amonestados') { r.amonestados++; if (anio) porAnio[anio].amonestados++; }
+          if (campo === 'Expulsados')  { r.expulsados++;  if (anio) porAnio[anio].expulsados++; }
         });
       });
     });
@@ -3049,6 +3142,10 @@ function verFichaJugador(nombre) {
           porEquipo[equipoId].pj++;
           const anio = p.Fecha ? parseInt(p.Fecha.split('/')[2] || p.Fecha.split('-')[0]) : null;
           if (anio) porEquipo[equipoId].anios.add(anio);
+          if (anio) {
+            if (!porAnio[anio]) porAnio[anio] = { pj:0, goles:0, amonestados:0, expulsados:0 };
+            porAnio[anio].pj++;
+          }
         });
       });
     }
@@ -3141,6 +3238,62 @@ function verFichaJugador(nombre) {
       </tr>`;
     }).join('');
 
+  // ── Tabla GOLES: ranking de rivales por goles convertidos ──
+  const equiposConGoles = Object.entries(porEquipo).filter(([,r]) => (r.goles||0) > 0);
+  document.getElementById('ficha-tabla-goles').innerHTML = equiposConGoles.length
+    ? equiposConGoles
+        .sort((a,b) => (b[1].goles||0) - (a[1].goles||0))
+        .map(([eid, r], idx) => {
+          const nm = equipos[eid]||eid;
+          const esc = ESCUDOS[nm] ? `<img src="${ESCUDOS[nm]}" style="width:18px;height:18px;object-fit:contain;margin-right:6px;" onerror="this.style.display='none'">` : '';
+          const prom = r.pj ? (r.goles / r.pj).toFixed(2) : '—';
+          return `<tr>
+            <td style="text-align:center;color:var(--texto-3);font-weight:600;">${idx+1}</td>
+            <td style="padding:10px 12px;"><div style="display:flex;align-items:center;">${esc}<strong>${nm}</strong></div></td>
+            <td style="text-align:center;font-weight:700;color:var(--celeste);">${r.goles}</td>
+            <td style="text-align:center;color:var(--amarillo);">${r.penales||'—'}</td>
+            <td style="text-align:center;color:var(--texto-1);">${r.pj||'—'}</td>
+            <td style="text-align:center;color:var(--texto-2);font-size:13px;">${prom}</td>
+          </tr>`;
+        }).join('')
+    : `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--texto-3);">Sin goles registrados</td></tr>`;
+
+  // ── Tabla DISCIPLINA: ranking de rivales por tarjetas ──
+  const equiposConTarjetas = Object.entries(porEquipo).filter(([,r]) => ((r.amonestados||0)+(r.expulsados||0)) > 0);
+  document.getElementById('ficha-tabla-disciplina').innerHTML = equiposConTarjetas.length
+    ? equiposConTarjetas
+        .sort((a,b) => ((b[1].amonestados||0)+(b[1].expulsados||0)) - ((a[1].amonestados||0)+(a[1].expulsados||0)))
+        .map(([eid, r], idx) => {
+          const nm = equipos[eid]||eid;
+          const esc = ESCUDOS[nm] ? `<img src="${ESCUDOS[nm]}" style="width:18px;height:18px;object-fit:contain;margin-right:6px;" onerror="this.style.display='none'">` : '';
+          return `<tr>
+            <td style="text-align:center;color:var(--texto-3);font-weight:600;">${idx+1}</td>
+            <td style="padding:10px 12px;"><div style="display:flex;align-items:center;">${esc}<strong>${nm}</strong></div></td>
+            <td style="text-align:center;font-weight:700;color:var(--amarillo);">${r.amonestados||'—'}</td>
+            <td style="text-align:center;font-weight:700;color:var(--rojo);">${r.expulsados||'—'}</td>
+            <td style="text-align:center;color:var(--texto-1);">${r.pj||'—'}</td>
+          </tr>`;
+        }).join('')
+    : `<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--texto-3);">Sin tarjetas registradas</td></tr>`;
+
+  // ── Tabla TEMPORADAS: evolución año a año ──
+  const aniosOrdenados = Object.keys(porAnio).map(Number).sort((a,b) => b-a);
+  document.getElementById('ficha-tabla-temporadas').innerHTML = aniosOrdenados.length
+    ? aniosOrdenados.map(anio => {
+        const r = porAnio[anio];
+        return `<tr>
+          <td style="padding:10px 12px;font-weight:700;color:var(--texto-1);">${anio}</td>
+          <td style="text-align:center;color:var(--texto-1);">${r.pj||'—'}</td>
+          <td style="text-align:center;font-weight:600;color:var(--celeste);">${r.goles||'—'}</td>
+          <td style="text-align:center;color:var(--amarillo);">${r.amonestados||'—'}</td>
+          <td style="text-align:center;color:var(--rojo);">${r.expulsados||'—'}</td>
+        </tr>`;
+      }).join('')
+    : `<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--texto-3);">Sin datos por temporada</td></tr>`;
+
+  // Volver siempre a la pestaña Principal al abrir una ficha
+  cambiarFichaTab('principal');
+
   // ── Sección DT (si también fue DT) ──
   const todosDTs = recopilarDTs();
   const claveDT = nombreCanonico(nombre);
@@ -3176,6 +3329,16 @@ function verFichaJugador(nombre) {
 
 function cerrarFichaJugador() {
   document.getElementById('modal-jugador').classList.remove('visible');
+}
+
+// ── TABS internos de la ficha de jugador ──
+function cambiarFichaTab(tab) {
+  document.querySelectorAll('.ficha-panel').forEach(p => p.style.display = 'none');
+  document.querySelectorAll('#modal-jugador .torneo-tab-btn').forEach(b => b.classList.remove('activo'));
+  const panel = document.getElementById('fpanel-' + tab);
+  if (panel) panel.style.display = 'block';
+  const btn = document.getElementById('ftab-' + tab);
+  if (btn) btn.classList.add('activo');
 }
 
 // ── TABLA DE POSICIONES ──
