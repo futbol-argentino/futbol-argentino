@@ -124,18 +124,14 @@
   .stat-pill-num { font-size:22px; }
   .stats-nums { display:grid; grid-template-columns:repeat(3,1fr); }
 
-  /* Tabla responsive — layout tipo card, sin scroll horizontal */
-  .tabla-scroll { overflow-x: visible; }
-  .tabla-scroll table { min-width: 0 !important; width: 100%; border-collapse: collapse; }
-  /* Tablas de stats/fichas mantienen scroll */
-  .tabla-scroll.scroll-forzado { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .tabla-scroll.scroll-forzado table { min-width: 300px !important; }
+  /* ═══ TABLAS: nunca requieren scroll horizontal en mobile ═══ */
+  .tabla-scroll { overflow-x: visible !important; }
+  .tabla-scroll table { min-width: 0 !important; width: 100% !important; }
 
-  /* Ocultar thead en tablas de partidos */
-  .tabla-scroll:not(.scroll-forzado) table thead { display: none; }
+  /* ─ Tablas de PARTIDOS (fecha/local/resultado/visitante/torneo): layout tipo card ─ */
+  table.tabla-partidos thead { display: none; }
 
-  /* Cada fila de partido: layout vertical tipo card */
-  .tabla-scroll:not(.scroll-forzado) table tbody tr {
+  table.tabla-partidos tbody tr {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     grid-template-rows: auto auto;
@@ -146,60 +142,97 @@
   }
 
   /* Col 1: fecha — segunda fila, primera columna */
-  .tabla-scroll:not(.scroll-forzado) table tbody tr td:nth-child(1) {
+  table.tabla-partidos tbody tr td:nth-child(1) {
     grid-column: 1; grid-row: 2;
     font-size: 11px; color: var(--texto-3); font-family: var(--fuente-mono);
     padding: 0; white-space: nowrap;
   }
   /* Col 2: local — primera fila, primera columna */
-  .tabla-scroll:not(.scroll-forzado) table tbody tr td:nth-child(2) {
+  table.tabla-partidos tbody tr td:nth-child(2) {
     grid-column: 1; grid-row: 1;
     padding: 0; min-width: 0;
   }
   /* Col 3: resultado — primera fila, centro */
-  .tabla-scroll:not(.scroll-forzado) table tbody tr td:nth-child(3) {
+  table.tabla-partidos tbody tr td:nth-child(3) {
     grid-column: 2; grid-row: 1;
     padding: 0 6px; text-align: center;
   }
   /* Col 4: visitante — primera fila, tercera columna */
-  .tabla-scroll:not(.scroll-forzado) table tbody tr td:nth-child(4) {
+  table.tabla-partidos tbody tr td:nth-child(4) {
     grid-column: 3; grid-row: 1;
     padding: 0; min-width: 0; text-align: right;
   }
   /* Col 5: torneo — segunda fila, tercera columna */
-  .tabla-scroll:not(.scroll-forzado) table tbody tr td:nth-child(5) {
+  table.tabla-partidos tbody tr td:nth-child(5) {
     grid-column: 3; grid-row: 2;
     padding: 0; text-align: right;
   }
   /* Fila de goles desplegable */
-  .tabla-scroll:not(.scroll-forzado) table tbody tr.fila-gol-preview {
+  table.tabla-partidos tbody tr.fila-gol-preview {
     display: block; padding: 0;
   }
   .fila-gol-preview td { display: block; padding: 3px 12px 8px !important; }
 
   /* Equipos: nombre completo sin truncar */
-  .tabla-scroll:not(.scroll-forzado) .td-equipo {
+  table.tabla-partidos .td-equipo {
     display: flex; align-items: center; gap: 6px;
     white-space: normal; word-break: break-word;
   }
-  .tabla-scroll:not(.scroll-forzado) .td-equipo span {
+  table.tabla-partidos .td-equipo span {
     font-size: 13px; line-height: 1.2; white-space: normal;
   }
-  .tabla-scroll:not(.scroll-forzado) .td-equipo img {
+  table.tabla-partidos .td-equipo img {
     width: 18px !important; height: 18px !important; flex-shrink: 0;
   }
   /* Visitante: alinear a la derecha */
-  .tabla-scroll:not(.scroll-forzado) table tbody tr td:nth-child(4) .td-equipo {
+  table.tabla-partidos tbody tr td:nth-child(4) .td-equipo {
     justify-content: flex-end; flex-direction: row-reverse;
   }
   /* Resultado */
-  .tabla-scroll:not(.scroll-forzado) .td-resultado {
+  table.tabla-partidos .td-resultado {
     font-size: 17px !important; letter-spacing: 1px !important;
   }
   /* Badge torneo más pequeño */
-  .tabla-scroll:not(.scroll-forzado) .badge-torneo {
+  table.tabla-partidos .badge-torneo {
     font-size: 10px; padding: 2px 5px;
   }
+
+  /* ─ Todas las demás tablas (rankings, posiciones, fichas, historial vs rivales, etc.) ─
+     Se convierten en tarjetas con etiqueta + valor, sin necesidad de scroll lateral. */
+  table:not(.tabla-partidos) thead { display: none; }
+  table:not(.tabla-partidos) tbody tr {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px 14px;
+    padding: 12px 10px;
+    border-bottom: 1px solid var(--borde);
+  }
+  table:not(.tabla-partidos) tbody tr:last-child { border-bottom: none; }
+  table:not(.tabla-partidos) tbody tr td {
+    display: block;
+    padding: 0 !important;
+    border: none !important;
+    font-size: 13px;
+    min-width: 0;
+    overflow-wrap: break-word;
+  }
+  /* La primera columna (# o nombre) y cualquier celda con un bloque interno (escudo+nombre)
+     ocupan todo el ancho de la fila */
+  table:not(.tabla-partidos) tbody tr td:first-child,
+  table:not(.tabla-partidos) tbody tr td:has(> div) {
+    grid-column: 1 / -1;
+  }
+  table:not(.tabla-partidos) tbody tr td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.6px; color: var(--texto-3); margin-bottom: 2px;
+  }
+  /* Filas de "sin datos" con colspan: centradas, sin grilla */
+  table:not(.tabla-partidos) tbody tr td[colspan] {
+    grid-column: 1 / -1; text-align: center; color: var(--texto-3);
+  }
+
   td { font-size: 13px; padding: 8px 8px; }
   .td-fecha { font-size: 11px; white-space: nowrap; }
 
@@ -250,6 +283,14 @@
 
   /* Btn tema */
   .btn-tema { bottom:14px; right:14px; width:40px; height:40px; font-size:18px; }
+
+  /* Header: evitar que el badge de usuario se corte o desborde */
+  .header-inner { gap:8px; }
+  #btn-usuario-wrap { min-width:0; flex-shrink:1; }
+  .btn-usuario { padding:0 10px; max-width:100%; }
+  .btn-usuario span, #btn-usuario-login { white-space:nowrap; overflow:hidden; }
+  .usuario-badge { min-width:0; }
+  .usuario-badge-nombre { max-width:32vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:inline-block; vertical-align:middle; }
 }
 
 @media(max-width:380px) {
@@ -871,7 +912,7 @@ select option{background:#080F20;color:#F0F6FF}
           <div class="tabla-count" id="hoy-fecha-count"></div>
         </div>
         <div class="tabla-scroll">
-          <table>
+          <table class="tabla-partidos">
             <thead>
               <tr>
                 <th>Fecha</th><th>Local</th>
@@ -981,7 +1022,7 @@ select option{background:#080F20;color:#F0F6FF}
         </div>
       </div>
       <div class="tabla-scroll">
-        <table>
+        <table class="tabla-partidos">
           <thead>
             <tr>
               <th>Fecha</th><th>Local</th>
@@ -1131,7 +1172,7 @@ select option{background:#080F20;color:#F0F6FF}
           </div>
         </div>
         <div class="tabla-scroll">
-          <table>
+          <table class="tabla-partidos">
             <thead>
               <tr>
                 <th>Fecha</th><th>Local</th>
@@ -1578,8 +1619,8 @@ select option{background:#080F20;color:#F0F6FF}
     </div>
     <!-- Últimos partidos -->
     <div class="ficha-seccion-titulo" style="margin-top:20px;">Últimos partidos dirigidos</div>
-    <div class="tabla-scroll scroll-forzado">
-      <table style="width:100%;border-collapse:collapse;min-width:340px;">
+    <div class="tabla-scroll">
+      <table class="tabla-partidos" style="width:100%;border-collapse:collapse;">
         <thead><tr>
           <th>Fecha</th><th>Local</th>
           <th style="text-align:center;">Res.</th>
@@ -5580,7 +5621,7 @@ function verTorneoEquipo(idTemporada, equipoId) {
         letter-spacing:0.8px;padding:5px 0 4px;border-bottom:1px solid var(--borde);margin-bottom:2px;">
         ${fase}
       </div>
-      <table style="width:100%;border-collapse:collapse;">
+      <table class="tabla-partidos" style="width:100%;border-collapse:collapse;">
         <thead><tr>
           <th>Fecha</th><th>Local</th><th class="center">Resultado</th><th>Visitante</th><th>Torneo</th>
         </tr></thead>
@@ -5714,6 +5755,7 @@ function renderH2H(eq1, eq2, contenedorId) {
   };
 
   // Siempre muestra la tabla aunque esté vacía
+  const tablaH2HLabels = { goles:'Goles', amon:'Amarillas', expu:'Rojas' };
   const tablaH2H = (titulo, datos, color, clave) => {
     const sorted = Object.values(datos).sort((a,b)=>b.n-a.n);
     const total  = sorted.length;
@@ -5737,8 +5779,10 @@ function renderH2H(eq1, eq2, contenedorId) {
           <div class="tabla-titulo">${titulo}</div>
           <div class="tabla-count">${total} jugadores</div>
         </div>
-        <div class="tabla-scroll scroll-forzado">
-          <table style="min-width:240px;width:100%;border-collapse:collapse;"><tbody>
+        <div class="tabla-scroll">
+          <table style="width:100%;border-collapse:collapse;">
+            <thead><tr><th>#</th><th>Jugador</th><th>${tablaH2HLabels[clave]||'Cant.'}</th></tr></thead>
+            <tbody>
             ${rows.length
               ? rows.map((r,i)=>filaH2H(r,inicio+i,color)).join('')
               : `<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--texto-3);font-size:13px;">Sin datos cargados</td></tr>`
@@ -5786,9 +5830,8 @@ function renderH2H(eq1, eq2, contenedorId) {
     return `<tr onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
       <td class="td-fecha">${fecha}</td>
       <td><div class="td-equipo">${escudoImg(local,18)}<span>${local}</span></div></td>
-      <td class="td-resultado"><span class="${rc}">${p.Goles_Local} - ${p.Goles_Visitante}</span></td>
+      <td class="td-resultado"><span class="${rc}">${p.Goles_Local} - ${p.Goles_Visitante}</span>${extra ? `<div style="font-size:10px;color:var(--celeste);font-weight:700;margin-top:2px;">${extra}</div>` : ''}</td>
       <td><div class="td-equipo">${escudoImg(visita,18)}<span>${visita}</span></div></td>
-      ${extra ? `<td style="font-size:11px;color:var(--celeste);font-weight:700;">${extra}</td>` : ''}
       <td><span class="badge-torneo" style="font-size:10px;">${temporadas[p.ID_Temporada]||p.Fase||''}</span></td>
     </tr>`;
   };
@@ -5884,7 +5927,7 @@ function renderH2H(eq1, eq2, contenedorId) {
       ${masGoles.length?`
       <div class="tabla-wrapper" style="margin-bottom:14px;">
         <div class="tabla-header"><div class="tabla-titulo">🔥 Partidos con más goles</div></div>
-        <div class="tabla-scroll"><table style="width:100%;border-collapse:collapse;"><tbody>
+        <div class="tabla-scroll"><table class="tabla-partidos" style="width:100%;border-collapse:collapse;"><tbody>
           ${masGoles.map(({p,tot})=>filaPartidoH2H(p,tot+' ⚽')).join('')}
         </tbody></table></div>
       </div>`:''}
@@ -5894,14 +5937,14 @@ function renderH2H(eq1, eq2, contenedorId) {
         ${goleadasEq1.length?`
         <div class="tabla-wrapper">
           <div class="tabla-header"><div class="tabla-titulo">💥 Goleadas de ${n1.split(' ')[0]}</div></div>
-          <div class="tabla-scroll"><table style="width:100%;border-collapse:collapse;"><tbody>
+          <div class="tabla-scroll"><table class="tabla-partidos" style="width:100%;border-collapse:collapse;"><tbody>
             ${goleadasEq1.map(x=>filaGoleada(x)).join('')}
           </tbody></table></div>
         </div>`:''}
         ${goleadasEq2.length?`
         <div class="tabla-wrapper">
           <div class="tabla-header"><div class="tabla-titulo">💥 Goleadas de ${n2.split(' ')[0]}</div></div>
-          <div class="tabla-scroll"><table style="width:100%;border-collapse:collapse;"><tbody>
+          <div class="tabla-scroll"><table class="tabla-partidos" style="width:100%;border-collapse:collapse;"><tbody>
             ${goleadasEq2.map(x=>filaGoleada(x)).join('')}
           </tbody></table></div>
         </div>`:''}
@@ -6043,6 +6086,33 @@ window.addEventListener('popstate', () => {
     history.pushState({ n: 0 }, '');
   }
 });
+
+// ── ETIQUETADO AUTOMÁTICO DE TABLAS PARA MÓVIL ──
+// Todas las tablas que no sean de partidos (.tabla-partidos) se muestran en mobile
+// como tarjetas "etiqueta: valor". Esta función copia el texto de cada <th> a un
+// data-label en el <td> correspondiente, para que el CSS lo muestre sin necesidad
+// de tocar cada función de renderizado individualmente.
+function _bdfaEtiquetarTablas(root) {
+  (root || document).querySelectorAll('table:not(.tabla-partidos)').forEach(tabla => {
+    const ths = tabla.querySelectorAll('thead th');
+    if (!ths.length) return;
+    const headers = Array.from(ths).map(th => th.textContent.trim());
+    tabla.querySelectorAll('tbody tr').forEach(tr => {
+      const celdas = tr.children;
+      if (celdas.length === 1 && celdas[0].hasAttribute('colspan')) return;
+      Array.from(celdas).forEach((td, i) => {
+        if (headers[i] && !td.hasAttribute('data-label')) td.setAttribute('data-label', headers[i]);
+      });
+    });
+  });
+}
+let _bdfaEtiquetaTimeout;
+new MutationObserver(() => {
+  clearTimeout(_bdfaEtiquetaTimeout);
+  _bdfaEtiquetaTimeout = setTimeout(() => _bdfaEtiquetarTablas(document), 60);
+}).observe(document.body, { childList: true, subtree: true });
+document.addEventListener('DOMContentLoaded', () => _bdfaEtiquetarTablas(document));
+_bdfaEtiquetarTablas(document);
 </script>
 </body>
 </html>
