@@ -823,6 +823,68 @@ select option{background:#080F20;color:#F0F6FF}
 
   <!-- ══ TAB HOY ══ -->
   <div class="tab-panel activo" id="panel-hoy">
+
+    <!-- NAVEGADOR DE FECHAS -->
+    <div class="filtros-panel" style="margin-bottom:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <span class="filtros-titulo" style="margin-bottom:0;">📅 Navegar por fecha</span>
+        <button id="btn-limpiar-fecha" onclick="limpiarFiltroFecha()" style="display:none;background:transparent;border:1px solid var(--borde);border-radius:7px;color:var(--texto-2);font-family:var(--fuente-cuerpo);font-size:11px;padding:4px 10px;cursor:pointer;transition:var(--trans);" onmouseover="this.style.borderColor='var(--rojo)';this.style.color='var(--rojo)'" onmouseout="this.style.borderColor='var(--borde)';this.style.color='var(--texto-2)'">✕ Volver a hoy</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:14px;flex-wrap:wrap;">
+        <!-- Flecha izquierda -->
+        <button onclick="navegarFecha(-1)" title="Día anterior"
+          style="background:var(--fondo-3);border:1px solid var(--borde);border-radius:9px;color:var(--celeste);font-size:18px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--trans);flex-shrink:0;"
+          onmouseover="this.style.borderColor='var(--borde-hover)';this.style.background='var(--fondo-4)'"
+          onmouseout="this.style.borderColor='var(--borde)';this.style.background='var(--fondo-3)'">‹</button>
+
+        <!-- Etiqueta fecha + input calendar oculto -->
+        <div style="position:relative;flex:1;min-width:160px;max-width:300px;">
+          <div id="fecha-nav-label"
+            onclick="toggleCalendarioFecha()"
+            style="background:var(--fondo-3);border:1px solid var(--borde);border-radius:9px;color:var(--texto-1);font-family:var(--fuente-cuerpo);font-size:14px;padding:9px 14px;cursor:pointer;transition:var(--trans);display:flex;align-items:center;justify-content:space-between;gap:8px;user-select:none;"
+            onmouseover="this.style.borderColor='var(--celeste)';this.style.background='var(--fondo-4)'"
+            onmouseout="this.style.borderColor=fechaNavActiva?'var(--borde-activo)':'var(--borde)';this.style.background='var(--fondo-3)'">
+            <span id="fecha-nav-texto" style="color:var(--texto-3);">Hoy</span>
+            <span style="color:var(--texto-3);font-size:12px;">📆</span>
+          </div>
+          <input type="date" id="fecha-nav-input"
+            style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2;"
+            onchange="seleccionarFechaNav(this.value)">
+        </div>
+
+        <!-- Flecha derecha -->
+        <button onclick="navegarFecha(1)" title="Día siguiente"
+          style="background:var(--fondo-3);border:1px solid var(--borde);border-radius:9px;color:var(--celeste);font-size:18px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--trans);flex-shrink:0;"
+          onmouseover="this.style.borderColor='var(--borde-hover)';this.style.background='var(--fondo-4)'"
+          onmouseout="this.style.borderColor='var(--borde)';this.style.background='var(--fondo-3)'">›</button>
+
+        <!-- Chips de fechas disponibles cercanas -->
+        <div id="fecha-nav-chips" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+      </div>
+    </div>
+
+    <!-- Resultados históricos de la fecha seleccionada (solo cuando se navega a otra fecha) -->
+    <div id="hoy-fecha-resultados-wrap" style="display:none;margin-bottom:20px;">
+      <div class="tabla-wrapper">
+        <div class="tabla-header">
+          <div class="tabla-titulo" id="hoy-fecha-titulo">Partidos</div>
+          <div class="tabla-count" id="hoy-fecha-count"></div>
+        </div>
+        <div class="tabla-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th><th>Local</th>
+                <th class="center">Resultado</th>
+                <th>Visitante</th><th>Torneo</th>
+              </tr>
+            </thead>
+            <tbody id="hoy-fecha-tabla"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <div id="hoy-container">
       <div style="text-align:center;padding:60px 20px;color:var(--texto-3);">
         <div style="font-size:40px;margin-bottom:12px;">📅</div>
@@ -863,45 +925,6 @@ select option{background:#080F20;color:#F0F6FF}
           </select>
         </div>
         <button class="btn-limpiar" onclick="limpiarFiltros()">✕ Limpiar</button>
-      </div>
-
-      <!-- NAVEGADOR DE FECHAS -->
-      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--borde);">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-          <span class="filtro-label" style="margin-bottom:0;">📅 Navegar por fecha</span>
-          <button id="btn-limpiar-fecha" onclick="limpiarFiltroFecha()" style="display:none;background:transparent;border:1px solid var(--borde);border-radius:7px;color:var(--texto-2);font-family:var(--fuente-cuerpo);font-size:11px;padding:4px 10px;cursor:pointer;transition:var(--trans);" onmouseover="this.style.borderColor='var(--rojo)';this.style.color='var(--rojo)'" onmouseout="this.style.borderColor='var(--borde)';this.style.color='var(--texto-2)'">✕ Ver todos</button>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;">
-          <!-- Flecha izquierda -->
-          <button onclick="navegarFecha(-1)" title="Día anterior"
-            style="background:var(--fondo-3);border:1px solid var(--borde);border-radius:9px;color:var(--celeste);font-size:18px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--trans);flex-shrink:0;"
-            onmouseover="this.style.borderColor='var(--borde-hover)';this.style.background='var(--fondo-4)'"
-            onmouseout="this.style.borderColor='var(--borde)';this.style.background='var(--fondo-3)'">‹</button>
-
-          <!-- Etiqueta fecha + input calendar oculto -->
-          <div style="position:relative;flex:1;min-width:160px;max-width:300px;">
-            <div id="fecha-nav-label"
-              onclick="toggleCalendarioFecha()"
-              style="background:var(--fondo-3);border:1px solid var(--borde);border-radius:9px;color:var(--texto-1);font-family:var(--fuente-cuerpo);font-size:14px;padding:9px 14px;cursor:pointer;transition:var(--trans);display:flex;align-items:center;justify-content:space-between;gap:8px;user-select:none;"
-              onmouseover="this.style.borderColor='var(--celeste)';this.style.background='var(--fondo-4)'"
-              onmouseout="this.style.borderColor=fechaNavActiva?'var(--borde-activo)':'var(--borde)';this.style.background='var(--fondo-3)'">
-              <span id="fecha-nav-texto" style="color:var(--texto-3);">Todas las fechas</span>
-              <span style="color:var(--texto-3);font-size:12px;">📆</span>
-            </div>
-            <input type="date" id="fecha-nav-input"
-              style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2;"
-              onchange="seleccionarFechaNav(this.value)">
-          </div>
-
-          <!-- Flecha derecha -->
-          <button onclick="navegarFecha(1)" title="Día siguiente"
-            style="background:var(--fondo-3);border:1px solid var(--borde);border-radius:9px;color:var(--celeste);font-size:18px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--trans);flex-shrink:0;"
-            onmouseover="this.style.borderColor='var(--borde-hover)';this.style.background='var(--fondo-4)'"
-            onmouseout="this.style.borderColor='var(--borde)';this.style.background='var(--fondo-3)'">›</button>
-
-          <!-- Chips de fechas disponibles cercanas -->
-          <div id="fecha-nav-chips" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
-        </div>
       </div>
     </div>
 
@@ -2037,7 +2060,7 @@ function actualizarFechasDisponibles() {
 }
 
 function formatearFechaDisplay(iso) {
-  if (!iso) return 'Todas las fechas';
+  if (!iso) return 'Hoy';
   const [y, m, d] = iso.split('-');
   const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   return `${parseInt(d)} ${meses[parseInt(m)-1]} ${y}`;
@@ -2047,7 +2070,7 @@ function seleccionarFechaNav(iso) {
   if (!iso) { limpiarFiltroFecha(); return; }
   fechaNavActiva = iso;
   actualizarUIFechaNav();
-  filtrar();
+  actualizarVistaHoyFecha();
 }
 
 function toggleCalendarioFecha() {
@@ -2075,13 +2098,43 @@ function navegarFecha(delta) {
     fechaNavActiva = fechasDisponibles[nuevoIdx];
   }
   actualizarUIFechaNav();
-  filtrar();
+  actualizarVistaHoyFecha();
 }
 
 function limpiarFiltroFecha() {
   fechaNavActiva = null;
   actualizarUIFechaNav();
-  filtrar();
+  actualizarVistaHoyFecha();
+}
+
+// Alterna entre los partidos "en vivo" de hoy y el listado histórico de la fecha elegida
+function actualizarVistaHoyFecha() {
+  const wrap = document.getElementById('hoy-fecha-resultados-wrap');
+  const cont = document.getElementById('hoy-container');
+  if (!wrap || !cont) return;
+
+  if (!fechaNavActiva) {
+    wrap.style.display = 'none';
+    cont.style.display = 'block';
+    return;
+  }
+
+  cont.style.display = 'none';
+  wrap.style.display = 'block';
+
+  const filtrados = partidos
+    .filter(p => normalizarFechaISO(p.Fecha) === fechaNavActiva)
+    .sort((a, b) => {
+      const fa = a.Fecha ? a.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$2-$1') : '0';
+      const fb = b.Fecha ? b.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$2-$1') : '0';
+      return fa.localeCompare(fb);
+    });
+
+  document.getElementById('hoy-fecha-titulo').textContent = 'Partidos del ' + formatearFechaDisplay(fechaNavActiva);
+  document.getElementById('hoy-fecha-count').textContent = filtrados.length.toLocaleString() + ' partidos';
+  document.getElementById('hoy-fecha-tabla').innerHTML = filtrados.length === 0
+    ? '<tr class="loading-row"><td colspan="5">No se encontraron partidos para esta fecha.</td></tr>'
+    : filtrados.map(filaPartido).join('');
 }
 
 function actualizarUIFechaNav() {
@@ -2097,7 +2150,7 @@ function actualizarUIFechaNav() {
     inputDate.value = fechaNavActiva;
     btnLimpiar.style.display = 'block';
   } else {
-    texto.textContent = 'Todas las fechas';
+    texto.textContent = 'Hoy';
     texto.style.color = 'var(--texto-3)';
     label.style.borderColor = 'var(--borde)';
     inputDate.value = '';
@@ -2129,7 +2182,7 @@ function limpiarFiltros() {
     const el = document.getElementById(id);
     el.value = '';
   });
-  limpiarFiltroFecha();
+  filtrar();
 }
 
 function filtrar() {
@@ -2150,9 +2203,7 @@ function filtrar() {
     if (res === 'local') okRes = parseInt(p.Goles_Local) > parseInt(p.Goles_Visitante);
     if (res === 'visitante') okRes = parseInt(p.Goles_Visitante) > parseInt(p.Goles_Local);
     if (res === 'empate') okRes = p.Goles_Local === p.Goles_Visitante;
-    // Filtro por fecha
-    const okFecha = !fechaNavActiva || normalizarFechaISO(p.Fecha) === fechaNavActiva;
-    return okBuscar && okEq1 && okEq2 && okRes && okFecha;
+    return okBuscar && okEq1 && okEq2 && okRes;
   });
 
   const tbody = document.getElementById('tabla-partidos');
