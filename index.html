@@ -297,7 +297,8 @@ header{position:relative;background:var(--fondo);border-bottom:1px solid var(--b
 header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--azul),var(--celeste),var(--azul),transparent);animation:shimmer-line 3s ease-in-out infinite}
 @keyframes shimmer-line{0%,100%{opacity:0.4}50%{opacity:1}}
 .header-banner{width:100%;height:110px;object-fit:cover;object-position:center;display:block}
-.header-inner{position:absolute;top:0;left:0;width:100%;height:100%;z-index:2;display:flex;align-items:center;padding:0 20px}
+.header-inner{position:absolute;top:0;left:0;width:100%;height:100%;z-index:2;display:flex;align-items:center;padding:0 20px;pointer-events:none}
+.header-inner>*{pointer-events:auto}
 .btn-menu{background:rgba(5,11,26,0.7);border:1px solid var(--borde-activo);border-radius:10px;color:var(--celeste);width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;transition:var(--trans);flex-shrink:0;backdrop-filter:blur(8px);box-shadow:var(--sombra-azul)}
 .btn-menu:hover{background:rgba(14,165,233,0.2);border-color:var(--celeste);transform:scale(1.05)}
 @media(min-width:1200px){.header-banner{height:130px}}
@@ -3081,6 +3082,7 @@ function verFichaJugador(nombre) {
   // Use normalized name to merge duplicates
   const nombreNorm = normalizarNombre(nombre);
   const porEquipo = {};
+  const porRival = {};
   const porAnio = {};
   let nacionalidad = null;
   let posicion = null;
@@ -3103,17 +3105,23 @@ function verFichaJugador(nombre) {
           if (!porEquipo[teamId]) porEquipo[teamId] = { goles:0, penales:0, ec:0, amonestados:0, expulsados:0, anios:new Set() };
           const r = porEquipo[teamId];
           if (anio) r.anios.add(anio);
+
+          // Estadísticas por RIVAL (el equipo contrario en ese partido, sin importar EC)
+          if (!porRival[equipoRival]) porRival[equipoRival] = { goles:0, penales:0, ec:0, amonestados:0, expulsados:0, pj:0, anios:new Set() };
+          const rv = porRival[equipoRival];
+          if (anio) rv.anios.add(anio);
+
           if (anio) {
             if (!porAnio[anio]) porAnio[anio] = { pj:0, goles:0, amonestados:0, expulsados:0 };
           }
           if (campo === 'Goleadores') {
-            if (esEC) r.ec++;
-            else if (/\(P\)/i.test(entrada)) { r.goles++; r.penales++; }
-            else r.goles++;
+            if (esEC) { r.ec++; rv.ec++; }
+            else if (/\(P\)/i.test(entrada)) { r.goles++; r.penales++; rv.goles++; rv.penales++; }
+            else { r.goles++; rv.goles++; }
             if (anio && !esEC) porAnio[anio].goles++;
           }
-          if (campo === 'Amonestados') { r.amonestados++; if (anio) porAnio[anio].amonestados++; }
-          if (campo === 'Expulsados')  { r.expulsados++;  if (anio) porAnio[anio].expulsados++; }
+          if (campo === 'Amonestados') { r.amonestados++; rv.amonestados++; if (anio) porAnio[anio].amonestados++; }
+          if (campo === 'Expulsados')  { r.expulsados++;  rv.expulsados++;  if (anio) porAnio[anio].expulsados++; }
         });
       });
     });
@@ -3123,6 +3131,7 @@ function verFichaJugador(nombre) {
     if (rawJ) {
       rawJ.split('/').forEach((parte, idx) => {
         const equipoId = idx === 0 ? p.Local_ID : p.Visitante_ID;
+        const rivalIdPJ = idx === 0 ? p.Visitante_ID : p.Local_ID;
         parte.split('-').forEach(entrada => {
           const n = limpiarNombre(entrada);
           if (normalizarNombre(n) !== nombreNorm) return;
@@ -3146,6 +3155,11 @@ function verFichaJugador(nombre) {
             if (!porAnio[anio]) porAnio[anio] = { pj:0, goles:0, amonestados:0, expulsados:0 };
             porAnio[anio].pj++;
           }
+
+          // Contar PJ frente al RIVAL de ese partido
+          if (!porRival[rivalIdPJ]) porRival[rivalIdPJ] = { goles:0, penales:0, ec:0, amonestados:0, expulsados:0, pj:0, anios:new Set() };
+          porRival[rivalIdPJ].pj++;
+          if (anio) porRival[rivalIdPJ].anios.add(anio);
         });
       });
     }
@@ -3239,7 +3253,7 @@ function verFichaJugador(nombre) {
     }).join('');
 
   // ── Tabla GOLES: ranking de rivales por goles convertidos ──
-  const equiposConGoles = Object.entries(porEquipo).filter(([,r]) => (r.goles||0) > 0);
+  const equiposConGoles = Object.entries(porRival).filter(([,r]) => (r.goles||0) > 0);
   document.getElementById('ficha-tabla-goles').innerHTML = equiposConGoles.length
     ? equiposConGoles
         .sort((a,b) => (b[1].goles||0) - (a[1].goles||0))
@@ -3259,7 +3273,7 @@ function verFichaJugador(nombre) {
     : `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--texto-3);">Sin goles registrados</td></tr>`;
 
   // ── Tabla DISCIPLINA: ranking de rivales por tarjetas ──
-  const equiposConTarjetas = Object.entries(porEquipo).filter(([,r]) => ((r.amonestados||0)+(r.expulsados||0)) > 0);
+  const equiposConTarjetas = Object.entries(porRival).filter(([,r]) => ((r.amonestados||0)+(r.expulsados||0)) > 0);
   document.getElementById('ficha-tabla-disciplina').innerHTML = equiposConTarjetas.length
     ? equiposConTarjetas
         .sort((a,b) => ((b[1].amonestados||0)+(b[1].expulsados||0)) - ((a[1].amonestados||0)+(a[1].expulsados||0)))
