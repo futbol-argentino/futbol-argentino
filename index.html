@@ -3677,12 +3677,19 @@ const CLASIFICACION_CONFIG = {
   'D': { clase:'pos-descalif',  label:'Descalificado',             color:'#7B2D3E', emoji:null },
 };
 
-function parsearClasifCode(nombreRaw) {
-  const m = (nombreRaw||'').match(/\(([A-Z])\)\s*$/);
-  return m ? m[1] : null;
-}
-function limpiarNombreEquipo(nombreRaw) {
-  return (nombreRaw||'').replace(/\s*\([A-Z]\)\s*$/, '').trim();
+// Prioridad para elegir el color/borde principal de la fila cuando un equipo
+// tiene más de una clasificación asignada a la vez (ej: clasificó Y va a Copa Sudamericana)
+const PRIORIDAD_CLASIF = ['E','R','D','C','M','V','P'];
+
+function parsearClasifCodes(nombreRaw) {
+  let resto = (nombreRaw||'').replace(/\u00A0/g, ' ').trim();
+  const codigos = [];
+  let m;
+  while ((m = resto.match(/\s*\(([A-Za-z])\)\s*$/))) {
+    codigos.unshift(m[1].toUpperCase());
+    resto = resto.slice(0, m.index);
+  }
+  return { nombre: resto.trim(), codigos };
 }
 
 function renderTablasPosiciones(idTemporada) {
@@ -3693,7 +3700,9 @@ function renderTablasPosiciones(idTemporada) {
   filas.forEach(r => { const g = r.Grupo || 'General'; if (!grupos[g]) grupos[g] = []; grupos[g].push(r); });
 
   const clasifUsados = new Set();
-  filas.forEach(r => { const c = parsearClasifCode(r.Equipo); if (c && CLASIFICACION_CONFIG[c]) clasifUsados.add(c); });
+  filas.forEach(r => {
+    parsearClasifCodes(r.Equipo).codigos.forEach(c => { if (CLASIFICACION_CONFIG[c]) clasifUsados.add(c); });
+  });
 
   const legendaHTML = clasifUsados.size > 0
     ? `<div class="pos-legend">${[...clasifUsados].map(c => {
@@ -3705,16 +3714,23 @@ function renderTablasPosiciones(idTemporada) {
     const sorted = rows.sort((a,b) => parseInt(a.Pos||99) - parseInt(b.Pos||99));
     const filasHTML = sorted.map(r => {
       const nombreRaw = r.Equipo || '';
-      const code = parsearClasifCode(nombreRaw);
-      const nombre = limpiarNombreEquipo(nombreRaw);
-      const cfg = code ? CLASIFICACION_CONFIG[code] : null;
+      const { nombre, codigos } = parsearClasifCodes(nombreRaw);
+      const codigosValidos = codigos.filter(c => CLASIFICACION_CONFIG[c]);
+      const codigoPrincipal = codigosValidos.slice().sort((a,b) => PRIORIDAD_CLASIF.indexOf(a)-PRIORIDAD_CLASIF.indexOf(b))[0] || null;
+      const cfg = codigoPrincipal ? CLASIFICACION_CONFIG[codigoPrincipal] : null;
       const esc = ESCUDOS[nombre] ? `<img src="${ESCUDOS[nombre]}" style="width:18px;height:18px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">` : '';
-      const estrella = cfg?.emoji ? `<span style="margin-left:4px;font-size:12px;">${cfg.emoji}</span>` : '';
+      // Un indicador (estrella o punto de color) por cada clasificación que tenga el equipo
+      const indicadores = codigosValidos.map(c => {
+        const cc = CLASIFICACION_CONFIG[c];
+        return cc.emoji
+          ? `<span title="${cc.label}" style="margin-left:4px;font-size:12px;">${cc.emoji}</span>`
+          : `<span title="${cc.label}" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${cc.color};margin-left:5px;"></span>`;
+      }).join('');
       const gf = parseInt(r.GF)||0, gc = parseInt(r.GC)||0;
       const dg = r.DG || ((gf-gc >= 0 ? '+':'') + (gf-gc));
       return `<tr class="${cfg ? cfg.clase : ''}">
         <td class="pos-num" style="color:var(--texto-2);font-size:13px;text-align:center;padding:8px 6px;">${r.Pos||''}</td>
-        <td style="padding:8px 12px;"><div style="display:flex;align-items:center;gap:8px;">${esc}<span style="font-size:13px;font-weight:600;">${nombre}</span>${estrella}</div></td>
+        <td style="padding:8px 12px;"><div style="display:flex;align-items:center;gap:8px;">${esc}<span style="font-size:13px;font-weight:600;">${nombre}</span>${indicadores}</div></td>
         <td style="text-align:center;font-size:13px;color:var(--texto-2);">${r.PJ||0}</td>
         <td style="text-align:center;font-size:13px;color:var(--verde);">${r.PG||0}</td>
         <td style="text-align:center;font-size:13px;color:var(--amarillo);">${r.PE||0}</td>
