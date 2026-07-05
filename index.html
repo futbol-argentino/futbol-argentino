@@ -470,8 +470,22 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 .estadio-card-equipo img{width:16px;height:16px;object-fit:contain}
 .estadio-detalle{display:none}
 .estadio-detalle.visible{display:block;animation:fadeIn 0.2s ease}
-.estadio-detalle-foto{width:100%;max-height:380px;object-fit:cover;border-radius:16px;border:1px solid var(--borde);box-shadow:var(--sombra-card);margin-bottom:20px;display:block;background:linear-gradient(160deg,var(--fondo-3) 0%,var(--fondo-4) 100%)}
-.estadio-datos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:20px}
+.estadio-hero{position:relative;width:100%;height:320px;border-radius:18px;overflow:hidden;margin-bottom:22px;background:linear-gradient(160deg,var(--fondo-3) 0%,var(--fondo-4) 100%);border:1px solid var(--borde);box-shadow:var(--sombra-card)}
+.estadio-hero-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:100px;opacity:0.3}
+.estadio-hero-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.estadio-hero-overlay{position:absolute;left:0;right:0;bottom:0;padding:22px 26px;background:linear-gradient(0deg,rgba(0,0,0,0.78) 0%,rgba(0,0,0,0.35) 65%,transparent 100%)}
+.estadio-hero-nombre{font-family:var(--fuente-titulo);font-size:32px;color:#fff;letter-spacing:1px;text-shadow:0 2px 10px rgba(0,0,0,0.7);line-height:1.1}
+.estadio-hero-equipo{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:13px;color:rgba(255,255,255,0.85);font-weight:500}
+.estadio-hero-equipo img{width:20px;height:20px;object-fit:contain}
+.estadio-datos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin-bottom:22px}
+.estadio-info-card{background:var(--fondo-2);border:1px solid var(--borde);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;transition:var(--trans)}
+.estadio-info-card:hover{border-color:var(--borde-hover)}
+.estadio-info-icon{width:38px;height:38px;border-radius:10px;background:var(--fondo-3);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.estadio-info-texto{display:flex;flex-direction:column;gap:2px;min-width:0}
+.estadio-info-label{font-size:9px;color:var(--texto-3);text-transform:uppercase;letter-spacing:1.2px;font-weight:600}
+.estadio-info-valor{font-size:14px;font-weight:600;color:var(--texto-1);line-height:1.3}
+.estadio-descripcion-card{background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;padding:20px 22px;color:var(--texto-2);font-size:14px;line-height:1.7}
+.estadio-descripcion-titulo{font-family:var(--fuente-titulo);font-size:18px;color:var(--texto-1);margin-bottom:10px;letter-spacing:0.5px}
 .detalle-filtro{background:var(--fondo-2);border:1px solid var(--borde);border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .detalle-filtro-label{font-size:11px;color:var(--texto-3);text-transform:uppercase;letter-spacing:1px;white-space:nowrap;font-weight:600}
 .detalle-filtro select{background:var(--fondo-3);border:1px solid var(--borde);border-radius:8px;color:var(--texto-1);font-family:var(--fuente-cuerpo);font-size:14px;padding:8px 32px 8px 12px;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2338BDF8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;transition:var(--trans)}
@@ -1499,13 +1513,23 @@ select option{background:#080F20;color:#F0F6FF}
 
     <!-- Vista detalle de un estadio -->
     <div class="estadio-detalle" id="estadio-vista-detalle">
-      <div class="detalle-header">
-        <button class="btn-volver" onclick="volverEstadiosGrilla()">← Volver</button>
-        <div class="detalle-equipo-nombre" id="estadio-detalle-nombre"></div>
+      <button class="btn-volver" onclick="volverEstadiosGrilla()" style="margin-bottom:18px;">← Volver</button>
+
+      <div class="estadio-hero" id="estadio-hero">
+        <div class="estadio-hero-fallback">🏟️</div>
+        <img id="estadio-detalle-foto" class="estadio-hero-img" src="" alt="" onerror="this.style.display='none'">
+        <div class="estadio-hero-overlay">
+          <div class="estadio-hero-nombre" id="estadio-detalle-nombre"></div>
+          <div class="estadio-hero-equipo" id="estadio-hero-equipo" style="display:none;"></div>
+        </div>
       </div>
-      <img id="estadio-detalle-foto" class="estadio-detalle-foto" src="" alt="" onerror="this.style.display='none'">
+
       <div class="estadio-datos-grid" id="estadio-detalle-datos"></div>
-      <div id="estadio-detalle-descripcion" style="color:var(--texto-2);font-size:14px;line-height:1.6;"></div>
+
+      <div class="estadio-descripcion-card" id="estadio-detalle-descripcion-wrap" style="display:none;">
+        <div class="estadio-descripcion-titulo">📖 Sobre el estadio</div>
+        <div id="estadio-detalle-descripcion"></div>
+      </div>
     </div>
 
   </div><!-- fin panel-estadios -->
@@ -5386,16 +5410,37 @@ function verEstadio(id) {
   document.getElementById('estadio-vista-detalle').classList.add('visible');
 
   document.getElementById('estadio-detalle-nombre').textContent = e.Nombre || '';
+
   const foto = document.getElementById('estadio-detalle-foto');
-  foto.src = e.Foto || '';
-  foto.alt = e.Nombre || '';
-  foto.style.display = e.Foto ? 'block' : 'none';
+  if (e.Foto) {
+    foto.style.display = 'block';
+    foto.src = e.Foto;
+    foto.alt = e.Nombre || '';
+  } else {
+    foto.style.display = 'none';
+    foto.removeAttribute('src');
+  }
+
+  const equipoWrap = document.getElementById('estadio-hero-equipo');
+  if (e.Equipo) {
+    equipoWrap.style.display = 'flex';
+    equipoWrap.innerHTML = `${escudoImg(e.Equipo, 20)}<span>${e.Equipo}</span>`;
+  } else {
+    equipoWrap.style.display = 'none';
+    equipoWrap.innerHTML = '';
+  }
+
+  // Capacidad: limpiar cualquier separador de miles antes de formatear
+  let capacidadTxt = '';
+  if (e.Capacidad) {
+    const soloDigitos = e.Capacidad.toString().replace(/\D/g, '');
+    if (soloDigitos) capacidadTxt = Number(soloDigitos).toLocaleString('es-AR') + ' espectadores';
+  }
 
   const datos = [
-    { label: 'Equipo', valor: e.Equipo, icon: '🛡️' },
     { label: 'Ciudad', valor: e.Ciudad, icon: '📍' },
     { label: 'Provincia', valor: e.Provincia, icon: '🗺️' },
-    { label: 'Capacidad', valor: e.Capacidad ? Number(e.Capacidad).toLocaleString('es-AR') + ' espectadores' : '', icon: '👥' },
+    { label: 'Capacidad', valor: capacidadTxt, icon: '👥' },
     { label: 'Inauguración', valor: e.Inauguracion, icon: '📅' },
     { label: 'Dirección', valor: e.Direccion, icon: '🏠' },
     { label: 'Superficie', valor: e.Superficie, icon: '🌱' },
@@ -5404,10 +5449,22 @@ function verEstadio(id) {
   ].filter(d => d.valor);
 
   document.getElementById('estadio-detalle-datos').innerHTML = datos.map(d =>
-    `<div class="modal-dato"><div class="modal-dato-label">${d.icon} ${d.label}</div><div class="modal-dato-valor">${d.valor}</div></div>`
+    `<div class="estadio-info-card">
+      <div class="estadio-info-icon">${d.icon}</div>
+      <div class="estadio-info-texto">
+        <div class="estadio-info-label">${d.label}</div>
+        <div class="estadio-info-valor">${d.valor}</div>
+      </div>
+    </div>`
   ).join('');
 
-  document.getElementById('estadio-detalle-descripcion').textContent = e.Descripcion || '';
+  const descWrap = document.getElementById('estadio-detalle-descripcion-wrap');
+  if (e.Descripcion) {
+    descWrap.style.display = 'block';
+    document.getElementById('estadio-detalle-descripcion').textContent = e.Descripcion;
+  } else {
+    descWrap.style.display = 'none';
+  }
 }
 
 function volverEstadiosGrilla() {
