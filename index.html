@@ -233,6 +233,47 @@
     grid-column: 1 / -1; text-align: center; color: var(--texto-3);
   }
 
+  /* ─ Tablas marcadas como "scroll-forzado" (posiciones, rankings, temporadas, etc.):
+     tienen demasiadas columnas numéricas para funcionar como tarjetas apiladas,
+     así que se mantienen como tabla real y compacta con scroll horizontal. ─ */
+  .tabla-scroll.scroll-forzado { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+  .tabla-scroll.scroll-forzado table {
+    width: auto !important; min-width: 460px !important;
+  }
+  .tabla-scroll.scroll-forzado table thead { display: table-header-group !important; }
+  .tabla-scroll.scroll-forzado table thead th {
+    font-size: 10px !important; padding: 8px 8px !important; white-space: nowrap;
+  }
+  .tabla-scroll.scroll-forzado table tbody tr {
+    display: table-row !important;
+    grid-template-columns: none !important;
+    padding: 0 !important;
+    align-items: initial;
+  }
+  .tabla-scroll.scroll-forzado table tbody tr td {
+    display: table-cell !important;
+    padding: 9px 8px !important;
+    border: none !important;
+    font-size: 12px !important;
+    min-width: 0;
+    white-space: nowrap;
+  }
+  .tabla-scroll.scroll-forzado table tbody tr td::before { content: none !important; }
+  .tabla-scroll.scroll-forzado table tbody tr td:first-child,
+  .tabla-scroll.scroll-forzado table tbody tr td:has(> div) {
+    grid-column: auto !important;
+    white-space: normal;
+  }
+  .tabla-scroll.scroll-forzado table tbody tr td[colspan] {
+    grid-column: auto !important; white-space: normal;
+  }
+  /* Columna de nombre (jugador/equipo) fija a la izquierda mientras se desliza el resto */
+  .tabla-scroll.scroll-forzado table th:nth-child(2),
+  .tabla-scroll.scroll-forzado table td:nth-child(2) {
+    position: sticky; left: 0; background: var(--fondo-2); z-index: 1;
+    white-space: normal; max-width: 140px;
+  }
+
   td { font-size: 13px; padding: 8px 8px; }
   .td-fecha { font-size: 11px; white-space: nowrap; }
 
