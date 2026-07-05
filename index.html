@@ -1114,6 +1114,15 @@ select option{background:#080F20;color:#F0F6FF}
       <div id="provincias-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:20px;"></div>
     </div>
 
+    <!-- Vista portada de ligas regionales dentro de una provincia -->
+    <div id="vista-ligas" style="display:none;">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+        <button class="btn-volver" onclick="volverAProvincias()">← Volver</button>
+        <div id="ligas-titulo" style="font-family:var(--fuente-titulo);font-size:24px;letter-spacing:1px;"></div>
+      </div>
+      <div id="ligas-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:20px;"></div>
+    </div>
+
     <!-- Vista grilla de equipos de una división -->
     <div id="vista-equipos" style="display:none;">
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
@@ -2162,6 +2171,7 @@ function resClase(gl, gv, equipoRefEsLocal) {
   const refGano = equipoRefEsLocal ? (l > v) : (v > l);
   return refGano ? 'res-local' : 'res-visita';
 }
+let _golUidSeq = 0;
 function filaPartido(p, equipoRef) {
   const local = equipos[p.Local_ID] || p.Local_ID;
   const visita = equipos[p.Visitante_ID] || p.Visitante_ID;
@@ -2199,8 +2209,8 @@ function filaPartido(p, equipoRef) {
     }
     const todos = [...parseGoles(partes[0], escL), ...parseGoles(partes[1], escV)].sort((a,b)=>a.minuto-b.minuto);
     if (!todos.length) return null;
-    const uid = 'gol_' + p.ID_Partido;
-    const tdId = 'goltd_' + p.ID_Partido;
+    const uid = 'gol_' + p.ID_Partido + '_' + (_golUidSeq++);
+    const tdId = 'goltd_' + uid;
     const arrow = `<span onclick="event.stopPropagation();var c=document.getElementById('${uid}');var td=document.getElementById('${tdId}');var a=document.getElementById('arr_${uid}');var open=c.style.display==='block';c.style.display=open?'none':'block';td.style.padding=open?'0':'4px 20px 8px 20px';td.style.borderBottom=open?'none':'1px solid var(--borde)';a.style.transform=open?'rotate(0deg)':'rotate(180deg)';"
       style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:1px solid var(--borde);border-radius:6px;cursor:pointer;margin-left:5px;flex-shrink:0;transition:border-color 0.15s;vertical-align:middle;"
       onmouseover="this.style.borderColor='var(--celeste)'" onmouseout="this.style.borderColor='var(--borde)'"><span id="arr_${uid}" style="font-size:12px;color:var(--texto-2);transition:transform 0.2s;display:inline-block;line-height:1;">▼</span></span>`;
@@ -2477,6 +2487,7 @@ function renderizarEquipos(filtro='') {
     .filter(e => {
       if (equiposDivision && e.Division !== equiposDivision) return false;
       if (provinciaActual && e.Provincia !== provinciaActual) return false;
+      if (ligaActual && e.Liga !== ligaActual) return false;
       return e.Nombre_Equipo.toLowerCase().includes(filtro.toLowerCase());
     })
     .sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo));
@@ -2705,22 +2716,33 @@ function volverEquipos() {
   document.getElementById('vista-detalle').classList.remove('visible');
   equipoDetalleID = null;
   document.getElementById('vista-divisiones').style.display = 'block';
-  if (provinciaActual !== null) {
+  if (ligaActual !== null) {
+    // Vino desde una liga regional
+    document.getElementById('vista-ligas').style.display = 'block';
+    document.getElementById('vista-provincias').style.display = 'none';
+    document.getElementById('divisiones-grid').style.display = 'none';
+    document.getElementById('todos-equipos-wrap').style.display = 'none';
+    document.getElementById('vista-equipos').style.display = 'none';
+  } else if (provinciaActual !== null) {
     // Vino desde una provincia
     document.getElementById('vista-provincias').style.display = 'block';
+    document.getElementById('vista-ligas').style.display = 'none';
     document.getElementById('divisiones-grid').style.display = 'none';
     document.getElementById('todos-equipos-wrap').style.display = 'none';
     document.getElementById('vista-equipos').style.display = 'none';
   } else if (equiposDivision !== null) {
     document.getElementById('vista-equipos').style.display = 'block';
+    document.getElementById('vista-ligas').style.display = 'none';
     document.getElementById('divisiones-grid').style.display = 'none';
     document.getElementById('todos-equipos-wrap').style.display = 'none';
   } else if (vistaEquiposModo === 'todos') {
     document.getElementById('todos-equipos-wrap').style.display = 'block';
+    document.getElementById('vista-ligas').style.display = 'none';
     document.getElementById('divisiones-grid').style.display = 'none';
     document.getElementById('vista-equipos').style.display = 'none';
   } else {
     document.getElementById('divisiones-grid').style.display = 'grid';
+    document.getElementById('vista-ligas').style.display = 'none';
     document.getElementById('todos-equipos-wrap').style.display = 'none';
     document.getElementById('vista-equipos').style.display = 'none';
   }
@@ -5238,6 +5260,7 @@ const DIVISIONES_CONFIG = {
   'Primera C':                     { logo:'div_primera_c.png',         label:'Primera C' },
   'Promocional Amateur':           { logo:'div_promocional.png',       label:'Promocional Amateur' },
   'Torneo Regional Federal Amateur':{ logo:'div_regional_federal.png', label:'Torneo Regional Federal Amateur' },
+  'Ligas Regionales':              { logo:'div_ligas_regionales.png',  label:'Ligas Regionales' },
 };
 
 // Orden fijo de divisiones
@@ -5249,6 +5272,7 @@ const DIVISIONES_ORDEN = [
   'Primera C',
   'Promocional Amateur',
   'Torneo Regional Federal Amateur',
+  'Ligas Regionales',
 ];
 
 let divisionActual = null;
@@ -5290,7 +5314,17 @@ function renderDivisiones() {
 }
 
 // Divisiones que muestran provincias en lugar de equipos directamente
-const DIVISIONES_CON_PROVINCIAS = ['Torneo Regional Federal Amateur'];
+const DIVISIONES_CON_PROVINCIAS = ['Torneo Regional Federal Amateur', 'Ligas Regionales'];
+
+// Divisiones donde, dentro de cada provincia, además se agrupa por Liga
+const DIVISIONES_CON_LIGAS = ['Ligas Regionales'];
+
+// Logos de cada liga regional (nombre de Liga tal cual aparece en el CSV → archivo de imagen)
+// Ej: 'Liga Marplatense de Fútbol': { logo:'liga_marplatense.png' },
+const LIGAS_CONFIG = {
+};
+
+let ligaActual = null;
 
 const PROVINCIAS_CONFIG = {
   'Buenos Aires':     { logo:'prov_buenos_aires.png' },
@@ -5366,6 +5400,36 @@ function verDivision(division) {
 function verProvincia(provincia) {
   provinciaActual = provincia;
   document.getElementById('vista-provincias').style.display = 'none';
+
+  // ¿Esta división además agrupa por Liga dentro de la provincia?
+  if (DIVISIONES_CON_LIGAS.includes(divisionActual)) {
+    const ligas = [...new Set(
+      equiposArr.filter(e => e.Division === divisionActual && e.Provincia === provincia && e.Liga).map(e => e.Liga)
+    )].sort();
+
+    if (ligas.length > 0) {
+      document.getElementById('ligas-titulo').textContent = provincia;
+      document.getElementById('vista-ligas').style.display = 'block';
+
+      document.getElementById('ligas-grid').innerHTML = ligas.map(liga => {
+        const lcfg = LIGAS_CONFIG[liga] || {};
+        const count = equiposArr.filter(e => e.Division === divisionActual && e.Provincia === provincia && e.Liga === liga).length;
+        const logoHtml = lcfg.logo
+          ? `<img src="${lcfg.logo}" style="width:120px;height:120px;object-fit:contain;filter:drop-shadow(0 4px 16px rgba(0,0,0,0.4));" onerror="this.style.display='none'">`
+          : `<div style="font-size:56px;">🏆</div>`;
+        return `<div class="camp-card" onclick="verLiga('${liga.replace(/'/g,"\\'")}')">
+          <div class="camp-foto-wrap">${logoHtml}</div>
+          <div class="camp-info">
+            <div class="camp-nombre">${liga}</div>
+            <div class="camp-campeon" style="color:var(--texto-2);">${count} equipos</div>
+          </div>
+        </div>`;
+      }).join('');
+      return;
+    }
+  }
+
+  // Sin ligas → ir directo a equipos
   document.getElementById('division-titulo').textContent = provincia;
   document.getElementById('btn-volver-division').onclick = volverAProvincias;
   document.getElementById('vista-equipos').style.display = 'block';
@@ -5373,15 +5437,36 @@ function verProvincia(provincia) {
   renderizarEquipos();
 }
 
+function verLiga(liga) {
+  ligaActual = liga;
+  document.getElementById('vista-ligas').style.display = 'none';
+  document.getElementById('division-titulo').textContent = liga;
+  document.getElementById('btn-volver-division').onclick = volverALigas;
+  document.getElementById('vista-equipos').style.display = 'block';
+  document.getElementById('buscar-equipo').value = '';
+  renderizarEquipos();
+}
+
+function volverALigas() {
+  ligaActual = null;
+  document.getElementById('vista-equipos').style.display = 'none';
+  document.getElementById('vista-ligas').style.display = 'block';
+  document.getElementById('buscar-equipo').value = '';
+}
+
 function volverAProvincias() {
   provinciaActual = null;
+  ligaActual = null;
   document.getElementById('vista-equipos').style.display = 'none';
+  document.getElementById('vista-ligas').style.display = 'none';
   document.getElementById('vista-provincias').style.display = 'block';
   document.getElementById('buscar-equipo').value = '';
 }
 
 function volverADivision() {
-  if (provinciaActual !== null) {
+  if (ligaActual !== null) {
+    volverALigas();
+  } else if (provinciaActual !== null) {
     volverAProvincias();
   } else {
     volverDivisiones();
@@ -5391,9 +5476,11 @@ function volverADivision() {
 function volverDivisiones() {
   divisionActual = null;
   provinciaActual = null;
+  ligaActual = null;
   equiposDivision = null;
   document.getElementById('vista-equipos').style.display = 'none';
   document.getElementById('vista-provincias').style.display = 'none';
+  document.getElementById('vista-ligas').style.display = 'none';
   document.getElementById('vista-divisiones').style.display = 'block';
   document.getElementById('buscar-equipo').value = '';
 }
