@@ -1999,7 +1999,7 @@ async function cargarDatos() {
       })(),
       (async () => {
         try {
-          const csvEst = await fetchWithCache(URL_ESTADIOS);
+          const csvEst = await fetchWithCache(URL_ESTADIOS, true);
           estadiosArr = csvToArray(csvEst);
         } catch(e) { estadiosArr = []; }
         estadiosCargados = true;
@@ -5293,7 +5293,7 @@ async function cargarEstadios() {
     return;
   }
   try {
-    const csv = await fetchWithCache(URL_ESTADIOS);
+    const csv = await fetchWithCache(URL_ESTADIOS, true);
     estadiosArr = csvToArray(csv);
   } catch(e) {
     estadiosArr = [];
