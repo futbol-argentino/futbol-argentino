@@ -1490,19 +1490,10 @@ select option{background:#080F20;color:#F0F6FF}
   <!-- ══ TAB ESTADIOS ══ -->
   <div class="tab-panel" id="panel-estadios">
 
-    <!-- Vista portadas de divisiones -->
-    <div id="estadios-vista-divisiones">
+    <!-- Vista listado de estadios -->
+    <div id="estadios-vista-grilla">
       <div class="filtros-panel" style="margin-bottom:20px;">
         <div class="filtros-titulo">🏟️ Estadios</div>
-      </div>
-      <div id="estadios-divisiones-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:20px;"></div>
-    </div>
-
-    <!-- Vista grilla de estadios de una división -->
-    <div id="estadios-vista-grilla" style="display:none;">
-      <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
-        <button class="btn-volver" onclick="volverDivisionesEstadios()">← Volver</button>
-        <div id="estadios-division-titulo" style="font-family:var(--fuente-titulo);font-size:24px;letter-spacing:1px;"></div>
       </div>
       <div class="equipos-buscar">
         <span class="equipos-buscar-icon">🔍</span>
@@ -2088,7 +2079,11 @@ function cambiarTab(tab) {
   if (btn) btn.classList.add('activo');
   const menu = document.getElementById('menu-' + tab);
   if (menu) menu.classList.add('activo');
-  if (tab === 'estadios') cargarEstadios();
+  if (tab === 'estadios') {
+    document.getElementById('estadio-vista-detalle').classList.remove('visible');
+    document.getElementById('estadios-vista-grilla').style.display = 'block';
+    cargarEstadios();
+  }
 }
 
 // ── HELPERS ──
@@ -5274,29 +5269,29 @@ function buscarEstadioPorNombre(nombre) {
   }) || null;
 }
 
+// Arma la ruta de la foto: si el CSV solo tiene el nombre del archivo,
+// se le agrega automáticamente la carpeta 'estadios/'. Si ya viene con
+// una ruta (contiene '/') o es una URL completa, se respeta tal cual.
+function rutaFotoEstadio(foto) {
+  if (!foto) return '';
+  const f = foto.trim();
+  if (/^https?:\/\//i.test(f) || f.includes('/')) return f;
+  return 'estadios/' + f;
+}
+
 async function irAEstadioDesdeModal(id) {
   if (!id) return;
   cerrarModal();
   if (!estadiosCargados) await cargarEstadios();
   cambiarTab('estadios');
-  mostrarEstadioDirecto(id);
-}
-
-function mostrarEstadioDirecto(id) {
-  const e = estadiosArr.find(x => x.ID_Estadio === id);
-  if (!e) return;
-  estadiosDivisionActual = e.Division || null;
-  const cfg = DIVISIONES_CONFIG[estadiosDivisionActual] || {};
-  document.getElementById('estadios-vista-divisiones').style.display = 'none';
-  document.getElementById('estadios-vista-grilla').style.display = 'none';
-  document.getElementById('estadios-division-titulo').textContent = cfg.label || estadiosDivisionActual || 'Estadios';
-  document.getElementById('buscar-estadio').value = '';
-  renderEstadiosGrid();
   verEstadio(id);
 }
 
 async function cargarEstadios() {
-  if (estadiosCargados) return;
+  if (estadiosCargados) {
+    renderEstadiosGrid();
+    return;
+  }
   try {
     const csv = await fetchWithCache(URL_ESTADIOS);
     estadiosArr = csvToArray(csv);
@@ -5304,72 +5299,15 @@ async function cargarEstadios() {
     estadiosArr = [];
   }
   estadiosCargados = true;
-  renderDivisionesEstadios();
-}
-
-function renderDivisionesEstadios() {
-  const divsEnCSV = new Set(estadiosArr.map(e => e.Division).filter(Boolean));
-  const grid = document.getElementById('estadios-divisiones-grid');
-
-  if (!grid) return;
-
-  if (estadiosArr.length === 0) {
-    grid.innerHTML = '<div style="color:var(--texto-2);padding:20px;">No hay datos de estadios cargados todavía.</div>';
-    return;
-  }
-
-  if (divsEnCSV.size === 0) {
-    // Sin columna Division — mostrar todos directamente
-    document.getElementById('estadios-vista-divisiones').style.display = 'none';
-    estadiosDivisionActual = null;
-    document.getElementById('estadios-vista-grilla').style.display = 'block';
-    document.getElementById('estadios-division-titulo').textContent = 'Todos los estadios';
-    renderEstadiosGrid();
-    return;
-  }
-
-  const divsOrdenadas = DIVISIONES_ORDEN.filter(d => divsEnCSV.has(d));
-  divsEnCSV.forEach(d => { if (!DIVISIONES_ORDEN.includes(d)) divsOrdenadas.push(d); });
-
-  grid.innerHTML = divsOrdenadas.map(div => {
-    const cfg = DIVISIONES_CONFIG[div] || {};
-    const count = estadiosArr.filter(e => e.Division === div).length;
-    const logoHtml = cfg.logo
-      ? `<img src="${cfg.logo}" style="width:120px;height:120px;object-fit:contain;filter:drop-shadow(0 4px 16px rgba(0,0,0,0.5));" onerror="this.style.display='none'">`
-      : `<div style="font-size:64px;">🏟️</div>`;
-    return `<div class="camp-card" onclick="verDivisionEstadio('${div.replace(/'/g,"\\'")}')">
-      <div class="camp-foto-wrap">${logoHtml}</div>
-      <div class="camp-info">
-        <div class="camp-nombre">${cfg.label || div}</div>
-        <div class="camp-campeon" style="color:var(--texto-2);">${count} estadios</div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function verDivisionEstadio(division) {
-  estadiosDivisionActual = division;
-  const cfg = DIVISIONES_CONFIG[division] || {};
-  document.getElementById('estadios-vista-divisiones').style.display = 'none';
-  document.getElementById('estadios-vista-grilla').style.display = 'block';
-  document.getElementById('estadios-division-titulo').textContent = cfg.label || division;
-  document.getElementById('buscar-estadio').value = '';
   renderEstadiosGrid();
-}
-
-function volverDivisionesEstadios() {
-  estadiosDivisionActual = null;
-  document.getElementById('estadios-vista-grilla').style.display = 'none';
-  document.getElementById('estadios-vista-divisiones').style.display = 'block';
 }
 
 function renderEstadiosGrid() {
   const grid = document.getElementById('estadios-grid');
+  if (!grid) return;
   const filtro = (document.getElementById('buscar-estadio').value || '').toLowerCase().trim();
 
-  let lista = estadiosDivisionActual !== null
-    ? estadiosArr.filter(e => e.Division === estadiosDivisionActual)
-    : estadiosArr;
+  let lista = [...estadiosArr].sort((a, b) => (a.Nombre || '').localeCompare(b.Nombre || '', 'es'));
 
   if (filtro) {
     lista = lista.filter(e =>
@@ -5385,8 +5323,9 @@ function renderEstadiosGrid() {
   }
 
   grid.innerHTML = lista.map(e => {
-    const fotoHtml = e.Foto
-      ? `<img src="${e.Foto}" loading="lazy" onerror="this.parentElement.innerHTML='<div style=\\'font-size:40px;\\'>🏟️</div>'">`
+    const rutaFoto = rutaFotoEstadio(e.Foto);
+    const fotoHtml = rutaFoto
+      ? `<img src="${rutaFoto}" loading="lazy" onerror="this.parentElement.innerHTML='<div style=\\'font-size:40px;\\'>🏟️</div>'">`
       : `<div style="font-size:40px;">🏟️</div>`;
     const escudo = escudoImg(e.Equipo, 16);
     return `<div class="estadio-card" onclick="verEstadio('${e.ID_Estadio}')">
@@ -5394,7 +5333,6 @@ function renderEstadiosGrid() {
       <div class="estadio-card-info">
         <div class="estadio-card-nombre">${e.Nombre || ''}</div>
         ${e.Equipo ? `<div class="estadio-card-equipo">${escudo}<span>${e.Equipo}</span></div>` : ''}
-        ${e.Ciudad ? `<div class="estadio-card-equipo">📍 ${e.Ciudad}${e.Provincia ? ', ' + e.Provincia : ''}</div>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -5412,9 +5350,10 @@ function verEstadio(id) {
   document.getElementById('estadio-detalle-nombre').textContent = e.Nombre || '';
 
   const foto = document.getElementById('estadio-detalle-foto');
-  if (e.Foto) {
+  const rutaFoto = rutaFotoEstadio(e.Foto);
+  if (rutaFoto) {
     foto.style.display = 'block';
-    foto.src = e.Foto;
+    foto.src = rutaFoto;
     foto.alt = e.Nombre || '';
   } else {
     foto.style.display = 'none';
@@ -5471,6 +5410,7 @@ function volverEstadiosGrilla() {
   document.getElementById('estadio-vista-detalle').classList.remove('visible');
   document.getElementById('estadios-vista-grilla').style.display = 'block';
 }
+
 
 // ── HOY ──
 let partidosHoy = [];
