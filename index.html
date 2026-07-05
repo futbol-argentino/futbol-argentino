@@ -477,9 +477,12 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 .estadio-hero-nombre{font-family:var(--fuente-titulo);font-size:32px;color:#fff;letter-spacing:1px;text-shadow:0 2px 10px rgba(0,0,0,0.7);line-height:1.1}
 .estadio-hero-equipo{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:13px;color:rgba(255,255,255,0.85);font-weight:500}
 .estadio-hero-equipo img{width:20px;height:20px;object-fit:contain}
-.estadio-datos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin-bottom:22px}
+.estadio-datos-grid{display:flex;flex-direction:column;gap:12px;margin-bottom:22px}
+.estadio-info-card{width:100%}
+.estadio-info-valor{overflow-wrap:anywhere;word-break:break-word;white-space:normal}
 .estadio-info-card{background:var(--fondo-2);border:1px solid var(--borde);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;transition:var(--trans)}
 .estadio-info-card:hover{border-color:var(--borde-hover)}
+.estadio-seccion-titulo{font-family:var(--fuente-titulo);font-size:17px;letter-spacing:1px;color:var(--texto-1);margin:26px 0 12px 0;display:flex;align-items:center;gap:8px}
 .estadio-info-icon{width:38px;height:38px;border-radius:10px;background:var(--fondo-3);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
 .estadio-info-texto{display:flex;flex-direction:column;gap:2px;min-width:0}
 .estadio-info-label{font-size:9px;color:var(--texto-3);text-transform:uppercase;letter-spacing:1.2px;font-weight:600}
@@ -1520,6 +1523,60 @@ select option{background:#080F20;color:#F0F6FF}
       <div class="estadio-descripcion-card" id="estadio-detalle-descripcion-wrap" style="display:none;">
         <div class="estadio-descripcion-titulo">📖 Sobre el estadio</div>
         <div id="estadio-detalle-descripcion"></div>
+      </div>
+
+      <!-- Últimos partidos jugados en el estadio -->
+      <div id="estadio-partidos-wrap" style="display:none;">
+        <div class="estadio-seccion-titulo">🕒 Últimos partidos en este estadio</div>
+        <div class="tabla-wrapper">
+          <div class="tabla-scroll scroll-forzado">
+            <table class="tabla-partidos" style="width:100%;border-collapse:collapse;">
+              <thead><tr>
+                <th>Fecha</th><th>Local</th><th class="center">Resultado</th><th>Visitante</th><th>Torneo</th>
+              </tr></thead>
+              <tbody id="estadio-partidos-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Goleadores y jugadores con más partidos en el estadio -->
+      <div id="estadio-rankings-wrap" style="display:flex;flex-direction:column;gap:16px;">
+
+        <div class="tabla-wrapper" id="estadio-goleadores-wrap" style="display:none;">
+          <div class="tabla-header">
+            <div class="tabla-titulo">⚽ Máximos goleadores en este estadio</div>
+            <div class="tabla-count" id="estadio-goleadores-count"></div>
+          </div>
+          <div class="tabla-scroll scroll-forzado">
+            <table style="width:100%;border-collapse:collapse;min-width:280px;">
+              <thead><tr>
+                <th style="width:40px;">#</th>
+                <th>Jugador</th>
+                <th style="text-align:center;width:80px;">Goles</th>
+              </tr></thead>
+              <tbody id="estadio-goleadores-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="tabla-wrapper" id="estadio-pj-wrap" style="display:none;">
+          <div class="tabla-header">
+            <div class="tabla-titulo">📋 Más partidos jugados en este estadio</div>
+            <div class="tabla-count" id="estadio-pj-count"></div>
+          </div>
+          <div class="tabla-scroll scroll-forzado">
+            <table style="width:100%;border-collapse:collapse;min-width:280px;">
+              <thead><tr>
+                <th style="width:40px;">#</th>
+                <th>Jugador</th>
+                <th style="text-align:center;width:80px;">PJ</th>
+              </tr></thead>
+              <tbody id="estadio-pj-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -5377,8 +5434,8 @@ function verEstadio(id) {
   }
 
   const datos = [
-    { label: 'Ciudad', valor: e.Ciudad, icon: '📍' },
     { label: 'Provincia', valor: e.Provincia, icon: '🗺️' },
+    { label: 'Ciudad', valor: e.Ciudad, icon: '📍' },
     { label: 'Capacidad', valor: capacidadTxt, icon: '👥' },
     { label: 'Inauguración', valor: e.Inauguracion, icon: '📅' },
     { label: 'Dirección', valor: e.Direccion, icon: '🏠' },
@@ -5403,6 +5460,106 @@ function verEstadio(id) {
     document.getElementById('estadio-detalle-descripcion').textContent = e.Descripcion;
   } else {
     descWrap.style.display = 'none';
+  }
+
+  renderHistorialEstadio(e);
+}
+
+// Devuelve todos los partidos jugados en un estadio dado (por nombre o alias)
+function partidosDeEstadio(e) {
+  if (!e) return [];
+  const nombreNorm = normalizarTextoEstadio(e.Nombre);
+  const aliasSet = e.Alias ? new Set(e.Alias.split(',').map(a => normalizarTextoEstadio(a))) : new Set();
+  return partidos.filter(p => {
+    const pn = normalizarTextoEstadio(p.Estadio);
+    if (!pn) return false;
+    return pn === nombreNorm || aliasSet.has(pn);
+  });
+}
+
+// Cuenta goles por jugador (excluyendo en contra) dentro de un conjunto de partidos
+function golesPorJugadorEnPartidos(listaPartidos) {
+  const goles = {};
+  listaPartidos.forEach(p => {
+    if (!esPartidoJugado(p)) return;
+    const raw = p.Goleadores || '';
+    if (!raw) return;
+    raw.split('/').forEach(parte => {
+      (parte || '').split('-').forEach(entradaRaw => {
+        const entrada = entradaRaw.trim();
+        if (!entrada || entrada.toLowerCase() === 'ninguno') return;
+        if (/\(EC\)/i.test(entrada)) return; // no contar goles en contra como goleador
+        const nombre = nombreCanonico(limpiarNombre(entrada));
+        if (!nombre || nombre.length < 2) return;
+        goles[nombre] = (goles[nombre] || 0) + 1;
+      });
+    });
+  });
+  return Object.entries(goles).sort((a, b) => b[1] - a[1]);
+}
+
+// Cuenta partidos jugados por jugador dentro de un conjunto de IDs de partido
+function partidosJugadosPorJugador(idsPartidosSet) {
+  const conteo = {};
+  Object.keys(jugadoresData).forEach(nombre => {
+    const porEquipo = jugadoresData[nombre];
+    let count = 0;
+    Object.values(porEquipo).forEach(setIds => {
+      setIds.forEach(idPartido => { if (idsPartidosSet.has(idPartido)) count++; });
+    });
+    if (count > 0) conteo[nombre] = count;
+  });
+  return Object.entries(conteo).sort((a, b) => b[1] - a[1]);
+}
+
+function filaRankingEstadio(i, nombre, valor) {
+  return `<tr onclick="verFichaJugador('${nombre.replace(/'/g, "\\'")}')" style="cursor:pointer;">
+    <td style="color:var(--texto-2);font-size:13px;width:36px;padding:8px 10px;">${i + 1}</td>
+    <td style="font-size:14px;font-weight:500;">${nombre}</td>
+    <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;font-weight:700;color:var(--celeste);">${valor}</td>
+  </tr>`;
+}
+
+function renderHistorialEstadio(e) {
+  const partidosEstadio = partidosDeEstadio(e);
+  const partidosJugados = partidosEstadio.filter(esPartidoJugado);
+
+  // Últimos partidos (más recientes primero)
+  const ultimos = [...partidosJugados].sort((a, b) => {
+    const fa = normalizarFechaISO(a.Fecha) || '';
+    const fb = normalizarFechaISO(b.Fecha) || '';
+    return fb.localeCompare(fa);
+  }).slice(0, 15);
+
+  const partidosWrap = document.getElementById('estadio-partidos-wrap');
+  if (ultimos.length) {
+    partidosWrap.style.display = 'block';
+    document.getElementById('estadio-partidos-tbody').innerHTML = ultimos.map(p => filaPartido(p)).join('');
+  } else {
+    partidosWrap.style.display = 'none';
+  }
+
+  // Goleadores en este estadio
+  const goleadores = golesPorJugadorEnPartidos(partidosJugados).slice(0, 15);
+  const golWrap = document.getElementById('estadio-goleadores-wrap');
+  if (goleadores.length) {
+    golWrap.style.display = 'block';
+    document.getElementById('estadio-goleadores-count').textContent = goleadores.length + (goleadores.length === 1 ? ' jugador' : ' jugadores');
+    document.getElementById('estadio-goleadores-tbody').innerHTML = goleadores.map(([nombre, goles], i) => filaRankingEstadio(i, nombre, goles)).join('');
+  } else {
+    golWrap.style.display = 'none';
+  }
+
+  // Jugadores con más partidos en este estadio
+  const idsSet = new Set(partidosEstadio.map(p => p.ID_Partido));
+  const pjLista = partidosJugadosPorJugador(idsSet).slice(0, 15);
+  const pjWrap = document.getElementById('estadio-pj-wrap');
+  if (pjLista.length) {
+    pjWrap.style.display = 'block';
+    document.getElementById('estadio-pj-count').textContent = pjLista.length + (pjLista.length === 1 ? ' jugador' : ' jugadores');
+    document.getElementById('estadio-pj-tbody').innerHTML = pjLista.map(([nombre, pj], i) => filaRankingEstadio(i, nombre, pj)).join('');
+  } else {
+    pjWrap.style.display = 'none';
   }
 }
 
