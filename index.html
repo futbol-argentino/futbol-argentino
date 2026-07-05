@@ -432,6 +432,7 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 .res-local{color:var(--verde)}
 .res-empate{color:var(--amarillo)}
 .res-visita{color:var(--rojo)}
+.res-neutro{color:var(--texto-1)}
 .badge-torneo{display:inline-block;background:rgba(14,165,233,0.07);border:1px solid rgba(14,165,233,0.15);border-radius:6px;padding:3px 8px;font-size:11px;color:var(--texto-2);white-space:nowrap;font-weight:500}
 .loading-row td{text-align:center;padding:48px;color:var(--texto-3);font-size:14px}
 
@@ -1541,7 +1542,7 @@ select option{background:#080F20;color:#F0F6FF}
       </div>
 
       <!-- Goleadores y jugadores con más partidos en el estadio -->
-      <div id="estadio-rankings-wrap" style="display:flex;flex-direction:column;gap:16px;">
+      <div id="estadio-rankings-wrap" style="display:flex;flex-direction:column;gap:16px;margin-top:32px;">
 
         <div class="tabla-wrapper" id="estadio-goleadores-wrap" style="display:none;">
           <div class="tabla-header">
@@ -2149,16 +2150,27 @@ function escudoImg(nombre, size) {
     ? `<img src="${ESCUDOS[nombre]}" loading="lazy" decoding="async" style="width:${size}px;height:${size}px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">`
     : '';
 }
-function resClase(gl, gv) {
+function resClase(gl, gv, equipoRefEsLocal) {
+  // Sin equipo de referencia (equipoRefEsLocal es undefined) => color neutro
+  // en toda la página. Solo se colorea verde/amarillo/rojo cuando se está
+  // filtrando/viendo los partidos de un equipo específico.
+  if (equipoRefEsLocal === undefined || equipoRefEsLocal === null) return 'res-neutro';
   const l = parseInt(gl)||0, v = parseInt(gv)||0;
-  return l > v ? 'res-local' : (v > l ? 'res-visita' : 'res-empate');
+  if (l === v) return 'res-empate';
+  const refGano = equipoRefEsLocal ? (l > v) : (v > l);
+  return refGano ? 'res-local' : 'res-visita';
 }
-function filaPartido(p) {
+function filaPartido(p, equipoRef) {
   const local = equipos[p.Local_ID] || p.Local_ID;
   const visita = equipos[p.Visitante_ID] || p.Visitante_ID;
   const fecha = p.Fecha ? p.Fecha.split('T')[0] : '';
   const torneo = temporadas[p.ID_Temporada] || p.Fase || '';
-  const rc = resClase(p.Goles_Local, p.Goles_Visitante);
+  let refEsLocal;
+  if (equipoRef) {
+    if (p.Local_ID === equipoRef) refEsLocal = true;
+    else if (p.Visitante_ID === equipoRef) refEsLocal = false;
+  }
+  const rc = resClase(p.Goles_Local, p.Goles_Visitante, refEsLocal);
   const usuario = getUsuario();
   const esFav = usuario && usuario.equipoId &&
     (p.Local_ID === usuario.equipoId || p.Visitante_ID === usuario.equipoId);
@@ -2401,7 +2413,7 @@ function filtrar() {
 
   tbody.innerHTML = filtrados.length === 0
     ? '<tr class="loading-row"><td colspan="5">No se encontraron partidos.</td></tr>'
-    : filtrados.slice(0, 200).map(filaPartido).join('');
+    : filtrados.slice(0, 200).map(p => filaPartido(p, eq1 || null)).join('');
 
   // Stats
   if (eq1 && eq2) {
@@ -2675,7 +2687,7 @@ function filtrarDetalle() {
 
   document.getElementById('tabla-detalle').innerHTML = lista.length === 0
     ? '<tr class="loading-row"><td colspan="5">No se encontraron partidos.</td></tr>'
-    : lista.slice(0, 200).map(filaPartido).join('');
+    : lista.slice(0, 200).map(p => filaPartido(p, id)).join('');
 }
 
 function toggleRivales() {
