@@ -3212,7 +3212,7 @@ function parsearTarjetas(campo, equipoId, torneoId) {
 // Estado de paginación
 const paginas = { goleadores:1, gc:1, amonestados:1, expulsados:1, pj:1 };
 const POR_PAG = 30;
-let datosStats = { goleadores:[], gc:[], amonestados:[], expulsados:[], pj:[], nacGoleadores:{}, nacGC:{}, nacAmon:{}, nacExpu:{} };
+let datosStats = { goleadores:[], gc:[], amonestados:[], expulsados:[], pj:[], nacGoleadores:{}, nacGC:{}, nacAmon:{}, nacExpu:{}, nacPJ:{} };
 
 function filaJugador(i, nombre, nac, cols) {
   const bandera = nac ? `<span style="display:inline-flex;align-items:center;flex-shrink:0;">${getBandera(nac)}</span>` : '';
@@ -3306,8 +3306,7 @@ function renderTablaStat(tipo) {
     tbody.innerHTML = slice.length === 0
       ? '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>'
       : slice.map(([nombre, cant], i) => {
-          const allNac = { ...datosStats.nacGoleadores, ...datosStats.nacAmon, ...datosStats.nacExpu };
-          return filaJugador(inicio+i, nombre, allNac[nombre],
+          return filaJugador(inicio+i, nombre, datosStats.nacPJ[nombre],
             `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--texto-1);">${cant}</td>`);
         }).join('');
     document.getElementById('count-pj').textContent = datosStats.pj.length + ' jugadores';
@@ -3374,6 +3373,7 @@ function renderEstadisticas() {
   });
   // Aplicar filtros de nombre y nac a PJ también
   const todosNacPJMerged = { ...todosNacPJ, ...nacionalidades, ...nacAmon, ...nacExpu };
+  datosStats.nacPJ = todosNacPJMerged;
   datosStats.pj = Object.entries(pjConteo)
     .sort((a,b) => b[1]-a[1])
     .filter(([nombre]) => {
@@ -4800,6 +4800,7 @@ function renderStatsEquipoInline(equipoId) {
 
   // PJ desde columna Jugadores
   const pjConteo = {};
+  const nacPJ = {};
   partidos.forEach(p => {
     if (p.Local_ID !== equipoId && p.Visitante_ID !== equipoId) return;
     const rawJ = p.Jugadores || '';
@@ -4810,18 +4811,20 @@ function renderStatsEquipoInline(equipoId) {
       parte.split('-').forEach(entrada => {
         const n = nombreCanonico(limpiarNombre(entrada));
         if (!n || n.length < 2 || n.toLowerCase() === 'ninguno') return;
+        const nac = extraerNacionalidad(entrada);
+        if (nac) nacPJ[n] = nac;
         pjConteo[n] = (pjConteo[n]||0) + 1;
       });
     });
   });
 
-  const makeTablaInline = (titulo, headers, rows) => `
+  const makeTablaInline = (titulo, headers, rows, nacMap) => `
     <div class="tabla-wrapper" style="margin-bottom:14px;">
       <div class="tabla-header"><div class="tabla-titulo">${titulo}</div><div class="tabla-count">${rows.length} jugadores</div></div>
       <div class="tabla-scroll"><table style="width:100%;border-collapse:collapse;min-width:280px;">
         <thead><tr>${headers.map((h,i)=>`<th style="text-align:${i>1?'center':'left'};${i===0?'width:36px;':''}">${h}</th>`).join('')}</tr></thead>
         <tbody>${rows.slice(0,10).map(([nombre,val], i) => {
-          const nac = nacionalidades[nombre];
+          const nac = (nacMap||nacionalidades)[nombre];
           return filaJugador(i, nombre, nac,
             `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;color:var(--celeste);">${typeof val==='object'?val.normales+val.penales:val}</td>`);
         }).join('')}</tbody>
@@ -4832,6 +4835,7 @@ function renderStatsEquipoInline(equipoId) {
   const pjArr    = Object.entries(pjConteo).sort((a,b)=>b[1]-a[1]);
   const amonArr  = amon.slice(0,10);
   const expuArr  = expu.slice(0,10);
+  const nacPJMerged = { ...nacPJ, ...nacionalidades };
 
   const esc = ESCUDOS[nmEq] ? `<img src="${ESCUDOS[nmEq]}" style="width:24px;height:24px;object-fit:contain;">` : '';
   return `<div style="background:var(--fondo-2);border:1px solid var(--borde-activo);border-radius:14px;padding:18px 20px;">
@@ -4839,7 +4843,7 @@ function renderStatsEquipoInline(equipoId) {
       ${esc} Estadísticas · ${nmEq}
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;">
-      ${makeTablaInline('📋 Más Partidos Jugados', ['#','Jugador','PJ'], pjArr)}
+      ${makeTablaInline('📋 Más Partidos Jugados', ['#','Jugador','PJ'], pjArr, nacPJMerged)}
       ${makeTablaInline('⚽ Top Goleadores',        ['#','Jugador','Goles'], golesArr)}
       ${makeTablaInline('🟨 Más Amonestados',       ['#','Jugador','Amar.'], amonArr.map(([n,v])=>[n,v]))}
       ${makeTablaInline('🟥 Más Expulsados',        ['#','Jugador','Rojas'], expuArr.map(([n,v])=>[n,v]))}
