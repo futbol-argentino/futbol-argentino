@@ -124,155 +124,35 @@
   .stat-pill-num { font-size:22px; }
   .stats-nums { display:grid; grid-template-columns:repeat(3,1fr); }
 
-  /* ═══ TABLAS: nunca requieren scroll horizontal en mobile ═══ */
-  .tabla-scroll { overflow-x: visible !important; }
-  .tabla-scroll table { min-width: 0 !important; width: 100% !important; }
+  /* ═══ TABLAS: se mantienen igual que en PC (misma estructura de columnas),
+     solo más compactas. Si no entran en el ancho de pantalla, se puede
+     deslizar hacia los costados en vez de deformar la tabla. ═══ */
+  .tabla-scroll { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+  .tabla-scroll table { width: max-content !important; min-width: 100% !important; }
 
-  /* ─ Tablas de PARTIDOS (fecha/local/resultado/visitante/torneo): layout tipo card ─ */
-  table.tabla-partidos thead { display: none; }
-
-  table.tabla-partidos tbody tr {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    grid-template-rows: auto auto;
-    gap: 2px 6px;
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--borde);
-    align-items: center;
-  }
-
-  /* Col 1: fecha — segunda fila, primera columna */
-  table.tabla-partidos tbody tr td:nth-child(1) {
-    grid-column: 1; grid-row: 2;
-    font-size: 11px; color: var(--texto-3); font-family: var(--fuente-mono);
-    padding: 0; white-space: nowrap;
-  }
-  /* Col 2: local — primera fila, primera columna */
-  table.tabla-partidos tbody tr td:nth-child(2) {
-    grid-column: 1; grid-row: 1;
-    padding: 0; min-width: 0;
-  }
-  /* Col 3: resultado — primera fila, centro */
-  table.tabla-partidos tbody tr td:nth-child(3) {
-    grid-column: 2; grid-row: 1;
-    padding: 0 6px; text-align: center;
-  }
-  /* Col 4: visitante — primera fila, tercera columna */
-  table.tabla-partidos tbody tr td:nth-child(4) {
-    grid-column: 3; grid-row: 1;
-    padding: 0; min-width: 0; text-align: right;
-  }
-  /* Col 5: torneo — segunda fila, tercera columna */
-  table.tabla-partidos tbody tr td:nth-child(5) {
-    grid-column: 3; grid-row: 2;
-    padding: 0; text-align: right;
-  }
-  /* Fila de goles desplegable */
-  table.tabla-partidos tbody tr.fila-gol-preview {
-    display: block; padding: 0;
-  }
-  .fila-gol-preview td { display: block; padding: 3px 12px 8px !important; }
-
-  /* Equipos: nombre completo sin truncar */
-  table.tabla-partidos .td-equipo {
-    display: flex; align-items: center; gap: 6px;
-    white-space: normal; word-break: break-word;
-  }
-  table.tabla-partidos .td-equipo span {
-    font-size: 13px; line-height: 1.2; white-space: normal;
-  }
-  table.tabla-partidos .td-equipo img {
-    width: 18px !important; height: 18px !important; flex-shrink: 0;
-  }
-  /* Visitante: alinear a la derecha */
-  table.tabla-partidos tbody tr td:nth-child(4) .td-equipo {
-    justify-content: flex-end; flex-direction: row-reverse;
-  }
-  /* Resultado */
-  table.tabla-partidos .td-resultado {
-    font-size: 17px !important; letter-spacing: 1px !important;
-  }
-  /* Badge torneo más pequeño */
-  table.tabla-partidos .badge-torneo {
-    font-size: 10px; padding: 2px 5px;
-  }
-
-  /* ─ Todas las demás tablas (rankings, posiciones, fichas, historial vs rivales, etc.) ─
-     Se convierten en tarjetas con etiqueta + valor, sin necesidad de scroll lateral. */
-  table:not(.tabla-partidos) thead { display: none; }
-  table:not(.tabla-partidos) tbody tr {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 6px 14px;
-    padding: 12px 10px;
-    border-bottom: 1px solid var(--borde);
-  }
-  table:not(.tabla-partidos) tbody tr:last-child { border-bottom: none; }
-  table:not(.tabla-partidos) tbody tr td {
-    display: block;
-    padding: 0 !important;
-    border: none !important;
-    font-size: 13px;
-    min-width: 0;
-    overflow-wrap: break-word;
-  }
-  /* La primera columna (# o nombre) y cualquier celda con un bloque interno (escudo+nombre)
-     ocupan todo el ancho de la fila */
-  table:not(.tabla-partidos) tbody tr td:first-child,
-  table:not(.tabla-partidos) tbody tr td:has(> div) {
-    grid-column: 1 / -1;
-  }
-  table:not(.tabla-partidos) tbody tr td[data-label]::before {
-    content: attr(data-label);
-    display: block;
-    font-size: 9px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.6px; color: var(--texto-3); margin-bottom: 2px;
-  }
-  /* Filas de "sin datos" con colspan: centradas, sin grilla */
-  table:not(.tabla-partidos) tbody tr td[colspan] {
-    grid-column: 1 / -1; text-align: center; color: var(--texto-3);
-  }
-
-  /* ─ Tablas marcadas como "scroll-forzado" (posiciones, rankings, temporadas, etc.):
-     tienen demasiadas columnas numéricas para funcionar como tarjetas apiladas,
-     así que se mantienen como tabla real y compacta con scroll horizontal. ─ */
-  .tabla-scroll.scroll-forzado { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
-  .tabla-scroll.scroll-forzado table {
-    width: auto !important; min-width: 460px !important;
-  }
-  .tabla-scroll.scroll-forzado table thead { display: table-header-group !important; }
-  .tabla-scroll.scroll-forzado table thead th {
-    font-size: 10px !important; padding: 8px 8px !important; white-space: nowrap;
-  }
-  .tabla-scroll.scroll-forzado table tbody tr {
-    display: table-row !important;
-    grid-template-columns: none !important;
-    padding: 0 !important;
-    align-items: initial;
-  }
-  .tabla-scroll.scroll-forzado table tbody tr td {
-    display: table-cell !important;
-    padding: 9px 8px !important;
-    border: none !important;
-    font-size: 12px !important;
-    min-width: 0;
+  table thead th {
+    font-size: 10.5px !important;
+    padding: 8px 8px !important;
     white-space: nowrap;
   }
-  .tabla-scroll.scroll-forzado table tbody tr td::before { content: none !important; }
-  .tabla-scroll.scroll-forzado table tbody tr td:first-child,
-  .tabla-scroll.scroll-forzado table tbody tr td:has(> div) {
-    grid-column: auto !important;
+  table tbody tr td {
+    font-size: 12.5px !important;
+    padding: 8px 8px !important;
+    white-space: nowrap;
+  }
+  /* La celda con nombre de jugador/equipo (escudo o bandera + texto) puede
+     partir en más de una línea si hace falta, el resto se mantiene compacto */
+  table tbody tr td:has(> div) {
     white-space: normal;
   }
-  .tabla-scroll.scroll-forzado table tbody tr td[colspan] {
-    grid-column: auto !important; white-space: normal;
-  }
-  /* Columna de nombre (jugador/equipo) fija a la izquierda mientras se desliza el resto */
-  .tabla-scroll.scroll-forzado table th:nth-child(2),
-  .tabla-scroll.scroll-forzado table td:nth-child(2) {
-    position: sticky; left: 0; background: var(--fondo-2); z-index: 1;
-    white-space: normal; max-width: 140px;
-  }
+
+  /* ─ Tablas de PARTIDOS: un poco más chicas, resultado y escudos reducidos ─ */
+  table.tabla-partidos .td-equipo img { width: 18px !important; height: 18px !important; }
+  table.tabla-partidos .td-resultado { font-size: 15px !important; }
+  table.tabla-partidos .badge-torneo { font-size: 10px; padding: 2px 5px; white-space: nowrap; }
+  table.tabla-partidos td:nth-child(2),
+  table.tabla-partidos td:nth-child(4) { min-width: 130px; }
+  .fila-gol-preview td { padding: 3px 12px 8px !important; white-space: normal !important; }
 
   td { font-size: 13px; padding: 8px 8px; }
   .td-fecha { font-size: 11px; white-space: nowrap; }
