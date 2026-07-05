@@ -1926,6 +1926,7 @@ let jugadoresData = {}; // nombre → { equipoId → Set(ID_Partido) }
 let equiposArr = [], temporadasArr = [];
 let posicionesData = [];
 let equipoDetalleID = null;
+let torneoOrigenEquipo = null; // si no es null, "volver" desde vista-torneo regresa al historial de este equipo
 let estadiosArr = [], estadiosCargados = false, estadiosDivisionActual = null;
 let ordenDesc = true;
 let ordenDetalleDesc = true;
@@ -2210,7 +2211,23 @@ function actualizarFechasDisponibles() {
     const iso = normalizarFechaISO(p.Fecha);
     if (iso) set.add(iso);
   });
-  fechasDisponibles = Array.from(set).sort();
+  const conPartidos = Array.from(set).sort();
+  if (!conPartidos.length) { fechasDisponibles = []; return; }
+
+  // Generar TODOS los días en el rango, tengan o no partidos cargados,
+  // para que al navegar con las flechas se recorra día por día sin saltos.
+  const hoyISO = new Date().toISOString().split('T')[0];
+  const inicioISO = conPartidos[0];
+  const finISO = conPartidos[conPartidos.length - 1] > hoyISO ? conPartidos[conPartidos.length - 1] : hoyISO;
+
+  const dias = [];
+  const cursor = new Date(inicioISO + 'T00:00:00');
+  const fin = new Date(finISO + 'T00:00:00');
+  while (cursor <= fin) {
+    dias.push(cursor.toISOString().split('T')[0]);
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  fechasDisponibles = dias;
 }
 
 function formatearFechaDisplay(iso) {
@@ -2659,6 +2676,7 @@ function toggleRivales() {
 }
 
 function volverEquipos() {
+  torneoOrigenEquipo = null;
   document.getElementById('vista-detalle').classList.remove('visible');
   equipoDetalleID = null;
   document.getElementById('vista-divisiones').style.display = 'block';
@@ -4524,8 +4542,25 @@ function actualizarLineaGrafico(idTemporada, selectId, svgId) {
 }
 
 function volverCampeones() {
-  torneoActualId = null;
   document.getElementById('vista-torneo').style.display = 'none';
+  torneoActualId = null;
+
+  if (torneoOrigenEquipo) {
+    // Vinimos desde el historial de torneos de un equipo: volvemos ahí
+    const eqId = torneoOrigenEquipo;
+    torneoOrigenEquipo = null;
+    document.getElementById('vista-campeones').style.display = 'block';
+    cambiarTab('equipos');
+    equipoDetalleID = eqId;
+    document.getElementById('vista-divisiones').style.display = 'none';
+    document.getElementById('vista-equipos').style.display = 'none';
+    document.getElementById('todos-equipos-wrap').style.display = 'none';
+    document.getElementById('vista-detalle').classList.add('visible');
+    cambiarDetalleTab('torneos');
+    requestAnimationFrame(() => window.scrollTo(0, 0));
+    return;
+  }
+
   document.getElementById('vista-campeones').style.display = 'block';
   requestAnimationFrame(() => window.scrollTo(0, scrollCampeones));
 }
@@ -6023,11 +6058,12 @@ function renderHistorialTorneos(equipoId) {
       (r.Equipo||'').toLowerCase().replace(/\s+/g,'').includes(nmEq.toLowerCase().replace(/\s+/g,'').substring(0,6))
     );
 
-    // Campeón
+    // Campeón / Subcampeón
     const fueCampeon = (t.Campeon||'').toLowerCase().replace(/\s+/g,'') === nmEq.toLowerCase().replace(/\s+/g,'');
+    const fueSubcampeon = !fueCampeon && (t.Subcampeon||'').toLowerCase().replace(/\s+/g,'') === nmEq.toLowerCase().replace(/\s+/g,'');
 
     if (!torneosPorAnio[anio]) torneosPorAnio[anio] = [];
-    torneosPorAnio[anio].push({ t, pj, pg, pe, pp, gf, gc, pos: posRow?.Pos||null, fueCampeon });
+    torneosPorAnio[anio].push({ t, pj, pg, pe, pp, gf, gc, pos: posRow?.Pos||null, fueCampeon, fueSubcampeon });
   });
 
   const aniosOrdenados = Object.keys(torneosPorAnio).sort((a,b)=>b-a);
@@ -6039,14 +6075,15 @@ function renderHistorialTorneos(equipoId) {
 
   lista.innerHTML = aniosOrdenados.map(anio => {
     const items = torneosPorAnio[anio];
-    const cards = items.map(({ t, pj, pg, pe, pp, gf, gc, pos, fueCampeon }) => {
+    const cards = items.map(({ t, pj, pg, pe, pp, gf, gc, pos, fueCampeon, fueSubcampeon }) => {
       const foto = t.Foto_Trofeo
         ? `<img src="trofeos/${t.Foto_Trofeo}" style="width:38px;height:38px;object-fit:contain;" onerror="this.style.display='none'">`
         : `<span style="font-size:28px;">🏅</span>`;
       const campBadge = fueCampeon
         ? `<span style="font-size:10px;background:rgba(251,191,36,0.15);color:var(--oro);padding:2px 7px;border-radius:5px;border:1px solid rgba(251,191,36,0.3);font-weight:700;">🏆 CAMPEÓN</span>`
+        : fueSubcampeon
+        ? `<span style="font-size:10px;background:rgba(192,192,192,0.15);color:#C0C0C0;padding:2px 7px;border-radius:5px;border:1px solid rgba(192,192,192,0.35);font-weight:700;">🥈 SUBCAMPEÓN</span>`
         : '';
-      const posTxt = pos ? `<span style="font-size:12px;color:var(--texto-3);">#${pos} en tabla ·</span>` : '';
       return `
         <div onclick="verTorneoEquipo('${t.ID_Temporada}','${equipoId}')"
           style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:12px;padding:14px 16px;
@@ -6060,7 +6097,6 @@ function renderHistorialTorneos(equipoId) {
               ${campBadge}
             </div>
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;">
-              ${posTxt}
               <span style="color:var(--texto-3);">${pj}PJ</span>
               <span style="color:var(--verde);">${pg}G</span>
               <span style="color:var(--amarillo);">${pe}E</span>
@@ -6089,121 +6125,10 @@ function renderHistorialTorneos(equipoId) {
 function verTorneoEquipo(idTemporada, equipoId) {
   const temp = temporadasArr.find(t => t.ID_Temporada == idTemporada);
   if (!temp) return;
-
-  document.getElementById('historial-lista').style.display    = 'none';
-  document.getElementById('historial-torneo').style.display   = 'block';
-  window.scrollTo(0,0);
-
-  const nmEq = equipos[equipoId] || equipoId;
-
-  // Stats
-  const jugados = partidos.filter(p =>
-    p.ID_Temporada == idTemporada && esPartidoJugado(p) &&
-    (p.Local_ID===equipoId||p.Visitante_ID===equipoId)
-  );
-  const todos = partidos.filter(p =>
-    p.ID_Temporada == idTemporada &&
-    (p.Local_ID===equipoId||p.Visitante_ID===equipoId)
-  ).sort((a,b) => {
-    const norm = f => (f||'').split('T')[0].replace(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/,'$3-$2-$1');
-    return norm(a.Fecha).localeCompare(norm(b.Fecha)) || (parseInt(a.Numero_Fecha)||0)-(parseInt(b.Numero_Fecha)||0);
-  });
-
-  const pj=jugados.length;
-  const pg=jugados.filter(p=>p.Tipo_Definicion==='0'&&p.ID_Ganador===equipoId).length;
-  const pp=jugados.filter(p=>p.Tipo_Definicion==='0'&&p.ID_Ganador&&p.ID_Ganador!==equipoId).length;
-  const pe=pj-pg-pp;
-  const gf=jugados.reduce((a,p)=>a+(p.Local_ID===equipoId?parseInt(p.Goles_Local)||0:parseInt(p.Goles_Visitante)||0),0);
-  const gc=jugados.reduce((a,p)=>a+(p.Local_ID===equipoId?parseInt(p.Goles_Visitante)||0:parseInt(p.Goles_Local)||0),0);
-
-  // Tabla de posiciones
-  const posRows = posicionesData
-    .filter(r => r.ID_Temporada == idTemporada)
-    .sort((a,b) => parseInt(a.Pos||99)-parseInt(b.Pos||99));
-
-  const htmlPos = posRows.length ? `
-    <div class="tabla-wrapper" style="margin-bottom:16px;">
-      <div class="tabla-header"><div class="tabla-titulo">📋 Tabla de Posiciones</div></div>
-      <div class="tabla-scroll scroll-forzado">
-        <table style="min-width:400px;">
-          <thead><tr>
-            <th style="width:36px;">#</th><th>Equipo</th>
-            <th style="text-align:center;width:40px;">PJ</th>
-            <th style="text-align:center;width:40px;">PG</th>
-            <th style="text-align:center;width:40px;">PE</th>
-            <th style="text-align:center;width:40px;">PP</th>
-            <th style="text-align:center;width:40px;">GF</th>
-            <th style="text-align:center;width:40px;">GC</th>
-            <th style="text-align:center;width:40px;">Pts</th>
-          </tr></thead>
-          <tbody>${posRows.map(r => {
-            const esMio = (r.Equipo||'').toLowerCase().replace(/\s+/g,'').includes(
-              nmEq.toLowerCase().replace(/\s+/g,'').substring(0,5)
-            );
-            const esc = ESCUDOS[r.Equipo]
-              ? `<img src="${ESCUDOS[r.Equipo]}" style="width:18px;height:18px;object-fit:contain;margin-right:6px;" onerror="this.style.display='none'">`
-              : '';
-            return `<tr style="${esMio?'background:rgba(34,197,94,0.08);font-weight:700;':''}">
-              <td style="text-align:center;color:var(--texto-3);">${r.Pos||''}</td>
-              <td><div style="display:flex;align-items:center;">${esc}${r.Equipo||''}</div></td>
-              <td style="text-align:center;">${r.PJ||''}</td>
-              <td style="text-align:center;color:var(--verde);">${r.PG||''}</td>
-              <td style="text-align:center;color:var(--amarillo);">${r.PE||''}</td>
-              <td style="text-align:center;color:var(--rojo);">${r.PP||''}</td>
-              <td style="text-align:center;">${r.GF||''}</td>
-              <td style="text-align:center;">${r.GC||''}</td>
-              <td style="text-align:center;font-weight:700;color:var(--celeste);">${r.Pts||r.PTS||''}</td>
-            </tr>`;
-          }).join('')}</tbody>
-        </table>
-      </div>
-    </div>` : '';
-
-  // Partidos agrupados por fase
-  const grupos = {};
-  todos.forEach(p => {
-    const fase = p.Fase || 'Sin fase';
-    const clave = (fase === 'Fase Regular' && p.Numero_Fecha) ? `Fecha ${p.Numero_Fecha}` : fase;
-    if (!grupos[clave]) grupos[clave] = [];
-    grupos[clave].push(p);
-  });
-
-  const htmlPartidos = Object.entries(grupos).map(([fase, ps]) => `
-    <div style="margin-bottom:10px;">
-      <div style="font-size:11px;font-weight:600;color:var(--celeste);text-transform:uppercase;
-        letter-spacing:0.8px;padding:5px 0 4px;border-bottom:1px solid var(--borde);margin-bottom:2px;">
-        ${fase}
-      </div>
-      <table class="tabla-partidos" style="width:100%;border-collapse:collapse;">
-        <thead><tr>
-          <th>Fecha</th><th>Local</th><th class="center">Resultado</th><th>Visitante</th><th>Torneo</th>
-        </tr></thead>
-        <tbody>${ps.map(p => filaPartido(p)).join('')}</tbody>
-      </table>
-    </div>`).join('');
-
-  document.getElementById('historial-torneo').innerHTML = `
-    <button class="btn-volver" onclick="volverHistorialLista()" style="margin-bottom:16px;">← Volver al historial</button>
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
-      ${temp.Foto_Trofeo ? `<img src="trofeos/${temp.Foto_Trofeo}" style="width:38px;height:38px;object-fit:contain;" onerror="this.style.display='none'">` : ''}
-      <div style="font-family:var(--fuente-titulo);font-size:22px;">${temp.Competencia}</div>
-    </div>
-    <div class="stats-nums" style="margin-bottom:16px;">
-      <div class="stat-pill"><span class="stat-pill-num num-celeste">${pj}</span><span class="stat-pill-label">PJ</span></div>
-      <div class="stat-pill"><span class="stat-pill-num num-verde">${pg}</span><span class="stat-pill-label">PG</span></div>
-      <div class="stat-pill"><span class="stat-pill-num num-amarillo">${pe}</span><span class="stat-pill-label">PE</span></div>
-      <div class="stat-pill"><span class="stat-pill-num num-rojo">${pp}</span><span class="stat-pill-label">PP</span></div>
-      <div class="stat-pill"><span class="stat-pill-num num-celeste">${gf}</span><span class="stat-pill-label">GF</span></div>
-      <div class="stat-pill"><span class="stat-pill-num num-celeste">${gc}</span><span class="stat-pill-label">GC</span></div>
-    </div>
-    ${htmlPos}
-    <div class="tabla-wrapper">
-      <div class="tabla-header">
-        <div class="tabla-titulo">📅 Partidos de ${nmEq}</div>
-        <div class="tabla-count">${todos.length} partidos</div>
-      </div>
-      <div class="tabla-scroll">${htmlPartidos}</div>
-    </div>`;
+  // Recordar que venimos del historial de este equipo, para que "Volver" regrese ahí
+  torneoOrigenEquipo = equipoId;
+  cambiarTab('campeones');
+  verTorneo(idTemporada);
 }
 
 function volverHistorialLista() {
