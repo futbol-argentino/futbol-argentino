@@ -1916,7 +1916,9 @@ const ESCUDOS = {
   'Sportivo Italiano':'escudos/sportivo_italiano.png',
   'Deportivo Armenio':'escudos/deportivo_armenio.png',
   'Racing de Córdoba':'escudos/racing_de_cordoba.png',
-  'Chaco For Ever':'escudos/chaco_for_ever.png'
+  'Chaco For Ever':'escudos/chaco_for_ever.png',
+  'Deportivo Mandiyú':'escudos/deportivo_mandiyu.png',
+  'Huracán Corrientes':'escudos/huracan_corrientes.png'
 };
 
 let partidos = [], equipos = {}, temporadas = {};
@@ -5992,14 +5994,19 @@ function renderHistorialTorneos(equipoId) {
     );
     if (!psTorneo.length) return;
 
-    // Año = año máximo entre las fechas de esos partidos
+    // Año = primero se usa el campo Año de la temporada; si no existe, se calcula
+    // a partir de la fecha máxima entre los partidos de ese torneo.
     let anio = '?';
-    const anios = psTorneo.map(p => {
-      const f = (p.Fecha||'').split('T')[0];
-      const m = f.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-      return m ? parseInt(m[3]) : parseInt((f.split('-')[0])||0);
-    }).filter(a => a > 2000);
-    if (anios.length) anio = Math.max(...anios);
+    if (t.Año && parseInt(t.Año) > 0) {
+      anio = parseInt(t.Año);
+    } else {
+      const anios = psTorneo.map(p => {
+        const f = (p.Fecha||'').split('T')[0];
+        const m = f.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        return m ? parseInt(m[3]) : parseInt((f.split('-')[0])||0);
+      }).filter(a => a > 2000);
+      if (anios.length) anio = Math.max(...anios);
+    }
 
     // Stats
     const jugados = psTorneo.filter(p => esPartidoJugado(p));
