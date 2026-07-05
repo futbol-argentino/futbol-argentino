@@ -457,6 +457,21 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 .btn-volver:hover{border-color:var(--celeste);color:var(--celeste)}
 .detalle-equipo-nombre{font-family:var(--fuente-titulo);font-size:32px;font-weight:400;letter-spacing:2px}
 .detalle-equipo-escudo{width:44px;height:44px;object-fit:contain}
+
+/* ── ESTADIOS ── */
+.estadios-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px}
+.estadio-card{background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;overflow:hidden;cursor:pointer;transition:var(--trans);display:flex;flex-direction:column;position:relative}
+.estadio-card:hover{border-color:var(--borde-hover);transform:translateY(-3px);box-shadow:0 12px 30px rgba(0,0,0,0.4)}
+.estadio-card-foto-wrap{width:100%;height:140px;background:linear-gradient(160deg,var(--fondo-3) 0%,var(--fondo-4) 100%);overflow:hidden;display:flex;align-items:center;justify-content:center}
+.estadio-card-foto-wrap img{width:100%;height:100%;object-fit:cover}
+.estadio-card-info{padding:14px;display:flex;flex-direction:column;gap:6px}
+.estadio-card-nombre{font-family:var(--fuente-titulo);font-size:16px;font-weight:500;color:var(--texto-1);letter-spacing:0.5px;line-height:1.2}
+.estadio-card-equipo{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--texto-2)}
+.estadio-card-equipo img{width:16px;height:16px;object-fit:contain}
+.estadio-detalle{display:none}
+.estadio-detalle.visible{display:block;animation:fadeIn 0.2s ease}
+.estadio-detalle-foto{width:100%;max-height:380px;object-fit:cover;border-radius:16px;border:1px solid var(--borde);box-shadow:var(--sombra-card);margin-bottom:20px;display:block;background:linear-gradient(160deg,var(--fondo-3) 0%,var(--fondo-4) 100%)}
+.estadio-datos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:20px}
 .detalle-filtro{background:var(--fondo-2);border:1px solid var(--borde);border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .detalle-filtro-label{font-size:11px;color:var(--texto-3);text-transform:uppercase;letter-spacing:1px;white-space:nowrap;font-weight:600}
 .detalle-filtro select{background:var(--fondo-3);border:1px solid var(--borde);border-radius:8px;color:var(--texto-1);font-family:var(--fuente-cuerpo);font-size:14px;padding:8px 32px 8px 12px;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2338BDF8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;transition:var(--trans)}
@@ -808,6 +823,10 @@ select option{background:#080F20;color:#F0F6FF}
     <div class="sidebar-nav-item" onclick="cambiarTab('jugadores'); cerrarSidebar();" id="menu-jugadores">
       <span class="sidebar-nav-icon">👤</span>
       <span class="sidebar-nav-texto">Jugadores</span>
+    </div>
+    <div class="sidebar-nav-item" onclick="cambiarTab('estadios'); cerrarSidebar();" id="menu-estadios">
+      <span class="sidebar-nav-icon">🏟️</span>
+      <span class="sidebar-nav-texto">Estadios</span>
     </div>
   </nav>
   <div class="sidebar-footer">Base de Datos del Fútbol Argentino</div>
@@ -1454,6 +1473,43 @@ select option{background:#080F20;color:#F0F6FF}
     </div>
   </div><!-- fin panel-jugadores -->
 
+  <!-- ══ TAB ESTADIOS ══ -->
+  <div class="tab-panel" id="panel-estadios">
+
+    <!-- Vista portadas de divisiones -->
+    <div id="estadios-vista-divisiones">
+      <div class="filtros-panel" style="margin-bottom:20px;">
+        <div class="filtros-titulo">🏟️ Estadios</div>
+      </div>
+      <div id="estadios-divisiones-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:20px;"></div>
+    </div>
+
+    <!-- Vista grilla de estadios de una división -->
+    <div id="estadios-vista-grilla" style="display:none;">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+        <button class="btn-volver" onclick="volverDivisionesEstadios()">← Volver</button>
+        <div id="estadios-division-titulo" style="font-family:var(--fuente-titulo);font-size:24px;letter-spacing:1px;"></div>
+      </div>
+      <div class="equipos-buscar">
+        <span class="equipos-buscar-icon">🔍</span>
+        <input type="text" id="buscar-estadio" placeholder="Buscar estadio o equipo..." oninput="filtrarEstadiosDebounced()">
+      </div>
+      <div class="estadios-grid" id="estadios-grid"></div>
+    </div>
+
+    <!-- Vista detalle de un estadio -->
+    <div class="estadio-detalle" id="estadio-vista-detalle">
+      <div class="detalle-header">
+        <button class="btn-volver" onclick="volverEstadiosGrilla()">← Volver</button>
+        <div class="detalle-equipo-nombre" id="estadio-detalle-nombre"></div>
+      </div>
+      <img id="estadio-detalle-foto" class="estadio-detalle-foto" src="" alt="" onerror="this.style.display='none'">
+      <div class="estadio-datos-grid" id="estadio-detalle-datos"></div>
+      <div id="estadio-detalle-descripcion" style="color:var(--texto-2);font-size:14px;line-height:1.6;"></div>
+    </div>
+
+  </div><!-- fin panel-estadios -->
+
 </div><!-- fin main -->
 
 <!-- MODAL FICHA JUGADOR -->
@@ -1654,7 +1710,7 @@ select option{background:#080F20;color:#F0F6FF}
     <div class="modal-grid">
       <div class="modal-dato"><div class="modal-dato-label">Torneo</div><div class="modal-dato-valor" id="modal-torneo"></div></div>
       <div class="modal-dato"><div class="modal-dato-label">Fase</div><div class="modal-dato-valor" id="modal-fase"></div></div>
-      <div class="modal-dato full"><div class="modal-dato-label">Estadio</div><div class="modal-dato-valor" id="modal-estadio"></div></div>
+      <div class="modal-dato full" id="modal-estadio-wrap"><div class="modal-dato-label">Estadio</div><div class="modal-dato-valor" id="modal-estadio"></div></div>
 
       <!-- DESPLEGABLE GOLEADORES -->
       <div class="modal-dato full modal-desplegable" onclick="toggleDesplegable('goleadores')">
@@ -1776,6 +1832,7 @@ const URL_TEMPORADAS = 'TEMPORADAS.csv';
 const URL_POSICIONES = 'Posiciones.csv';
 const URL_HOY        = 'Hoy.csv';
 const URL_JUGADORES  = 'Jugadores.csv';
+const URL_ESTADIOS   = 'Estadios.csv';
 
 // ── CACHÉ (SessionStorage) ──
 async function fetchWithCache(url, bypassCache = false) {
@@ -1839,6 +1896,7 @@ let jugadoresData = {}; // nombre → { equipoId → Set(ID_Partido) }
 let equiposArr = [], temporadasArr = [];
 let posicionesData = [];
 let equipoDetalleID = null;
+let estadiosArr = [], estadiosCargados = false, estadiosDivisionActual = null;
 let ordenDesc = true;
 let ordenDetalleDesc = true;
 
@@ -1923,6 +1981,13 @@ async function cargarDatos() {
           const csvPos = await fetchWithCache(URL_POSICIONES);
           posicionesData = csvToArray(csvPos).filter(r => r.ID_Temporada);
         } catch(e) { /* sin Posiciones.csv */ }
+      })(),
+      (async () => {
+        try {
+          const csvEst = await fetchWithCache(URL_ESTADIOS);
+          estadiosArr = csvToArray(csvEst);
+        } catch(e) { estadiosArr = []; }
+        estadiosCargados = true;
       })()
     ]);
 
@@ -1999,6 +2064,7 @@ function cambiarTab(tab) {
   if (btn) btn.classList.add('activo');
   const menu = document.getElementById('menu-' + tab);
   if (menu) menu.classList.add('activo');
+  if (tab === 'estadios') cargarEstadios();
 }
 
 // ── HELPERS ──
@@ -2654,6 +2720,21 @@ function verPartido(id) {
     : (p.Fase || '');
   document.getElementById('modal-fase').textContent = faseTexto;
   document.getElementById('modal-estadio').textContent = p.Estadio||'No disponible';
+  const estadioObjModal = buscarEstadioPorNombre(p.Estadio);
+  const estadioWrapModal = document.getElementById('modal-estadio-wrap');
+  if (estadioObjModal) {
+    estadioWrapModal.style.cursor = 'pointer';
+    estadioWrapModal.onclick = () => irAEstadioDesdeModal(estadioObjModal.ID_Estadio);
+    estadioWrapModal.title = 'Ver ficha del estadio';
+    document.getElementById('modal-estadio').style.textDecoration = 'underline';
+    document.getElementById('modal-estadio').style.color = 'var(--celeste)';
+  } else {
+    estadioWrapModal.style.cursor = 'default';
+    estadioWrapModal.onclick = null;
+    estadioWrapModal.title = '';
+    document.getElementById('modal-estadio').style.textDecoration = 'none';
+    document.getElementById('modal-estadio').style.color = '';
+  }
 
   // Notas (desplegable al final)
   const notasWrap = document.getElementById('modal-notas-wrap');
@@ -5149,6 +5230,189 @@ function volverDivisiones() {
   document.getElementById('vista-provincias').style.display = 'none';
   document.getElementById('vista-divisiones').style.display = 'block';
   document.getElementById('buscar-equipo').value = '';
+}
+
+// ── ESTADIOS ──
+function normalizarTextoEstadio(s) {
+  return (s||'').toString().trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+}
+
+function buscarEstadioPorNombre(nombre) {
+  if (!nombre) return null;
+  const n = normalizarTextoEstadio(nombre);
+  if (!n) return null;
+  return estadiosArr.find(e => {
+    if (normalizarTextoEstadio(e.Nombre) === n) return true;
+    if (e.Alias) {
+      return e.Alias.split(',').map(a => normalizarTextoEstadio(a)).includes(n);
+    }
+    return false;
+  }) || null;
+}
+
+async function irAEstadioDesdeModal(id) {
+  if (!id) return;
+  cerrarModal();
+  if (!estadiosCargados) await cargarEstadios();
+  cambiarTab('estadios');
+  mostrarEstadioDirecto(id);
+}
+
+function mostrarEstadioDirecto(id) {
+  const e = estadiosArr.find(x => x.ID_Estadio === id);
+  if (!e) return;
+  estadiosDivisionActual = e.Division || null;
+  const cfg = DIVISIONES_CONFIG[estadiosDivisionActual] || {};
+  document.getElementById('estadios-vista-divisiones').style.display = 'none';
+  document.getElementById('estadios-vista-grilla').style.display = 'none';
+  document.getElementById('estadios-division-titulo').textContent = cfg.label || estadiosDivisionActual || 'Estadios';
+  document.getElementById('buscar-estadio').value = '';
+  renderEstadiosGrid();
+  verEstadio(id);
+}
+
+async function cargarEstadios() {
+  if (estadiosCargados) return;
+  try {
+    const csv = await fetchWithCache(URL_ESTADIOS);
+    estadiosArr = csvToArray(csv);
+  } catch(e) {
+    estadiosArr = [];
+  }
+  estadiosCargados = true;
+  renderDivisionesEstadios();
+}
+
+function renderDivisionesEstadios() {
+  const divsEnCSV = new Set(estadiosArr.map(e => e.Division).filter(Boolean));
+  const grid = document.getElementById('estadios-divisiones-grid');
+
+  if (!grid) return;
+
+  if (estadiosArr.length === 0) {
+    grid.innerHTML = '<div style="color:var(--texto-2);padding:20px;">No hay datos de estadios cargados todavía.</div>';
+    return;
+  }
+
+  if (divsEnCSV.size === 0) {
+    // Sin columna Division — mostrar todos directamente
+    document.getElementById('estadios-vista-divisiones').style.display = 'none';
+    estadiosDivisionActual = null;
+    document.getElementById('estadios-vista-grilla').style.display = 'block';
+    document.getElementById('estadios-division-titulo').textContent = 'Todos los estadios';
+    renderEstadiosGrid();
+    return;
+  }
+
+  const divsOrdenadas = DIVISIONES_ORDEN.filter(d => divsEnCSV.has(d));
+  divsEnCSV.forEach(d => { if (!DIVISIONES_ORDEN.includes(d)) divsOrdenadas.push(d); });
+
+  grid.innerHTML = divsOrdenadas.map(div => {
+    const cfg = DIVISIONES_CONFIG[div] || {};
+    const count = estadiosArr.filter(e => e.Division === div).length;
+    const logoHtml = cfg.logo
+      ? `<img src="${cfg.logo}" style="width:120px;height:120px;object-fit:contain;filter:drop-shadow(0 4px 16px rgba(0,0,0,0.5));" onerror="this.style.display='none'">`
+      : `<div style="font-size:64px;">🏟️</div>`;
+    return `<div class="camp-card" onclick="verDivisionEstadio('${div.replace(/'/g,"\\'")}')">
+      <div class="camp-foto-wrap">${logoHtml}</div>
+      <div class="camp-info">
+        <div class="camp-nombre">${cfg.label || div}</div>
+        <div class="camp-campeon" style="color:var(--texto-2);">${count} estadios</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function verDivisionEstadio(division) {
+  estadiosDivisionActual = division;
+  const cfg = DIVISIONES_CONFIG[division] || {};
+  document.getElementById('estadios-vista-divisiones').style.display = 'none';
+  document.getElementById('estadios-vista-grilla').style.display = 'block';
+  document.getElementById('estadios-division-titulo').textContent = cfg.label || division;
+  document.getElementById('buscar-estadio').value = '';
+  renderEstadiosGrid();
+}
+
+function volverDivisionesEstadios() {
+  estadiosDivisionActual = null;
+  document.getElementById('estadios-vista-grilla').style.display = 'none';
+  document.getElementById('estadios-vista-divisiones').style.display = 'block';
+}
+
+function renderEstadiosGrid() {
+  const grid = document.getElementById('estadios-grid');
+  const filtro = (document.getElementById('buscar-estadio').value || '').toLowerCase().trim();
+
+  let lista = estadiosDivisionActual !== null
+    ? estadiosArr.filter(e => e.Division === estadiosDivisionActual)
+    : estadiosArr;
+
+  if (filtro) {
+    lista = lista.filter(e =>
+      (e.Nombre || '').toLowerCase().includes(filtro) ||
+      (e.Equipo || '').toLowerCase().includes(filtro) ||
+      (e.Ciudad || '').toLowerCase().includes(filtro)
+    );
+  }
+
+  if (lista.length === 0) {
+    grid.innerHTML = '<div style="color:var(--texto-2);padding:20px;">No se encontraron estadios.</div>';
+    return;
+  }
+
+  grid.innerHTML = lista.map(e => {
+    const fotoHtml = e.Foto
+      ? `<img src="${e.Foto}" loading="lazy" onerror="this.parentElement.innerHTML='<div style=\\'font-size:40px;\\'>🏟️</div>'">`
+      : `<div style="font-size:40px;">🏟️</div>`;
+    const escudo = escudoImg(e.Equipo, 16);
+    return `<div class="estadio-card" onclick="verEstadio('${e.ID_Estadio}')">
+      <div class="estadio-card-foto-wrap">${fotoHtml}</div>
+      <div class="estadio-card-info">
+        <div class="estadio-card-nombre">${e.Nombre || ''}</div>
+        ${e.Equipo ? `<div class="estadio-card-equipo">${escudo}<span>${e.Equipo}</span></div>` : ''}
+        ${e.Ciudad ? `<div class="estadio-card-equipo">📍 ${e.Ciudad}${e.Provincia ? ', ' + e.Provincia : ''}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+const filtrarEstadiosDebounced = debounce(renderEstadiosGrid, 250);
+
+function verEstadio(id) {
+  const e = estadiosArr.find(x => x.ID_Estadio === id);
+  if (!e) return;
+
+  document.getElementById('estadios-vista-grilla').style.display = 'none';
+  document.getElementById('estadio-vista-detalle').classList.add('visible');
+
+  document.getElementById('estadio-detalle-nombre').textContent = e.Nombre || '';
+  const foto = document.getElementById('estadio-detalle-foto');
+  foto.src = e.Foto || '';
+  foto.alt = e.Nombre || '';
+  foto.style.display = e.Foto ? 'block' : 'none';
+
+  const datos = [
+    { label: 'Equipo', valor: e.Equipo, icon: '🛡️' },
+    { label: 'Ciudad', valor: e.Ciudad, icon: '📍' },
+    { label: 'Provincia', valor: e.Provincia, icon: '🗺️' },
+    { label: 'Capacidad', valor: e.Capacidad ? Number(e.Capacidad).toLocaleString('es-AR') + ' espectadores' : '', icon: '👥' },
+    { label: 'Inauguración', valor: e.Inauguracion, icon: '📅' },
+    { label: 'Dirección', valor: e.Direccion, icon: '🏠' },
+    { label: 'Superficie', valor: e.Superficie, icon: '🌱' },
+    { label: 'Techado', valor: e.Techado, icon: '☂️' },
+    { label: 'Iluminación', valor: e.Iluminacion, icon: '💡' },
+  ].filter(d => d.valor);
+
+  document.getElementById('estadio-detalle-datos').innerHTML = datos.map(d =>
+    `<div class="modal-dato"><div class="modal-dato-label">${d.icon} ${d.label}</div><div class="modal-dato-valor">${d.valor}</div></div>`
+  ).join('');
+
+  document.getElementById('estadio-detalle-descripcion').textContent = e.Descripcion || '';
+}
+
+function volverEstadiosGrilla() {
+  document.getElementById('estadio-vista-detalle').classList.remove('visible');
+  document.getElementById('estadios-vista-grilla').style.display = 'block';
 }
 
 // ── HOY ──
