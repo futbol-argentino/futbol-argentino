@@ -1,6 +1,6 @@
 ID_Temporada,Año,Competencia,Division,Campeon,Foto_Trofeo
-1,2025,Copa De La Liga Apertura,Primera Division,Platense,apertura_2025.jpg
-2,2025,Copa De La Liga Clausura,Primera Division,Estudiantes LP,clausura_2025.jpg
+1,2025,Copa De La Liga Apertura 2025,Primera Division,Platense,apertura_2025.jpg
+2,2025,Copa De La Liga Clausura 2025,Primera Division,Estudiantes LP,clausura_2025.jpg
 3,2024,Copa De La Liga 2024,Primera Division,Estudiantes LP,copa_2024.jpg
 4,2024,Liga Profesional 2024,Primera Division,Velez Sarsfield,liga_2024.jpg
 5,2023,Copa De La Liga 2023,Primera Division,Rosario Central,copa_2023.jpg
@@ -62,3 +62,16 @@ ID_Temporada,Año,Competencia,Division,Campeon,Foto_Trofeo
 61,1994,Torneo Clausura 1994,Primera Division,Independiente,
 62,1993,Torneo Apertura 1993,Primera Division,River Plate,
 63,1993,Torneo Clausura 1993,Primera Division,Velez Sarsfield,
+64,1992,Torneo Apertura 1992,Primera Division,Boca Juniors,
+65,1992,Torneo Clausura 1992,Primera Division,Newells,
+66,1991,Torneo Apertura 1991,Primera Division,River Plate,
+67,1991,Torneo Clausura 1991,Primera Division,Boca Juniors,
+68,1990,Torneo Apertura 1990,Primera Division,Newells,
+69,1989/1990,Campeonato de Primera División 1989-90,Primera Division,River Plate,
+70,1988/1989,Campeonato de Primera División 1988-89,Primera Division,Independiente,
+71,1987/1988,Campeonato de Primera División 1987-88,Primera Division,Newells,
+72,1986/1987,Campeonato de Primera División 1986-87,Primera Division,Rosario Central,
+73,1985/1986,Campeonato de Primera División 1985-86,Primera Division,River Plate,
+74,1985,Torneo Nacional 1985,Primera Division,Argentinos Juniors,
+75,1984,Torneo Nacional 1984,Primera Division,Ferro Carril Oeste,
+76,1984,Campeonato de Primera División 1984,Primera Division,Argentinos Juniors,
