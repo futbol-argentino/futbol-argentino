@@ -2129,6 +2129,37 @@ function calcularScorePenales(raw) {
   return null;
 }
 
+// Construye el desplegable de goleadores (flecha + fila oculta) para un partido dado.
+// colspan indica cuántas columnas ocupa la tabla donde se va a insertar la fila oculta.
+function construirGolData(p, local, visita, colspan) {
+  const raw = p.Goleadores || '';
+  if (!raw || raw.trim() === '' || raw.toLowerCase() === 'ninguno') return null;
+  const partes = raw.split('/');
+  const escL = ESCUDOS[local] ? `<img src="${ESCUDOS[local]}" style="width:14px;height:14px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">` : '';
+  const escV = ESCUDOS[visita] ? `<img src="${ESCUDOS[visita]}" style="width:14px;height:14px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">` : '';
+  function parseGoles(raw, esc) {
+    return (raw||'').split('-').map(e=>e.trim()).filter(e=>e&&e.toLowerCase()!=='ninguno'&&e.length>1).map(entrada => {
+      const minMatch = entrada.match(/(\d+)\s*(?:\+\s*\d+)?\s*[''`´'′]/);
+      const minuto = minMatch ? parseInt(minMatch[1]) : 999;
+      const nombre = limpiarNombre(entrada);
+      let badge = '';
+      if (/\(P\)/i.test(entrada)) badge = `<span style="background:var(--amarillo);color:#000;font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;margin-left:3px;">P</span>`;
+      if (/\(EC\)/i.test(entrada)) badge = `<span style="background:var(--rojo);color:#fff;font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;margin-left:3px;">EC</span>`;
+      const minTxt = minMatch ? `<span style="color:var(--texto-3);font-size:10px;min-width:28px;">${minMatch[0]}</span>` : '';
+      return { minuto, html: `<div style="display:flex;align-items:center;gap:5px;padding:2px 0;">${esc}${minTxt}<span style="color:var(--texto-2);font-size:12px;">${nombre}</span>${badge}</div>` };
+    });
+  }
+  const todos = [...parseGoles(partes[0], escL), ...parseGoles(partes[1], escV)].sort((a,b)=>a.minuto-b.minuto);
+  if (!todos.length) return null;
+  const uid = 'gol_' + p.ID_Partido + '_' + (_golUidSeq++);
+  const tdId = 'goltd_' + uid;
+  const arrow = `<span onclick="event.stopPropagation();var c=document.getElementById('${uid}');var td=document.getElementById('${tdId}');var a=document.getElementById('arr_${uid}');var open=c.style.display==='block';c.style.display=open?'none':'block';td.style.padding=open?'0':'4px 20px 8px 20px';td.style.borderBottom=open?'none':'1px solid var(--borde)';a.style.transform=open?'rotate(0deg)':'rotate(180deg)';"
+    style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:1px solid var(--borde);border-radius:6px;cursor:pointer;margin-left:5px;flex-shrink:0;transition:border-color 0.15s;vertical-align:middle;"
+    onmouseover="this.style.borderColor='var(--celeste)'" onmouseout="this.style.borderColor='var(--borde)'"><span id="arr_${uid}" style="font-size:12px;color:var(--texto-2);transition:transform 0.2s;display:inline-block;line-height:1;">▼</span></span>`;
+  const drop = `<tr class="fila-gol-preview"><td id="${tdId}" colspan="${colspan}" style="padding:0;border-bottom:none;"><div id="${uid}" style="display:none;">${todos.map(g=>g.html).join('')}</div></td></tr>`;
+  return { arrow, drop };
+}
+
 function filaPartido(p, equipoRef) {
   const local = equipos[p.Local_ID] || p.Local_ID;
   const visita = equipos[p.Visitante_ID] || p.Visitante_ID;
@@ -2146,34 +2177,7 @@ function filaPartido(p, equipoRef) {
   const claseExtra = esFav ? ' class="equipo-favorito-row"' : '';
 
   // Goleadores desplegables ordenados por minuto con escudo de equipo
-  const golData = (() => {
-    const raw = p.Goleadores || '';
-    if (!raw || raw.trim() === '' || raw.toLowerCase() === 'ninguno') return null;
-    const partes = raw.split('/');
-    const escL = ESCUDOS[local] ? `<img src="${ESCUDOS[local]}" style="width:14px;height:14px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">` : '';
-    const escV = ESCUDOS[visita] ? `<img src="${ESCUDOS[visita]}" style="width:14px;height:14px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">` : '';
-    function parseGoles(raw, esc) {
-      return (raw||'').split('-').map(e=>e.trim()).filter(e=>e&&e.toLowerCase()!=='ninguno'&&e.length>1).map(entrada => {
-        const minMatch = entrada.match(/(\d+)\s*(?:\+\s*\d+)?\s*[''`´'′]/);
-        const minuto = minMatch ? parseInt(minMatch[1]) : 999;
-        const nombre = limpiarNombre(entrada);
-        let badge = '';
-        if (/\(P\)/i.test(entrada)) badge = `<span style="background:var(--amarillo);color:#000;font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;margin-left:3px;">P</span>`;
-        if (/\(EC\)/i.test(entrada)) badge = `<span style="background:var(--rojo);color:#fff;font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;margin-left:3px;">EC</span>`;
-        const minTxt = minMatch ? `<span style="color:var(--texto-3);font-size:10px;min-width:28px;">${minMatch[0]}</span>` : '';
-        return { minuto, html: `<div style="display:flex;align-items:center;gap:5px;padding:2px 0;">${esc}${minTxt}<span style="color:var(--texto-2);font-size:12px;">${nombre}</span>${badge}</div>` };
-      });
-    }
-    const todos = [...parseGoles(partes[0], escL), ...parseGoles(partes[1], escV)].sort((a,b)=>a.minuto-b.minuto);
-    if (!todos.length) return null;
-    const uid = 'gol_' + p.ID_Partido + '_' + (_golUidSeq++);
-    const tdId = 'goltd_' + uid;
-    const arrow = `<span onclick="event.stopPropagation();var c=document.getElementById('${uid}');var td=document.getElementById('${tdId}');var a=document.getElementById('arr_${uid}');var open=c.style.display==='block';c.style.display=open?'none':'block';td.style.padding=open?'0':'4px 20px 8px 20px';td.style.borderBottom=open?'none':'1px solid var(--borde)';a.style.transform=open?'rotate(0deg)':'rotate(180deg)';"
-      style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:1px solid var(--borde);border-radius:6px;cursor:pointer;margin-left:5px;flex-shrink:0;transition:border-color 0.15s;vertical-align:middle;"
-      onmouseover="this.style.borderColor='var(--celeste)'" onmouseout="this.style.borderColor='var(--borde)'"><span id="arr_${uid}" style="font-size:12px;color:var(--texto-2);transition:transform 0.2s;display:inline-block;line-height:1;">▼</span></span>`;
-    const drop = `<tr class="fila-gol-preview"><td id="${tdId}" colspan="5" style="padding:0;border-bottom:none;"><div id="${uid}" style="display:none;">${todos.map(g=>g.html).join('')}</div></td></tr>`;
-    return { arrow, drop };
-  })();
+  const golData = construirGolData(p, local, visita, 5);
 
   const scorePen = p.Tipo_Definicion === '1' && p.Penales ? calcularScorePenales(p.Penales) : null;
   const resultadoTxt = scorePen
@@ -4004,14 +4008,16 @@ function verTorneo(idTemporada) {
                 ? `<span class="${rc}" style="font-family:var(--fuente-titulo);font-size:17px;">${p.Goles_Local}<span style="color:var(--amarillo);">(${scorePen.local})</span> - <span style="color:var(--amarillo);">(${scorePen.visita})</span>${p.Goles_Visitante}</span>`
                 : `<span class="${rc}" style="font-family:var(--fuente-titulo);font-size:17px;">${p.Goles_Local} - ${p.Goles_Visitante}</span>`)
             : `<span style="color:var(--texto-2);font-size:13px;">${p.Fecha ? p.Fecha.split('T')[0] : '—'}</span>`;
+          const golData = construirGolData(p, local, visita, 4);
           return `<tr onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
             <td style="padding:8px 12px;overflow:hidden;"><div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;overflow:hidden;"><span style="font-size:13px;font-weight:500;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${local}</span>${escL}</div></td>
             <td style="padding:8px 6px;text-align:center;white-space:nowrap;">${resultado}</td>
-            <td style="padding:8px 12px;overflow:hidden;"><div style="display:flex;align-items:center;gap:6px;overflow:hidden;"><span style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${visita}</span></div></td>
-          </tr>`;
+            <td style="padding:8px 12px;overflow:hidden;"><div style="display:flex;align-items:center;gap:6px;overflow:hidden;">${escV}<span style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${visita}</span></div></td>
+            <td style="padding:8px 6px;text-align:center;">${golData ? golData.arrow : ''}</td>
+          </tr>${golData ? golData.drop : ''}`;
         }).join('');
         const diaFormateado = formatearFechaDia(fecha);
-        return `<tr><td colspan="3" style="padding:6px 12px;background:var(--fondo-3);color:var(--texto-2);font-size:12px;font-weight:600;letter-spacing:0.5px;border-top:1px solid var(--borde);border-bottom:1px solid var(--borde);">${diaFormateado}</td></tr>${filas}`;
+        return `<tr><td colspan="4" style="padding:6px 12px;background:var(--fondo-3);color:var(--texto-2);font-size:12px;font-weight:600;letter-spacing:0.5px;border-top:1px solid var(--borde);border-bottom:1px solid var(--borde);">${diaFormateado}</td></tr>${filas}`;
       }).join('');
 
       const esFinal = !grupoNombre.startsWith('Fecha');
@@ -4026,7 +4032,7 @@ function verTorneo(idTemporada) {
         <div id="${gid}" style="display:none;">
           <div style="overflow-x:auto;">
             <table style="width:100%;border-collapse:collapse;min-width:340px;table-layout:fixed;">
-              <colgroup><col style="width:auto"><col style="width:120px"><col style="width:auto"></colgroup>
+              <colgroup><col style="width:auto"><col style="width:120px"><col style="width:auto"><col style="width:38px"></colgroup>
               <tbody>${fechasHTML}</tbody>
             </table>
           </div>
@@ -4809,13 +4815,14 @@ function verFichaDT(nombre) {
     const rc = resClase(p.Goles_Local, p.Goles_Visitante);
     const torneo = temporadas[p.ID_Temporada]||'';
     const fecha = p.Fecha ? p.Fecha.split('T')[0] : '';
+    const golData = construirGolData(p, local, visita, 5);
     return `<tr onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
       <td class="td-fecha">${fecha}</td>
       <td><div class="td-equipo">${escudoImg(local,18)}<span>${local}</span></div></td>
       <td class="td-resultado"><span class="${rc}">${p.Goles_Local} - ${p.Goles_Visitante}</span></td>
       <td><div class="td-equipo">${escudoImg(visita,18)}<span>${visita}</span></div></td>
-      <td style="font-size:12px;color:var(--texto-3);">${torneo}</td>
-    </tr>`;
+      <td style="font-size:12px;color:var(--texto-3);"><div style="display:flex;align-items:center;">${torneo}${golData ? golData.arrow : ''}</div></td>
+    </tr>${golData ? golData.drop : ''}`;
   }).join('');
 
   document.getElementById('modal-dt').classList.add('visible');
@@ -6059,13 +6066,14 @@ function renderH2H(eq1, eq2, contenedorId) {
     const local=equipos[p.Local_ID]||p.Local_ID, visita=equipos[p.Visitante_ID]||p.Visitante_ID;
     const fecha=(p.Fecha||'').split('T')[0];
     const rc=resClase(p.Goles_Local,p.Goles_Visitante);
+    const golData = construirGolData(p, local, visita, 5);
     return `<tr onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
       <td class="td-fecha">${fecha}</td>
       <td><div class="td-equipo">${escudoImg(local,18)}<span>${local}</span></div></td>
       <td class="td-resultado"><span class="${rc}">${p.Goles_Local} - ${p.Goles_Visitante}</span>${extra ? `<div style="font-size:10px;color:var(--celeste);font-weight:700;margin-top:2px;">${extra}</div>` : ''}</td>
       <td><div class="td-equipo">${escudoImg(visita,18)}<span>${visita}</span></div></td>
-      <td><span class="badge-torneo" style="font-size:10px;">${temporadas[p.ID_Temporada]||p.Fase||''}</span></td>
-    </tr>`;
+      <td><div style="display:flex;align-items:center;"><span class="badge-torneo" style="font-size:10px;">${temporadas[p.ID_Temporada]||p.Fase||''}</span>${golData ? golData.arrow : ''}</div></td>
+    </tr>${golData ? golData.drop : ''}`;
   };
 
   const filaGoleada = ({p}) => filaPartidoH2H(p);
