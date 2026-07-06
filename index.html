@@ -4005,9 +4005,9 @@ function verTorneo(idTemporada) {
                 : `<span class="${rc}" style="font-family:var(--fuente-titulo);font-size:17px;">${p.Goles_Local} - ${p.Goles_Visitante}</span>`)
             : `<span style="color:var(--texto-2);font-size:13px;">${p.Fecha ? p.Fecha.split('T')[0] : '—'}</span>`;
           return `<tr onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
-            <td style="padding:8px 12px;"><div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;"><span style="font-size:13px;font-weight:500;text-align:right;">${local}</span>${escL}</div></td>
-            <td style="padding:8px 6px;text-align:center;white-space:nowrap;min-width:60px;">${resultado}</td>
-            <td style="padding:8px 12px;"><div style="display:flex;align-items:center;gap:6px;">${escV}<span style="font-size:13px;font-weight:500;">${visita}</span></div></td>
+            <td style="padding:8px 12px;overflow:hidden;"><div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;overflow:hidden;"><span style="font-size:13px;font-weight:500;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${local}</span>${escL}</div></td>
+            <td style="padding:8px 6px;text-align:center;white-space:nowrap;">${resultado}</td>
+            <td style="padding:8px 12px;overflow:hidden;"><div style="display:flex;align-items:center;gap:6px;overflow:hidden;"><span style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${visita}</span></div></td>
           </tr>`;
         }).join('');
         const diaFormateado = formatearFechaDia(fecha);
@@ -4025,7 +4025,10 @@ function verTorneo(idTemporada) {
         </div>
         <div id="${gid}" style="display:none;">
           <div style="overflow-x:auto;">
-            <table style="width:100%;border-collapse:collapse;min-width:300px;"><tbody>${fechasHTML}</tbody></table>
+            <table style="width:100%;border-collapse:collapse;min-width:340px;table-layout:fixed;">
+              <colgroup><col style="width:auto"><col style="width:120px"><col style="width:auto"></colgroup>
+              <tbody>${fechasHTML}</tbody>
+            </table>
           </div>
         </div>
       </div>`;
