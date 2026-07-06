@@ -952,17 +952,19 @@ select option{background:#080F20;color:#F0F6FF}
           <label class="filtro-label">Buscar equipo</label>
           <input type="text" id="buscar" class="filtro-input" placeholder="Ej: Boca, River..." oninput="filtrarDebounced()">
         </div>
-        <div class="filtro-grupo">
+        <div class="filtro-grupo" style="position:relative;">
           <label class="filtro-label">Equipo</label>
-          <select id="filtro-equipo" class="filtro-select" onchange="filtrar()">
-            <option value="">Todos los equipos</option>
-          </select>
+          <input type="text" id="filtro-equipo-input" class="filtro-input" placeholder="Todos los equipos..." autocomplete="off"
+            oninput="filtrarEquipoDropdown('match1')" onfocus="mostrarDropdown('match1')" onblur="setTimeout(()=>ocultarDropdown('match1'),200)">
+          <input type="hidden" id="filtro-equipo" value="">
+          <div id="match1-equipo-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:9999;background:var(--fondo-2);border:1px solid var(--borde-activo);border-radius:10px;max-height:220px;overflow-y:auto;box-shadow:var(--sombra-card);margin-top:3px;"></div>
         </div>
-        <div class="filtro-grupo">
+        <div class="filtro-grupo" style="position:relative;">
           <label class="filtro-label">Contra</label>
-          <select id="filtro-equipo2" class="filtro-select" onchange="filtrar()">
-            <option value="">Cualquier equipo</option>
-          </select>
+          <input type="text" id="filtro-equipo2-input" class="filtro-input" placeholder="Cualquier equipo..." autocomplete="off"
+            oninput="filtrarEquipoDropdown('match2')" onfocus="mostrarDropdown('match2')" onblur="setTimeout(()=>ocultarDropdown('match2'),200)">
+          <input type="hidden" id="filtro-equipo2" value="">
+          <div id="match2-equipo-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:9999;background:var(--fondo-2);border:1px solid var(--borde-activo);border-radius:10px;max-height:220px;overflow-y:auto;box-shadow:var(--sombra-card);margin-top:3px;"></div>
         </div>
         <div class="filtro-grupo">
           <label class="filtro-label">Resultado</label>
@@ -2070,17 +2072,6 @@ async function cargarDatos() {
       })()
     ]);
 
-    // Llenar selects del buscador
-    const sel1 = document.getElementById('filtro-equipo');
-    const sel2 = document.getElementById('filtro-equipo2');
-    equiposArr.sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo)).forEach(e => {
-      [sel1, sel2].forEach(sel => {
-        const opt = document.createElement('option');
-        opt.value = e.ID_Equipo; opt.textContent = e.Nombre_Equipo;
-        sel.appendChild(opt);
-      });
-    });
-
     renderizarEquipos();
     actualizarFechasDisponibles();
     filtrar();
@@ -2418,9 +2409,9 @@ function actualizarUIFechaNav() {
 
 // ── BUSCADOR ──
 function limpiarFiltros() {
-  ['buscar','filtro-equipo','filtro-equipo2','filtro-resultado'].forEach(id => {
+  ['buscar','filtro-equipo','filtro-equipo2','filtro-resultado','filtro-equipo-input','filtro-equipo2-input'].forEach(id => {
     const el = document.getElementById(id);
-    el.value = '';
+    if (el) el.value = '';
   });
   filtrar();
 }
@@ -4545,10 +4536,16 @@ function inicializarBuscadorJugadores() {
 // ── Dropdown buscador de equipo ──
 let _equiposOrdenados = [];
 
+function _idsDropdownEquipo(contexto) {
+  if (contexto === 'stats')  return { input: 'stats-equipo-input',   hid: 'stats-filtro-equipo' };
+  if (contexto === 'match1') return { input: 'filtro-equipo-input',  hid: 'filtro-equipo' };
+  if (contexto === 'match2') return { input: 'filtro-equipo2-input', hid: 'filtro-equipo2' };
+  return { input: `${contexto}-equipo-input`, hid: `${contexto}-buscar-equipo` };
+}
+
 function filtrarEquipoDropdown(contexto) {
-  const inputId = contexto === 'stats' ? 'stats-equipo-input' : `${contexto}-equipo-input`;
+  const { input: inputId, hid: hidId } = _idsDropdownEquipo(contexto);
   const dropId  = `${contexto}-equipo-dropdown`;
-  const hidId   = contexto === 'stats' ? 'stats-filtro-equipo' : `${contexto}-buscar-equipo`;
   const q = document.getElementById(inputId)?.value.toLowerCase().trim() || '';
 
   // Si borraron el texto, limpiar el filtro
@@ -4556,6 +4553,7 @@ function filtrarEquipoDropdown(contexto) {
     document.getElementById(hidId).value = '';
     if (contexto === 'jugador') buscarJugador();
     else if (contexto === 'dt') buscarDT();
+    else if (contexto === 'match1' || contexto === 'match2') filtrar();
     else renderEstadisticas();
   }
 
@@ -4583,14 +4581,14 @@ function ocultarDropdown(contexto) {
 }
 
 function seleccionarEquipoDropdown(contexto, id, nombre) {
-  const inputId = contexto === 'stats' ? 'stats-equipo-input' : `${contexto}-equipo-input`;
-  const hidId   = contexto === 'stats' ? 'stats-filtro-equipo' : `${contexto}-buscar-equipo`;
+  const { input: inputId, hid: hidId } = _idsDropdownEquipo(contexto);
   const dropId  = `${contexto}-equipo-dropdown`;
   document.getElementById(inputId).value = nombre;
   document.getElementById(hidId).value = id;
   document.getElementById(dropId).style.display = 'none';
   if (contexto === 'jugador') buscarJugador();
   else if (contexto === 'dt') buscarDT();
+  else if (contexto === 'match1' || contexto === 'match2') filtrar();
   else renderEstadisticas();
 }
 
