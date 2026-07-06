@@ -1,77 +1,79 @@
-ID_Temporada,Año,Competencia,Division,Campeon,Foto_Trofeo
-1,2025,Copa De La Liga Apertura 2025,Primera Division,Platense,apertura_2025.jpg
-2,2025,Copa De La Liga Clausura 2025,Primera Division,Estudiantes LP,clausura_2025.jpg
-3,2024,Copa De La Liga 2024,Primera Division,Estudiantes LP,copa_2024.jpg
-4,2024,Liga Profesional 2024,Primera Division,Velez Sarsfield,liga_2024.jpg
-5,2023,Copa De La Liga 2023,Primera Division,Rosario Central,copa_2023.jpg
-6,2023,Liga Profesional 2023,Primera Division,River Plate,liga_2023.jpg
-7,2022,Copa De La Liga 2022,Primera Division,Boca Juniors,copa_2022.jpg
-8,2022,Liga Profesional 2022,Primera Division,Boca Juniors,liga_2022.jpg
-9,2021,Copa De La Liga 2021,Primera Division,Colon,copa_2021.jpg
-10,2021,Liga Profesional 2021,Primera Division,River Plate,liga_2021.jpg
-11,2020,Copa Diego Armando Maradona 2020,Primera Division,Boca Juniors,copa_2020.jpg
-12,2019/20,Superliga Argentina 2019/2020,Primera Division,Boca Juniors,superliga_2020.jpg
-13,2020,Copa De La Superliga 2020,,,
-14,2018/19,Superliga Argentina 2018/2019,Primera Division,Racing Club,superliga_2019.jpg
-15,2019,Copa De La Superliga 2019,Primera Division,Tigre,copa_2019.jpg
-16,2017/18,Superliga Argentina 2017/2018,Primera Division,Boca Juniors,superliga_2018.jpg
-17,2016/17,Superliga Argentina 2016/2017,Primera Division,Boca Juniors,superliga_2017.jpg
-18,2016,Torneo Transición 2016,Primera Division,Lanus,transicion_2016.jpg
-19,2015,Primera División 2015,Primera Division,Boca Juniors,primera_2015.jpg
-20,2014,Torneo Transición 2014,Primera Division,Racing Club,
-21,2014,Torneo Final 2014,Primera Division,River Plate,
-22,2013,Torneo Inicial 2013,Primera Division,San Lorenzo,
-23,2013,Torneo Final 2013,Primera Division,Newells,
-24,2012,Torneo Inicial 2012,Primera Division,Velez Sarsfield,
-25,2012,Torneo Clausura 2012,Primera Division,Arsenal,
-26,2011,Torneo Apertura 2011,Primera Division,Boca Juniors,
-27,2011,Torneo Clausura 2011,Primera Division,Velez Sarsfield,
-28,2010,Torneo Apertura 2010,Primera Division,Estudiantes LP,
-29,2010,Torneo Clausura 2010,Primera Division,Argentinos Juniors,
-30,2009,Torneo Apertura 2009,Primera Division,Banfield,
-31,2009,Torneo Clausura 2009,Primera Division,Velez Sarsfield,
-32,2008,Torneo Apertura 2008,Primera Division,Boca Juniors,
-33,2008,Torneo Clausura 2008,Primera Division,River Plate,
-34,2007,Torneo Apertura 2007,Primera Division,Lanus,
-35,2007,Torneo Clausura 2007,Primera Division,San Lorenzo,
-36,2006,Torneo Apertura 2006,Primera Division,Estudiantes LP,
-37,2006,Torneo Clausura 2006,Primera Division,Boca Juniors,
-38,2005,Torneo Apertura 2005,Primera Division,Boca Juniors,
-39,2005,Torneo Clausura 2005,Primera Division,Velez Sarsfield,
-40,2004,Torneo Apertura 2004,Primera Division,Newells,
-41,2004,Torneo Clausura 2004,Primera Division,River Plate,
-42,2003,Torneo Apertura 2003,Primera Division,Boca Juniors,
-43,2003,Torneo Clausura 2003,Primera Division,River Plate,
-44,2002,Torneo Apertura 2002,Primera Division,Independiente,
-45,2002,Torneo Clausura 2002,Primera Division,River Plate,
-46,2001,Torneo Apertura 2001,Primera Division,Racing Club,
-47,2001,Torneo Clausura 2001,Primera Division,San Lorenzo,
-48,2000,Torneo Apertura 2000,Primera Division,Boca Juniors,
-49,2000,Torneo Clausura 2000,Primera Division,River Plate,
-50,1999,Torneo Apertura 1999,Primera Division,River Plate,
-51,1999,Torneo Clausura 1999,Primera Division,Boca Juniors,
-52,1998,Torneo Apertura 1998,Primera Division,Boca Juniors,
-53,1998,Torneo Clausura 1998,Primera Division,Velez Sarsfield,
-54,1997,Torneo Apertura 1997,Primera Division,River Plate,
-55,1997,Torneo Clausura 1997,Primera Division,River Plate,
-56,1996,Torneo Apertura 1996,Primera Division,River Plate,
-57,1996,Torneo Clausura 1996,Primera Division,Velez Sarsfield,
-58,1995,Torneo Apertura 1995,Primera Division,Velez Sarsfield,
-59,1995,Torneo Clausura 1995,Primera Division,San Lorenzo,
-60,1994,Torneo Apertura 1994,Primera Division,River Plate,
-61,1994,Torneo Clausura 1994,Primera Division,Independiente,
-62,1993,Torneo Apertura 1993,Primera Division,River Plate,
-63,1993,Torneo Clausura 1993,Primera Division,Velez Sarsfield,
-64,1992,Torneo Apertura 1992,Primera Division,Boca Juniors,
-65,1992,Torneo Clausura 1992,Primera Division,Newells,
-66,1991,Torneo Apertura 1991,Primera Division,River Plate,
-67,1991,Torneo Clausura 1991,Primera Division,Boca Juniors,
-68,1990,Torneo Apertura 1990,Primera Division,Newells,
-69,1989/1990,Campeonato de Primera División 1989-90,Primera Division,River Plate,
-70,1988/1989,Campeonato de Primera División 1988-89,Primera Division,Independiente,
-71,1987/1988,Campeonato de Primera División 1987-88,Primera Division,Newells,
-72,1986/1987,Campeonato de Primera División 1986-87,Primera Division,Rosario Central,
-73,1985/1986,Campeonato de Primera División 1985-86,Primera Division,River Plate,
-74,1985,Torneo Nacional 1985,Primera Division,Argentinos Juniors,
-75,1984,Torneo Nacional 1984,Primera Division,Ferro Carril Oeste,
-76,1984,Campeonato de Primera División 1984,Primera Division,Argentinos Juniors,
+ID_Temporada,Año,Competencia,Division,Campeon,Subcampeon,Ascensos,Descensos,Foto_Trofeo
+1,2025,Copa De La Liga Apertura 2025,Primera Division,Platense,Huracan,,,apertura_2025.jpg
+2,2025,Copa De La Liga Clausura 2025,Primera Division,Estudiantes LP,Racing Club,,Godoy Cruz;San Martin de San Juan,clausura_2025.jpg
+3,2024,Copa De La Liga 2024,Primera Division,Estudiantes LP,Velez Sarsfield,,,copa_2024.jpg
+4,2024,Liga Profesional 2024,Primera Division,Velez Sarsfield,Talleres,,,liga_2024.jpg
+5,2023,Copa De La Liga 2023,Primera Division,Rosario Central,Platense,,Arsenal;Colon,copa_2023.jpg
+6,2023,Liga Profesional 2023,Primera Division,River Plate,Talleres,,,liga_2023.jpg
+7,2022,Copa De La Liga 2022,Primera Division,Boca Juniors,Tigre,,,copa_2022.jpg
+8,2022,Liga Profesional 2022,Primera Division,Boca Juniors,Racing Club,,Aldosivi;Patronato,liga_2022.jpg
+9,2021,Copa De La Liga 2021,Primera Division,Colon,Racing Club,,,copa_2021.jpg
+10,2021,Liga Profesional 2021,Primera Division,River Plate,Defensa y Justicia,,,liga_2021.jpg
+11,2020,Copa Diego Armando Maradona 2020,Primera Division,Boca Juniors,Banfield,,,copa_2020.jpg
+12,2019/20,Superliga Argentina 2019/2020,Primera Division,Boca Juniors,River Plate,,,superliga_2020.jpg
+13,2020,Copa De La Superliga 2020,,,,,,
+14,2018/19,Superliga Argentina 2018/2019,Primera Division,Racing Club,Defensa y Justicia,,San Martin de Tucuman;Tigre;San Martin de San Juan;Belgrano,superliga_2019.jpg
+15,2019,Copa De La Superliga 2019,Primera Division,Tigre,Boca Juniors,,,copa_2019.jpg
+16,2017/18,Superliga Argentina 2017/2018,Primera Division,Boca Juniors,Godoy Cruz,,Arsenal;Chacarita Juniors;Temperley;Olimpo,superliga_2018.jpg
+17,2016/17,Superliga Argentina 2016/2017,Primera Division,Boca Juniors,River Plate,,Aldosivi;Atletico Rafaela;Quilmes;Sarmiento,superliga_2017.jpg
+18,2016,Torneo Transición 2016,Primera Division,Lanus,San Lorenzo,,Argentinos Juniors,transicion_2016.jpg
+19,2015,Primera División 2015,Primera Division,Boca Juniors,San Lorenzo,,Crucero del Norte;Nueva Chicago,primera_2015.jpg
+20,2014,Torneo Transición 2014,Primera Division,Racing Club,River Plate,,,
+21,2014,Torneo Final 2014,Primera Division,River Plate,Boca Juniors,,Colon;All Boys;Argentinos Juniors,
+22,2013,Torneo Inicial 2013,Primera Division,San Lorenzo,Lanus,,,
+23,2013,Torneo Final 2013,Primera Division,Newells,River Plate,,San Martin de San Juan;Independiente;Union,
+24,2012,Torneo Inicial 2012,Primera Division,Velez Sarsfield,Newells,,,
+25,2012,Torneo Clausura 2012,Primera Division,Arsenal,Tigre,,Olimpo;Banfield,
+26,2011,Torneo Apertura 2011,Primera Division,Boca Juniors,Racing Club,,,
+27,2011,Torneo Clausura 2011,Primera Division,Velez Sarsfield,Lanus,,River Plate;Huracan;Gimnasia LP;Quilmes,
+28,2010,Torneo Apertura 2010,Primera Division,Estudiantes LP,Velez Sarsfield,,,
+29,2010,Torneo Clausura 2010,Primera Division,Argentinos Juniors,Estudiantes LP,,Atletico Tucuman;Chacarita Juniors;Rosario Central,
+30,2009,Torneo Apertura 2009,Primera Division,Banfield,Newells,,,
+31,2009,Torneo Clausura 2009,Primera Division,Velez Sarsfield,Huracan,,San Martin de Tucuman;Gimnasia de Jujuy,
+32,2008,Torneo Apertura 2008,Primera Division,Boca Juniors,Tigre,,,
+33,2008,Torneo Clausura 2008,Primera Division,River Plate,Boca Juniors,,Olimpo;San Martin de San Juan,
+34,2007,Torneo Apertura 2007,Primera Division,Lanus,Tigre,,,
+35,2007,Torneo Clausura 2007,Primera Division,San Lorenzo,Boca Juniors,,Quilmes;Godoy Cruz;Belgrano;Nueva Chicago,
+36,2006,Torneo Apertura 2006,Primera Division,Estudiantes LP,Boca Juniors,,,
+37,2006,Torneo Clausura 2006,Primera Division,Boca Juniors,Lanus,,Instituto;Tiro Federal;Olimpo,
+38,2005,Torneo Apertura 2005,Primera Division,Boca Juniors,Gimnasia LP,,,
+39,2005,Torneo Clausura 2005,Primera Division,Velez Sarsfield,Banfield,,Almagro;Huracan de Tres Arroyos;Instituto,
+40,2004,Torneo Apertura 2004,Primera Division,Newells,Velez Sarsfield,,,
+41,2004,Torneo Clausura 2004,Primera Division,River Plate,Boca Juniors,,Nueva Chicago;Chacarita Juniors;Talleres;Atletico Rafaela,
+42,2003,Torneo Apertura 2003,Primera Division,Boca Juniors,San Lorenzo,,,
+43,2003,Torneo Clausura 2003,Primera Division,River Plate,Boca Juniors,,Union;Huracan,
+44,2002,Torneo Apertura 2002,Primera Division,Independiente,Boca Juniors,,,
+45,2002,Torneo Clausura 2002,Primera Division,River Plate,Gimnasia LP,,Argentinos Juniors;Belgrano,
+46,2001,Torneo Apertura 2001,Primera Division,Racing Club,River Plate,,,
+47,2001,Torneo Clausura 2001,Primera Division,San Lorenzo,River Plate,,Los Andes;Almagro,
+48,2000,Torneo Apertura 2000,Primera Division,Boca Juniors,River Plate,,,
+49,2000,Torneo Clausura 2000,Primera Division,River Plate,Independiente,,Ferro Carril Oeste;Instituto,
+50,1999,Torneo Apertura 1999,Primera Division,River Plate,Rosario Central,,,
+51,1999,Torneo Clausura 1999,Primera Division,Boca Juniors,River Plate,,Platense;Huracan,
+52,1998,Torneo Apertura 1998,Primera Division,Boca Juniors,Gimnasia LP,,,
+53,1998,Torneo Clausura 1998,Primera Division,Velez Sarsfield,Lanus,,Deportivo Español;Gimnasia y Tiro,
+54,1997,Torneo Apertura 1997,Primera Division,River Plate,Boca Juniors,,,
+55,1997,Torneo Clausura 1997,Primera Division,River Plate,Colon,,Huracan Corrientes;Banfield,
+56,1996,Torneo Apertura 1996,Primera Division,River Plate,Independiente,,,
+57,1996,Torneo Clausura 1996,Primera Division,Velez Sarsfield,Gimnasia LP,,Belgrano;Argentinos Juniors,
+58,1995,Torneo Apertura 1995,Primera Division,Velez Sarsfield,Racing Club,,,
+59,1995,Torneo Clausura 1995,Primera Division,San Lorenzo,Gimnasia LP,,Deportivo Mandiyú;Talleres,
+60,1994,Torneo Apertura 1994,Primera Division,River Plate,San Lorenzo,,,
+61,1994,Torneo Clausura 1994,Primera Division,Independiente,Huracan,,Estudiantes LP;Gimnasia y Tiro,
+62,1993,Torneo Apertura 1993,Primera Division,River Plate,Velez Sarsfield,,,
+63,1993,Torneo Clausura 1993,Primera Division,Velez Sarsfield,Independiente,,Talleres;San Martin de Tucuman,
+64,1992,Torneo Apertura 1992,Primera Division,Boca Juniors,River Plate,,,
+65,1992,Torneo Clausura 1992,Primera Division,Newells,Velez Sarsfield,,Union;Quilmes,
+66,1991,Torneo Apertura 1991,Primera Division,River Plate,Boca Juniors,,,
+67,1991,Torneo Clausura 1991,Primera Division,Boca Juniors,San Lorenzo,,Chaco For Ever;Lanus,
+68,1990,Torneo Apertura 1990,Primera Division,Newells,River Plate,,,
+69,1989/1990,Campeonato de Primera División 1989-90,Primera Division,River Plate,Independiente,,Racing de Córdoba;Instituto,
+70,1988/1989,Campeonato de Primera División 1988-89,Primera Division,Independiente,Boca Juniors,,San Martin de Tucuman;Deportivo Armenio,
+71,1987/1988,Campeonato de Primera División 1987-88,Primera Division,Newells,San Lorenzo,,Banfield;Union,
+72,1986/1987,Campeonato de Primera División 1986-87,Primera Division,Rosario Central,Newells,,Deportivo Italiano;Temperley,
+73,1985/1986,Campeonato de Primera División 1985-86,Primera Division,River Plate,Newells,,Chacarita Juniors;Huracan,
+74,1985,Torneo Nacional 1985,Primera Division,Argentinos Juniors,Velez Sarsfield,,,
+75,1984,Torneo Nacional 1984,Primera Division,Ferro Carril Oeste,River Plate,,,
+76,1984,Campeonato de Primera División 1984,Primera Division,Argentinos Juniors,Ferro Carril Oeste,,Rosario Central;Atlanta,
+77,1983,Torneo Nacional 1983,Primera Division,Estudiantes LP,Independiente,,,
+78,1983,Torneo Metropolitano 1983,Primera Division,Independiente,San Lorenzo,,Nueva Chicago;Racing Club,
