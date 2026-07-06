@@ -948,10 +948,6 @@ select option{background:#080F20;color:#F0F6FF}
     <div class="filtros-panel">
       <div class="filtros-titulo">🔍 Filtros de búsqueda</div>
       <div class="filtros-grid">
-        <div class="filtro-grupo">
-          <label class="filtro-label">Buscar equipo</label>
-          <input type="text" id="buscar" class="filtro-input" placeholder="Ej: Boca, River..." oninput="filtrarDebounced()">
-        </div>
         <div class="filtro-grupo" style="position:relative;">
           <label class="filtro-label">Equipo</label>
           <input type="text" id="filtro-equipo-input" class="filtro-input" placeholder="Todos los equipos..." autocomplete="off"
@@ -2409,7 +2405,7 @@ function actualizarUIFechaNav() {
 
 // ── BUSCADOR ──
 function limpiarFiltros() {
-  ['buscar','filtro-equipo','filtro-equipo2','filtro-resultado','filtro-equipo-input','filtro-equipo2-input'].forEach(id => {
+  ['filtro-equipo','filtro-equipo2','filtro-resultado','filtro-equipo-input','filtro-equipo2-input'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -2417,15 +2413,11 @@ function limpiarFiltros() {
 }
 
 function filtrar() {
-  const buscar = document.getElementById('buscar').value.toLowerCase();
   const eq1 = document.getElementById('filtro-equipo').value;
   const eq2 = document.getElementById('filtro-equipo2').value;
   const res = document.getElementById('filtro-resultado').value;
 
   let filtrados = partidos.filter(p => {
-    const nL = (equipos[p.Local_ID]||'').toLowerCase();
-    const nV = (equipos[p.Visitante_ID]||'').toLowerCase();
-    const okBuscar = !buscar || nL.includes(buscar) || nV.includes(buscar);
     const okEq1 = !eq1 || p.Local_ID === eq1 || p.Visitante_ID === eq1;
     const okEq2 = !eq2 || !eq1 ||
       (p.Local_ID === eq1 && p.Visitante_ID === eq2) ||
@@ -2434,7 +2426,7 @@ function filtrar() {
     if (res === 'local') okRes = parseInt(p.Goles_Local) > parseInt(p.Goles_Visitante);
     if (res === 'visitante') okRes = parseInt(p.Goles_Visitante) > parseInt(p.Goles_Local);
     if (res === 'empate') okRes = p.Goles_Local === p.Goles_Visitante;
-    return okBuscar && okEq1 && okEq2 && okRes;
+    return okEq1 && okEq2 && okRes;
   });
 
   const tbody = document.getElementById('tabla-partidos');
@@ -5871,8 +5863,15 @@ function renderHistorialTorneos(equipoId) {
     const fueCampeon = (t.Campeon||'').toLowerCase().replace(/\s+/g,'') === nmEq.toLowerCase().replace(/\s+/g,'');
     const fueSubcampeon = !fueCampeon && (t.Subcampeon||'').toLowerCase().replace(/\s+/g,'') === nmEq.toLowerCase().replace(/\s+/g,'');
 
+    // Ascenso / Descenso (columnas Ascensos/Descensos del CSV, equipos separados por ";")
+    const nmEqNorm = nmEq.toLowerCase().replace(/\s+/g,'');
+    const listaAscensos = (t.Ascensos||'').split(';').map(s => s.toLowerCase().replace(/\s+/g,''));
+    const listaDescensos = (t.Descensos||'').split(';').map(s => s.toLowerCase().replace(/\s+/g,''));
+    const fueAscenso = listaAscensos.includes(nmEqNorm);
+    const fueDescenso = !fueAscenso && listaDescensos.includes(nmEqNorm);
+
     if (!torneosPorAnio[anio]) torneosPorAnio[anio] = [];
-    torneosPorAnio[anio].push({ t, pj, pg, pe, pp, gf, gc, pos: posRow?.Pos||null, fueCampeon, fueSubcampeon });
+    torneosPorAnio[anio].push({ t, pj, pg, pe, pp, gf, gc, pos: posRow?.Pos||null, fueCampeon, fueSubcampeon, fueAscenso, fueDescenso });
   });
 
   const aniosOrdenados = Object.keys(torneosPorAnio).sort((a,b)=>b-a);
@@ -5884,7 +5883,7 @@ function renderHistorialTorneos(equipoId) {
 
   lista.innerHTML = aniosOrdenados.map(anio => {
     const items = torneosPorAnio[anio];
-    const cards = items.map(({ t, pj, pg, pe, pp, gf, gc, pos, fueCampeon, fueSubcampeon }) => {
+    const cards = items.map(({ t, pj, pg, pe, pp, gf, gc, pos, fueCampeon, fueSubcampeon, fueAscenso, fueDescenso }) => {
       const foto = t.Foto_Trofeo
         ? `<img src="trofeos/${t.Foto_Trofeo}" style="width:38px;height:38px;object-fit:contain;" onerror="this.style.display='none'">`
         : `<span style="font-size:28px;">🏅</span>`;
@@ -5892,6 +5891,11 @@ function renderHistorialTorneos(equipoId) {
         ? `<span style="font-size:10px;background:rgba(251,191,36,0.15);color:var(--oro);padding:2px 7px;border-radius:5px;border:1px solid rgba(251,191,36,0.3);font-weight:700;">🏆 CAMPEÓN</span>`
         : fueSubcampeon
         ? `<span style="font-size:10px;background:rgba(192,192,192,0.15);color:#C0C0C0;padding:2px 7px;border-radius:5px;border:1px solid rgba(192,192,192,0.35);font-weight:700;">🥈 SUBCAMPEÓN</span>`
+        : '';
+      const ascDescBadge = fueAscenso
+        ? `<span style="font-size:10px;background:rgba(74,222,128,0.15);color:var(--verde);padding:2px 7px;border-radius:5px;border:1px solid rgba(74,222,128,0.35);font-weight:700;">▲ ASCENSO</span>`
+        : fueDescenso
+        ? `<span style="font-size:10px;background:rgba(244,63,94,0.15);color:var(--rojo);padding:2px 7px;border-radius:5px;border:1px solid rgba(244,63,94,0.35);font-weight:700;">▼ DESCENSO</span>`
         : '';
       return `
         <div onclick="verTorneoEquipo('${t.ID_Temporada}','${equipoId}')"
@@ -5904,6 +5908,7 @@ function renderHistorialTorneos(equipoId) {
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px;">
               <span style="font-size:15px;font-weight:600;">${t.Competencia}</span>
               ${campBadge}
+              ${ascDescBadge}
             </div>
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;">
               <span style="color:var(--texto-3);">${pj}PJ</span>
