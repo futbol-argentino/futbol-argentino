@@ -2176,14 +2176,14 @@ function filaPartido(p, equipoRef) {
   })();
 
   const scorePen = p.Tipo_Definicion === '1' && p.Penales ? calcularScorePenales(p.Penales) : null;
-  const penalesHTML = scorePen
-    ? `<div style="font-size:10px;color:var(--amarillo);font-weight:600;margin-top:1px;">(${scorePen.local}) - (${scorePen.visita})</div>`
-    : '';
+  const resultadoTxt = scorePen
+    ? `${p.Goles_Local}<span style="color:var(--amarillo);font-size:0.7em;">(${scorePen.local})</span> - <span style="color:var(--amarillo);font-size:0.7em;">(${scorePen.visita})</span>${p.Goles_Visitante}`
+    : `${p.Goles_Local} - ${p.Goles_Visitante}`;
 
   return `<tr${claseExtra} onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
     <td class="td-fecha">${fecha}</td>
     <td><div class="td-equipo">${escudoImg(local,22)}<span>${local}</span></div></td>
-    <td class="td-resultado"><span class="${rc}">${p.Goles_Local} - ${p.Goles_Visitante}</span>${penalesHTML}</td>
+    <td class="td-resultado"><span class="${rc}">${resultadoTxt}</span></td>
     <td><div class="td-equipo">${escudoImg(visita,22)}<span>${visita}</span></div></td>
     <td><div style="display:flex;align-items:center;"><span class="badge-torneo">${torneo}</span>${golData ? golData.arrow : ''}</div></td>
   </tr>${golData ? golData.drop : ''}`;
@@ -3998,15 +3998,15 @@ function verTorneo(idTemporada) {
           const escV = ESCUDOS[visita] ? `<img src="${ESCUDOS[visita]}" style="width:18px;height:18px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">` : '';
           const rc = resClase(p.Goles_Local, p.Goles_Visitante);
           const esJugado = p.Goles_Local !== '' && p.Goles_Visitante !== '';
-          const resultado = esJugado
-            ? `<span class="${rc}" style="font-family:var(--fuente-titulo);font-size:17px;">${p.Goles_Local} - ${p.Goles_Visitante}</span>`
-            : `<span style="color:var(--texto-2);font-size:13px;">${p.Fecha ? p.Fecha.split('T')[0] : '—'}</span>`;
           const scorePen = p.Tipo_Definicion === '1' && p.Penales ? calcularScorePenales(p.Penales) : null;
-          const penales = scorePen
-            ? `<div style="font-size:11px;color:var(--amarillo);font-weight:600;text-align:center;">(${scorePen.local}) - (${scorePen.visita})</div>` : '';
+          const resultado = esJugado
+            ? (scorePen
+                ? `<span class="${rc}" style="font-family:var(--fuente-titulo);font-size:17px;">${p.Goles_Local}<span style="color:var(--amarillo);font-size:0.65em;">(${scorePen.local})</span> - <span style="color:var(--amarillo);font-size:0.65em;">(${scorePen.visita})</span>${p.Goles_Visitante}</span>`
+                : `<span class="${rc}" style="font-family:var(--fuente-titulo);font-size:17px;">${p.Goles_Local} - ${p.Goles_Visitante}</span>`)
+            : `<span style="color:var(--texto-2);font-size:13px;">${p.Fecha ? p.Fecha.split('T')[0] : '—'}</span>`;
           return `<tr onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
             <td style="padding:8px 12px;"><div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;"><span style="font-size:13px;font-weight:500;text-align:right;">${local}</span>${escL}</div></td>
-            <td style="padding:8px 6px;text-align:center;white-space:nowrap;min-width:60px;">${resultado}${penales}</td>
+            <td style="padding:8px 6px;text-align:center;white-space:nowrap;min-width:60px;">${resultado}</td>
             <td style="padding:8px 12px;"><div style="display:flex;align-items:center;gap:6px;">${escV}<span style="font-size:13px;font-weight:500;">${visita}</span></div></td>
           </tr>`;
         }).join('');
