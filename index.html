@@ -935,7 +935,7 @@ select option{background:#080F20;color:#F0F6FF}
     </div>
 
     <div id="hoy-container">
-      <div style="text-align:center;padding:60px 20px;color:var(--texto-3);">
+      <div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:60px 20px;color:var(--texto-3);">
         <div style="font-size:40px;margin-bottom:12px;">📅</div>
         <div>Cargando partidos de hoy...</div>
       </div>
@@ -3973,7 +3973,7 @@ function verTorneo(idTemporada) {
   const container = document.getElementById('torneo-partidos-container');
 
   if (pts.length === 0) {
-    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">No hay partidos cargados para este torneo.</div>';
+    container.innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">No hay partidos cargados para este torneo.</div>';
   } else {
     const faseOrder = [
       // Fases numeradas de Copa Maradona
@@ -4167,7 +4167,7 @@ function renderBracket(idTemporada) {
   const pts = partidos.filter(p => p.ID_Temporada == idTemporada && !FASES_EXCLUIDAS.includes(p.Fase));
 
   if (!pts.length) {
-    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">No hay fases eliminatorias para este torneo.</div>';
+    container.innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">No hay fases eliminatorias para este torneo.</div>';
     return;
   }
 
@@ -4193,7 +4193,7 @@ function renderBracket(idTemporada) {
   });
 
   if (!rondasData.length) {
-    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">No hay fases eliminatorias para este torneo.</div>';
+    container.innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">No hay fases eliminatorias para este torneo.</div>';
     return;
   }
 
@@ -4423,7 +4423,7 @@ function buscarJugador() {
   const container = document.getElementById('jugador-resultados');
 
   if (!q && !eqFiltro) {
-    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">Escribí un nombre o elegí un equipo para buscar jugadores.</div>';
+    container.innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">Escribí un nombre o elegí un equipo para buscar jugadores.</div>';
     return;
   }
 
@@ -4444,7 +4444,7 @@ function buscarJugador() {
   }
 
   if (resultados.length === 0) {
-    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">No se encontraron jugadores.</div>';
+    container.innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">No se encontraron jugadores.</div>';
     return;
   }
 
@@ -4521,8 +4521,8 @@ function inicializarBuscadorJugadores() {
     });
   }
 
-  document.getElementById('jugador-resultados').innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">Escribí un nombre o elegí un equipo para buscar jugadores.</div>';
-  document.getElementById('dt-resultados').innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">Escribí un nombre o elegí un equipo para buscar directores técnicos.</div>';
+  document.getElementById('jugador-resultados').innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">Escribí un nombre o elegí un equipo para buscar jugadores.</div>';
+  document.getElementById('dt-resultados').innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">Escribí un nombre o elegí un equipo para buscar directores técnicos.</div>';
 }
 
 // ── Dropdown buscador de equipo ──
@@ -4744,7 +4744,7 @@ function buscarDT() {
   const container = document.getElementById('dt-resultados');
 
   if (!q && !eqFiltro) {
-    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">Escribí un nombre o elegí un equipo para buscar directores técnicos.</div>';
+    container.innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">Escribí un nombre o elegí un equipo para buscar directores técnicos.</div>';
     return;
   }
 
@@ -4765,7 +4765,7 @@ function buscarDT() {
   }
 
   if (!resultados.length) {
-    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">No se encontraron directores técnicos.</div>';
+    container.innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">No se encontraron directores técnicos.</div>';
     return;
   }
 
@@ -4950,7 +4950,7 @@ function renderStatsEquiposTorneo(idTemporada) {
   const pts = partidos.filter(p => p.ID_Temporada == idTemporada && !FASES_EXCLUIDAS_STATS.includes(p.Fase));
 
   if (pts.length === 0) {
-    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">Sin datos de partidos.</div>';
+    container.innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">Sin datos de partidos.</div>';
     return;
   }
 
@@ -5550,7 +5550,7 @@ async function cargarHoy() {
 
 function renderHoyVacio(msg) {
   document.getElementById('hoy-container').innerHTML = `
-    <div style="text-align:center;padding:60px 20px;color:var(--texto-3);">
+    <div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:60px 20px;color:var(--texto-3);">
       <div style="font-size:48px;margin-bottom:14px;">📅</div>
       <div style="font-size:15px;">${msg}</div>
     </div>`;
@@ -5877,7 +5877,7 @@ function renderHistorialTorneos(equipoId) {
   const aniosOrdenados = Object.keys(torneosPorAnio).sort((a,b)=>b-a);
 
   if (!aniosOrdenados.length) {
-    lista.innerHTML = `<div style="text-align:center;padding:40px;color:var(--texto-3);">No hay torneos registrados para este equipo.</div>`;
+    lista.innerHTML = `<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">No hay torneos registrados para este equipo.</div>`;
     return;
   }
 
@@ -6210,7 +6210,7 @@ function renderH2H(eq1, eq2, contenedorId) {
       ${proximo?cardPartido(proximo,'📅 Próximo partido'):''}
 
       <!-- Tablas jugadores: siempre las 3 -->
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;margin-bottom:20px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin-bottom:20px;width:100%;">
         ${tablaH2H('⚽ Goleadores', goles, 'var(--verde)', 'goles')}
         ${tablaH2H('🟨 Más amonestados', amon, 'var(--amarillo)', 'amon')}
         ${tablaH2H('🟥 Más expulsados', expu, 'var(--rojo)', 'expu')}
