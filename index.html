@@ -4608,8 +4608,8 @@ function cambiarSubtabJugadores(tab) {
 function renderStatsEquipoInline(equipoId) {
   const nmEq = equipos[equipoId] || equipoId;
   const { goles, ec, nacionalidades } = parsearGoleadores(equipoId);
-  const { datos: amon } = parsearTarjetas('Amonestados', equipoId);
-  const { datos: expu } = parsearTarjetas('Expulsados', equipoId);
+  const { datos: amon, nacionalidades: nacAmon } = parsearTarjetas('Amonestados', equipoId);
+  const { datos: expu, nacionalidades: nacExpu } = parsearTarjetas('Expulsados', equipoId);
 
   // PJ desde columna Jugadores
   const pjConteo = {};
@@ -4632,9 +4632,9 @@ function renderStatsEquipoInline(equipoId) {
   });
 
   const makeTablaInline = (titulo, headers, rows, nacMap) => `
-    <div class="tabla-wrapper" style="margin-bottom:14px;">
-      <div class="tabla-header"><div class="tabla-titulo">${titulo}</div><div class="tabla-count">${rows.length} jugadores</div></div>
-      <div class="tabla-scroll"><table style="width:100%;border-collapse:collapse;min-width:280px;">
+    <div class="tabla-wrapper" style="margin-bottom:14px;display:flex;flex-direction:column;height:100%;">
+      <div class="tabla-header"><div class="tabla-titulo">${titulo}</div></div>
+      <div class="tabla-scroll" style="flex:1;"><table style="width:100%;border-collapse:collapse;min-width:280px;">
         <thead><tr>${headers.map((h,i)=>`<th style="text-align:${i>1?'center':'left'};${i===0?'width:36px;':''}">${h}</th>`).join('')}</tr></thead>
         <tbody>${rows.slice(0,10).map(([nombre,val], i) => {
           const nac = (nacMap||nacionalidades)[nombre];
@@ -4648,18 +4648,18 @@ function renderStatsEquipoInline(equipoId) {
   const pjArr    = Object.entries(pjConteo).sort((a,b)=>b[1]-a[1]);
   const amonArr  = amon.slice(0,10);
   const expuArr  = expu.slice(0,10);
-  const nacPJMerged = { ...nacPJ, ...nacionalidades };
+  const nacTodas = { ...nacPJ, ...nacionalidades, ...nacAmon, ...nacExpu };
 
   const esc = ESCUDOS[nmEq] ? `<img src="${ESCUDOS[nmEq]}" style="width:24px;height:24px;object-fit:contain;">` : '';
   return `<div style="background:var(--fondo-2);border:1px solid var(--borde-activo);border-radius:14px;padding:18px 20px;">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;font-family:var(--fuente-titulo);font-size:22px;letter-spacing:1px;">
       ${esc} Estadísticas · ${nmEq}
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;">
-      ${makeTablaInline('📋 Más Partidos Jugados', ['#','Jugador','PJ'], pjArr, nacPJMerged)}
-      ${makeTablaInline('⚽ Top Goleadores',        ['#','Jugador','Goles'], golesArr)}
-      ${makeTablaInline('🟨 Más Amonestados',       ['#','Jugador','Amar.'], amonArr.map(([n,v])=>[n,v]))}
-      ${makeTablaInline('🟥 Más Expulsados',        ['#','Jugador','Rojas'], expuArr.map(([n,v])=>[n,v]))}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;align-items:stretch;">
+      ${makeTablaInline('📋 Más Partidos Jugados', ['#','Jugador','PJ'], pjArr, nacTodas)}
+      ${makeTablaInline('⚽ Top Goleadores',        ['#','Jugador','Goles'], golesArr, nacTodas)}
+      ${makeTablaInline('🟨 Más Amonestados',       ['#','Jugador','Amar.'], amonArr.map(([n,v])=>[n,v]), nacTodas)}
+      ${makeTablaInline('🟥 Más Expulsados',        ['#','Jugador','Rojas'], expuArr.map(([n,v])=>[n,v]), nacTodas)}
     </div>
   </div>`;
 }
