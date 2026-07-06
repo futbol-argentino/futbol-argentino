@@ -427,6 +427,7 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 .modal-cerrar{background:var(--fondo-3);border:1px solid var(--borde);color:var(--texto-2);font-size:18px;cursor:pointer;padding:4px 8px;border-radius:8px;transition:var(--trans);flex-shrink:0;line-height:1}
 .modal-cerrar:hover{color:var(--rojo);border-color:var(--rojo);background:rgba(244,63,94,0.1)}
 .modal-resultado-num{font-family:var(--fuente-titulo);font-size:58px;font-weight:400;color:var(--celeste);text-align:center;line-height:1;letter-spacing:4px;text-shadow:0 0 30px rgba(56,189,248,0.4)}
+.modal-penales-num{font-family:var(--fuente-titulo);font-size:58px;font-weight:400;color:var(--amarillo);text-align:center;line-height:1;letter-spacing:4px;margin-top:2px}
 .modal-fecha-txt{text-align:center;color:var(--texto-3);font-size:12px;margin-top:4px;margin-bottom:20px;letter-spacing:0.5px}
 .modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .modal-dato{background:rgba(5,11,26,0.7);border:1px solid var(--borde);border-radius:10px;padding:12px;transition:var(--trans)}
@@ -472,7 +473,7 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
   .equipo-card{padding:14px 10px;gap:8px}.equipo-card-escudo{width:44px;height:44px}.equipo-card-nombre{font-size:12px}
   .modal-overlay{padding:10px}.modal-box{padding:18px;border-radius:14px;max-height:95vh}
   .modal-grid{grid-template-columns:1fr}.modal-dato.full{grid-column:span 1}
-  .modal-resultado-num{font-size:46px}.modal-equipos{font-size:17px}
+  .modal-resultado-num{font-size:46px}.modal-penales-num{font-size:46px}.modal-equipos{font-size:17px}
   #modal-jugador .modal-box{padding:16px}
   #ficha-foto{width:160px!important;height:160px!important;object-position:top!important}
   #ficha-stats{gap:6px}#ficha-stats>div{min-width:58px;padding:8px 6px}
@@ -1702,7 +1703,7 @@ select option{background:#080F20;color:#F0F6FF}
       <img id="modal-escudo-local" src="" alt="" style="width:56px;height:56px;object-fit:contain;" onerror="this.style.display='none'">
       <div>
         <div class="modal-resultado-num" id="modal-resultado"></div>
-        <div id="modal-penales-txt" style="display:none;text-align:center;font-size:13px;color:var(--amarillo);margin-top:4px;font-weight:600;"></div>
+        <div id="modal-penales-txt" class="modal-penales-num" style="display:none;"></div>
       </div>
       <img id="modal-escudo-visita" src="" alt="" style="width:56px;height:56px;object-fit:contain;" onerror="this.style.display='none'">
     </div>
@@ -1728,6 +1729,26 @@ select option{background:#080F20;color:#F0F6FF}
             <div>
               <div style="font-size:10px;color:var(--celeste);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;font-weight:600;" id="modal-goleadores-visita-label"></div>
               <div id="modal-goleadores-visita"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DESPLEGABLE PENALES (solo si hubo definición por penales) -->
+      <div class="modal-dato full modal-desplegable" id="modal-penales-wrap" style="display:none;" onclick="toggleDesplegable('penales')">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="modal-dato-label">🥅 Definición por Penales</div>
+          <span id="arrow-penales" style="color:var(--texto-2);font-size:12px;transition:transform 0.2s;">▼</span>
+        </div>
+        <div id="modal-penales" class="modal-desplegable-contenido">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;">
+            <div>
+              <div style="font-size:10px;color:var(--amarillo);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;font-weight:600;" id="modal-penales-local-label"></div>
+              <div id="modal-penales-local"></div>
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--amarillo);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;font-weight:600;" id="modal-penales-visita-label"></div>
+              <div id="modal-penales-visita"></div>
             </div>
           </div>
         </div>
@@ -1768,26 +1789,6 @@ select option{background:#080F20;color:#F0F6FF}
             <div>
               <div style="font-size:10px;color:var(--rojo);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;font-weight:600;" id="modal-expulsados-visita-label"></div>
               <div id="modal-expulsados-visita"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- DESPLEGABLE PENALES (solo si hubo definición por penales) -->
-      <div class="modal-dato full modal-desplegable" id="modal-penales-wrap" style="display:none;" onclick="toggleDesplegable('penales')">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div class="modal-dato-label">🥅 Definición por Penales</div>
-          <span id="arrow-penales" style="color:var(--texto-2);font-size:12px;transition:transform 0.2s;">▼</span>
-        </div>
-        <div id="modal-penales" class="modal-desplegable-contenido">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;">
-            <div>
-              <div style="font-size:10px;color:var(--amarillo);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;font-weight:600;" id="modal-penales-local-label"></div>
-              <div id="modal-penales-local"></div>
-            </div>
-            <div>
-              <div style="font-size:10px;color:var(--amarillo);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;font-weight:600;" id="modal-penales-visita-label"></div>
-              <div id="modal-penales-visita"></div>
             </div>
           </div>
         </div>
@@ -2782,12 +2783,12 @@ function verPartido(id) {
       return raw.split('-').map(e => e.trim()).filter(Boolean).map(entrada => {
         const metio = /\(G\)/i.test(entrada);
         const erro  = /\(E\)/i.test(entrada) || /\(X\)/i.test(entrada);
-        const nombre = entrada.replace(/\([GEXgex]\)/gi,'').trim();
+        const nombreRaw = entrada.replace(/\([GEXgex]\)/gi,'').trim();
+        const nombre = limpiarNombre(nombreRaw);
         const icono = metio ? '✅' : erro ? '❌' : '⬜';
-        const color = metio ? 'var(--verde)' : erro ? 'var(--rojo)' : 'var(--texto-2)';
         return `<div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px solid var(--borde);">
           <span style="font-size:16px;flex-shrink:0;">${icono}</span>
-          <span style="font-size:13px;color:${color};font-weight:${metio||erro?'500':'400'};">${nombre}</span>
+          <span onclick="event.stopPropagation();verFichaJugador('${nombre.replace(/'/g,"\\'")}')" style="cursor:pointer;font-size:13px;color:var(--celeste-claro);font-weight:500;text-decoration:underline dotted;">${nombre}</span>
         </div>`;
       }).join('');
     };
