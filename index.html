@@ -4502,9 +4502,10 @@ function buscarJugador() {
           const esc = ESCUDOS[nombreEq] ? `<img src="${ESCUDOS[nombreEq]}" onerror="this.style.display='none'">` : '';
           return `<span class="pers-equipo-chip">${esc}${nombreEq} <span class="anios">(${anios})</span></span>`;
         }).join('');
+        const equipoNombreFoto = eqFiltro ? (equipos[eqFiltro]||'') : '';
         return `<div class="pers-card" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')">
           <div class="pers-card-top">
-            <img class="pers-card-foto" src="jugadores/${fotoKey}.jpg" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><rect width=%2260%22 height=%2260%22 fill=%22%230D1628%22 rx=%2212%22/><text x=%2230%22 y=%2238%22 font-size=%2226%22 text-anchor=%22middle%22>👤</text></svg>'">
+            ${fotoJugadorImg(nombre, equipoNombreFoto, 'width:60px;height:60px;border-radius:12px;object-fit:cover;object-position:top;background:var(--fondo-3);flex-shrink:0;border:1px solid var(--borde);', 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><rect width=%2260%22 height=%2260%22 fill=%22%230D1628%22 rx=%2212%22/><text x=%2230%22 y=%2238%22 font-size=%2226%22 text-anchor=%22middle%22>👤</text></svg>')}
             <div class="pers-card-nombre"><span style="display:inline-flex;">${bandera}</span>${nombre}</div>
           </div>
           <div class="pers-card-stats">
