@@ -2115,6 +2115,20 @@ function resClase(gl, gv, equipoRefEsLocal) {
   return refGano ? 'res-local' : 'res-visita';
 }
 let _golUidSeq = 0;
+// Calcula el resultado de la definición por penales a partir del texto crudo
+// (que suele traer el detalle de cada pateador, ej: "Rojo (G) - Zeballos (G).../Canelo (E) - Moreno (G)...")
+function calcularScorePenales(raw) {
+  if (!raw) return null;
+  const partes = raw.split('/');
+  if (partes.length >= 2 && /\(G\)/i.test(raw)) {
+    const contar = s => (s.match(/\(G\)/gi) || []).length;
+    return { local: contar(partes[0]), visita: contar(partes[1]) };
+  }
+  const m = raw.match(/(\d+)\s*[-–]\s*(\d+)/);
+  if (m) return { local: parseInt(m[1]), visita: parseInt(m[2]) };
+  return null;
+}
+
 function filaPartido(p, equipoRef) {
   const local = equipos[p.Local_ID] || p.Local_ID;
   const visita = equipos[p.Visitante_ID] || p.Visitante_ID;
@@ -2161,10 +2175,15 @@ function filaPartido(p, equipoRef) {
     return { arrow, drop };
   })();
 
+  const scorePen = p.Tipo_Definicion === '1' && p.Penales ? calcularScorePenales(p.Penales) : null;
+  const penalesHTML = scorePen
+    ? `<div style="font-size:10px;color:var(--amarillo);font-weight:600;margin-top:1px;">(${scorePen.local}) - (${scorePen.visita})</div>`
+    : '';
+
   return `<tr${claseExtra} onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
     <td class="td-fecha">${fecha}</td>
     <td><div class="td-equipo">${escudoImg(local,22)}<span>${local}</span></div></td>
-    <td class="td-resultado"><span class="${rc}">${p.Goles_Local} - ${p.Goles_Visitante}</span></td>
+    <td class="td-resultado"><span class="${rc}">${p.Goles_Local} - ${p.Goles_Visitante}</span>${penalesHTML}</td>
     <td><div class="td-equipo">${escudoImg(visita,22)}<span>${visita}</span></div></td>
     <td><div style="display:flex;align-items:center;"><span class="badge-torneo">${torneo}</span>${golData ? golData.arrow : ''}</div></td>
   </tr>${golData ? golData.drop : ''}`;
@@ -2747,10 +2766,14 @@ function verPartido(id) {
   const penalesTxt = document.getElementById('modal-penales-txt');
   const penalesWrap = document.getElementById('modal-penales-wrap');
   if (p.Tipo_Definicion === '1' && p.Penales) {
-    // Mostrar score de penales arriba
-    const scoreMatch = p.Penales.match(/(\d+)\s*[-–]\s*(\d+)/);
-    penalesTxt.textContent = scoreMatch ? `Penales: ${scoreMatch[1]} - ${scoreMatch[2]}` : `Penales: ${p.Penales}`;
-    penalesTxt.style.display = 'block';
+    // Mostrar score de penales arriba, ya calculado (no el texto crudo de pateadores)
+    const scoreCalc = calcularScorePenales(p.Penales);
+    if (scoreCalc) {
+      penalesTxt.textContent = `(${scoreCalc.local}) - (${scoreCalc.visita})`;
+      penalesTxt.style.display = 'block';
+    } else {
+      penalesTxt.style.display = 'none';
+    }
 
     // Renderizar pateadores si están cargados
     const partes = p.Penales.split('/');
@@ -3978,8 +4001,9 @@ function verTorneo(idTemporada) {
           const resultado = esJugado
             ? `<span class="${rc}" style="font-family:var(--fuente-titulo);font-size:17px;">${p.Goles_Local} - ${p.Goles_Visitante}</span>`
             : `<span style="color:var(--texto-2);font-size:13px;">${p.Fecha ? p.Fecha.split('T')[0] : '—'}</span>`;
-          const penales = p.Tipo_Definicion === '1' && p.Penales
-            ? `<div style="font-size:11px;color:var(--amarillo);text-align:center;">(${p.Penales})</div>` : '';
+          const scorePen = p.Tipo_Definicion === '1' && p.Penales ? calcularScorePenales(p.Penales) : null;
+          const penales = scorePen
+            ? `<div style="font-size:11px;color:var(--amarillo);font-weight:600;text-align:center;">(${scorePen.local}) - (${scorePen.visita})</div>` : '';
           return `<tr onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
             <td style="padding:8px 12px;"><div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;"><span style="font-size:13px;font-weight:500;text-align:right;">${local}</span>${escL}</div></td>
             <td style="padding:8px 6px;text-align:center;white-space:nowrap;min-width:60px;">${resultado}${penales}</td>
