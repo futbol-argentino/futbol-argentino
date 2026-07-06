@@ -665,6 +665,56 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
   font-size:40px;
 }
 
+/* ── LISTA JUGADORES / DTs (rediseño) ── */
+.pers-card {
+  background:var(--fondo-2); border:1px solid var(--borde); border-radius:14px;
+  padding:16px; cursor:pointer; transition:var(--trans); position:relative; overflow:hidden;
+  display:flex; flex-direction:column; gap:12px;
+}
+.pers-card::before{
+  content:''; position:absolute; inset:0; opacity:0; transition:opacity 0.25s ease;
+  background:radial-gradient(circle at 50% 0%,rgba(56,189,248,0.08),transparent 55%);
+}
+.pers-card:hover { border-color:var(--borde-hover); transform:translateY(-3px); box-shadow:0 12px 28px rgba(0,0,0,0.4); }
+.pers-card:hover::before { opacity:1; }
+.pers-card-top { display:flex; align-items:center; gap:12px; position:relative; }
+.pers-card-foto {
+  width:60px; height:60px; border-radius:12px; object-fit:cover; object-position:top;
+  background:var(--fondo-3); flex-shrink:0; border:1px solid var(--borde);
+}
+.pers-card-avatar {
+  width:60px; height:60px; border-radius:12px; background:var(--fondo-3);
+  display:flex; align-items:center; justify-content:center; font-size:26px; flex-shrink:0;
+  border:1px solid var(--borde);
+}
+.pers-card-nombre {
+  font-family:var(--fuente-titulo); font-size:16px; font-weight:400; letter-spacing:0.5px;
+  color:var(--texto-1); line-height:1.25; display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+}
+.pers-card-badge {
+  font-size:9px; background:rgba(251,191,36,0.15); color:var(--oro); padding:2px 6px;
+  border-radius:5px; border:1px solid rgba(251,191,36,0.3); font-weight:700; letter-spacing:0.3px;
+}
+.pers-card-stats { display:flex; gap:8px; position:relative; }
+.pers-mini-stat {
+  flex:1; text-align:center; background:var(--fondo-3); border:1px solid var(--borde);
+  border-radius:9px; padding:7px 4px;
+}
+.pers-mini-stat .num {
+  display:block; font-family:var(--fuente-titulo); font-size:17px; font-weight:400; line-height:1;
+}
+.pers-mini-stat .label {
+  display:block; font-size:8px; color:var(--texto-3); text-transform:uppercase;
+  letter-spacing:0.6px; font-weight:600; margin-top:3px;
+}
+.pers-card-equipos { display:flex; flex-wrap:wrap; gap:6px; position:relative; }
+.pers-equipo-chip {
+  font-size:11px; color:var(--texto-2); background:var(--fondo-3); border:1px solid var(--borde);
+  border-radius:20px; padding:3px 10px 3px 6px; display:inline-flex; align-items:center; gap:5px;
+}
+.pers-equipo-chip img { width:14px; height:14px; object-fit:contain; flex-shrink:0; }
+.pers-equipo-chip .anios { color:var(--texto-3); }
+
 /* ── BRACKET ── */
 .bracket-wrap { display:flex; gap:0; min-width:max-content; padding-bottom:16px; }
 .bracket-ronda { display:flex; flex-direction:column; min-width:220px; }
@@ -4438,32 +4488,31 @@ function buscarJugador() {
       }).join('') + '</div>' +
       (resultados.length > 120 ? `<div style="text-align:center;padding:16px;color:var(--texto-3);font-size:13px;">Mostrando 120 de ${resultados.length}. Refiná la búsqueda.</div>` : '');
   } else {
-    // LISTA: tarjetas con estadísticas
-    container.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;">` +
+    // LISTA: tarjetas con estadísticas (rediseño)
+    container.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;">` +
       resultados.slice(0,60).map(([nombre, data]) => {
         const fotoKey = nombre.toLowerCase().replace(/\s+/g,'_').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
         const bandera = data.nac ? getBandera(data.nac) : '';
         const totGoles = Object.values(data.equipos).reduce((s,r)=>s+r.goles,0);
         const totAmon  = Object.values(data.equipos).reduce((s,r)=>s+r.amonestados,0);
         const totExp   = Object.values(data.equipos).reduce((s,r)=>s+r.expulsados,0);
-        const equiposList = Object.keys(data.equipos).map(id => {
+        const equiposChips = Object.keys(data.equipos).map(id => {
           const anios = formatearAnios(data.equipos[id].anios);
-          return `<span style="font-size:11px;color:var(--texto-2);">${equipos[id]||id} <span style="color:var(--texto-3);">(${anios})</span></span>`;
-        }).join(' · ');
-        return `<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:12px;padding:14px;display:flex;gap:14px;align-items:flex-start;cursor:pointer;transition:var(--trans);" onmouseenter="this.style.borderColor='var(--borde-hover)'" onmouseleave="this.style.borderColor='var(--borde)'" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')">
-          <img src="jugadores/${fotoKey}.jpg" style="width:56px;height:56px;object-fit:cover;object-position:top;border-radius:10px;flex-shrink:0;background:var(--fondo-3);" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2256%22 height=%2256%22><rect width=%2256%22 height=%2256%22 fill=%22%230D1628%22 rx=%2210%22/><text x=%2228%22 y=%2234%22 font-size=%2224%22 text-anchor=%22middle%22>👤</text></svg>'">
-          <div style="flex:1;min-width:0;">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-              <span style="display:inline-flex;">${bandera}</span>
-              <span style="font-size:15px;font-weight:600;">${nombre}</span>
-            </div>
-            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">
-              ${totGoles ? `<span style="font-size:11px;background:rgba(34,197,94,0.1);color:var(--celeste);padding:2px 7px;border-radius:6px;border:1px solid var(--borde);">⚽ ${totGoles}</span>` : ''}
-              ${totAmon  ? `<span style="font-size:11px;background:rgba(245,158,11,0.1);color:var(--amarillo);padding:2px 7px;border-radius:6px;border:1px solid var(--borde);">🟨 ${totAmon}</span>` : ''}
-              ${totExp   ? `<span style="font-size:11px;background:rgba(244,63,94,0.1);color:var(--rojo);padding:2px 7px;border-radius:6px;border:1px solid var(--borde);">🟥 ${totExp}</span>` : ''}
-            </div>
-            <div style="line-height:1.6;">${equiposList}</div>
+          const nombreEq = equipos[id]||id;
+          const esc = ESCUDOS[nombreEq] ? `<img src="${ESCUDOS[nombreEq]}" onerror="this.style.display='none'">` : '';
+          return `<span class="pers-equipo-chip">${esc}${nombreEq} <span class="anios">(${anios})</span></span>`;
+        }).join('');
+        return `<div class="pers-card" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')">
+          <div class="pers-card-top">
+            <img class="pers-card-foto" src="jugadores/${fotoKey}.jpg" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><rect width=%2260%22 height=%2260%22 fill=%22%230D1628%22 rx=%2212%22/><text x=%2230%22 y=%2238%22 font-size=%2226%22 text-anchor=%22middle%22>👤</text></svg>'">
+            <div class="pers-card-nombre"><span style="display:inline-flex;">${bandera}</span>${nombre}</div>
           </div>
+          <div class="pers-card-stats">
+            <div class="pers-mini-stat"><span class="num" style="color:var(--celeste);">${totGoles}</span><span class="label">⚽ Goles</span></div>
+            <div class="pers-mini-stat"><span class="num" style="color:var(--amarillo);">${totAmon}</span><span class="label">🟨 Amon.</span></div>
+            <div class="pers-mini-stat"><span class="num" style="color:var(--rojo);">${totExp}</span><span class="label">🟥 Exp.</span></div>
+          </div>
+          <div class="pers-card-equipos">${equiposChips}</div>
         </div>`;
       }).join('') + '</div>' +
       (resultados.length > 60 ? `<div style="text-align:center;padding:16px;color:var(--texto-3);font-size:13px;">Mostrando 60 de ${resultados.length}. Refiná la búsqueda.</div>` : '');
@@ -4729,33 +4778,33 @@ function buscarDT() {
     return;
   }
 
-  container.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;">` +
+  container.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;">` +
     resultados.slice(0,60).map(([nombre, data]) => {
       const fotoKey = nombre.toLowerCase().replace(/\s+/g,'_').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
       const totalPD = Object.values(data.equipos).reduce((s,r)=>s+r.pd,0);
       const totalPG = Object.values(data.equipos).reduce((s,r)=>s+r.pg,0);
-      const equiposList = Object.keys(data.equipos).map(id => {
+      const equiposChips = Object.keys(data.equipos).map(id => {
         const anios = formatearAnios(data.equipos[id].anios);
-        return `<span style="font-size:11px;color:var(--texto-2);">${equipos[id]||id} <span style="color:var(--texto-3);">(${anios})</span></span>`;
-      }).join(' · ');
+        const nombreEq = equipos[id]||id;
+        const esc = ESCUDOS[nombreEq] ? `<img src="${ESCUDOS[nombreEq]}" onerror="this.style.display='none'">` : '';
+        return `<span class="pers-equipo-chip">${esc}${nombreEq} <span class="anios">(${anios})</span></span>`;
+      }).join('');
       const pct = totalPD > 0 ? Math.round((totalPG/totalPD)*100) : 0;
       const claveNom = nombreCanonico(nombre);
       const datosJugMap = recopilarJugadores();
       const tambienJugador = datosJugMap[claveNom] && Object.keys(datosJugMap[claveNom].equipos).length > 0;
-      const banderaDT = data.nac ? `<span style="display:inline-flex;margin-right:5px;">${getBandera(data.nac)}</span>` : '';
-      return `<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:12px;padding:14px;display:flex;gap:14px;align-items:flex-start;cursor:pointer;transition:var(--trans);" onmouseenter="this.style.borderColor='var(--borde-hover)'" onmouseleave="this.style.borderColor='var(--borde)'" onclick="verFichaDT('${nombre.replace(/'/g,"\\'")}')">
-        <img src="dts/${fotoKey}.jpg" style="width:56px;height:56px;object-fit:cover;object-position:top;border-radius:10px;flex-shrink:0;background:var(--fondo-3);" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2256%22 height=%2256%22><rect width=%2256%22 height=%2256%22 fill=%22%230D1628%22 rx=%2210%22/><text x=%2228%22 y=%2234%22 font-size=%2224%22 text-anchor=%22middle%22>🧑‍💼</text></svg>'">
-        <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;">
-            ${banderaDT}<span style="font-size:15px;font-weight:600;">${nombre}</span>
-            ${tambienJugador ? `<span style="font-size:10px;background:rgba(251,191,36,0.15);color:var(--oro);padding:2px 6px;border-radius:5px;border:1px solid rgba(251,191,36,0.3);font-weight:600;">⚽ Ex jugador</span>` : ''}
-          </div>
-          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">
-            <span style="font-size:11px;background:rgba(34,197,94,0.1);color:var(--celeste);padding:2px 7px;border-radius:6px;border:1px solid var(--borde);">📋 ${totalPD} PD</span>
-            <span style="font-size:11px;background:rgba(34,197,94,0.1);color:var(--verde);padding:2px 7px;border-radius:6px;border:1px solid var(--borde);">✅ ${pct}% victorias</span>
-          </div>
-          <div style="line-height:1.6;">${equiposList}</div>
+      const banderaDT = data.nac ? `<span style="display:inline-flex;">${getBandera(data.nac)}</span>` : '';
+      return `<div class="pers-card" onclick="verFichaDT('${nombre.replace(/'/g,"\\'")}')">
+        <div class="pers-card-top">
+          <img class="pers-card-foto" src="dts/${fotoKey}.jpg" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><rect width=%2260%22 height=%2260%22 fill=%22%230D1628%22 rx=%2212%22/><text x=%2230%22 y=%2238%22 font-size=%2226%22 text-anchor=%22middle%22>🧑‍💼</text></svg>'">
+          <div class="pers-card-nombre">${banderaDT}${nombre}${tambienJugador ? `<span class="pers-card-badge">⚽ Ex jugador</span>` : ''}</div>
         </div>
+        <div class="pers-card-stats">
+          <div class="pers-mini-stat"><span class="num" style="color:var(--celeste);">${totalPD}</span><span class="label">📋 PD</span></div>
+          <div class="pers-mini-stat"><span class="num" style="color:var(--verde);">${totalPG}</span><span class="label">✅ PG</span></div>
+          <div class="pers-mini-stat"><span class="num" style="color:var(--texto-1);">${pct}%</span><span class="label">Victorias</span></div>
+        </div>
+        <div class="pers-card-equipos">${equiposChips}</div>
       </div>`;
     }).join('') + '</div>' +
     (resultados.length > 60 ? `<div style="text-align:center;padding:16px;color:var(--texto-3);font-size:13px;">Mostrando 60 de ${resultados.length}. Refiná la búsqueda.</div>` : '');
