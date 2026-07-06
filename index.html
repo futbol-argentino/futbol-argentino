@@ -6072,7 +6072,7 @@ function renderH2H(eq1, eq2, contenedorId) {
           <div class="tabla-count">${total} jugadores</div>
         </div>
         <div class="tabla-scroll">
-          <table style="width:100%;border-collapse:collapse;">
+          <table style="width:100%;border-collapse:collapse;min-width:0;">
             <thead><tr><th>#</th><th>Jugador</th><th>${tablaH2HLabels[clave]||'Cant.'}</th></tr></thead>
             <tbody>
             ${rows.length
@@ -6220,24 +6220,24 @@ function renderH2H(eq1, eq2, contenedorId) {
       ${masGoles.length?`
       <div class="tabla-wrapper" style="margin-bottom:14px;">
         <div class="tabla-header"><div class="tabla-titulo">🔥 Partidos con más goles</div></div>
-        <div class="tabla-scroll"><table class="tabla-partidos" style="width:100%;border-collapse:collapse;"><tbody>
+        <div class="tabla-scroll"><table class="tabla-partidos" style="width:100%;border-collapse:collapse;min-width:0;"><tbody>
           ${masGoles.map(({p,tot})=>filaPartidoH2H(p,tot+' ⚽')).join('')}
         </tbody></table></div>
       </div>`:''}
 
       <!-- Mayores goleadas -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+      <div style="margin-bottom:14px;">
         ${goleadasEq1.length?`
-        <div class="tabla-wrapper">
+        <div class="tabla-wrapper" style="margin-bottom:12px;">
           <div class="tabla-header"><div class="tabla-titulo">💥 Goleadas de ${n1.split(' ')[0]}</div></div>
-          <div class="tabla-scroll"><table class="tabla-partidos" style="width:100%;border-collapse:collapse;"><tbody>
+          <div class="tabla-scroll"><table class="tabla-partidos" style="width:100%;border-collapse:collapse;min-width:0;"><tbody>
             ${goleadasEq1.map(x=>filaGoleada(x)).join('')}
           </tbody></table></div>
         </div>`:''}
         ${goleadasEq2.length?`
         <div class="tabla-wrapper">
           <div class="tabla-header"><div class="tabla-titulo">💥 Goleadas de ${n2.split(' ')[0]}</div></div>
-          <div class="tabla-scroll"><table class="tabla-partidos" style="width:100%;border-collapse:collapse;"><tbody>
+          <div class="tabla-scroll"><table class="tabla-partidos" style="width:100%;border-collapse:collapse;min-width:0;"><tbody>
             ${goleadasEq2.map(x=>filaGoleada(x)).join('')}
           </tbody></table></div>
         </div>`:''}
