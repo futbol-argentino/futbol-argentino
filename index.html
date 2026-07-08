@@ -221,7 +221,9 @@
 }
 
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-html{scroll-behavior:smooth}
+html{scroll-behavior:smooth;-webkit-tap-highlight-color:transparent}
+button{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;user-select:none}
+button:focus{outline:none}
 body{
   font-family:var(--fuente-cuerpo);
   background:var(--fondo);
@@ -2503,7 +2505,7 @@ function renderizarEquipos(filtro='') {
       if (equiposDivision && e.Division !== equiposDivision) return false;
       if (provinciaActual && e.Provincia !== provinciaActual) return false;
       if (ligaActual && e.Liga !== ligaActual) return false;
-      return e.Nombre_Equipo.toLowerCase().includes(filtro.toLowerCase());
+      return normalizarNombre(e.Nombre_Equipo).includes(normalizarNombre(filtro));
     })
     .sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo));
 
@@ -4429,7 +4431,7 @@ function buscarJugador() {
 
   const todos = recopilarJugadores();
   const resultados = Object.entries(todos).filter(([nombre, data]) => {
-    if (q && !nombre.toLowerCase().includes(q)) return false;
+    if (q && !normalizarNombre(nombre).includes(normalizarNombre(q))) return false;
     if (eqFiltro && !Object.keys(data.equipos).includes(eqFiltro)) return false;
     return true;
   }).sort(([a],[b]) => a.localeCompare(b));
@@ -4549,7 +4551,7 @@ function filtrarEquipoDropdown(contexto) {
     else renderEstadisticas();
   }
 
-  const filtrados = _equiposOrdenados.filter(e => e.Nombre_Equipo.toLowerCase().includes(q));
+  const filtrados = _equiposOrdenados.filter(e => normalizarNombre(e.Nombre_Equipo).includes(normalizarNombre(q)));
   const drop = document.getElementById(dropId);
   if (!filtrados.length) { drop.style.display = 'none'; return; }
 
@@ -4910,7 +4912,7 @@ function setVistaEquipos(modo) {
 function renderizarEquiposTodos(filtro) {
   const grid = document.getElementById('equipos-grid-todos');
   const lista = equiposArr
-    .filter(e => e.Nombre_Equipo.toLowerCase().includes(filtro.toLowerCase()))
+    .filter(e => normalizarNombre(e.Nombre_Equipo).includes(normalizarNombre(filtro)))
     .sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo));
   grid.innerHTML = lista.map(e => {
     const n = (e.Nombre_Equipo||'').trim().replace(/^"+|"+$/g,'');
