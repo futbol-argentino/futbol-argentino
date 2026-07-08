@@ -166,6 +166,7 @@
   .ficha-stats-grid { grid-template-columns:repeat(3,1fr) !important; gap:7px; }
   #modal-jugador .modal-box { padding:16px !important; }
   #ficha-fotos-equipos { justify-content:center; }
+  #dt-fotos-equipos { justify-content:center; }
 
   /* Modal partido */
   .modal-grid { gap:8px; }
@@ -1708,6 +1709,8 @@ select option{background:#080F20;color:#F0F6FF}
         <div style="font-size:12px;color:var(--celeste);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;margin-top:4px;">Director Técnico</div>
         <div id="dt-nacionalidad" style="font-size:13px;color:var(--texto-2);margin-bottom:4px;"></div>
         <div id="dt-equipos-lista" style="font-size:13px;color:var(--texto-3);line-height:1.5;"></div>
+        <!-- Miniaturas de fotos por equipo -->
+        <div id="dt-fotos-equipos" style="display:none;flex-wrap:wrap;gap:6px;margin-top:10px;"></div>
       </div>
     </div>
     <div class="ficha-seccion-titulo">Partidos dirigidos</div>
@@ -3140,6 +3143,25 @@ function cambiarFichaFoto(jugKey, eqKey) {
   foto.onerror = function() {
     if (!this.dataset.tried) { this.dataset.tried = '1'; this.src = `jugadores/${jugKey}.jpg`; }
     else { this.onerror = null; this.src = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22180%22 height=%22180%22><rect width=%22180%22 height=%22180%22 fill=%22%230D1628%22 rx=%2216%22/><text x=%2290%22 y=%22105%22 font-size=%2264%22 text-anchor=%22middle%22>👤</text></svg>'; }
+  };
+}
+
+// Returns img HTML that tries team-specific DT photo first, falls back to default (same system as jugadores)
+function fotoDTImg(nombre, equipoNombre, style, placeholder) {
+  const dtKey = toFotoKey(nombre);
+  const eqKey = equipoNombre ? toFotoKey(equipoNombre) : '';
+  const src      = eqKey ? `dts/${dtKey}_${eqKey}.jpg` : `dts/${dtKey}.jpg`;
+  const fallback = eqKey ? `dts/${dtKey}.jpg` : placeholder || 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22180%22 height=%22180%22><rect width=%22180%22 height=%22180%22 fill=%22%230D1628%22 rx=%2216%22/><text x=%2290%22 y=%22105%22 font-size=%2264%22 text-anchor=%22middle%22>🧑‍💼</text></svg>';
+  return `<img src="${src}" loading="lazy" decoding="async" style="${style}" onerror="if(this.dataset.tried){this.src='${placeholder||'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2256%22 height=%2256%22><rect width=%2256%22 height=%2256%22 fill=%22%230D1628%22 rx=%2210%22/><text x=%2228%22 y=%2234%22 font-size=%2224%22 text-anchor=%22middle%22>🧑‍💼</text></svg>'}'}else{this.dataset.tried=1;this.src='${fallback}'}">`;
+}
+
+function cambiarFichaFotoDT(dtKey, eqKey) {
+  const foto = document.getElementById('dt-foto');
+  foto.dataset.tried = '';
+  foto.src = `dts/${dtKey}_${eqKey}.jpg`;
+  foto.onerror = function() {
+    if (!this.dataset.tried) { this.dataset.tried = '1'; this.src = `dts/${dtKey}.jpg`; }
+    else { this.onerror = null; this.src = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22180%22 height=%22180%22><rect width=%22180%22 height=%22180%22 fill=%22%230D1628%22 rx=%2216%22/><text x=%2290%22 y=%22105%22 font-size=%2264%22 text-anchor=%22middle%22>🧑‍💼</text></svg>'; }
   };
 }
 
@@ -4773,7 +4795,7 @@ function buscarDT() {
 
   container.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;">` +
     resultados.slice(0,60).map(([nombre, data]) => {
-      const fotoKey = nombre.toLowerCase().replace(/\s+/g,'_').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+      const equipoNombreFoto = eqFiltro ? (equipos[eqFiltro]||'') : '';
       const totalPD = Object.values(data.equipos).reduce((s,r)=>s+r.pd,0);
       const totalPG = Object.values(data.equipos).reduce((s,r)=>s+r.pg,0);
       const equiposChips = Object.keys(data.equipos).map(id => {
@@ -4789,7 +4811,7 @@ function buscarDT() {
       const banderaDT = data.nac ? `<span style="display:inline-flex;">${getBandera(data.nac)}</span>` : '';
       return `<div class="pers-card" onclick="verFichaDT('${nombre.replace(/'/g,"\\'")}')">
         <div class="pers-card-top">
-          <img class="pers-card-foto" src="dts/${fotoKey}.jpg" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><rect width=%2260%22 height=%2260%22 fill=%22%230D1628%22 rx=%2212%22/><text x=%2230%22 y=%2238%22 font-size=%2226%22 text-anchor=%22middle%22>🧑‍💼</text></svg>'">
+          ${fotoDTImg(nombre, equipoNombreFoto, 'width:60px;height:60px;border-radius:12px;object-fit:cover;object-position:top;background:var(--fondo-3);flex-shrink:0;border:1px solid var(--borde);', 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><rect width=%2260%22 height=%2260%22 fill=%22%230D1628%22 rx=%2212%22/><text x=%2230%22 y=%2238%22 font-size=%2226%22 text-anchor=%22middle%22>🧑‍💼</text></svg>')}
           <div class="pers-card-nombre">${banderaDT}${nombre}${tambienJugador ? `<span class="pers-card-badge">⚽ Ex jugador</span>` : ''}</div>
         </div>
         <div class="pers-card-stats">
@@ -4817,12 +4839,44 @@ function verFichaDT(nombre) {
   const data = todos[clave];
   if (!data) return;
 
-  const fotoKey = nombre.toLowerCase().replace(/\s+/g,'_').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  document.getElementById('dt-foto').src = `dts/${fotoKey}.jpg`;
+  // Equipo principal = el que más partidos dirigidos tiene
+  const equiposOrdenados = Object.entries(data.equipos).sort((a,b) => b[1].pd - a[1].pd);
+  const equipoPrincipalId = equiposOrdenados[0]?.[0];
+  const equipoPrincipalNombre = equipos[equipoPrincipalId] || '';
+
+  const dtKey = toFotoKey(nombre);
+  const eqKeyPrincipal = toFotoKey(equipoPrincipalNombre);
+  const dtFoto = document.getElementById('dt-foto');
+  dtFoto.dataset.tried = '';
+  dtFoto.src = `dts/${dtKey}_${eqKeyPrincipal}.jpg`;
+  dtFoto.onerror = function() {
+    if (!this.dataset.tried) { this.dataset.tried = '1'; this.src = `dts/${dtKey}.jpg`; }
+    else { this.onerror = null; this.src = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22180%22 height=%22180%22><rect width=%22180%22 height=%22180%22 fill=%22%230D1628%22 rx=%2216%22/><text x=%2290%22 y=%22105%22 font-size=%2264%22 text-anchor=%22middle%22>🧑‍💼</text></svg>'; }
+  };
   document.getElementById('dt-nombre').textContent = nombre;
   document.getElementById('dt-bandera').innerHTML = data.nac ? getBandera(data.nac) : '';
   document.getElementById('dt-nacionalidad').textContent = data.nac ? getNombrePais(data.nac) : '';
   document.getElementById('dt-equipos-lista').textContent = Object.keys(data.equipos).map(id => equipos[id]||id).join(' · ');
+
+  // Miniaturas por equipo (solo si dirigió a más de 1)
+  const dtFotos = document.getElementById('dt-fotos-equipos');
+  if (dtFotos) {
+    if (equiposOrdenados.length > 1) {
+      dtFotos.innerHTML = equiposOrdenados.map(([eid]) => {
+        const nm = equipos[eid]||eid;
+        const ek = toFotoKey(nm);
+        const esc = ESCUDOS[nm] ? `<img src="${ESCUDOS[nm]}" style="width:14px;height:14px;object-fit:contain;">` : '';
+        return `<div title="${nm}" onclick="cambiarFichaFotoDT('${dtKey}','${ek}')" style="cursor:pointer;border:2px solid var(--borde);border-radius:8px;overflow:hidden;width:52px;flex-shrink:0;transition:var(--trans);" onmouseenter="this.style.borderColor='var(--celeste)'" onmouseleave="this.style.borderColor='var(--borde)'">
+          <img src="dts/${dtKey}_${ek}.jpg" style="width:52px;height:52px;object-fit:cover;object-position:top;display:block;" onerror="this.src='dts/${dtKey}.jpg'" >
+          <div style="display:flex;align-items:center;justify-content:center;gap:3px;padding:2px;font-size:9px;color:var(--texto-3);background:var(--fondo-3);">${esc}</div>
+        </div>`;
+      }).join('');
+      dtFotos.style.display = 'flex';
+    } else {
+      dtFotos.innerHTML = '';
+      dtFotos.style.display = 'none';
+    }
+  }
 
   document.getElementById('dt-tabla-equipos').innerHTML = Object.entries(data.equipos)
     .sort((a,b) => b[1].pd - a[1].pd)
