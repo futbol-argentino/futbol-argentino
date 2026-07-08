@@ -3929,7 +3929,7 @@ function cambiarTorneoTab(tab) {
 }
 
 function tieneFasesEliminatorias(idTemporada) {
-  const FASES_EXCLUIDAS = ['Fase Regular','Fase Clasificatoria','Fase Complementación','Fase Complementacion','Fase Campeonato','Fase Campeonato Final'];
+  const FASES_EXCLUIDAS = ['Fase Regular','Fase Clasificatoria','Fase Complementación','Fase Complementacion','Fase Campeonato','Fase Campeonato Final','Primera Fase'];
   return partidos.some(p => p.ID_Temporada == idTemporada && !FASES_EXCLUIDAS.includes(p.Fase));
 }
 
@@ -3970,16 +3970,23 @@ function verTorneo(idTemporada) {
   const pts = partidos
     .filter(p => p.ID_Temporada == idTemporada)
     .sort((a, b) => {
-      const fa = a.Fecha ? a.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/,'$3-$2-$1') : '0';
-      const fb = b.Fecha ? b.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/,'$3-$2-$1') : '0';
-      if (fa !== fb) return fa.localeCompare(fb);
-      return (parseInt(a.Numero_Fecha)||0) - (parseInt(b.Numero_Fecha)||0);
+      // Orden cronológico real usando Fecha_Numerica (serial numérico), evita el bug
+      // de comparar fechas como texto (ej: "17/2" ordenaba antes que "3/2" por string).
+      const na = parseInt(a.Fecha_Numerica), nb = parseInt(b.Fecha_Numerica);
+      const va = isNaN(na) ? null : na, vb = isNaN(nb) ? null : nb;
+      if (va !== null && vb !== null && va !== vb) return va - vb;
+      const ma = parseInt(a.Numero_Fecha)||0, mb = parseInt(b.Numero_Fecha)||0;
+      if (ma !== mb) return ma - mb;
+      if (va !== null && vb !== null) return va - vb;
+      return (parseInt(a.ID_Partido)||0) - (parseInt(b.ID_Partido)||0);
     });
 
   const grupos = {};
   pts.forEach(p => {
     const fase = p.Fase || 'Sin fase';
-    const esFaseRegular = fase === 'Fase Regular';
+    // "Primera Fase" (ej. Torneo Nacional) se agrupa por fecha igual que la Fase Regular,
+    // porque es una fase de todos-contra-todos jugada en fechas numeradas.
+    const esFaseRegular = fase === 'Fase Regular' || fase === 'Primera Fase';
     // Fases numeradas (Clasificatoria, Complementación, Campeonato) usan Numero_Fecha
     const esFaseNumerada = ['Fase Clasificatoria','Fase Complementación','Fase Complementacion','Fase Campeonato'].includes(fase);
     let clave;
@@ -4011,10 +4018,25 @@ function verTorneo(idTemporada) {
       'Cuartos de Final Ida','Cuartos de Final Vuelta','Cuartos de Final',
       'Semifinal Ida','Semifinal Vuelta','Semifinal',
       'Desempate Descenso',
+      // Torneo Nacional (formato ganadores/perdedores, ej. 1985): van antes de "Final"
+      // porque cronológicamente se juegan primero (fechas 7 a 17 del torneo).
+      'Segunda Fase Ronda de Ganadores Ida','Segunda Fase Ronda de Ganadores Vuelta','Segunda Fase Ronda de Ganadores',
+      'Tercera Fase Ronda de Ganadores',
+      'Semifinal Ronda de Ganadores',
+      'Final Ronda de Ganadores Ida','Final Ronda de Ganadores Vuelta','Final Ronda de Ganadores',
+      'Segunda Fase Ronda de Perdedores Ida','Segunda Fase Ronda de Perdedores Vuelta','Segunda Fase Ronda de Perdedores',
+      'Tercera Fase Ronda de Perdedores',
+      'Cuarta Fase Ronda de Perdedores',
+      'Quinta Fase Ronda de Perdedores',
+      'Sexta Fase Ronda de Perdedores',
+      'Septima Fase Ronda de Perdedores',
+      'Final Ronda de Perdedores',
       'Final Ida','Final Vuelta','Final',
+      'Final Desempate',
       // Copa Maradona - siempre al final
       'Clasificatorio Sudamericana 2022',
     ];
+    const faseOrderLower = faseOrder.map(f => f.toLowerCase());
     const gruposOrdenados = Object.entries(grupos).sort(([a], [b]) => {
       // "Fecha X" primero, ordenadas numéricamente
       const aFecha = a.match(/^Fecha (\d+)$/);
@@ -4026,18 +4048,19 @@ function verTorneo(idTemporada) {
       const aFaseNum = a.match(/^(.+) — Fecha (\d+)$/);
       const bFaseNum = b.match(/^(.+) — Fecha (\d+)$/);
       if (aFaseNum && bFaseNum) {
-        const faseA = faseOrder.indexOf(aFaseNum[1]);
-        const faseB = faseOrder.indexOf(bFaseNum[1]);
+        const faseA = faseOrderLower.indexOf(aFaseNum[1].toLowerCase());
+        const faseB = faseOrderLower.indexOf(bFaseNum[1].toLowerCase());
         if (faseA !== faseB) return (faseA === -1 ? 999 : faseA) - (faseB === -1 ? 999 : faseB);
         return parseInt(aFaseNum[2]) - parseInt(bFaseNum[2]);
       }
       if (aFaseNum && !bFaseNum) return -1;
       if (!aFaseNum && bFaseNum) return 1;
-      // Resto: ordenar por posición en faseOrder; si no está, va al final
-      const ai = faseOrder.indexOf(a);
-      const bi = faseOrder.indexOf(b);
-      const av = ai === -1 ? 9999 : ai;
-      const bv = bi === -1 ? 9999 : bi;
+      // Resto: ordenar por posición en faseOrder (sin distinguir mayúsculas); si no está, va al
+      // final ordenado por Numero_Fecha
+      const ai = faseOrderLower.indexOf(a.toLowerCase());
+      const bi = faseOrderLower.indexOf(b.toLowerCase());
+      const av = ai === -1 ? 9000 + (grupos[a].numero||0) : ai;
+      const bv = bi === -1 ? 9000 + (grupos[b].numero||0) : bi;
       if (av !== bv) return av - bv;
       return a.localeCompare(b);
     });
@@ -4185,65 +4208,42 @@ const BRACKET_FASES = [
   ['Final Ida','Final Vuelta','Final'],
 ];
 
-function renderBracket(idTemporada) {
-  const container = document.getElementById('torneo-bracket-container');
-  const FASES_EXCLUIDAS = ['Fase Regular','Fase Clasificatoria','Fase Complementación','Fase Complementacion','Fase Campeonato','Fase Campeonato Final'];
-  const pts = partidos.filter(p => p.ID_Temporada == idTemporada && !FASES_EXCLUIDAS.includes(p.Fase));
+// Fases que nunca se muestran en el Cuadro: fases de todos-contra-todos (no eliminatorias).
+// "Primera Fase" corresponde a la fase regular del Torneo Nacional (y similares): no va en el cuadro.
+const BRACKET_FASES_EXCLUIDAS = ['Fase Regular','Fase Clasificatoria','Fase Complementación','Fase Complementacion','Fase Campeonato','Fase Campeonato Final','Primera Fase'];
 
-  if (!pts.length) {
-    container.innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">No hay fases eliminatorias para este torneo.</div>';
-    return;
-  }
-
-  // Agrupar por fase canónica
-  const fasesPresentes = new Set(pts.map(p => p.Fase));
-  const rondasData = [];
-  BRACKET_FASES.forEach(grupo => {
-    const matchingFases = grupo.filter(f => fasesPresentes.has(f));
-    if (!matchingFases.length) return;
-    const nombreRonda = grupo[grupo.length-1]; // nombre canónico (último del grupo)
-    const ptsRonda = pts.filter(p => grupo.includes(p.Fase));
-    if (!ptsRonda.length) return;
-
-    // Agrupar por enfrentamiento (par de equipos)
-    const enfrentamientos = {};
-    ptsRonda.forEach(p => {
-      const key = [p.Local_ID, p.Visitante_ID].sort().join('_');
-      if (!enfrentamientos[key]) enfrentamientos[key] = { partidos:[], key };
-      enfrentamientos[key].partidos.push(p);
-    });
-
-    rondasData.push({ nombre: nombreRonda, enfrentamientos: Object.values(enfrentamientos) });
+// Agrupa partidos en enfrentamientos (por par de equipos) y calcula el ganador de cada uno
+function _bracketAgruparEnfrentamientos(pts) {
+  const enfrentamientos = {};
+  pts.forEach(p => {
+    const key = [p.Local_ID, p.Visitante_ID].sort().join('_');
+    if (!enfrentamientos[key]) enfrentamientos[key] = { partidos:[], key };
+    enfrentamientos[key].partidos.push(p);
   });
-
-  if (!rondasData.length) {
-    container.innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">No hay fases eliminatorias para este torneo.</div>';
-    return;
-  }
-
-  // ── Ordenar bracket: mirar hacia adelante (a qué partido de la próxima ronda va cada equipo) ──
-  rondasData.forEach(ronda => {
-    ronda.enfrentamientos.forEach(enf => {
-      const ids = new Set();
-      enf.partidos.forEach(p => { ids.add(p.Local_ID); ids.add(p.Visitante_ID); });
-      const [eqA, eqB] = [...ids];
-      enf.eqA = eqA; enf.eqB = eqB;
-      let totA = 0, totB = 0;
-      enf.partidos.forEach(p => {
-        const gl = parseInt(p.Goles_Local)||0, gv = parseInt(p.Goles_Visitante)||0;
-        if (p.Local_ID === eqA) { totA += gl; totB += gv; } else { totA += gv; totB += gl; }
-      });
-      const ult = enf.partidos[enf.partidos.length-1];
-      enf.ganador = ult.ID_Ganador || (totA > totB ? eqA : totB > totA ? eqB : null);
+  const lista = Object.values(enfrentamientos);
+  lista.forEach(enf => {
+    const ids = new Set();
+    enf.partidos.forEach(p => { ids.add(p.Local_ID); ids.add(p.Visitante_ID); });
+    const [eqA, eqB] = [...ids];
+    enf.eqA = eqA; enf.eqB = eqB;
+    let totA = 0, totB = 0;
+    enf.partidos.forEach(p => {
+      const gl = parseInt(p.Goles_Local)||0, gv = parseInt(p.Goles_Visitante)||0;
+      if (p.Local_ID === eqA) { totA += gl; totB += gv; } else { totA += gv; totB += gl; }
     });
+    const ult = enf.partidos[enf.partidos.length-1];
+    enf.ganador = ult.ID_Ganador || (totA > totB ? eqA : totB > totA ? eqB : null);
   });
+  return lista;
+}
 
-  // Ordenar de la última ronda hacia la primera
-  // Última ronda: ordenar por nombre
+// Ordena las rondas mirando hacia adelante: la última ronda por nombre de equipo,
+// las anteriores según a qué partido de la próxima ronda avanza cada equipo/ganador.
+function _bracketOrdenarRondas(rondasData) {
+  if (!rondasData.length) return;
   const ultima = rondasData[rondasData.length-1];
   ultima.enfrentamientos.sort((a,b) => (equipos[a.eqA]||a.eqA).localeCompare(equipos[b.eqA]||b.eqA));
 
-  // Para cada ronda anterior: ordenar por qué partido de la próxima ronda involucra a sus equipos
   for (let r = rondasData.length - 2; r >= 0; r--) {
     const nextEnfs = rondasData[r+1].enfrentamientos;
     rondasData[r].enfrentamientos.forEach(enf => {
@@ -4261,44 +4261,133 @@ function renderBracket(idTemporada) {
     });
     rondasData[r].enfrentamientos.sort((a,b) => a._nextIdx - b._nextIdx);
   }
+}
 
-  const renderEquipo = (idEq, goles, ganador, jugado) => {
-    const nombre = equipos[idEq] || idEq;
-    const esc = ESCUDOS[nombre] ? `<img src="${ESCUDOS[nombre]}" onerror="this.style.display='none'">` : '';
-    if (!jugado) return `<div class="bracket-equipo">${esc}<span style="flex:1;">${nombre}</span><span class="bracket-gol bracket-pendiente">—</span></div>`;
-    const gana = ganador === idEq;
-    const claseEq = gana ? 'ganador' : 'perdedor';
-    const claseGol = gana ? 'g-win' : 'g-lose';
-    return `<div class="bracket-equipo ${claseEq}">${esc}<span style="flex:1;">${nombre}</span><span class="bracket-gol ${claseGol}">${goles}</span></div>`;
-  };
+function _bracketRenderEquipo(idEq, goles, ganador, jugado) {
+  const nombre = equipos[idEq] || idEq;
+  const esc = ESCUDOS[nombre] ? `<img src="${ESCUDOS[nombre]}" onerror="this.style.display='none'">` : '';
+  if (!jugado) return `<div class="bracket-equipo">${esc}<span style="flex:1;">${nombre}</span><span class="bracket-gol bracket-pendiente">—</span></div>`;
+  const gana = ganador === idEq;
+  const claseEq = gana ? 'ganador' : 'perdedor';
+  const claseGol = gana ? 'g-win' : 'g-lose';
+  return `<div class="bracket-equipo ${claseEq}">${esc}<span style="flex:1;">${nombre}</span><span class="bracket-gol ${claseGol}">${goles}</span></div>`;
+}
 
-  const renderEnfrentamiento = (enf) => {
-    const { eqA, eqB, ganador, partidos: ps } = enf;
-    const jugado = ps.some(p => p.Goles_Local !== '' && p.Goles_Local !== undefined);
-    let totA = 0, totB = 0;
-    ps.forEach(p => {
-      const gl = parseInt(p.Goles_Local)||0, gv = parseInt(p.Goles_Visitante)||0;
-      if (p.Local_ID === eqA) { totA += gl; totB += gv; } else { totA += gv; totB += gl; }
-    });
-    const clickable = ps.length === 1 ? `onclick="verPartido(${ps[0].ID_Partido})"` : '';
-    return `<div class="bracket-partido" ${clickable} style="${ps.length > 1 ? 'cursor:default;' : ''}">
-      ${renderEquipo(eqA, totA, ganador, jugado)}
-      ${renderEquipo(eqB, totB, ganador, jugado)}
-      ${ps.length > 1 ? `<div style="padding:4px 10px;font-size:10px;color:var(--texto-3);text-align:center;">${ps.length} partidos</div>` : ''}
-    </div>`;
-  };
+function _bracketRenderEnfrentamiento(enf) {
+  const { eqA, eqB, ganador, partidos: ps } = enf;
+  const jugado = ps.some(p => p.Goles_Local !== '' && p.Goles_Local !== undefined);
+  let totA = 0, totB = 0;
+  ps.forEach(p => {
+    const gl = parseInt(p.Goles_Local)||0, gv = parseInt(p.Goles_Visitante)||0;
+    if (p.Local_ID === eqA) { totA += gl; totB += gv; } else { totA += gv; totB += gl; }
+  });
+  const clickable = ps.length === 1 ? `onclick="verPartido(${ps[0].ID_Partido})"` : '';
+  return `<div class="bracket-partido" ${clickable} style="${ps.length > 1 ? 'cursor:default;' : ''}">
+    ${_bracketRenderEquipo(eqA, totA, ganador, jugado)}
+    ${_bracketRenderEquipo(eqB, totB, ganador, jugado)}
+    ${ps.length > 1 ? `<div style="padding:4px 10px;font-size:10px;color:var(--texto-3);text-align:center;">${ps.length} partidos</div>` : ''}
+  </div>`;
+}
 
-  const html = `<div class="bracket-wrap">` +
+function _bracketRenderRondas(rondasData) {
+  return `<div class="bracket-wrap">` +
     rondasData.map(ronda => `
       <div class="bracket-ronda">
         <div class="bracket-ronda-titulo">${ronda.nombre}</div>
         <div class="bracket-col">
-          ${ronda.enfrentamientos.map(e => renderEnfrentamiento(e)).join('')}
+          ${ronda.enfrentamientos.map(e => _bracketRenderEnfrentamiento(e)).join('')}
         </div>
       </div>`).join('') +
     `</div>`;
+}
 
-  container.innerHTML = html;
+// Nombre canónico de una fase para el cuadro: saca los sufijos Ida/Vuelta/Desempate
+// para agrupar ambas ramas de una misma ronda (ej. "Final Ronda de Ganadores Ida" y
+// "...Vuelta" son la misma ronda; también une "Final ida"/"Final Vuelta" sin importar mayúsculas).
+function _bracketNombreCanonico(fase) {
+  return fase.replace(/\s+(ida|vuelta|desempate)\s*$/i,'').trim();
+}
+
+function renderBracket(idTemporada) {
+  const container = document.getElementById('torneo-bracket-container');
+  const pts = partidos.filter(p => p.ID_Temporada == idTemporada && !BRACKET_FASES_EXCLUIDAS.includes(p.Fase));
+  const vacio = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">No hay fases eliminatorias para este torneo.</div>';
+
+  if (!pts.length) { container.innerHTML = vacio; return; }
+
+  // ── Torneos con doble cuadro: Ronda de Ganadores y Ronda de Perdedores (ej. Torneo Nacional 1985) ──
+  const tieneGanadores = pts.some(p => /ronda de ganadores/i.test(p.Fase));
+  const tienePerdedores = pts.some(p => /ronda de perdedores/i.test(p.Fase));
+
+  if (tieneGanadores && tienePerdedores) {
+    const ptsGanadores = pts.filter(p => /ronda de ganadores/i.test(p.Fase));
+    const ptsPerdedores = pts.filter(p => /ronda de perdedores/i.test(p.Fase));
+    // Todo lo que no sea de ninguna de las dos ramas (ej. "Final" / "Final Desempate") es la gran final
+    const ptsFinal = pts.filter(p => !/ronda de ganadores/i.test(p.Fase) && !/ronda de perdedores/i.test(p.Fase));
+
+    const construirRondasGenericas = (ptsGrupo) => {
+      const porCanonico = {};
+      ptsGrupo.forEach(p => {
+        const nombre = _bracketNombreCanonico(p.Fase);
+        if (!porCanonico[nombre]) porCanonico[nombre] = { nombre, partidos:[], numero: Infinity };
+        porCanonico[nombre].partidos.push(p);
+        porCanonico[nombre].numero = Math.min(porCanonico[nombre].numero, parseInt(p.Numero_Fecha)||0);
+      });
+      const rondas = Object.values(porCanonico).sort((a,b) => a.numero - b.numero);
+      rondas.forEach(r => { r.enfrentamientos = _bracketAgruparEnfrentamientos(r.partidos); });
+      _bracketOrdenarRondas(rondas);
+      return rondas;
+    };
+
+    const rondasGanadores = construirRondasGenericas(ptsGanadores);
+    const rondasPerdedores = construirRondasGenericas(ptsPerdedores);
+
+    let finalHTML = '';
+    if (ptsFinal.length) {
+      const finalEnf = _bracketAgruparEnfrentamientos(ptsFinal);
+      finalHTML = `
+        <div style="margin-top:28px;">
+          <h3 style="font-family:var(--fuente-titulo);font-size:20px;letter-spacing:0.5px;color:var(--oro);margin:0 0 12px;">🏆 Gran Final</h3>
+          <div style="overflow-x:auto;"><div class="bracket-wrap">
+            <div class="bracket-ronda">
+              <div class="bracket-col">${finalEnf.map(e => _bracketRenderEnfrentamiento(e)).join('')}</div>
+            </div>
+          </div></div>
+        </div>`;
+    }
+
+    container.innerHTML = `
+      <div>
+        <h3 style="font-family:var(--fuente-titulo);font-size:20px;letter-spacing:0.5px;color:var(--texto-1);margin:0 0 12px;">🟢 Ronda de Ganadores</h3>
+        <div style="overflow-x:auto;">${_bracketRenderRondas(rondasGanadores)}</div>
+      </div>
+      <div style="margin-top:28px;">
+        <h3 style="font-family:var(--fuente-titulo);font-size:20px;letter-spacing:0.5px;color:var(--texto-1);margin:0 0 12px;">🔴 Ronda de Perdedores</h3>
+        <div style="overflow-x:auto;">${_bracketRenderRondas(rondasPerdedores)}</div>
+      </div>
+      ${finalHTML}
+    `;
+    return;
+  }
+
+  // ── Cuadro simple (un solo bracket, ej. eliminación directa clásica) ──
+  const fasesPresentes = new Set(pts.map(p => p.Fase));
+  const rondasData = [];
+  BRACKET_FASES.forEach(grupo => {
+    const grupoLower = grupo.map(f => f.toLowerCase());
+    // Comparación sin distinguir mayúsculas/minúsculas (algunos datos históricos traen "Final ida" en minúscula)
+    const matchingFases = [...fasesPresentes].filter(f => grupoLower.includes(f.toLowerCase()));
+    if (!matchingFases.length) return;
+    const nombreRonda = grupo[grupo.length-1]; // nombre canónico (último del grupo)
+    const ptsRonda = pts.filter(p => matchingFases.includes(p.Fase));
+    if (!ptsRonda.length) return;
+    rondasData.push({ nombre: nombreRonda, enfrentamientos: _bracketAgruparEnfrentamientos(ptsRonda) });
+  });
+
+  if (!rondasData.length) { container.innerHTML = vacio; return; }
+
+  _bracketOrdenarRondas(rondasData);
+  container.innerHTML = _bracketRenderRondas(rondasData);
 }
 
 function renderStatsTorneo(idTemporada) {
