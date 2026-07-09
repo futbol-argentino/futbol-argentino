@@ -3489,13 +3489,7 @@ function renderEstadisticas() {
   ['goleadores','gc','amonestados','expulsados','pj'].forEach(renderTablaStat);
 }
 
-function filaJugador(i, nombre, nac, cols) {
-  const bandera = nac ? `<span style="display:inline-flex;align-items:center;flex-shrink:0;">${getBandera(nac)}</span>` : '';
-  const nameCell = `<td style="font-size:14px;font-weight:500;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')">
-    <div style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap;min-width:0;">${bandera}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${nombre}</span></div>
-  </td>`;
-  return `<tr><td style="color:var(--texto-2);font-size:13px;width:36px;padding:8px 10px;">${i+1}</td>${nameCell}${cols}</tr>`;
-}
+// (nota: la definición de filaJugador vive más arriba, junto a renderEscudosJugador)
 
 // ── FICHA JUGADOR ──
 function formatearAnios(aniosSet) {
