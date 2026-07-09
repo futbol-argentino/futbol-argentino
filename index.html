@@ -3212,6 +3212,8 @@ function parsearGoleadores(equipoId, torneoId) {
   const goles = {};
   const ec = {};
   const nacionalidades = {};
+  const equiposGoles = {};
+  const equiposEC = {};
 
   partidos.forEach(p => {
     if (!esPartidoJugado(p)) return; // Fix: ignorar partidos sin resultado
@@ -3238,21 +3240,26 @@ function parsearGoleadores(equipoId, torneoId) {
           // When filtering by team, only count EC if this team is the RIVAL (player's team).
           if (equipoId && idRival !== equipoId) return;
           ec[nombre] = (ec[nombre] || 0) + 1;
+          if (!equiposEC[nombre]) equiposEC[nombre] = new Set();
+          equiposEC[nombre].add(idRival);
         } else {
           if (equipoId && idEquipo !== equipoId) return;
           if (!goles[nombre]) goles[nombre] = { normales: 0, penales: 0 };
           if (esP) goles[nombre].penales++;
           else goles[nombre].normales++;
+          if (!equiposGoles[nombre]) equiposGoles[nombre] = new Set();
+          equiposGoles[nombre].add(idEquipo);
         }
       });
     });
   });
-  return { goles, ec, nacionalidades };
+  return { goles, ec, nacionalidades, equiposGoles, equiposEC };
 }
 
 function parsearTarjetas(campo, equipoId, torneoId) {
   const conteo = {};
   const nacionalidades = {};
+  const equiposPorJugador = {};
   partidos.forEach(p => {
     if (!esPartidoJugado(p)) return; // Fix: ignorar partidos sin resultado
     if (torneoId && p.ID_Temporada != torneoId) return;
@@ -3269,21 +3276,39 @@ function parsearTarjetas(campo, equipoId, torneoId) {
         if (!nombre || nombre.toLowerCase() === 'ninguno' || nombre.length < 2) return;
         if (nac) nacionalidades[nombre] = nac;
         conteo[nombre] = (conteo[nombre] || 0) + 1;
+        if (!equiposPorJugador[nombre]) equiposPorJugador[nombre] = new Set();
+        equiposPorJugador[nombre].add(idEquipo);
       });
     });
   });
-  return { datos: Object.entries(conteo).sort((a, b) => b[1] - a[1]), nacionalidades };
+  return { datos: Object.entries(conteo).sort((a, b) => b[1] - a[1]), nacionalidades, equiposPorJugador };
 }
 
 // Estado de paginación
 const paginas = { goleadores:1, gc:1, amonestados:1, expulsados:1, pj:1 };
 const POR_PAG = 30;
-let datosStats = { goleadores:[], gc:[], amonestados:[], expulsados:[], pj:[], nacGoleadores:{}, nacGC:{}, nacAmon:{}, nacExpu:{}, nacPJ:{} };
+let datosStats = { goleadores:[], gc:[], amonestados:[], expulsados:[], pj:[], nacGoleadores:{}, nacGC:{}, nacAmon:{}, nacExpu:{}, nacPJ:{}, eqGoleadores:{}, eqGC:{}, eqAmon:{}, eqExpu:{}, eqPJ:{} };
 
-function filaJugador(i, nombre, nac, cols) {
+// Renderiza los escuditos de los equipos para los que un jugador aportó en una tabla de estadísticas
+function renderEscudosJugador(equiposIds) {
+  if (!equiposIds || !equiposIds.size) return '';
+  const MAX = 4;
+  const ids = [...equiposIds];
+  const visibles = ids.slice(0, MAX);
+  const extra = ids.length - visibles.length;
+  const imgs = visibles.map(id => {
+    const nombreEq = equipos[id] || id;
+    return ESCUDOS[nombreEq] ? `<img src="${ESCUDOS[nombreEq]}" title="${nombreEq}" style="width:16px;height:16px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">` : '';
+  }).join('');
+  const extraHtml = extra > 0 ? `<span style="font-size:10px;color:var(--texto-3);flex-shrink:0;">+${extra}</span>` : '';
+  return `<span style="display:inline-flex;align-items:center;gap:3px;flex-shrink:0;">${imgs}${extraHtml}</span>`;
+}
+
+function filaJugador(i, nombre, nac, cols, equiposIds) {
   const bandera = nac ? `<span style="display:inline-flex;align-items:center;flex-shrink:0;">${getBandera(nac)}</span>` : '';
+  const escudos = renderEscudosJugador(equiposIds);
   const nameCell = `<td style="font-size:14px;font-weight:500;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')">
-    <div style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap;min-width:0;">${bandera}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${nombre}</span></div>
+    <div style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap;min-width:0;">${bandera}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${nombre}</span>${escudos}</div>
   </td>`;
   return `<tr><td style="color:var(--texto-2);font-size:13px;width:36px;padding:8px 10px;">${i+1}</td>${nameCell}${cols}</tr>`;
 }
@@ -3320,7 +3345,8 @@ function renderTablaStat(tipo) {
           return filaJugador(inicio+i, nombre, datosStats.nacGoleadores[nombre],
             `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--celeste);">${total}</td>
              <td style="text-align:center;font-size:13px;color:var(--texto-2);">${d.normales > 0 ? d.normales : '—'}</td>
-             <td style="text-align:center;font-size:13px;color:var(--amarillo);">${d.penales > 0 ? d.penales : '—'}</td>`);
+             <td style="text-align:center;font-size:13px;color:var(--amarillo);">${d.penales > 0 ? d.penales : '—'}</td>`,
+            datosStats.eqGoleadores[nombre]);
         }).join('');
     document.getElementById('count-goleadores').textContent = datosStats.goleadores.length + ' jugadores';
     renderPaginacion('goleadores', datosStats.goleadores.length, paginas.goleadores, 'cambiarPaginaStats');
@@ -3333,7 +3359,8 @@ function renderTablaStat(tipo) {
       ? '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>'
       : slice.map(([nombre, cant], i) =>
           filaJugador(inicio+i, nombre, datosStats.nacGC[nombre],
-            `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--rojo);">${cant}</td>`)
+            `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--rojo);">${cant}</td>`,
+            datosStats.eqGC[nombre])
         ).join('');
     document.getElementById('count-gc').textContent = datosStats.gc.length + ' jugadores';
     renderPaginacion('gc', datosStats.gc.length, paginas.gc, 'cambiarPaginaStats');
@@ -3346,7 +3373,8 @@ function renderTablaStat(tipo) {
       ? '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>'
       : slice.map(([nombre, cant], i) =>
           filaJugador(inicio+i, nombre, datosStats.nacAmon[nombre],
-            `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--amarillo);">${cant}</td>`)
+            `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--amarillo);">${cant}</td>`,
+            datosStats.eqAmon[nombre])
         ).join('');
     document.getElementById('count-amonestados').textContent = datosStats.amonestados.length + ' jugadores';
     renderPaginacion('amonestados', datosStats.amonestados.length, paginas.amonestados, 'cambiarPaginaStats');
@@ -3359,7 +3387,8 @@ function renderTablaStat(tipo) {
       ? '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>'
       : slice.map(([nombre, cant], i) =>
           filaJugador(inicio+i, nombre, datosStats.nacExpu[nombre],
-            `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--rojo);">${cant}</td>`)
+            `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--rojo);">${cant}</td>`,
+            datosStats.eqExpu[nombre])
         ).join('');
     document.getElementById('count-expulsados').textContent = datosStats.expulsados.length + ' jugadores';
     renderPaginacion('expulsados', datosStats.expulsados.length, paginas.expulsados, 'cambiarPaginaStats');
@@ -3373,7 +3402,8 @@ function renderTablaStat(tipo) {
       ? '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>'
       : slice.map(([nombre, cant], i) => {
           return filaJugador(inicio+i, nombre, datosStats.nacPJ[nombre],
-            `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--texto-1);">${cant}</td>`);
+            `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--texto-1);">${cant}</td>`,
+            datosStats.eqPJ[nombre]);
         }).join('');
     document.getElementById('count-pj').textContent = datosStats.pj.length + ' jugadores';
     renderPaginacion('pj', datosStats.pj.length, paginas.pj, 'cambiarPaginaStats');
@@ -3390,9 +3420,9 @@ function renderEstadisticas() {
   const filtroNom = (document.getElementById('stats-filtro-nombre')?.value || '').toLowerCase().trim();
   const filtroNac = document.getElementById('stats-filtro-nac')?.value || '';
 
-  const { goles, ec, nacionalidades } = parsearGoleadores(equipoId);
-  const { datos: amon, nacionalidades: nacAmon } = parsearTarjetas('Amonestados', equipoId);
-  const { datos: expu, nacionalidades: nacExpu } = parsearTarjetas('Expulsados', equipoId);
+  const { goles, ec, nacionalidades, equiposGoles, equiposEC } = parsearGoleadores(equipoId);
+  const { datos: amon, nacionalidades: nacAmon, equiposPorJugador: eqAmon } = parsearTarjetas('Amonestados', equipoId);
+  const { datos: expu, nacionalidades: nacExpu, equiposPorJugador: eqExpu } = parsearTarjetas('Expulsados', equipoId);
 
   // Combinar todos los diccionarios de nac para filtrar
   const todosNac = { ...nacionalidades, ...nacAmon, ...nacExpu };
@@ -3412,15 +3442,20 @@ function renderEstadisticas() {
   datosStats.gc = aplicarFiltros(Object.entries(ec).sort((a,b) => b[1]-a[1]));
   datosStats.nacGoleadores = nacionalidades;
   datosStats.nacGC = nacionalidades;
+  datosStats.eqGoleadores = equiposGoles;
+  datosStats.eqGC = equiposEC;
 
   datosStats.amonestados = aplicarFiltros(amon);
   datosStats.expulsados  = aplicarFiltros(expu);
   datosStats.nacAmon = nacAmon;
   datosStats.nacExpu = nacExpu;
+  datosStats.eqAmon = eqAmon;
+  datosStats.eqExpu = eqExpu;
 
   // Calcular PJ desde columna Jugadores de partidos
   const pjConteo = {};
   const todosNacPJ = {};
+  const eqPorJugadorPJ = {};
   partidos.forEach(p => {
     if (equipoId && p.Local_ID !== equipoId && p.Visitante_ID !== equipoId) return;
     const rawJ = p.Jugadores || '';
@@ -3434,9 +3469,12 @@ function renderEstadisticas() {
         if (!nombre || nombre.length < 2 || nombre.toLowerCase() === 'ninguno') return;
         if (nac) todosNacPJ[nombre] = nac;
         pjConteo[nombre] = (pjConteo[nombre]||0) + 1;
+        if (!eqPorJugadorPJ[nombre]) eqPorJugadorPJ[nombre] = new Set();
+        eqPorJugadorPJ[nombre].add(eqId);
       });
     });
   });
+  datosStats.eqPJ = eqPorJugadorPJ;
   // Aplicar filtros de nombre y nac a PJ también
   const todosNacPJMerged = { ...todosNacPJ, ...nacionalidades, ...nacAmon, ...nacExpu };
   datosStats.nacPJ = todosNacPJMerged;
