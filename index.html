@@ -1639,13 +1639,13 @@ select option{background:#080F20;color:#F0F6FF}
       </div>
     </div>
 
-    <!-- Panel GOLES: ranking de equipos a los que más goles le hizo -->
+    <!-- Panel GOLES: ranking de equipos a los que más goles le hizo (o le hicieron, si es arquero) -->
     <div id="fpanel-goles" class="ficha-panel" style="display:none;">
-      <div class="ficha-seccion-titulo">⚽ Goles por rival</div>
-      <div style="font-size:12px;color:var(--texto-2);margin:-6px 0 12px 0;">Equipos rivales ordenados de mayor a menor cantidad de goles convertidos</div>
+      <div class="ficha-seccion-titulo" id="ficha-goles-titulo">⚽ Goles por rival</div>
+      <div style="font-size:12px;color:var(--texto-2);margin:-6px 0 12px 0;" id="ficha-goles-desc">Equipos rivales ordenados de mayor a menor cantidad de goles convertidos</div>
       <div class="tabla-scroll scroll-forzado">
         <table style="width:100%;border-collapse:collapse;min-width:460px;">
-          <thead><tr>
+          <thead id="ficha-goles-thead"><tr>
             <th style="width:34px;">#</th>
             <th>Rival</th>
             <th style="text-align:center;width:55px;">⚽</th>
@@ -1655,6 +1655,23 @@ select option{background:#080F20;color:#F0F6FF}
           </tr></thead>
           <tbody id="ficha-tabla-goles"></tbody>
         </table>
+      </div>
+      <div id="ficha-goles-convertidos-wrap" style="display:none;margin-top:22px;">
+        <div class="ficha-seccion-titulo">⚽ Goles convertidos por rival</div>
+        <div style="font-size:12px;color:var(--texto-2);margin:-6px 0 12px 0;">Poco frecuente en un arquero, pero quedó registrado</div>
+        <div class="tabla-scroll scroll-forzado">
+          <table style="width:100%;border-collapse:collapse;min-width:460px;">
+            <thead><tr>
+              <th style="width:34px;">#</th>
+              <th>Rival</th>
+              <th style="text-align:center;width:55px;">⚽</th>
+              <th style="text-align:center;width:55px;">🅿️</th>
+              <th style="text-align:center;width:55px;">PJ</th>
+              <th style="text-align:center;width:70px;">Prom.</th>
+            </tr></thead>
+            <tbody id="ficha-tabla-goles-convertidos"></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -3520,6 +3537,9 @@ function verFichaJugador(nombre) {
   const porAnio = {};
   let nacionalidad = null;
   let posicion = null;
+  // Goles recibidos (solo se acumulan en los partidos donde este jugador figura como ARQ)
+  let concedidosTotal = 0;
+  const concedidosPorRival = {};
 
   partidos.forEach(p => {
     const anio = p.Fecha ? parseInt(p.Fecha.split('/')[2] || p.Fecha.split('-')[0]) : null;
@@ -3590,6 +3610,19 @@ function verFichaJugador(nombre) {
             porAnio[anio].pj++;
           }
 
+          // Goles recibidos: solo en los partidos donde este jugador fue el arquero titular
+          if (posEncontrada === 'ARQ') {
+            const golesRival = parseInt(idx === 0 ? p.Goles_Visitante : p.Goles_Local);
+            if (!isNaN(golesRival)) {
+              concedidosTotal += golesRival;
+              if (!concedidosPorRival[rivalIdPJ]) concedidosPorRival[rivalIdPJ] = { goles:0, pj:0, anios:new Set() };
+              concedidosPorRival[rivalIdPJ].goles += golesRival;
+              concedidosPorRival[rivalIdPJ].pj++;
+              if (anio) concedidosPorRival[rivalIdPJ].anios.add(anio);
+            }
+          }
+
+
           // Contar PJ frente al RIVAL de ese partido
           if (!porRival[rivalIdPJ]) porRival[rivalIdPJ] = { goles:0, penales:0, ec:0, amonestados:0, expulsados:0, pj:0, anios:new Set() };
           porRival[rivalIdPJ].pj++;
@@ -3654,13 +3687,16 @@ function verFichaJugador(nombre) {
     }
   }
 
+  const esArquero = posicion === 'ARQ';
   const stats = [
     ['PJ', totales.pj, 'var(--texto-1)'],
-    ['⚽ Goles', totales.goles, 'var(--celeste)'],
+    esArquero ? ['🥅 Recibidos', concedidosTotal, 'var(--celeste)'] : ['⚽ Goles', totales.goles, 'var(--celeste)'],
     ['🅿️ Pen.', totales.penales, 'var(--amarillo)'],
     ['🟨 Amarillas', totales.amonestados, 'var(--amarillo)'],
     ['🟥 Rojas', totales.expulsados, 'var(--rojo)'],
   ];
+  // Si el arquero además convirtió algún gol (muy poco frecuente), lo mostramos aparte para no perder el dato
+  if (esArquero && totales.goles > 0) stats.push(['⚽ Convertidos', totales.goles, 'var(--verde)']);
   document.getElementById('ficha-stats').innerHTML = stats.map(([label, val, color]) => `
     <div class="ficha-stat-pill">
       <span class="ficha-stat-num" style="color:${color};">${val}</span>
@@ -3686,10 +3722,11 @@ function verFichaJugador(nombre) {
       </tr>`;
     }).join('');
 
-  // ── Tabla GOLES: ranking de rivales por goles convertidos ──
+  // ── Tabla GOLES: ranking de rivales por goles convertidos (o recibidos, si es arquero) ──
   const equiposConGoles = Object.entries(porRival).filter(([,r]) => (r.goles||0) > 0);
-  document.getElementById('ficha-tabla-goles').innerHTML = equiposConGoles.length
-    ? equiposConGoles
+
+  const renderTablaGolesPorRival = (entries, colorGoles) => entries.length
+    ? entries.slice()
         .sort((a,b) => (b[1].goles||0) - (a[1].goles||0))
         .map(([eid, r], idx) => {
           const nm = equipos[eid]||eid;
@@ -3698,13 +3735,53 @@ function verFichaJugador(nombre) {
           return `<tr>
             <td style="text-align:center;color:var(--texto-3);font-weight:600;">${idx+1}</td>
             <td style="padding:10px 12px;"><div style="display:flex;align-items:center;">${esc}<strong>${nm}</strong></div></td>
-            <td style="text-align:center;font-weight:700;color:var(--celeste);">${r.goles}</td>
+            <td style="text-align:center;font-weight:700;color:${colorGoles};">${r.goles}</td>
             <td style="text-align:center;color:var(--amarillo);">${r.penales||'—'}</td>
             <td style="text-align:center;color:var(--texto-1);">${r.pj||'—'}</td>
             <td style="text-align:center;color:var(--texto-2);font-size:13px;">${prom}</td>
           </tr>`;
         }).join('')
     : `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--texto-3);">Sin goles registrados</td></tr>`;
+
+  const theadGolesDefault = `<tr>
+    <th style="width:34px;">#</th>
+    <th>Rival</th>
+    <th style="text-align:center;width:55px;">⚽</th>
+    <th style="text-align:center;width:55px;">🅿️</th>
+    <th style="text-align:center;width:55px;">PJ</th>
+    <th style="text-align:center;width:70px;">Prom.</th>
+  </tr>`;
+
+  if (esArquero) {
+    // Arquero: la tabla principal pasa a ser "goles recibidos", agrupados por el equipo que se los hizo
+    document.getElementById('ficha-goles-titulo').textContent = '🥅 Goles recibidos por rival';
+    document.getElementById('ficha-goles-desc').textContent = 'Equipos rivales ordenados de mayor a menor cantidad de goles que le convirtieron';
+    document.getElementById('ficha-goles-thead').innerHTML = `<tr>
+      <th style="width:34px;">#</th>
+      <th>Rival</th>
+      <th style="text-align:center;width:55px;">🥅</th>
+      <th style="text-align:center;width:55px;">🅿️</th>
+      <th style="text-align:center;width:55px;">PJ</th>
+      <th style="text-align:center;width:70px;">Prom.</th>
+    </tr>`;
+    const concedidosEntries = Object.entries(concedidosPorRival).filter(([,r]) => (r.goles||0) > 0);
+    document.getElementById('ficha-tabla-goles').innerHTML = renderTablaGolesPorRival(concedidosEntries, 'var(--rojo)');
+
+    // Si además convirtió algún gol (raro, pero pasa), se muestra en una tabla aparte, sin ocultar lo principal
+    const convertidosWrap = document.getElementById('ficha-goles-convertidos-wrap');
+    if (totales.goles > 0) {
+      convertidosWrap.style.display = 'block';
+      document.getElementById('ficha-tabla-goles-convertidos').innerHTML = renderTablaGolesPorRival(equiposConGoles, 'var(--celeste)');
+    } else {
+      convertidosWrap.style.display = 'none';
+    }
+  } else {
+    document.getElementById('ficha-goles-titulo').textContent = '⚽ Goles por rival';
+    document.getElementById('ficha-goles-desc').textContent = 'Equipos rivales ordenados de mayor a menor cantidad de goles convertidos';
+    document.getElementById('ficha-goles-thead').innerHTML = theadGolesDefault;
+    document.getElementById('ficha-tabla-goles').innerHTML = renderTablaGolesPorRival(equiposConGoles, 'var(--celeste)');
+    document.getElementById('ficha-goles-convertidos-wrap').style.display = 'none';
+  }
 
   // ── Tabla DISCIPLINA: ranking de rivales por tarjetas ──
   const equiposConTarjetas = Object.entries(porRival).filter(([,r]) => ((r.amonestados||0)+(r.expulsados||0)) > 0);
