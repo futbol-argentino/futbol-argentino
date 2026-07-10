@@ -160,6 +160,7 @@
   /* Ficha jugador */
   .ficha-header { flex-direction:column; align-items:center; gap:14px; }
   #ficha-foto { width:130px !important; height:130px !important; }
+  #dt-foto { width:130px !important; height:130px !important; }
   .ficha-info { text-align:center; width:100%; }
   .ficha-nombre-row { justify-content:center; }
   #ficha-nombre { font-size:24px !important; }
@@ -478,6 +479,7 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
   .modal-resultado-num{font-size:46px}.modal-equipos{font-size:17px}
   #modal-jugador .modal-box{padding:16px}
   #ficha-foto{width:160px!important;height:160px!important;object-position:top!important}
+  #dt-foto{width:160px!important;height:160px!important;object-position:top!important}
   #ficha-stats{gap:6px}#ficha-stats>div{min-width:58px;padding:8px 6px}
   .stat-pill{padding:10px 6px}.stat-pill-num{font-size:22px}
   .stats-nums{display:grid;grid-template-columns:repeat(3,1fr);}
@@ -611,6 +613,10 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
   width:180px; height:180px; object-fit:cover; object-position:top;
   border-radius:16px; border:2px solid var(--borde-activo); display:block;
 }
+#dt-foto {
+  width:180px; height:180px; object-fit:cover; object-position:top;
+  border-radius:16px; border:2px solid var(--borde-activo); display:block;
+}
 .ficha-info { flex:1; min-width:0; }
 .ficha-nombre-row {
   display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap;
@@ -638,6 +644,7 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 @media(max-width:600px){
   .ficha-header { flex-direction:column; align-items:center; gap:16px; }
   #ficha-foto { width:140px !important; height:140px !important; }
+  #dt-foto { width:140px !important; height:140px !important; }
   .ficha-info { text-align:center; }
   .ficha-nombre-row { justify-content:center; }
   .ficha-stats-grid { grid-template-columns:repeat(3,1fr); }
@@ -4562,6 +4569,17 @@ function recopilarJugadores() {
   return jugadoresMap;
 }
 
+// Determina el equipo más reciente de un jugador (según el año máximo en que jugó ahí),
+// para usarlo como equipo de referencia al buscar su foto cuando no hay filtro de equipo.
+function equipoMasRecienteDeJugador(data) {
+  let mejorId = null, mejorAnio = -Infinity;
+  Object.entries(data.equipos).forEach(([id, r]) => {
+    const max = r.anios && r.anios.size ? Math.max(...r.anios) : -Infinity;
+    if (max > mejorAnio) { mejorAnio = max; mejorId = id; }
+  });
+  return mejorId;
+}
+
 function buscarJugador() {
   const q = (document.getElementById('jugador-buscar-input')?.value || '').toLowerCase().trim();
   const eqFiltro = document.getElementById('jugador-buscar-equipo')?.value || '';
@@ -4604,7 +4622,7 @@ function buscarJugador() {
           ? data.equipos[eqFiltro].anios
           : Object.values(data.equipos).reduce((s,r) => { r.anios.forEach(a=>s.add(a)); return s; }, new Set());
         const aniosStr = formatearAnios(aniosSet);
-        const equipoNombre = eqFiltro ? (equipos[eqFiltro]||'') : '';
+        const equipoNombre = eqFiltro ? (equipos[eqFiltro]||'') : (equipos[equipoMasRecienteDeJugador(data)]||'');
         return `<div class="album-card" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')">
           ${fotoJugadorImg(nombre, equipoNombre, 'width:100%;aspect-ratio:1/1;object-fit:cover;object-position:top;display:block;background:var(--fondo-3);', '')}
           <div class="album-avatar" style="display:none;">👤</div>
@@ -4630,7 +4648,7 @@ function buscarJugador() {
           const esc = ESCUDOS[nombreEq] ? `<img src="${ESCUDOS[nombreEq]}" onerror="this.style.display='none'">` : '';
           return `<span class="pers-equipo-chip">${esc}${nombreEq} <span class="anios">(${anios})</span></span>`;
         }).join('');
-        const equipoNombreFoto = eqFiltro ? (equipos[eqFiltro]||'') : '';
+        const equipoNombreFoto = eqFiltro ? (equipos[eqFiltro]||'') : (equipos[equipoMasRecienteDeJugador(data)]||'');
         return `<div class="pers-card" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')">
           <div class="pers-card-top">
             ${fotoJugadorImg(nombre, equipoNombreFoto, 'width:60px;height:60px;border-radius:12px;object-fit:cover;object-position:top;background:var(--fondo-3);flex-shrink:0;border:1px solid var(--borde);', 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><rect width=%2260%22 height=%2260%22 fill=%22%230D1628%22 rx=%2212%22/><text x=%2230%22 y=%2238%22 font-size=%2226%22 text-anchor=%22middle%22>👤</text></svg>')}
