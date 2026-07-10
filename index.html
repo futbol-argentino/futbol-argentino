@@ -2245,7 +2245,7 @@ function filaPartido(p, equipoRef) {
   // Goleadores desplegables ordenados por minuto con escudo de equipo
   const golData = construirGolData(p, local, visita, 5);
 
-  const scorePen = p.Tipo_Definicion === '1' && p.Penales ? calcularScorePenales(p.Penales) : null;
+  const scorePen = esDefinicionPorPenales(p.Tipo_Definicion) && p.Penales ? calcularScorePenales(p.Penales) : null;
   const resultadoTxt = scorePen
     ? `${p.Goles_Local}<span style="color:var(--amarillo);">(${scorePen.local})</span> - <span style="color:var(--amarillo);">(${scorePen.visita})</span>${p.Goles_Visitante}`
     : `${p.Goles_Local} - ${p.Goles_Visitante}`;
@@ -2478,8 +2478,8 @@ function filtrar() {
     const pe = partidos.filter(p =>
       (p.Local_ID===eq1 && p.Visitante_ID===eq2)||(p.Local_ID===eq2 && p.Visitante_ID===eq1));
     const pj = pe.length;
-    const g1 = pe.filter(p=>p.Tipo_Definicion==='0'&&p.ID_Ganador===eq1).length;
-    const g2 = pe.filter(p=>p.Tipo_Definicion==='0'&&p.ID_Ganador===eq2).length;
+    const g1 = pe.filter(p=>esResultadoNormal(p.Tipo_Definicion)&&p.ID_Ganador===eq1).length;
+    const g2 = pe.filter(p=>esResultadoNormal(p.Tipo_Definicion)&&p.ID_Ganador===eq2).length;
     const emp = pj-g1-g2;
     const gf1 = pe.reduce((a,p)=>a+(p.Local_ID===eq1?parseInt(p.Goles_Local)||0:parseInt(p.Goles_Visitante)||0),0);
     const gf2 = pe.reduce((a,p)=>a+(p.Local_ID===eq2?parseInt(p.Goles_Local)||0:parseInt(p.Goles_Visitante)||0),0);
@@ -2499,8 +2499,8 @@ function filtrar() {
     const nombre = equipos[eq1];
     const pe = partidos.filter(p=>p.Local_ID===eq1||p.Visitante_ID===eq1);
     const pj = pe.length;
-    const pg = pe.filter(p=>p.Tipo_Definicion==='0'&&p.ID_Ganador===eq1).length;
-    const pp = pe.filter(p=>p.Tipo_Definicion==='0'&&p.ID_Ganador!==eq1&&p.ID_Ganador!=='').length;
+    const pg = pe.filter(p=>esResultadoNormal(p.Tipo_Definicion)&&p.ID_Ganador===eq1).length;
+    const pp = pe.filter(p=>esResultadoNormal(p.Tipo_Definicion)&&p.ID_Ganador!==eq1&&p.ID_Ganador!=='').length;
     const gf = pe.reduce((a,p)=>a+(p.Local_ID===eq1?parseInt(p.Goles_Local)||0:parseInt(p.Goles_Visitante)||0),0);
     const gc = pe.reduce((a,p)=>a+(p.Local_ID===eq1?parseInt(p.Goles_Visitante)||0:parseInt(p.Goles_Local)||0),0);
     document.getElementById('stats-equipo').classList.add('visible');
@@ -2574,8 +2574,8 @@ function verDetalleEquipo(id) {
   // Stats — solo partidos jugados
   const pe = partidos.filter(p => esPartidoJugado(p) && (p.Local_ID===id||p.Visitante_ID===id));
   const pj = pe.length;
-  const pg = pe.filter(p=>p.Tipo_Definicion==='0'&&p.ID_Ganador===id).length;
-  const pp = pe.filter(p=>p.Tipo_Definicion==='0'&&p.ID_Ganador!==id&&p.ID_Ganador!=='').length;
+  const pg = pe.filter(p=>esResultadoNormal(p.Tipo_Definicion)&&p.ID_Ganador===id).length;
+  const pp = pe.filter(p=>esResultadoNormal(p.Tipo_Definicion)&&p.ID_Ganador!==id&&p.ID_Ganador!=='').length;
   const gf = pe.reduce((a,p)=>a+(p.Local_ID===id?parseInt(p.Goles_Local)||0:parseInt(p.Goles_Visitante)||0),0);
   const gc = pe.reduce((a,p)=>a+(p.Local_ID===id?parseInt(p.Goles_Visitante)||0:parseInt(p.Goles_Local)||0),0);
 
@@ -2600,7 +2600,7 @@ function verDetalleEquipo(id) {
     const gl = parseInt(p.Goles_Local)||0, gv = parseInt(p.Goles_Visitante)||0;
     r.gf += esLocal ? gl : gv;
     r.gc += esLocal ? gv : gl;
-    if (p.Tipo_Definicion === '0') {
+    if (esResultadoNormal(p.Tipo_Definicion)) {
       if (p.ID_Ganador === id) r.pg++;
       else if (p.ID_Ganador && p.ID_Ganador !== '') r.pp++;
       else r.pe++;
@@ -2683,10 +2683,10 @@ function filtrarDetalle() {
       (p.Local_ID===id&&p.Visitante_ID===rival)||(p.Local_ID===rival&&p.Visitante_ID===id));
   }
 
-  if (res === 'victoria') lista = lista.filter(p=>p.Tipo_Definicion==='0'&&p.ID_Ganador===id);
-  if (res === 'victoria-rival') lista = lista.filter(p=>p.Tipo_Definicion==='0'&&p.ID_Ganador===rival);
-  if (res === 'derrota') lista = lista.filter(p=>p.Tipo_Definicion==='0'&&p.ID_Ganador!==id&&p.ID_Ganador!=='');
-  if (res === 'empate') lista = lista.filter(p=>p.Goles_Local===p.Goles_Visitante&&p.Tipo_Definicion==='0');
+  if (res === 'victoria') lista = lista.filter(p=>esResultadoNormal(p.Tipo_Definicion)&&p.ID_Ganador===id);
+  if (res === 'victoria-rival') lista = lista.filter(p=>esResultadoNormal(p.Tipo_Definicion)&&p.ID_Ganador===rival);
+  if (res === 'derrota') lista = lista.filter(p=>esResultadoNormal(p.Tipo_Definicion)&&p.ID_Ganador!==id&&p.ID_Ganador!=='');
+  if (res === 'empate') lista = lista.filter(p=>p.Goles_Local===p.Goles_Visitante&&esResultadoNormal(p.Tipo_Definicion));
 
   // Mostrar stats vs rival cuando está seleccionado
   const rivalCard = document.getElementById('detalle-stats-rival');
@@ -2700,7 +2700,7 @@ function filtrarDetalle() {
       const esLocal = p.Local_ID === id;
       gf += parseInt(esLocal ? p.Goles_Local : p.Goles_Visitante)||0;
       gc += parseInt(esLocal ? p.Goles_Visitante : p.Goles_Local)||0;
-      if (p.Tipo_Definicion==='0') {
+      if (esResultadoNormal(p.Tipo_Definicion)) {
         if (p.ID_Ganador===id) pg++;
         else if (p.ID_Ganador===rival) pp++;
         else pe++;
@@ -2831,7 +2831,7 @@ function verPartido(id) {
   // Mostrar resultado de penales si aplica
   const penalesTxt = document.getElementById('modal-penales-txt');
   const penalesWrap = document.getElementById('modal-penales-wrap');
-  if (p.Tipo_Definicion === '1' && p.Penales) {
+  if (esDefinicionPorPenales(p.Tipo_Definicion) && p.Penales) {
     // Mostrar score de penales arriba, ya calculado (no el texto crudo de pateadores)
     const scoreCalc = calcularScorePenales(p.Penales);
     if (scoreCalc) {
@@ -3230,6 +3230,22 @@ function nombreCanonico(n) {
 function esPartidoJugado(p) {
   return p.Goles_Local !== '' && p.Goles_Local !== null && p.Goles_Local !== undefined &&
          p.Goles_Visitante !== '' && p.Goles_Visitante !== null && p.Goles_Visitante !== undefined;
+}
+
+// Tipo_Definicion del CSV de Partidos:
+//   0 = Partido Normal              3 = Partido en Cancha Neutral
+//   1 = Penales                     4 = Penales en Cancha Neutral
+//   2 = Partidos Mano a Mano
+// El '3' es la contraparte en cancha neutral del '0': mismo tipo de resultado (cuenta para
+// las tablas de posiciones / PG-PE-PP), solo cambia la sede. Por eso donde antes se chequeaba
+// únicamente '0' ahora se usa esResultadoNormal(), que también acepta '3'.
+// El '4' es la contraparte en cancha neutral del '1': define por penales igual, solo cambia
+// la sede. Por eso se usa esDefinicionPorPenales() donde antes se chequeaba únicamente '1'.
+function esResultadoNormal(tipoDefinicion) {
+  return tipoDefinicion === '0' || tipoDefinicion === '3';
+}
+function esDefinicionPorPenales(tipoDefinicion) {
+  return tipoDefinicion === '1' || tipoDefinicion === '4';
 }
 
 function parsearGoleadores(equipoId, torneoId) {
@@ -4198,7 +4214,7 @@ function verTorneo(idTemporada) {
           const escV = ESCUDOS[visita] ? `<img src="${ESCUDOS[visita]}" style="width:18px;height:18px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">` : '';
           const rc = resClase(p.Goles_Local, p.Goles_Visitante);
           const esJugado = p.Goles_Local !== '' && p.Goles_Visitante !== '';
-          const scorePen = p.Tipo_Definicion === '1' && p.Penales ? calcularScorePenales(p.Penales) : null;
+          const scorePen = esDefinicionPorPenales(p.Tipo_Definicion) && p.Penales ? calcularScorePenales(p.Penales) : null;
           const resultado = esJugado
             ? (scorePen
                 ? `<span class="${rc}" style="font-family:var(--fuente-titulo);font-size:17px;">${p.Goles_Local}<span style="color:var(--amarillo);">(${scorePen.local})</span> - <span style="color:var(--amarillo);">(${scorePen.visita})</span>${p.Goles_Visitante}</span>`
@@ -4968,7 +4984,7 @@ function recopilarDTs() {
       r.partidos.push(p);
       // Resultado
       const esLocal = idx === 0;
-      if (p.Tipo_Definicion === '0') {
+      if (esResultadoNormal(p.Tipo_Definicion)) {
         if (p.ID_Ganador === equipoId) r.pg++;
         else if (p.ID_Ganador && p.ID_Ganador !== equipoId) r.pp++;
         else r.pe++;
@@ -5240,7 +5256,7 @@ function renderStatsEquiposTorneo(idTemporada) {
     stats[l].pj++; stats[v].pj++;
     stats[l].gf += gl; stats[l].gc += gv;
     stats[v].gf += gv; stats[v].gc += gl;
-    if (p.Tipo_Definicion === '0') {
+    if (esResultadoNormal(p.Tipo_Definicion)) {
       if (p.ID_Ganador === l) { stats[l].pg++; stats[v].pp++; }
       else if (p.ID_Ganador === v) { stats[v].pg++; stats[l].pp++; }
       else { stats[l].pe++; stats[v].pe++; }
@@ -5904,8 +5920,8 @@ function renderHoyHistorial(idL, idV, nombreL, nombreV) {
   }
 
   const pj  = enfrentamientos.length;
-  const gL  = enfrentamientos.filter(p => p.Tipo_Definicion==='0' && p.ID_Ganador===idL).length;
-  const gV  = enfrentamientos.filter(p => p.Tipo_Definicion==='0' && p.ID_Ganador===idV).length;
+  const gL  = enfrentamientos.filter(p => esResultadoNormal(p.Tipo_Definicion) && p.ID_Ganador===idL).length;
+  const gV  = enfrentamientos.filter(p => esResultadoNormal(p.Tipo_Definicion) && p.ID_Ganador===idV).length;
   const emp = pj - gL - gV;
   const gfL = enfrentamientos.reduce((a,p)=>a+(p.Local_ID===idL?parseInt(p.Goles_Local)||0:parseInt(p.Goles_Visitante)||0),0);
   const gfV = enfrentamientos.reduce((a,p)=>a+(p.Local_ID===idV?parseInt(p.Goles_Local)||0:parseInt(p.Goles_Visitante)||0),0);
@@ -6119,8 +6135,8 @@ function renderHistorialTorneos(equipoId) {
     // Stats
     const jugados = psTorneo.filter(p => esPartidoJugado(p));
     const pj = jugados.length;
-    const pg = jugados.filter(p => p.Tipo_Definicion==='0' && p.ID_Ganador===equipoId).length;
-    const pp = jugados.filter(p => p.Tipo_Definicion==='0' && p.ID_Ganador && p.ID_Ganador!==equipoId).length;
+    const pg = jugados.filter(p => esResultadoNormal(p.Tipo_Definicion) && p.ID_Ganador===equipoId).length;
+    const pp = jugados.filter(p => esResultadoNormal(p.Tipo_Definicion) && p.ID_Ganador && p.ID_Ganador!==equipoId).length;
     const pe = pj - pg - pp;
     const gf = jugados.reduce((a,p)=>a+(p.Local_ID===equipoId?parseInt(p.Goles_Local)||0:parseInt(p.Goles_Visitante)||0),0);
     const gc = jugados.reduce((a,p)=>a+(p.Local_ID===equipoId?parseInt(p.Goles_Visitante)||0:parseInt(p.Goles_Local)||0),0);
@@ -6253,7 +6269,7 @@ function renderH2H(eq1, eq2, contenedorId) {
     gf1 += p.Local_ID===eq1 ? gl : gv;
     gf2 += p.Local_ID===eq1 ? gv : gl;
     totGoles += gl+gv;
-    if (p.Tipo_Definicion==='0') {
+    if (esResultadoNormal(p.Tipo_Definicion)) {
       if (p.ID_Ganador===eq1) pg1++;
       else if (p.ID_Ganador===eq2) pg2++;
       else emp++;
@@ -6266,7 +6282,7 @@ function renderH2H(eq1, eq2, contenedorId) {
   const h2hDesc = [...jugados].sort((a,b)=>normFecha(b.Fecha).localeCompare(normFecha(a.Fecha)));
   let rachaEq='', rachaCant=0;
   for (const p of h2hDesc) {
-    const gano = p.Tipo_Definicion==='0' ? p.ID_Ganador : null;
+    const gano = esResultadoNormal(p.Tipo_Definicion) ? p.ID_Ganador : null;
     if (!rachaEq) {
       rachaEq = gano===eq1 ? eq1 : gano===eq2 ? eq2 : 'emp';
       rachaCant = 1;
@@ -6381,7 +6397,7 @@ function renderH2H(eq1, eq2, contenedorId) {
       const key = dt+'__'+eqId;
       if (!dtStats[key]) dtStats[key]={dt,eqId,pd:0,pg:0};
       dtStats[key].pd++;
-      if (p.Tipo_Definicion==='0'&&p.ID_Ganador===eqId) dtStats[key].pg++;
+      if (esResultadoNormal(p.Tipo_Definicion)&&p.ID_Ganador===eqId) dtStats[key].pg++;
     });
   });
   const topDTs = Object.values(dtStats).sort((a,b)=>b.pg-a.pg||b.pd-a.pd).slice(0,8);
