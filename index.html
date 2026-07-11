@@ -3152,9 +3152,22 @@ function toFotoKey(texto) {
   return texto.toLowerCase().replace(/\s+/g,'_').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9_]/g,'');
 }
 
+// Clave de archivo de foto para un jugador. Si el nombre es ambiguo (hay 2+ jugadores con
+// ese nombre y distinta nacionalidad), la nacionalidad se agrega a la clave para que cada
+// uno tenga su propio archivo de foto y no se pisen entre sí.
+// Ej: "Vicente Poggi" (URU) -> jugadores/vicente_poggi_uru_godoy_cruz.jpg
+//     "Vicente Poggi" (ARG) -> jugadores/vicente_poggi_arg_godoy_cruz.jpg
+function claveFotoJugador(nombre, nacionalidad) {
+  const base = toFotoKey(nombre);
+  if (NOMBRES_AMBIGUOS.has(normalizarNombre(nombre)) && nacionalidad) {
+    return base + '_' + toFotoKey(nacionalidad);
+  }
+  return base;
+}
+
 // Returns img HTML that tries team-specific photo first, falls back to default
-function fotoJugadorImg(nombre, equipoNombre, style, placeholder) {
-  const jugKey = toFotoKey(nombre);
+function fotoJugadorImg(nombre, equipoNombre, nacionalidad, style, placeholder) {
+  const jugKey = claveFotoJugador(nombre, nacionalidad);
   const eqKey  = equipoNombre ? toFotoKey(equipoNombre) : '';
   const src    = eqKey ? `jugadores/${jugKey}_${eqKey}.jpg` : `jugadores/${jugKey}.jpg`;
   const fallback = eqKey ? `jugadores/${jugKey}.jpg` : placeholder || 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22180%22 height=%22180%22><rect width=%22180%22 height=%22180%22 fill=%22%230D1628%22 rx=%2216%22/><text x=%2290%22 y=%22105%22 font-size=%2264%22 text-anchor=%22middle%22>👤</text></svg>';
@@ -3735,7 +3748,7 @@ function verFichaJugador(nombre, nacionalidadBuscada) {
   const POSICIONES_LABEL = { ARQ:'Arquero', DEF:'Defensor', MED:'Mediocampista', DEL:'Delantero' };
 
   // Foto principal: intenta foto del equipo principal, si no default
-  const jugKey = toFotoKey(nombre);
+  const jugKey = claveFotoJugador(nombre, nacionalidad);
   const eqKey  = toFotoKey(equipoPrincipalNombre);
   const fichaFoto = document.getElementById('ficha-foto');
   fichaFoto.dataset.tried = '';
@@ -4789,7 +4802,7 @@ function buscarJugador() {
         const aniosStr = formatearAnios(aniosSet);
         const equipoNombre = eqFiltro ? (equipos[eqFiltro]||'') : (equipos[equipoMasRecienteDeJugador(data)]||'');
         return `<div class="album-card" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}','${(data.nac||'').replace(/'/g,"\\'")}')">
-          ${fotoJugadorImg(nombre, equipoNombre, 'width:100%;aspect-ratio:1/1;object-fit:cover;object-position:top;display:block;background:var(--fondo-3);', '')}
+          ${fotoJugadorImg(nombre, equipoNombre, data.nac, 'width:100%;aspect-ratio:1/1;object-fit:cover;object-position:top;display:block;background:var(--fondo-3);', '')}
           <div class="album-avatar" style="display:none;">👤</div>
           <div class="album-card-info">
             <div class="album-card-nombre"><span style="display:inline-flex;">${bandera}</span> ${nombre}</div>
@@ -4816,7 +4829,7 @@ function buscarJugador() {
         const equipoNombreFoto = eqFiltro ? (equipos[eqFiltro]||'') : (equipos[equipoMasRecienteDeJugador(data)]||'');
         return `<div class="pers-card" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}','${(data.nac||'').replace(/'/g,"\\'")}')">
           <div class="pers-card-top">
-            ${fotoJugadorImg(nombre, equipoNombreFoto, 'width:60px;height:60px;border-radius:12px;object-fit:cover;object-position:top;background:var(--fondo-3);flex-shrink:0;border:1px solid var(--borde);', 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><rect width=%2260%22 height=%2260%22 fill=%22%230D1628%22 rx=%2212%22/><text x=%2230%22 y=%2238%22 font-size=%2226%22 text-anchor=%22middle%22>👤</text></svg>')}
+            ${fotoJugadorImg(nombre, equipoNombreFoto, data.nac, 'width:60px;height:60px;border-radius:12px;object-fit:cover;object-position:top;background:var(--fondo-3);flex-shrink:0;border:1px solid var(--borde);', 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><rect width=%2260%22 height=%2260%22 fill=%22%230D1628%22 rx=%2212%22/><text x=%2230%22 y=%2238%22 font-size=%2226%22 text-anchor=%22middle%22>👤</text></svg>')}
             <div class="pers-card-nombre"><span style="display:inline-flex;">${bandera}</span>${nombre}</div>
           </div>
           <div class="pers-card-stats">
