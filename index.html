@@ -2808,12 +2808,13 @@ function renderLista(items) {
   }
   return items.map(item => {
     const nombreLimpio = limpiarNombre(item);
+    const nacItem = extraerNacionalidad(item);
     let texto = item
       .replace(/\(P\)/gi, '<span style="background:var(--amarillo);color:#000;font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px;">P</span>')
       .replace(/\(EC\)/gi, '<span style="background:var(--rojo);color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px;">EC</span>');
     texto = texto.replace(/\([A-Z]{3}\)/g, '').replace(/\[[^\]]*\]/g, '');
     return `<div style="font-size:13px;color:var(--texto-1);padding:5px 0;border-bottom:1px solid var(--borde);display:flex;align-items:center;gap:4px;">
-      <span onclick="event.stopPropagation();verFichaJugador('${nombreLimpio.replace(/'/g,"\\'")}')" style="cursor:pointer;color:var(--celeste-claro);font-weight:500;text-decoration:underline dotted;">${texto}</span>
+      <span onclick="event.stopPropagation();verFichaJugador('${nombreLimpio.replace(/'/g,"\\'")}','${(nacItem||'').replace(/'/g,"\\'")}')" style="cursor:pointer;color:var(--celeste-claro);font-weight:500;text-decoration:underline dotted;">${texto}</span>
     </div>`;
   }).join('');
 }
@@ -2996,7 +2997,7 @@ function renderAlineacion(raw, dtRaw) {
   const renderJ = (j, esSup) => {
     const nac   = j.nac ? `<span style="display:inline-flex;margin-right:3px;">${getBandera(j.nac)}</span>` : '';
     const arrow = esSup ? '<span class="alin-suplente-arrow">↗</span> ' : '';
-    return `<div class="alin-jugador" onclick="verFichaJugador('${j.nombre.replace(/'/g,"\\'")}')">
+    return `<div class="alin-jugador" onclick="verFichaJugador('${j.nombre.replace(/'/g,"\\'")}','${(j.nac||'').replace(/'/g,"\\'")}')">
       <span class="alin-num">${j.num < 99 ? j.num : ''}</span>
       <span class="alin-nombre">${arrow}${nac}${j.nombre}</span>
     </div>`;
@@ -3268,8 +3269,13 @@ function esDefinicionPorPenales(tipoDefinicion) {
 // arma una sola vez a partir de TODOS los partidos, y se usa para separar sus estadísticas
 // y fichas en vez de mezclarlas cuando comparten nombre.
 let NOMBRES_AMBIGUOS = new Set();
+// Para cada nombre ambiguo, la nacionalidad más frecuente (la del jugador "principal" bajo
+// ese nombre). Sirve de resguardo: si algún lugar del sitio abre la ficha sin especificar
+// nacionalidad, se muestra el jugador más frecuente en vez de dejar todo en cero.
+let NACIONALIDAD_PRIMARIA = {};
 function construirIndiceNacionalidades() {
   const mapa = {}; // nombreNormalizado -> Set(nacionalidades vistas)
+  const conteo = {}; // nombreNormalizado -> { nacionalidad -> cantidad de apariciones }
   const campos = ['Goleadores','Amonestados','Expulsados','Jugadores'];
   partidos.forEach(p => {
     campos.forEach(campo => {
@@ -3285,11 +3291,19 @@ function construirIndiceNacionalidades() {
           if (!norm || norm.length < 2) return;
           if (!mapa[norm]) mapa[norm] = new Set();
           mapa[norm].add(nac);
+          if (!conteo[norm]) conteo[norm] = {};
+          conteo[norm][nac] = (conteo[norm][nac] || 0) + 1;
         });
       });
     });
   });
   NOMBRES_AMBIGUOS = new Set(Object.entries(mapa).filter(([,s]) => s.size > 1).map(([n]) => n));
+  NACIONALIDAD_PRIMARIA = {};
+  NOMBRES_AMBIGUOS.forEach(norm => {
+    const porNac = conteo[norm];
+    const principal = Object.entries(porNac).sort((a,b) => b[1]-a[1])[0][0];
+    NACIONALIDAD_PRIMARIA[norm] = principal;
+  });
 }
 
 // Clave interna para identificar a un jugador de forma única. Para la inmensa mayoría de los
@@ -3625,7 +3639,12 @@ function verFichaJugador(nombre, nacionalidadBuscada) {
   // Si el nombre es ambiguo (existe con más de una nacionalidad en la base), sólo se toman
   // las entradas cuya nacionalidad coincide con la del jugador que se pidió abrir — así no
   // se mezclan las estadísticas de dos jugadores distintos que comparten nombre.
+  // Si quien llama no especificó nacionalidad (versiones viejas de un link, por ejemplo),
+  // se usa la nacionalidad más frecuente para ese nombre en vez de dejar todo en cero.
   const esAmbiguo = NOMBRES_AMBIGUOS.has(nombreNorm);
+  if (esAmbiguo && nacionalidadBuscada === undefined) {
+    nacionalidadBuscada = NACIONALIDAD_PRIMARIA[nombreNorm] || undefined;
+  }
   const coincideIdentidad = (entrada) => {
     if (!esAmbiguo) return true;
     const nac = extraerNacionalidad(entrada);
@@ -4380,7 +4399,7 @@ function renderTablaTorneo(tipo) {
       const total2 = val.normales + val.penales;
       return `<tr>
         <td style="color:var(--texto-2);font-size:13px;width:36px;padding:8px 12px;">${inicio+i+1}</td>
-        <td style="padding:8px 12px;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')"><div style="display:flex;align-items:center;gap:6px;">${bandera}<span>${nombre}</span></div></td>
+        <td style="padding:8px 12px;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}','${(nacCode||'').replace(/'/g,"\\'")}')"><div style="display:flex;align-items:center;gap:6px;">${bandera}<span>${nombre}</span></div></td>
         <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;color:var(--celeste);">${total2}</td>
         <td style="text-align:center;font-size:13px;color:var(--texto-2);">${val.normales||'—'}</td>
         <td style="text-align:center;font-size:13px;color:var(--amarillo);">${val.penales||'—'}</td>
@@ -4388,7 +4407,7 @@ function renderTablaTorneo(tipo) {
     } else {
       return `<tr>
         <td style="color:var(--texto-2);font-size:13px;width:36px;padding:8px 12px;">${inicio+i+1}</td>
-        <td style="padding:8px 12px;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}')"><div style="display:flex;align-items:center;gap:6px;">${bandera}<span>${nombre}</span></div></td>
+        <td style="padding:8px 12px;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}','${(nacCode||'').replace(/'/g,"\\'")}')"><div style="display:flex;align-items:center;gap:6px;">${bandera}<span>${nombre}</span></div></td>
         <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;color:${color};">${val}</td>
       </tr>`;
     }
@@ -5145,9 +5164,13 @@ function buscarDT() {
 function verFichaDT(nombre) {
   // Si también fue jugador, abrir la ficha unificada de jugador
   const clave = nombreCanonico(nombre);
+  const nombreNorm = normalizarNombre(nombre);
   const datosJug = recopilarJugadores();
-  if (datosJug[clave] && Object.keys(datosJug[clave].equipos).length > 0) {
-    verFichaJugador(nombre);
+  // Las claves de datosJug son el nombre normalizado (o normalizado‡NAC si el nombre es
+  // ambiguo), no el nombre "lindo" — buscamos cualquier clave que corresponda a este nombre.
+  const claveJug = Object.keys(datosJug).find(k => k === nombreNorm || k.startsWith(nombreNorm + '‡'));
+  if (claveJug && Object.keys(datosJug[claveJug].equipos).length > 0) {
+    verFichaJugador(nombre, datosJug[claveJug].nac || undefined);
     return;
   }
 
@@ -6705,9 +6728,9 @@ verTorneo = function(id) {
   _pushAtras(() => _orig_volverCampeones());
   _orig_verTorneo(id);
 };
-verFichaJugador = function(nombre) {
+verFichaJugador = function(nombre, nacionalidadBuscada) {
   _pushAtras(() => _orig_cerrarFichaJug());
-  _orig_verFichaJugador(nombre);
+  _orig_verFichaJugador(nombre, nacionalidadBuscada);
 };
 verFichaDT = function(nombre) {
   _pushAtras(() => _orig_cerrarFichaDT());
