@@ -4397,9 +4397,11 @@ function renderTablaTorneo(tipo) {
   const nacA = datosStatsTorneo.nacAmon || {};
   const nacE = datosStatsTorneo.nacExpu || {};
   const nac = { ...nacG, ...nacA, ...nacE };
+  const nombresDisplay = datosStatsTorneo.nombresDisplay || {};
 
-  const filas = slice.map(([nombre, val], i) => {
-    const nacCode = nac[nombre];
+  const filas = slice.map(([clave, val], i) => {
+    const nombre = nombresDisplay[clave] || clave;
+    const nacCode = nac[clave];
     const bandera = nacCode ? `<span style="display:inline-flex;align-items:center;flex-shrink:0;">${getBandera(nacCode)}</span>` : '';
     if (tipo === 'goleadores') {
       const total2 = val.normales + val.penales;
@@ -4639,9 +4641,9 @@ function renderStatsTorneo(idTemporada) {
   paginasTorneo.goleadores = 1; paginasTorneo.ec = 1;
   paginasTorneo.amonestados = 1; paginasTorneo.expulsados = 1;
 
-  const { goles, ec, nacionalidades } = parsearGoleadores(null, idTemporada);
-  const { datos: amon, nacionalidades: nacAmon } = parsearTarjetas('Amonestados', null, idTemporada);
-  const { datos: expu, nacionalidades: nacExpu } = parsearTarjetas('Expulsados', null, idTemporada);
+  const { goles, ec, nacionalidades, nombresDisplay: ndGol } = parsearGoleadores(null, idTemporada);
+  const { datos: amon, nacionalidades: nacAmon, nombresDisplay: ndAmon } = parsearTarjetas('Amonestados', null, idTemporada);
+  const { datos: expu, nacionalidades: nacExpu, nombresDisplay: ndExpu } = parsearTarjetas('Expulsados', null, idTemporada);
   const ecDatos = Object.entries(ec).sort((a,b)=>b[1]-a[1]);
   const golesDatos = Object.entries(goles).sort((a,b)=>(b[1].normales+b[1].penales)-(a[1].normales+a[1].penales));
 
@@ -4651,6 +4653,7 @@ function renderStatsTorneo(idTemporada) {
     amonestados: { datos: amon,      headers: ['#','Jugador','Amarillas'],           color:'var(--amarillo)',colSpan:3 },
     expulsados:  { datos: expu,      headers: ['#','Jugador','Rojas'],               color:'var(--rojo)',   colSpan:3 },
     nacGoleadores: nacionalidades, nacAmon, nacExpu,
+    nombresDisplay: { ...ndGol, ...ndAmon, ...ndExpu },
   };
 
   const makeTabla = (tipo, titulo, headers) => `
@@ -4963,13 +4966,15 @@ function cambiarSubtabJugadores(tab) {
 // ── STATS INLINE POR EQUIPO (sección Jugadores) ──
 function renderStatsEquipoInline(equipoId) {
   const nmEq = equipos[equipoId] || equipoId;
-  const { goles, ec, nacionalidades } = parsearGoleadores(equipoId);
-  const { datos: amon, nacionalidades: nacAmon } = parsearTarjetas('Amonestados', equipoId);
-  const { datos: expu, nacionalidades: nacExpu } = parsearTarjetas('Expulsados', equipoId);
+  const { goles, ec, nacionalidades, equiposGoles, nombresDisplay: ndGol } = parsearGoleadores(equipoId);
+  const { datos: amon, nacionalidades: nacAmon, equiposPorJugador: eqAmon, nombresDisplay: ndAmon } = parsearTarjetas('Amonestados', equipoId);
+  const { datos: expu, nacionalidades: nacExpu, equiposPorJugador: eqExpu, nombresDisplay: ndExpu } = parsearTarjetas('Expulsados', equipoId);
 
   // PJ desde columna Jugadores
   const pjConteo = {};
   const nacPJ = {};
+  const ndPJ = {};
+  const eqPJ = {};
   partidos.forEach(p => {
     if (p.Local_ID !== equipoId && p.Visitante_ID !== equipoId) return;
     const rawJ = p.Jugadores || '';
@@ -4978,24 +4983,35 @@ function renderStatsEquipoInline(equipoId) {
       const eqId = idx === 0 ? p.Local_ID : p.Visitante_ID;
       if (eqId !== equipoId) return;
       parte.split('-').forEach(entrada => {
-        const n = nombreCanonico(limpiarNombre(entrada));
+        const nombreLimpio = limpiarNombre(entrada);
+        const n = nombreCanonico(nombreLimpio);
         if (!n || n.length < 2 || n.toLowerCase() === 'ninguno') return;
         const nac = extraerNacionalidad(entrada);
-        if (nac) nacPJ[n] = nac;
-        pjConteo[n] = (pjConteo[n]||0) + 1;
+        const clave = claveJugador(nombreLimpio, nac);
+        ndPJ[clave] = n;
+        if (nac) nacPJ[clave] = nac;
+        pjConteo[clave] = (pjConteo[clave]||0) + 1;
+        if (!eqPJ[clave]) eqPJ[clave] = new Set();
+        eqPJ[clave].add(eqId);
       });
     });
   });
+
+  const nombresDisplay = { ...ndPJ, ...ndGol, ...ndAmon, ...ndExpu };
+  const nacTodas = { ...nacPJ, ...nacionalidades, ...nacAmon, ...nacExpu };
+  const eqTodos  = { ...eqPJ, ...equiposGoles, ...eqAmon, ...eqExpu };
 
   const makeTablaInline = (titulo, headers, rows, nacMap) => `
     <div class="tabla-wrapper" style="margin-bottom:14px;display:flex;flex-direction:column;height:100%;">
       <div class="tabla-header"><div class="tabla-titulo">${titulo}</div></div>
       <div class="tabla-scroll" style="flex:1;"><table style="width:100%;border-collapse:collapse;min-width:280px;">
         <thead><tr>${headers.map((h,i)=>`<th style="text-align:${i>1?'center':'left'};${i===0?'width:36px;':''}">${h}</th>`).join('')}</tr></thead>
-        <tbody>${rows.slice(0,10).map(([nombre,val], i) => {
-          const nac = (nacMap||nacionalidades)[nombre];
+        <tbody>${rows.slice(0,10).map(([clave,val], i) => {
+          const nombre = nombresDisplay[clave] || clave;
+          const nac = (nacMap||nacTodas)[clave];
           return filaJugador(i, nombre, nac,
-            `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;color:var(--celeste);">${typeof val==='object'?val.normales+val.penales:val}</td>`);
+            `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;color:var(--celeste);">${typeof val==='object'?val.normales+val.penales:val}</td>`,
+            eqTodos[clave]);
         }).join('')}</tbody>
       </table></div>
     </div>`;
@@ -5004,7 +5020,6 @@ function renderStatsEquipoInline(equipoId) {
   const pjArr    = Object.entries(pjConteo).sort((a,b)=>b[1]-a[1]);
   const amonArr  = amon.slice(0,10);
   const expuArr  = expu.slice(0,10);
-  const nacTodas = { ...nacPJ, ...nacionalidades, ...nacAmon, ...nacExpu };
 
   const esc = ESCUDOS[nmEq] ? `<img src="${ESCUDOS[nmEq]}" style="width:24px;height:24px;object-fit:contain;">` : '';
   return `<div style="background:var(--fondo-2);border:1px solid var(--borde-activo);border-radius:14px;padding:18px 20px;">
