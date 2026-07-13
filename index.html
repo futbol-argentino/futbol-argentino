@@ -3210,7 +3210,7 @@ function extraerNacionalidad(texto) {
 }
 
 function limpiarNombre(texto) {
-  return texto
+  let n = texto
     .replace(/\d+\s*\+\s*\d+\s*[''`´'′]?/g, '') // "45+6'"
     .replace(/\d+\s*[''`´'′]?/g, '')              // "90'"
     .replace(/\s*\+\s*/g, ' ')                     // "+" sobrante
@@ -3219,6 +3219,12 @@ function limpiarNombre(texto) {
     .replace(/\s{2,}/g, ' ')
     .normalize('NFC')   // unifica combinaciones unicode idénticas
     .trim();
+  // Defensa contra un error de tipeo típico al cargar datos: pegar el mismo jugador dos
+  // veces seguidas sin separador (ej. "(15) Fulano(15) Fulano (SUP) [URU]" → "Fulano Fulano").
+  // Si el nombre resultante es exactamente su propia mitad repetida, se colapsa a una sola.
+  const dup = n.match(/^(.+)\s\1$/);
+  if (dup) n = dup[1];
+  return n;
 }
 
 // Normaliza un nombre para comparación (ignora tildes, mayúsculas, espacios extra, apóstrofes)
