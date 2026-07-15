@@ -3153,6 +3153,35 @@ function toFotoKey(texto) {
   return texto.toLowerCase().replace(/\s+/g,'_').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9_]/g,'');
 }
 
+// Carpetas donde pueden estar las fotos de jugadores (GitHub limita la cantidad de archivos
+// por carpeta, así que cuando una se llena se agrega una nueva acá: 'jugadores2', 'jugadores3', etc).
+// No hace falta tocar nada más del código: alcanza con sumar el nombre de la carpeta nueva a esta lista.
+const CARPETAS_JUGADORES = ['jugadores', 'jugadores2'];
+
+// Arma la lista de rutas candidatas para la foto de un jugador, probando primero la foto
+// específica del equipo en cada carpeta, y después la foto genérica (sin equipo) en cada carpeta.
+function fotoJugadorSrcs(jugKey, eqKey) {
+  const srcs = [];
+  if (eqKey) CARPETAS_JUGADORES.forEach(c => srcs.push(`${c}/${jugKey}_${eqKey}.jpg`));
+  CARPETAS_JUGADORES.forEach(c => srcs.push(`${c}/${jugKey}.jpg`));
+  return srcs;
+}
+
+// Handler de onerror genérico: recorre las rutas candidatas guardadas en el propio <img>
+// (data-fj-srcs) y cuando se agotan, cae al placeholder (data-fj-placeholder).
+function fjOnError(img) {
+  const idx = parseInt(img.dataset.fjIdx || '0', 10) + 1;
+  let srcs = [];
+  try { srcs = JSON.parse(img.dataset.fjSrcs || '[]'); } catch(e) {}
+  if (idx < srcs.length) {
+    img.dataset.fjIdx = idx;
+    img.src = srcs[idx];
+  } else {
+    img.onerror = null;
+    img.src = img.dataset.fjPlaceholder || '';
+  }
+}
+
 // Clave de archivo de foto para un jugador. Si el nombre es ambiguo (hay 2+ jugadores con
 // ese nombre y distinta nacionalidad), la nacionalidad se agrega a la clave para que cada
 // uno tenga su propio archivo de foto y no se pisen entre sí.
@@ -3170,17 +3199,20 @@ function claveFotoJugador(nombre, nacionalidad) {
 function fotoJugadorImg(nombre, equipoNombre, nacionalidad, style, placeholder) {
   const jugKey = claveFotoJugador(nombre, nacionalidad);
   const eqKey  = equipoNombre ? toFotoKey(equipoNombre) : '';
-  const src    = eqKey ? `jugadores/${jugKey}_${eqKey}.jpg` : `jugadores/${jugKey}.jpg`;
-  const fallback = eqKey ? `jugadores/${jugKey}.jpg` : placeholder || 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22180%22 height=%22180%22><rect width=%22180%22 height=%22180%22 fill=%22%230D1628%22 rx=%2216%22/><text x=%2290%22 y=%22105%22 font-size=%2264%22 text-anchor=%22middle%22>👤</text></svg>';
-  return `<img src="${src}" loading="lazy" decoding="async" style="${style}" onerror="if(this.dataset.tried){this.src='${placeholder||'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2256%22 height=%2256%22><rect width=%2256%22 height=%2256%22 fill=%22%230D1628%22 rx=%2210%22/><text x=%2228%22 y=%2234%22 font-size=%2224%22 text-anchor=%22middle%22>👤</text></svg>'}'}else{this.dataset.tried=1;this.src='${fallback}'}">`;
+  const srcs = fotoJugadorSrcs(jugKey, eqKey);
+  const ph = placeholder || 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2256%22 height=%2256%22><rect width=%2256%22 height=%2256%22 fill=%22%230D1628%22 rx=%2210%22/><text x=%2228%22 y=%2234%22 font-size=%2224%22 text-anchor=%22middle%22>👤</text></svg>';
+  const srcsAttr = JSON.stringify(srcs).replace(/"/g, '&quot;');
+  return `<img src="${srcs[0]}" data-fj-idx="0" data-fj-srcs="${srcsAttr}" data-fj-placeholder="${ph}" loading="lazy" decoding="async" style="${style}" onerror="fjOnError(this)">`;
 }
 
 function cambiarFichaFoto(jugKey, eqKey) {
   const foto = document.getElementById('ficha-foto');
-  foto.dataset.tried = '';
-  foto.src = `jugadores/${jugKey}_${eqKey}.jpg`;
+  const srcs = fotoJugadorSrcs(jugKey, eqKey);
+  let idx = 0;
+  foto.src = srcs[idx];
   foto.onerror = function() {
-    if (!this.dataset.tried) { this.dataset.tried = '1'; this.src = `jugadores/${jugKey}.jpg`; }
+    idx++;
+    if (idx < srcs.length) { this.src = srcs[idx]; }
     else { this.onerror = null; this.src = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22180%22 height=%22180%22><rect width=%22180%22 height=%22180%22 fill=%22%230D1628%22 rx=%2216%22/><text x=%2290%22 y=%22105%22 font-size=%2264%22 text-anchor=%22middle%22>👤</text></svg>'; }
   };
 }
@@ -3776,10 +3808,12 @@ function verFichaJugador(nombre, nacionalidadBuscada) {
   const jugKey = claveFotoJugador(nombre, nacionalidad);
   const eqKey  = toFotoKey(equipoPrincipalNombre);
   const fichaFoto = document.getElementById('ficha-foto');
-  fichaFoto.dataset.tried = '';
-  fichaFoto.src = `jugadores/${jugKey}_${eqKey}.jpg`;
+  const fichaFotoSrcs = fotoJugadorSrcs(jugKey, eqKey);
+  let fichaFotoIdx = 0;
+  fichaFoto.src = fichaFotoSrcs[fichaFotoIdx];
   fichaFoto.onerror = function() {
-    if (!this.dataset.tried) { this.dataset.tried = '1'; this.src = `jugadores/${jugKey}.jpg`; }
+    fichaFotoIdx++;
+    if (fichaFotoIdx < fichaFotoSrcs.length) { this.src = fichaFotoSrcs[fichaFotoIdx]; }
     else { this.onerror = null; this.src = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22180%22 height=%22180%22><rect width=%22180%22 height=%22180%22 fill=%22%230D1628%22 rx=%2216%22/><text x=%2290%22 y=%22105%22 font-size=%2264%22 text-anchor=%22middle%22>👤</text></svg>'; }
   };
 
@@ -3801,8 +3835,10 @@ function verFichaJugador(nombre, nacionalidadBuscada) {
         const nm = equipos[eid]||eid;
         const ek = toFotoKey(nm);
         const esc = ESCUDOS[nm] ? `<img src="${ESCUDOS[nm]}" style="width:14px;height:14px;object-fit:contain;">` : '';
+        const miniSrcs = fotoJugadorSrcs(jugKey, ek);
+        const miniSrcsAttr = JSON.stringify(miniSrcs).replace(/"/g, '&quot;');
         return `<div title="${nm}" onclick="cambiarFichaFoto('${jugKey}','${ek}')" style="cursor:pointer;border:2px solid var(--borde);border-radius:8px;overflow:hidden;width:52px;flex-shrink:0;transition:var(--trans);" onmouseenter="this.style.borderColor='var(--celeste)'" onmouseleave="this.style.borderColor='var(--borde)'">
-          <img src="jugadores/${jugKey}_${ek}.jpg" style="width:52px;height:52px;object-fit:cover;object-position:top;display:block;" onerror="this.src='jugadores/${jugKey}.jpg'" >
+          <img src="${miniSrcs[0]}" data-fj-idx="0" data-fj-srcs="${miniSrcsAttr}" data-fj-placeholder="" style="width:52px;height:52px;object-fit:cover;object-position:top;display:block;" onerror="fjOnError(this)" >
           <div style="display:flex;align-items:center;justify-content:center;gap:3px;padding:2px;font-size:9px;color:var(--texto-3);background:var(--fondo-3);">${esc}</div>
         </div>`;
       }).join('');
