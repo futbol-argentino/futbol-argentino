@@ -422,6 +422,7 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 
 /* MODAL */
 #modal-jugador{z-index:500}
+#modal{z-index:600}
 .modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(3,6,14,0.88);backdrop-filter:blur(8px);z-index:400;align-items:center;justify-content:center;padding:20px}
 .modal-overlay.visible{display:flex;animation:fadeIn 0.2s ease}
 .modal-box{background:linear-gradient(160deg,var(--fondo-3) 0%,var(--fondo-2) 100%);border:1px solid var(--borde-activo);border-radius:18px;padding:28px;max-width:580px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,0.7),0 0 0 1px rgba(56,189,248,0.1);position:relative}
@@ -1607,6 +1608,7 @@ select option{background:#080F20;color:#F0F6FF}
     <!-- Panel PRINCIPAL -->
     <div id="fpanel-principal" class="ficha-panel">
       <div class="ficha-seccion-titulo">Por equipo</div>
+      <div style="font-size:12px;color:var(--texto-2);margin:-6px 0 12px 0;">Tocá un equipo para ver los partidos jugados y las incidencias (⚽ gol, 🅿️ penal, 🔴 en contra, 🟨 amarilla, 🟥 roja)</div>
       <div class="tabla-scroll scroll-forzado">
         <table style="width:100%;border-collapse:collapse;min-width:420px;">
           <thead><tr>
@@ -1696,7 +1698,6 @@ select option{background:#080F20;color:#F0F6FF}
     <!-- Panel TEMPORADAS: evolución año a año -->
     <div id="fpanel-temporadas" class="ficha-panel" style="display:none;">
       <div class="ficha-seccion-titulo">📅 Historial por temporada</div>
-      <div style="font-size:12px;color:var(--texto-2);margin:-6px 0 12px 0;">Tocá un año para ver los partidos jugados y las incidencias (⚽ gol, 🅿️ penal, 🔴 en contra, 🟨 amarilla, 🟥 roja)</div>
       <div class="tabla-scroll scroll-forzado">
         <table style="width:100%;border-collapse:collapse;min-width:420px;">
           <thead><tr>
@@ -2013,7 +2014,7 @@ let torneoOrigenEquipo = null; // si no es null, "volver" desde vista-torneo reg
 let estadiosArr = [], estadiosCargados = false, estadiosDivisionActual = null;
 let ordenDesc = true;
 let ordenDetalleDesc = true;
-let fichaPartidosPorAnio = {}; // año → [{ partido, equipoId, incidencias }] del jugador actualmente abierto en la ficha
+let fichaPartidosPorEquipo = {}; // equipoId → [{ partido, anio, incidencias }] del jugador actualmente abierto en la ficha
 
 // ── CSV ──
 function csvToArray(csv) {
@@ -3801,13 +3802,12 @@ function verFichaJugador(nombre, nacionalidadBuscada) {
     }
   });
 
-  // ── Partidos jugados con sus incidencias, agrupados por año (para el detalle de temporada) ──
-  fichaPartidosPorAnio = {};
+  // ── Partidos jugados con sus incidencias, agrupados por equipo (para el detalle en "Por equipo") ──
+  fichaPartidosPorEquipo = {};
   partidos.forEach(p => {
     const rawJ = p.Jugadores || '';
     if (!rawJ) return;
     const anio = p.Fecha ? parseInt(p.Fecha.split('/')[2] || p.Fecha.split('-')[0]) : null;
-    if (!anio) return;
     let jugo = false, equipoIdJ = null;
     rawJ.split('/').forEach((parte, idx) => {
       const eqId = idx === 0 ? p.Local_ID : p.Visitante_ID;
@@ -3842,12 +3842,13 @@ function verFichaJugador(nombre, nacionalidadBuscada) {
       });
     });
 
-    if (!fichaPartidosPorAnio[anio]) fichaPartidosPorAnio[anio] = [];
-    fichaPartidosPorAnio[anio].push({ partido: p, equipoId: equipoIdJ, incidencias });
+    if (!fichaPartidosPorEquipo[equipoIdJ]) fichaPartidosPorEquipo[equipoIdJ] = [];
+    fichaPartidosPorEquipo[equipoIdJ].push({ partido: p, anio, incidencias });
   });
 
   const totales = Object.values(porEquipo).reduce((a, r) => ({
     goles: a.goles+r.goles, penales: a.penales+r.penales,
+
     ec: a.ec+r.ec, amonestados: a.amonestados+r.amonestados,
     expulsados: a.expulsados+r.expulsados,
     pj: a.pj+(r.pj||0)
@@ -3927,17 +3928,42 @@ function verFichaJugador(nombre, nacionalidadBuscada) {
       const nm = equipos[eid]||eid;
       const esc = ESCUDOS[nm] ? `<img src="${ESCUDOS[nm]}" style="width:18px;height:18px;object-fit:contain;margin-right:6px;" onerror="this.style.display='none'">` : '';
       const aniosStr = formatearAnios(r.anios);
-      return `<tr>
+
+      const partidosEquipo = (fichaPartidosPorEquipo[eid]||[]).slice().sort((a,b) => {
+        const fa = a.partido.Fecha||'', fb = b.partido.Fecha||'';
+        return fb.localeCompare(fa);
+      });
+      const uid = 'peq_' + eid + '_' + (_golUidSeq++);
+      const iconosMap = { gol:'⚽', penal:'🅿️', ec:'🔴', amarilla:'🟨', roja:'🟥' };
+      const filasPartidos = partidosEquipo.length ? partidosEquipo.map(({partido:p, incidencias}) => {
+        const local = equipos[p.Local_ID]||p.Local_ID;
+        const visita = equipos[p.Visitante_ID]||p.Visitante_ID;
+        const fecha = p.Fecha ? p.Fecha.split('T')[0] : '';
+        const refEsLocal = p.Local_ID === eid;
+        const rc = resClase(p.Goles_Local, p.Goles_Visitante, refEsLocal);
+        const incTxt = incidencias.length
+          ? incidencias.map(inc => `<span title="${inc.label}${inc.minuto?' '+inc.minuto:''}" style="margin-right:5px;white-space:nowrap;">${iconosMap[inc.tipo]}${inc.minuto?`<span style="font-size:9px;color:var(--texto-3);">${inc.minuto}</span>`:''}</span>`).join('')
+          : `<span style="color:var(--texto-3);font-size:11px;">—</span>`;
+        return `<div onclick="event.stopPropagation();verPartido(${p.ID_Partido})" style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--borde);cursor:pointer;">
+          <span style="font-size:10px;color:var(--texto-3);width:66px;flex-shrink:0;">${fecha}</span>
+          <span style="display:flex;align-items:center;gap:4px;flex:1;min-width:0;font-size:12px;">${escudoImg(local,14)}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${local}</span></span>
+          <span class="${rc}" style="font-weight:700;font-size:12px;flex-shrink:0;">${p.Goles_Local}-${p.Goles_Visitante}</span>
+          <span style="display:flex;align-items:center;gap:4px;flex:1;min-width:0;justify-content:flex-end;font-size:12px;text-align:right;"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${visita}</span>${escudoImg(visita,14)}</span>
+          <span style="flex-shrink:0;min-width:56px;text-align:right;">${incTxt}</span>
+        </div>`;
+      }).join('') : `<div style="padding:10px;text-align:center;color:var(--texto-3);font-size:12px;">Sin partidos registrados</div>`;
+
+      return `<tr onclick="var c=document.getElementById('${uid}');var a=document.getElementById('arr_${uid}');var open=c.style.display==='block';c.style.display=open?'none':'block';a.style.transform=open?'rotate(0deg)':'rotate(180deg)';" style="cursor:pointer;">
         <td style="padding:10px 12px;">
-          <div style="display:flex;align-items:center;">${esc}<strong>${nm}</strong></div>
-          <div style="font-size:11px;color:var(--texto-3);margin-top:2px;">${aniosStr}</div>
+          <div style="display:flex;align-items:center;"><span id="arr_${uid}" style="display:inline-block;margin-right:6px;font-size:10px;color:var(--texto-3);transition:transform 0.2s;">▶</span>${esc}<strong>${nm}</strong></div>
+          <div style="font-size:11px;color:var(--texto-3);margin-top:2px;margin-left:16px;">${aniosStr}</div>
         </td>
         <td style="text-align:center;font-weight:700;font-size:15px;color:var(--texto-1);">${r.pj||'—'}</td>
         <td style="text-align:center;font-weight:600;color:var(--celeste);">${r.goles||'—'}</td>
         <td style="text-align:center;color:var(--amarillo);">${r.penales||'—'}</td>
         <td style="text-align:center;color:var(--amarillo);">${r.amonestados||'—'}</td>
         <td style="text-align:center;color:var(--rojo);">${r.expulsados||'—'}</td>
-      </tr>`;
+      </tr><tr><td colspan="6" style="padding:0;border-bottom:1px solid var(--borde);"><div id="${uid}" style="display:none;background:var(--fondo-3);">${filasPartidos}</div></td></tr>`;
     }).join('');
 
   // ── Tabla GOLES: ranking de rivales por goles convertidos (o recibidos, si es arquero) ──
@@ -4019,42 +4045,18 @@ function verFichaJugador(nombre, nacionalidadBuscada) {
         }).join('')
     : `<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--texto-3);">Sin tarjetas registradas</td></tr>`;
 
-  // ── Tabla TEMPORADAS: evolución año a año (desplegable con los partidos e incidencias de ese año) ──
+  // ── Tabla TEMPORADAS: evolución año a año ──
   const aniosOrdenados = Object.keys(porAnio).map(Number).sort((a,b) => b-a);
   document.getElementById('ficha-tabla-temporadas').innerHTML = aniosOrdenados.length
     ? aniosOrdenados.map(anio => {
         const r = porAnio[anio];
-        const partidosAnio = (fichaPartidosPorAnio[anio]||[]).slice().sort((a,b) => {
-          const fa = a.partido.Fecha||'', fb = b.partido.Fecha||'';
-          return fb.localeCompare(fa);
-        });
-        const uid = 'temp_' + anio + '_' + (_golUidSeq++);
-        const iconosMap = { gol:'⚽', penal:'🅿️', ec:'🔴', amarilla:'🟨', roja:'🟥' };
-        const filasPartidos = partidosAnio.length ? partidosAnio.map(({partido:p, equipoId, incidencias}) => {
-          const local = equipos[p.Local_ID]||p.Local_ID;
-          const visita = equipos[p.Visitante_ID]||p.Visitante_ID;
-          const fecha = p.Fecha ? p.Fecha.split('T')[0] : '';
-          const refEsLocal = equipoId ? (p.Local_ID === equipoId) : undefined;
-          const rc = resClase(p.Goles_Local, p.Goles_Visitante, refEsLocal);
-          const incTxt = incidencias.length
-            ? incidencias.map(inc => `<span title="${inc.label}${inc.minuto?' '+inc.minuto:''}" style="margin-right:5px;white-space:nowrap;">${iconosMap[inc.tipo]}${inc.minuto?`<span style="font-size:9px;color:var(--texto-3);">${inc.minuto}</span>`:''}</span>`).join('')
-            : `<span style="color:var(--texto-3);font-size:11px;">—</span>`;
-          return `<div onclick="event.stopPropagation();verPartido(${p.ID_Partido})" style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--borde);cursor:pointer;">
-            <span style="font-size:10px;color:var(--texto-3);width:66px;flex-shrink:0;">${fecha}</span>
-            <span style="display:flex;align-items:center;gap:4px;flex:1;min-width:0;font-size:12px;">${escudoImg(local,14)}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${local}</span></span>
-            <span class="${rc}" style="font-weight:700;font-size:12px;flex-shrink:0;">${p.Goles_Local}-${p.Goles_Visitante}</span>
-            <span style="display:flex;align-items:center;gap:4px;flex:1;min-width:0;justify-content:flex-end;font-size:12px;text-align:right;"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${visita}</span>${escudoImg(visita,14)}</span>
-            <span style="flex-shrink:0;min-width:56px;text-align:right;">${incTxt}</span>
-          </div>`;
-        }).join('') : `<div style="padding:10px;text-align:center;color:var(--texto-3);font-size:12px;">Sin partidos registrados para este año</div>`;
-
-        return `<tr onclick="var c=document.getElementById('${uid}');var a=document.getElementById('arr_${uid}');var open=c.style.display==='block';c.style.display=open?'none':'block';a.style.transform=open?'rotate(0deg)':'rotate(180deg)';" style="cursor:pointer;">
-          <td style="padding:10px 12px;font-weight:700;color:var(--texto-1);"><span id="arr_${uid}" style="display:inline-block;margin-right:6px;font-size:10px;color:var(--texto-3);transition:transform 0.2s;">▶</span>${anio}</td>
+        return `<tr>
+          <td style="padding:10px 12px;font-weight:700;color:var(--texto-1);">${anio}</td>
           <td style="text-align:center;color:var(--texto-1);">${r.pj||'—'}</td>
           <td style="text-align:center;font-weight:600;color:var(--celeste);">${r.goles||'—'}</td>
           <td style="text-align:center;color:var(--amarillo);">${r.amonestados||'—'}</td>
           <td style="text-align:center;color:var(--rojo);">${r.expulsados||'—'}</td>
-        </tr><tr><td colspan="5" style="padding:0;border-bottom:1px solid var(--borde);"><div id="${uid}" style="display:none;background:var(--fondo-3);">${filasPartidos}</div></td></tr>`;
+        </tr>`;
       }).join('')
     : `<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--texto-3);">Sin datos por temporada</td></tr>`;
 
