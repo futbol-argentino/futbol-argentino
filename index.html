@@ -1194,6 +1194,31 @@ select option{background:#080F20;color:#F0F6FF}
         </select>
       </div>
 
+      <!-- Directores Técnicos -->
+      <div class="tabla-wrapper" style="margin-bottom:16px;">
+        <div class="tabla-header" onclick="toggleDTsEquipo()" style="cursor:pointer;user-select:none;">
+          <div class="tabla-titulo">🧑‍💼 Directores Técnicos</div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="tabla-count" id="detalle-dts-count"></div>
+            <span id="arrow-dts" style="color:var(--texto-2);font-size:12px;transition:transform 0.2s;">▼</span>
+          </div>
+        </div>
+        <div id="dts-contenido" style="display:none;">
+          <div style="padding:14px 18px;border-bottom:1px solid var(--borde);display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <span class="detalle-filtro-label">Ordenar por:</span>
+            <select id="dts-orden" onchange="aplicarOrdenDTsEquipo()" class="filtro-select" style="max-width:240px;">
+              <option value="reciente">📅 Más recientes primero</option>
+              <option value="antiguo">📅 Más antiguos primero</option>
+              <option value="pj">🔢 Más partidos dirigidos</option>
+              <option value="pg">✅ Más victorias</option>
+              <option value="pe">🤝 Más empates</option>
+              <option value="pp">❌ Más derrotas</option>
+            </select>
+          </div>
+          <div id="tabla-dts-equipo"></div>
+        </div>
+      </div>
+
       <!-- Stats vs rival específico -->
       <div id="detalle-stats-rival" class="stats-card" style="display:none;"></div>
       <!-- H2H Panel (equipos) -->
@@ -2659,6 +2684,9 @@ function verDetalleEquipo(id) {
   // Récords del equipo
   renderRecordsEquipo(id, calcularRecordsEquipo(id, pe));
 
+  // Directores Técnicos del equipo
+  renderDTsEquipo(id);
+
   // Tabla de rivales
   const rivalStats = {};
   pe.forEach(p => {
@@ -3062,6 +3090,94 @@ function toggleRivales() {
   const abierto = contenido.style.display === 'block';
   contenido.style.display = abierto ? 'none' : 'block';
   arrow.style.transform = abierto ? 'rotate(0deg)' : 'rotate(180deg)';
+}
+
+function toggleDTsEquipo() {
+  const contenido = document.getElementById('dts-contenido');
+  const arrow = document.getElementById('arrow-dts');
+  const abierto = contenido.style.display === 'block';
+  contenido.style.display = abierto ? 'none' : 'block';
+  arrow.style.transform = abierto ? 'rotate(0deg)' : 'rotate(180deg)';
+}
+
+// ── DIRECTORES TÉCNICOS DEL EQUIPO ──
+let dtsEquipoActual = null; // { id, lista } — la lista se calcula una vez, el orden se aplica al renderizar
+
+function calcularDTsEquipo(id) {
+  const dtsMap = recopilarDTs();
+  const lista = [];
+  Object.entries(dtsMap).forEach(([nombre, data]) => {
+    const info = data.equipos[id];
+    if (!info) return;
+    const anios = [...info.anios].sort((a,b) => a-b);
+    lista.push({
+      nombre,
+      pj: info.pd, pg: info.pg, pe: info.pe, pp: info.pp,
+      anioIni: anios[0] || null,
+      anioFin: anios[anios.length-1] || null
+    });
+  });
+  return lista;
+}
+
+function renderDTsEquipo(id) {
+  dtsEquipoActual = { id, lista: calcularDTsEquipo(id) };
+  const count = document.getElementById('detalle-dts-count');
+  if (count) count.textContent = dtsEquipoActual.lista.length + (dtsEquipoActual.lista.length===1 ? ' entrenador' : ' entrenadores');
+  aplicarOrdenDTsEquipo();
+}
+
+function aplicarOrdenDTsEquipo() {
+  if (!dtsEquipoActual) return;
+  const cont = document.getElementById('tabla-dts-equipo');
+  if (!cont) return;
+  const orden = document.getElementById('dts-orden')?.value || 'reciente';
+
+  const comparadores = {
+    reciente: (a,b) => (b.anioFin||0) - (a.anioFin||0),
+    antiguo:  (a,b) => (a.anioIni||9999) - (b.anioIni||9999),
+    pj: (a,b) => b.pj - a.pj,
+    pg: (a,b) => b.pg - a.pg,
+    pe: (a,b) => b.pe - a.pe,
+    pp: (a,b) => b.pp - a.pp
+  };
+  const lista = [...dtsEquipoActual.lista].sort(comparadores[orden] || comparadores.reciente);
+
+  if (!lista.length) {
+    cont.innerHTML = `<div style="padding:30px;text-align:center;color:var(--texto-3);font-size:13px;">No hay directores técnicos registrados para este equipo.</div>`;
+    return;
+  }
+
+  cont.innerHTML = `
+    <div class="tabla-scroll">
+      <table style="min-width:600px;">
+        <thead>
+          <tr>
+            <th>DT</th><th>Período</th>
+            <th style="text-align:center;">PJ</th><th style="text-align:center;">PG</th>
+            <th style="text-align:center;">PE</th><th style="text-align:center;">PP</th>
+            <th style="text-align:center;">Efectividad</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${lista.map(dt => {
+            const pct = dt.pj > 0 ? Math.round((dt.pg/dt.pj)*100) : 0;
+            const periodo = dt.anioIni && dt.anioFin
+              ? (dt.anioIni === dt.anioFin ? dt.anioIni : `${dt.anioIni} → ${dt.anioFin}`)
+              : '—';
+            return `<tr style="cursor:pointer;" onclick="verFichaDT('${dt.nombre.replace(/'/g,"\\'")}')">
+              <td style="font-weight:500;">${dt.nombre}</td>
+              <td style="color:var(--texto-2);font-size:13px;">${periodo}</td>
+              <td style="text-align:center;font-weight:600;">${dt.pj}</td>
+              <td style="text-align:center;color:var(--verde);">${dt.pg}</td>
+              <td style="text-align:center;color:var(--amarillo);">${dt.pe}</td>
+              <td style="text-align:center;color:var(--rojo);">${dt.pp}</td>
+              <td style="text-align:center;font-family:var(--fuente-titulo);font-weight:700;">${pct}%</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
 }
 
 function volverEquipos() {
