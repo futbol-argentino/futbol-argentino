@@ -3953,7 +3953,8 @@ function verFichaJugador(nombre, nacionalidadBuscada) {
       const aniosStr = formatearAnios(r.anios);
 
       const partidosEquipo = (fichaPartidosPorEquipo[eid]||[]).slice().sort((a,b) => {
-        const fa = a.partido.Fecha||'', fb = b.partido.Fecha||'';
+        const fa = normalizarFechaISO(a.partido.Fecha) || '';
+        const fb = normalizarFechaISO(b.partido.Fecha) || '';
         return fb.localeCompare(fa);
       });
       const uid = 'peq_' + eid + '_' + (_golUidSeq++);
