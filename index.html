@@ -2240,30 +2240,36 @@ function construirGolData(p, local, visita, colspan) {
 }
 
 function filaPartido(p, equipoRef) {
-  const local = equipos[p.Local_ID] || p.Local_ID;
-  const visita = equipos[p.Visitante_ID] || p.Visitante_ID;
+  const local = equipos[p.Local_ID] || p.Local || p.Local_ID;
+  const visita = equipos[p.Visitante_ID] || p.Visitante || p.Visitante_ID;
   const fecha = p.Fecha ? p.Fecha.split('T')[0] : '';
-  const torneo = temporadas[p.ID_Temporada] || p.Fase || '';
+  const torneo = temporadas[p.ID_Temporada] || p.Competencia || p.Torneo || p.Fase || '';
   let refEsLocal;
   if (equipoRef) {
     if (p.Local_ID === equipoRef) refEsLocal = true;
     else if (p.Visitante_ID === equipoRef) refEsLocal = false;
   }
-  const rc = resClase(p.Goles_Local, p.Goles_Visitante, refEsLocal);
+  const jugado = esPartidoJugado(p);
+  const rc = jugado ? resClase(p.Goles_Local, p.Goles_Visitante, refEsLocal) : 'res-neutro';
   const usuario = getUsuario();
   const esFav = usuario && usuario.equipoId &&
     (p.Local_ID === usuario.equipoId || p.Visitante_ID === usuario.equipoId);
   const claseExtra = esFav ? ' class="equipo-favorito-row"' : '';
 
-  // Goleadores desplegables ordenados por minuto con escudo de equipo
-  const golData = construirGolData(p, local, visita, 5);
+  // Goleadores desplegables ordenados por minuto con escudo de equipo (solo si el partido ya se jugó)
+  const golData = jugado ? construirGolData(p, local, visita, 5) : null;
 
-  const scorePen = esDefinicionPorPenales(p.Tipo_Definicion) && p.Penales ? calcularScorePenales(p.Penales) : null;
-  const resultadoTxt = scorePen
-    ? `${p.Goles_Local}<span style="color:var(--amarillo);">(${scorePen.local})</span> - <span style="color:var(--amarillo);">(${scorePen.visita})</span>${p.Goles_Visitante}`
-    : `${p.Goles_Local} - ${p.Goles_Visitante}`;
+  const scorePen = jugado && esDefinicionPorPenales(p.Tipo_Definicion) && p.Penales ? calcularScorePenales(p.Penales) : null;
+  const resultadoTxt = !jugado
+    ? `<span style="color:var(--texto-3);font-size:12px;">${p.Hora || p.hora || 'vs'}</span>`
+    : (scorePen
+      ? `${p.Goles_Local}<span style="color:var(--amarillo);">(${scorePen.local})</span> - <span style="color:var(--amarillo);">(${scorePen.visita})</span>${p.Goles_Visitante}`
+      : `${p.Goles_Local} - ${p.Goles_Visitante}`);
 
-  return `<tr${claseExtra} onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
+  // Sin ID_Partido (partido a jugar aún sin ID asignado) no hay ficha de detalle a la que ir
+  const clickAttr = p.ID_Partido ? ` onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;"` : '';
+
+  return `<tr${claseExtra}${clickAttr}>
     <td class="td-fecha">${fecha}</td>
     <td><div class="td-equipo">${escudoImg(local,22)}<span>${local}</span></div></td>
     <td class="td-resultado"><span class="${rc}">${resultadoTxt}</span></td>
@@ -2308,6 +2314,13 @@ function actualizarFechasDisponibles() {
   partidos.forEach(p => {
     const iso = normalizarFechaISO(p.Fecha);
     if (iso) set.add(iso);
+  });
+  const hoyISOTmp = new Date().toISOString().split('T')[0];
+  // Partidos.csv es el historial. Hoy.csv puede traer partidos de próximos días (fixture),
+  // así que sus fechas también entran al rango navegable con las flechas / calendario.
+  partidosHoy.forEach(p => {
+    const iso = normalizarFechaISO(p.Fecha) || hoyISOTmp;
+    set.add(iso);
   });
   const conPartidos = Array.from(set).sort();
   if (!conPartidos.length) { fechasDisponibles = []; return; }
@@ -2391,12 +2404,23 @@ function actualizarVistaHoyFecha() {
   cont.style.display = 'none';
   wrap.style.display = 'block';
 
-  const filtrados = partidos
-    .filter(p => normalizarFechaISO(p.Fecha) === fechaNavActiva)
+  const hoyISOTmp = new Date().toISOString().split('T')[0];
+  const historicos = partidos.filter(p => normalizarFechaISO(p.Fecha) === fechaNavActiva);
+  const idsHistoricos = new Set(historicos.map(p => p.ID_Partido));
+  // Sumar los partidos de Hoy.csv para esa fecha (fixture a futuro) que no estén ya
+  // en el historial de Partidos.csv, para no duplicar un partido que ya se jugó y cargó.
+  const fixtures = partidosHoy.filter(p => {
+    const iso = normalizarFechaISO(p.Fecha) || hoyISOTmp;
+    if (iso !== fechaNavActiva) return false;
+    return !(p.ID_Partido && idsHistoricos.has(p.ID_Partido));
+  });
+
+  const filtrados = [...historicos, ...fixtures]
     .sort((a, b) => {
       const fa = a.Fecha ? a.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$2-$1') : '0';
       const fb = b.Fecha ? b.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$2-$1') : '0';
-      return fa.localeCompare(fb);
+      if (fa !== fb) return fa.localeCompare(fb);
+      return (a.Hora || '').localeCompare(b.Hora || '');
     });
 
   document.getElementById('hoy-fecha-titulo').textContent = 'Partidos del ' + formatearFechaDisplay(fechaNavActiva);
@@ -3944,12 +3968,12 @@ function verFichaJugador(nombre, nacionalidadBuscada) {
         const incTxt = incidencias.length
           ? incidencias.map(inc => `<span title="${inc.label}${inc.minuto?' '+inc.minuto:''}" style="margin-right:5px;white-space:nowrap;">${iconosMap[inc.tipo]}${inc.minuto?`<span style="font-size:9px;color:var(--texto-3);">${inc.minuto}</span>`:''}</span>`).join('')
           : `<span style="color:var(--texto-3);font-size:11px;">—</span>`;
-        return `<div onclick="event.stopPropagation();verPartido(${p.ID_Partido})" style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--borde);cursor:pointer;">
-          <span style="font-size:10px;color:var(--texto-3);width:66px;flex-shrink:0;">${fecha}</span>
-          <span style="display:flex;align-items:center;gap:4px;flex:1;min-width:0;font-size:12px;">${escudoImg(local,14)}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${local}</span></span>
-          <span class="${rc}" style="font-weight:700;font-size:12px;flex-shrink:0;">${p.Goles_Local}-${p.Goles_Visitante}</span>
-          <span style="display:flex;align-items:center;gap:4px;flex:1;min-width:0;justify-content:flex-end;font-size:12px;text-align:right;"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${visita}</span>${escudoImg(visita,14)}</span>
-          <span style="flex-shrink:0;min-width:56px;text-align:right;">${incTxt}</span>
+        return `<div onclick="event.stopPropagation();verPartido(${p.ID_Partido})" style="display:grid;grid-template-columns:56px minmax(0,1fr) 50px minmax(0,1fr) 62px;align-items:center;column-gap:6px;padding:7px 10px;border-bottom:1px solid var(--borde);cursor:pointer;">
+          <span style="font-size:10px;color:var(--texto-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${fecha}</span>
+          <span style="display:flex;align-items:center;gap:4px;min-width:0;font-size:12px;overflow:hidden;">${escudoImg(local,14)}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${local}</span></span>
+          <span class="${rc}" style="font-weight:700;font-size:12px;text-align:center;white-space:nowrap;">${p.Goles_Local}-${p.Goles_Visitante}</span>
+          <span style="display:flex;align-items:center;gap:4px;min-width:0;justify-content:flex-end;font-size:12px;overflow:hidden;"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${visita}</span>${escudoImg(visita,14)}</span>
+          <span style="display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:2px;">${incTxt}</span>
         </div>`;
       }).join('') : `<div style="padding:10px;text-align:center;color:var(--texto-3);font-size:12px;">Sin partidos registrados</div>`;
 
@@ -5496,6 +5520,7 @@ function renderStatsEquiposTorneo(idTemporada) {
   };
 
   pts.forEach(p => {
+    if (!esPartidoJugado(p)) return; // Fix: ignorar partidos sin resultado
     const l = p.Local_ID, v = p.Visitante_ID;
     if (!l || !v) return;
     iniciar(l); iniciar(v);
@@ -6071,7 +6096,7 @@ function volverEstadiosGrilla() {
 
 
 // ── HOY ──
-let partidosHoy = [];
+let partidosHoy = []; // TODOS los partidos de Hoy.csv (hoy y próximos días, si tienen columna Fecha)
 
 async function cargarHoy() {
   try {
@@ -6079,6 +6104,7 @@ async function cargarHoy() {
     partidosHoy = csvToArray(csv).filter(p => p.Local_ID || p.ID_Partido);
     renderHoy();
   } catch(e) {
+    partidosHoy = [];
     renderHoyVacio('No hay partidos cargados para hoy.');
   }
 }
@@ -6093,11 +6119,14 @@ function renderHoyVacio(msg) {
 
 function renderHoy() {
   const container = document.getElementById('hoy-container');
-  if (!partidosHoy.length) { renderHoyVacio('No hay partidos programados para hoy.'); return; }
+  // Filas de Hoy.csv sin columna Fecha se siguen tratando como "de hoy" (compatibilidad).
+  const hoyISO = new Date().toISOString().split('T')[0];
+  const deHoy = partidosHoy.filter(p => (normalizarFechaISO(p.Fecha) || hoyISO) === hoyISO);
+  if (!deHoy.length) { renderHoyVacio('No hay partidos programados para hoy.'); return; }
 
   // Agrupar por torneo/competencia
   const grupos = {};
-  partidosHoy.forEach(p => {
+  deHoy.forEach(p => {
     const torneo = temporadas[p.ID_Temporada] || p.Competencia || p.Torneo || 'Partidos de Hoy';
     if (!grupos[torneo]) grupos[torneo] = [];
     grupos[torneo].push(p);
