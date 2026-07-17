@@ -3965,13 +3965,13 @@ function verFichaJugador(nombre, nacionalidadBuscada) {
         const refEsLocal = p.Local_ID === eid;
         const rc = resClase(p.Goles_Local, p.Goles_Visitante, refEsLocal);
         const incTxt = incidencias.length
-          ? incidencias.map(inc => `<span title="${inc.label}${inc.minuto?' '+inc.minuto:''}" style="margin-right:3px;white-space:nowrap;">${iconosMap[inc.tipo]}${inc.minuto?`<span style="font-size:9px;color:var(--texto-3);">${inc.minuto}</span>`:''}</span>`).join('')
+          ? incidencias.map(inc => `<span title="${inc.label}${inc.minuto?' '+inc.minuto:''}" style="margin-right:4px;white-space:nowrap;">${iconosMap[inc.tipo]}${inc.minuto?`<span style="font-size:9px;color:var(--texto-3);">${inc.minuto}</span>`:''}</span>`).join('')
           : `<span style="color:var(--texto-3);font-size:11px;">—</span>`;
-        return `<div onclick="event.stopPropagation();verPartido(${p.ID_Partido})" style="display:grid;grid-template-columns:44px minmax(0,1fr) 38px minmax(0,1fr) 100px;align-items:center;column-gap:4px;padding:7px 10px;border-bottom:1px solid var(--borde);cursor:pointer;">
+        return `<div onclick="event.stopPropagation();verPartido(${p.ID_Partido})" style="display:grid;grid-template-columns:52px minmax(0,1fr) 46px minmax(0,1fr) 130px;align-items:center;column-gap:2px;padding:7px 10px;border-bottom:1px solid var(--borde);cursor:pointer;">
           <span style="font-size:10px;color:var(--texto-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${fecha}</span>
-          <span style="display:flex;align-items:center;gap:3px;min-width:0;font-size:12px;overflow:hidden;">${escudoImg(local,14)}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${local}</span></span>
+          <span style="display:flex;align-items:center;gap:4px;min-width:0;font-size:12px;overflow:hidden;">${escudoImg(local,14)}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${local}</span></span>
           <span class="${rc}" style="font-weight:700;font-size:12px;text-align:center;white-space:nowrap;">${p.Goles_Local}-${p.Goles_Visitante}</span>
-          <span style="display:flex;align-items:center;gap:3px;min-width:0;justify-content:flex-end;font-size:12px;overflow:hidden;"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${visita}</span>${escudoImg(visita,14)}</span>
+          <span style="display:flex;align-items:center;gap:4px;min-width:0;justify-content:flex-end;font-size:12px;overflow:hidden;"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${visita}</span>${escudoImg(visita,14)}</span>
           <span style="display:flex;flex-wrap:nowrap;justify-content:flex-end;align-items:center;overflow:hidden;">${incTxt}</span>
         </div>`;
       }).join('') : `<div style="padding:10px;text-align:center;color:var(--texto-3);font-size:12px;">Sin partidos registrados</div>`;
