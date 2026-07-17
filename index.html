@@ -1127,6 +1127,9 @@ select option{background:#080F20;color:#F0F6FF}
       <!-- Stats del equipo en detalle -->
       <div class="stats-nums" id="detalle-stats" style="margin-bottom:16px;"></div>
 
+      <!-- Récords del equipo -->
+      <div class="tabla-wrapper" id="detalle-records" style="margin-bottom:16px;padding:18px;"></div>
+
       <!-- Tabs internos -->
       <div style="display:flex;gap:6px;margin-bottom:18px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
         <button id="dtab-partidos" onclick="cambiarDetalleTab('partidos')"
@@ -2634,6 +2637,9 @@ function verDetalleEquipo(id) {
     <div class="stat-pill"><span class="stat-pill-num num-celeste">${gf-gc}</span><span class="stat-pill-label">DG</span></div>
   `;
 
+  // Récords del equipo
+  renderRecordsEquipo(id, calcularRecordsEquipo(id, pe));
+
   // Tabla de rivales
   const rivalStats = {};
   pe.forEach(p => {
@@ -2695,6 +2701,128 @@ function verDetalleEquipo(id) {
   document.getElementById('detalle-filtro-resultado').value = '';
   document.getElementById('detalle-tabla-titulo').textContent = 'Partidos de ' + nombre;
   filtrarDetalle();
+}
+
+// ── RÉCORDS DEL EQUIPO ──
+// Recorre el historial completo del equipo en orden cronológico para encontrar
+// su racha invicta más larga, su racha de victorias más larga, su goleada más
+// grande y su peor derrota.
+function calcularRecordsEquipo(id, partidosEquipo) {
+  const ordenados = [...partidosEquipo].sort((a, b) => {
+    const fa = normalizarFechaISO(a.Fecha) || '';
+    const fb = normalizarFechaISO(b.Fecha) || '';
+    return fa.localeCompare(fb);
+  });
+
+  let rachaInvictaAct = 0, rachaInvictaMax = 0, rachaInvictaIni = null, rachaInvictaFin = null, tmpIniInv = null;
+  let rachaVictAct = 0, rachaVictMax = 0, rachaVictIni = null, rachaVictFin = null, tmpIniVict = null;
+  let mejorGoleada = null, peorDerrota = null;
+
+  ordenados.forEach(p => {
+    const esLocal = p.Local_ID === id;
+    const gf = parseInt(esLocal ? p.Goles_Local : p.Goles_Visitante) || 0;
+    const gc = parseInt(esLocal ? p.Goles_Visitante : p.Goles_Local) || 0;
+    const dif = gf - gc;
+
+    let resultado; // 'G' | 'E' | 'P'
+    if (esResultadoNormal(p.Tipo_Definicion)) {
+      resultado = p.ID_Ganador === id ? 'G' : (p.ID_Ganador && p.ID_Ganador !== '') ? 'P' : 'E';
+    } else {
+      resultado = gf === gc ? 'E' : (gf > gc ? 'G' : 'P');
+    }
+
+    // Racha invicta (gana o empata)
+    if (resultado !== 'P') {
+      if (rachaInvictaAct === 0) tmpIniInv = p;
+      rachaInvictaAct++;
+      if (rachaInvictaAct > rachaInvictaMax) {
+        rachaInvictaMax = rachaInvictaAct;
+        rachaInvictaIni = tmpIniInv;
+        rachaInvictaFin = p;
+      }
+    } else {
+      rachaInvictaAct = 0;
+    }
+
+    // Racha de victorias
+    if (resultado === 'G') {
+      if (rachaVictAct === 0) tmpIniVict = p;
+      rachaVictAct++;
+      if (rachaVictAct > rachaVictMax) {
+        rachaVictMax = rachaVictAct;
+        rachaVictIni = tmpIniVict;
+        rachaVictFin = p;
+      }
+    } else {
+      rachaVictAct = 0;
+    }
+
+    // Goleada más grande / peor derrota (solo partidos con resultado normal, no definiciones por penales)
+    if (esResultadoNormal(p.Tipo_Definicion)) {
+      if (resultado === 'G' && (!mejorGoleada || dif > mejorGoleada.dif)) mejorGoleada = { dif, p, gf, gc };
+      if (resultado === 'P' && (!peorDerrota || dif < peorDerrota.dif)) peorDerrota = { dif, p, gf, gc };
+    }
+  });
+
+  return {
+    rachaInvictaMax, rachaInvictaIni, rachaInvictaFin,
+    rachaVictMax, rachaVictIni, rachaVictFin,
+    mejorGoleada, peorDerrota
+  };
+}
+
+function renderRecordsEquipo(id, r) {
+  const cont = document.getElementById('detalle-records');
+  if (!cont) return;
+
+  const fechaCorta = f => f ? (f.split('T')[0] || f) : '';
+
+  const fmtRacha = (max, ini, fin) => {
+    if (!max) return `<div style="color:var(--texto-3);font-size:12px;">Sin datos suficientes</div>`;
+    const fIni = fechaCorta(ini?.Fecha), fFin = fechaCorta(fin?.Fecha);
+    return `
+      <div style="font-family:var(--fuente-titulo);font-size:30px;color:var(--oro);line-height:1;margin-bottom:6px;">${max}</div>
+      <div style="font-size:12px;color:var(--texto-2);margin-bottom:4px;">partido${max>1?'s':''}</div>
+      <div style="font-size:11px;color:var(--texto-3);">${fIni}${fFin && fFin!==fIni ? ' → '+fFin : ''}</div>
+    `;
+  };
+
+  const fmtPartido = (rec, positivo) => {
+    if (!rec) return `<div style="color:var(--texto-3);font-size:12px;">Sin datos suficientes</div>`;
+    const { p, gf, gc } = rec;
+    const esLocal = p.Local_ID === id;
+    const rivalId = esLocal ? p.Visitante_ID : p.Local_ID;
+    const rivalNombre = equipos[rivalId] || rivalId;
+    const torneo = temporadas[p.ID_Temporada] || p.Fase || '';
+    const esc = ESCUDOS[rivalNombre] ? `<img src="${ESCUDOS[rivalNombre]}" style="width:16px;height:16px;object-fit:contain;vertical-align:-3px;margin-right:4px;" onerror="this.style.display='none'">` : '';
+    return `
+      <div style="font-family:var(--fuente-titulo);font-size:26px;color:${positivo?'var(--verde)':'var(--rojo)'};line-height:1;margin-bottom:6px;">${gf} - ${gc}</div>
+      <div style="font-size:12px;color:var(--texto-2);margin-bottom:4px;">${esc}vs ${rivalNombre}</div>
+      <div style="font-size:11px;color:var(--texto-3);">${fechaCorta(p.Fecha)}${torneo?' · '+torneo:''}</div>
+    `;
+  };
+
+  cont.innerHTML = `
+    <div class="tabla-titulo" style="margin-bottom:14px;">🏅 Récords del Equipo</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
+      <div style="background:var(--fondo-3);border:1px solid var(--borde);border-radius:12px;padding:14px;text-align:center;">
+        <div style="font-size:11px;letter-spacing:0.5px;color:var(--texto-3);margin-bottom:8px;">🔥 RACHA INVICTA MÁS LARGA</div>
+        ${fmtRacha(r.rachaInvictaMax, r.rachaInvictaIni, r.rachaInvictaFin)}
+      </div>
+      <div style="background:var(--fondo-3);border:1px solid var(--borde);border-radius:12px;padding:14px;text-align:center;">
+        <div style="font-size:11px;letter-spacing:0.5px;color:var(--texto-3);margin-bottom:8px;">✅ RACHA DE VICTORIAS</div>
+        ${fmtRacha(r.rachaVictMax, r.rachaVictIni, r.rachaVictFin)}
+      </div>
+      <div style="background:var(--fondo-3);border:1px solid var(--borde);border-radius:12px;padding:14px;text-align:center;">
+        <div style="font-size:11px;letter-spacing:0.5px;color:var(--texto-3);margin-bottom:8px;">🎯 MAYOR GOLEADA</div>
+        ${fmtPartido(r.mejorGoleada, true)}
+      </div>
+      <div style="background:var(--fondo-3);border:1px solid var(--borde);border-radius:12px;padding:14px;text-align:center;">
+        <div style="font-size:11px;letter-spacing:0.5px;color:var(--texto-3);margin-bottom:8px;">😖 PEOR DERROTA</div>
+        ${fmtPartido(r.peorDerrota, false)}
+      </div>
+    </div>
+  `;
 }
 
 function actualizarSelectResultado(equipoId, equipoNombre) {
