@@ -2789,9 +2789,21 @@ function calcularRecordsEquipo(id, partidosEquipo) {
     }
   });
 
+  // Partido que cortó cada racha: el primero jugado inmediatamente después del
+  // último partido de la racha récord. Si no hay ninguno, la racha sigue vigente.
+  const encontrarCorte = (rachaPartidos) => {
+    if (!rachaPartidos || !rachaPartidos.length) return null;
+    const ultimo = rachaPartidos[rachaPartidos.length - 1];
+    const idx = ordenados.indexOf(ultimo);
+    if (idx === -1 || idx === ordenados.length - 1) return null;
+    return ordenados[idx + 1];
+  };
+  const corteInvicta = encontrarCorte(rachaInvictaPartidos);
+  const corteVictorias = encontrarCorte(rachaVictPartidos);
+
   return {
-    rachaInvictaMax, rachaInvictaIni, rachaInvictaFin, rachaInvictaPartidos,
-    rachaVictMax, rachaVictIni, rachaVictFin, rachaVictPartidos,
+    rachaInvictaMax, rachaInvictaIni, rachaInvictaFin, rachaInvictaPartidos, corteInvicta,
+    rachaVictMax, rachaVictIni, rachaVictFin, rachaVictPartidos, corteVictorias,
     mejorGoleada, peorDerrota
   };
 }
@@ -2870,6 +2882,7 @@ function abrirModalRacha(tipo) {
   const { id, nombre, r } = recordsEquipoActual;
   const esInvicta = tipo === 'invicta';
   const lista = esInvicta ? r.rachaInvictaPartidos : r.rachaVictPartidos;
+  const corte = esInvicta ? r.corteInvicta : r.corteVictorias;
   if (!lista || !lista.length) return;
 
   const ini = fechaCortaGlobal(lista[0].Fecha);
@@ -2881,7 +2894,7 @@ function abrirModalRacha(tipo) {
   document.getElementById('modal-racha-subtitulo').textContent =
     `${lista.length} partido${lista.length>1?'s':''} · ${ini}${fin!==ini?' → '+fin:''}`;
 
-  document.getElementById('modal-racha-lista').innerHTML = lista.map(p => {
+  const filasHtml = lista.map(p => {
     const rivalId = p.Local_ID === id ? p.Visitante_ID : p.Local_ID;
     const rivalNombre = equipos[rivalId] || rivalId;
     const torneo = temporadas[p.ID_Temporada] || p.Fase || '';
@@ -2902,6 +2915,39 @@ function abrirModalRacha(tipo) {
         <div style="font-family:var(--fuente-titulo);font-size:17px;color:${colorRes};flex-shrink:0;">${p.Goles_Local} - ${p.Goles_Visitante}</div>
       </div>`;
   }).join('');
+
+  const corteHtml = corte ? (() => {
+    const rivalId = corte.Local_ID === id ? corte.Visitante_ID : corte.Local_ID;
+    const rivalNombre = equipos[rivalId] || rivalId;
+    const torneo = temporadas[corte.ID_Temporada] || corte.Fase || '';
+    const esc = ESCUDOS[rivalNombre] ? `<img src="${ESCUDOS[rivalNombre]}" style="width:20px;height:20px;object-fit:contain;" onerror="this.style.display='none'">` : '';
+    const esEmpate = esResultadoNormal(corte.Tipo_Definicion) ? !corte.ID_Ganador : corte.Goles_Local===corte.Goles_Visitante;
+    const label = esEmpate ? 'Empate' : 'Derrota';
+    const colorLabel = esEmpate ? 'var(--amarillo)' : 'var(--rojo)';
+    return `
+      <div style="margin-top:6px;padding-top:16px;border-top:1px dashed var(--borde);">
+        <div style="font-size:12px;color:var(--texto-3);margin-bottom:8px;">✂️ Partido que cortó la racha</div>
+        <div onclick="verPartido('${corte.ID_Partido}')"
+          style="background:rgba(244,63,94,0.06);border:1px solid rgba(244,63,94,0.25);border-radius:10px;padding:10px 14px;
+                 cursor:pointer;transition:var(--trans);display:flex;align-items:center;gap:12px;"
+          onmouseenter="this.style.borderColor='rgba(244,63,94,0.5)'"
+          onmouseleave="this.style.borderColor='rgba(244,63,94,0.25)'">
+          <div style="flex-shrink:0;width:28px;text-align:center;">${esc}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:500;">vs ${rivalNombre}
+              <span style="font-size:10px;color:${colorLabel};border:1px solid ${colorLabel};border-radius:5px;padding:1px 6px;margin-left:6px;">${label}</span>
+            </div>
+            <div style="font-size:11px;color:var(--texto-3);">${fechaCortaGlobal(corte.Fecha)}${torneo?' · '+torneo:''}</div>
+          </div>
+          <div style="font-family:var(--fuente-titulo);font-size:17px;color:${colorLabel};flex-shrink:0;">${corte.Goles_Local} - ${corte.Goles_Visitante}</div>
+        </div>
+      </div>`;
+  })() : `
+    <div style="margin-top:6px;padding-top:16px;border-top:1px dashed var(--borde);text-align:center;color:var(--texto-3);font-size:12px;">
+      🟢 Racha vigente — ${nombre} sigue ${esInvicta?'invicto':'ganando'} desde el último partido registrado
+    </div>`;
+
+  document.getElementById('modal-racha-lista').innerHTML = filasHtml + corteHtml;
 
   document.getElementById('modal-racha').classList.add('visible');
 }
