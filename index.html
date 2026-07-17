@@ -2826,11 +2826,11 @@ function renderRecordsEquipo(id, r) {
     const rivalId = esLocal ? p.Visitante_ID : p.Local_ID;
     const rivalNombre = equipos[rivalId] || rivalId;
     const torneo = temporadas[p.ID_Temporada] || p.Fase || '';
-    const esc = ESCUDOS[rivalNombre] ? `<img src="${ESCUDOS[rivalNombre]}" style="width:16px;height:16px;object-fit:contain;vertical-align:-3px;margin-right:4px;" onerror="this.style.display='none'">` : '';
+    const esc = ESCUDOS[rivalNombre] ? `<img src="${ESCUDOS[rivalNombre]}" style="width:16px;height:16px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">` : '';
     return `
       <div class="record-card-body">
         <div style="font-family:var(--fuente-titulo);font-size:26px;color:${positivo?'var(--verde)':'var(--rojo)'};line-height:1;margin-bottom:6px;">${gf} - ${gc}</div>
-        <div style="font-size:12px;color:var(--texto-2);margin-bottom:4px;">${esc}vs ${rivalNombre}</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:5px;font-size:12px;color:var(--texto-2);margin-bottom:4px;">${esc}<span>vs ${rivalNombre}</span></div>
         <div style="font-size:11px;color:var(--texto-3);">${fechaCorta(p.Fecha)}${torneo?' · '+torneo:''}</div>
       </div>
     `;
@@ -2882,28 +2882,24 @@ function abrirModalRacha(tipo) {
     `${lista.length} partido${lista.length>1?'s':''} · ${ini}${fin!==ini?' → '+fin:''}`;
 
   document.getElementById('modal-racha-lista').innerHTML = lista.map(p => {
-    const esLocal = p.Local_ID === id;
-    const rivalId = esLocal ? p.Visitante_ID : p.Local_ID;
+    const rivalId = p.Local_ID === id ? p.Visitante_ID : p.Local_ID;
     const rivalNombre = equipos[rivalId] || rivalId;
-    const gf = esLocal ? p.Goles_Local : p.Goles_Visitante;
-    const gc = esLocal ? p.Goles_Visitante : p.Goles_Local;
     const torneo = temporadas[p.ID_Temporada] || p.Fase || '';
     const esc = ESCUDOS[rivalNombre] ? `<img src="${ESCUDOS[rivalNombre]}" style="width:20px;height:20px;object-fit:contain;" onerror="this.style.display='none'">` : '';
     const esVictoria = esResultadoNormal(p.Tipo_Definicion) && p.ID_Ganador === id;
-    const esEmpate = !esVictoria && (esResultadoNormal(p.Tipo_Definicion) ? !p.ID_Ganador : gf===gc);
-    const colorRes = esVictoria ? 'var(--verde)' : (esEmpate ? 'var(--amarillo)' : 'var(--rojo)');
+    const colorRes = esVictoria ? 'var(--verde)' : 'var(--amarillo)';
     return `
-      <div onclick="cerrarModalRacha();verPartido('${p.ID_Partido}')"
+      <div onclick="verPartido('${p.ID_Partido}')"
         style="background:var(--fondo-3);border:1px solid var(--borde);border-radius:10px;padding:10px 14px;
                cursor:pointer;transition:var(--trans);display:flex;align-items:center;gap:12px;margin-bottom:8px;"
         onmouseenter="this.style.borderColor='var(--borde-hover)'"
         onmouseleave="this.style.borderColor='var(--borde)'">
         <div style="flex-shrink:0;width:28px;text-align:center;">${esc}</div>
         <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;font-weight:500;">${esLocal?'vs':'@'} ${rivalNombre}</div>
+          <div style="font-size:13px;font-weight:500;">vs ${rivalNombre}</div>
           <div style="font-size:11px;color:var(--texto-3);">${fechaCortaGlobal(p.Fecha)}${torneo?' · '+torneo:''}</div>
         </div>
-        <div style="font-family:var(--fuente-titulo);font-size:17px;color:${colorRes};flex-shrink:0;">${gf} - ${gc}</div>
+        <div style="font-family:var(--fuente-titulo);font-size:17px;color:${colorRes};flex-shrink:0;">${p.Goles_Local} - ${p.Goles_Visitante}</div>
       </div>`;
   }).join('');
 
