@@ -423,6 +423,8 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 /* MODAL */
 #modal-jugador{z-index:500}
 #modal{z-index:600}
+#modal-dt{z-index:500}
+#modal-racha{z-index:500}
 .modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(3,6,14,0.88);backdrop-filter:blur(8px);z-index:400;align-items:center;justify-content:center;padding:20px}
 .modal-overlay.visible{display:flex;animation:fadeIn 0.2s ease}
 .modal-box{background:linear-gradient(160deg,var(--fondo-3) 0%,var(--fondo-2) 100%);border:1px solid var(--borde-activo);border-radius:18px;padding:28px;max-width:580px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,0.7),0 0 0 1px rgba(56,189,248,0.1);position:relative}
@@ -2182,6 +2184,16 @@ async function cargarDatos() {
 }
 
 // ── SIDEBAR ──
+// ── Apila el modal recién abierto por encima de cualquier otro modal ya abierto ──
+// (partido, ficha de jugador, ficha de DT y racha pueden abrirse unos desde
+// adentro de otros; esto asegura que el que se abre último quede siempre visible)
+window._modalZTop = window._modalZTop || 600;
+function traerModalAlFrente(id) {
+  window._modalZTop += 1;
+  const el = document.getElementById(id);
+  if (el) el.style.zIndex = window._modalZTop;
+}
+
 function abrirSidebar() {
   document.getElementById('sidebar').classList.add('activo');
   document.getElementById('sidebar-overlay').classList.add('activo');
@@ -2977,6 +2989,7 @@ function abrirModalRacha(tipo) {
 
   document.getElementById('modal-racha-lista').innerHTML = filasHtml + corteHtml;
 
+  traerModalAlFrente('modal-racha');
   document.getElementById('modal-racha').classList.add('visible');
 }
 
@@ -3373,6 +3386,7 @@ function verPartido(id) {
     alinWrap.style.display = 'none';
   }
 
+  traerModalAlFrente('modal');
   document.getElementById('modal').classList.add('visible');
 }
 
@@ -4505,6 +4519,7 @@ function verFichaJugador(nombre, nacionalidadBuscada) {
     dtSeccion.style.display = 'none';
   }
 
+  traerModalAlFrente('modal-jugador');
   document.getElementById('modal-jugador').classList.add('visible');
 }
 
@@ -5812,6 +5827,7 @@ function verFichaDT(nombre) {
     </tr>${golData ? golData.drop : ''}`;
   }).join('');
 
+  traerModalAlFrente('modal-dt');
   document.getElementById('modal-dt').classList.add('visible');
 }
 
