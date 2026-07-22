@@ -1395,6 +1395,120 @@ select option{background:#080F20;color:#F0F6FF}
           <div class="paginacion" id="pag-expulsados"></div>
         </div>
 
+        <!-- MÁS DOBLETES -->
+        <div class="tabla-wrapper">
+          <div class="tabla-header">
+            <div class="tabla-titulo">🎯 Más Dobletes</div>
+            <div class="tabla-count" id="count-doblete"></div>
+          </div>
+          <div class="tabla-scroll scroll-forzado">
+          <table style="width:100%;border-collapse:collapse;min-width:300px;">
+            <thead><tr>
+              <th style="width:40px;">#</th>
+              <th>Jugador</th>
+              <th style="text-align:center;width:100px;">Dobletes</th>
+            </tr></thead>
+            <tbody id="tabla-doblete-stats"></tbody>
+          </table>
+          </div>
+          <div class="paginacion" id="pag-doblete"></div>
+        </div>
+
+        <!-- MÁS HAT-TRICKS -->
+        <div class="tabla-wrapper">
+          <div class="tabla-header">
+            <div class="tabla-titulo">🎩 Más Hat-Tricks</div>
+            <div class="tabla-count" id="count-hattrick"></div>
+          </div>
+          <div class="tabla-scroll scroll-forzado">
+          <table style="width:100%;border-collapse:collapse;min-width:300px;">
+            <thead><tr>
+              <th style="width:40px;">#</th>
+              <th>Jugador</th>
+              <th style="text-align:center;width:100px;">Hat-Tricks</th>
+            </tr></thead>
+            <tbody id="tabla-hattrick-stats"></tbody>
+          </table>
+          </div>
+          <div class="paginacion" id="pag-hattrick"></div>
+        </div>
+
+        <!-- MÁS PÓKERS -->
+        <div class="tabla-wrapper">
+          <div class="tabla-header">
+            <div class="tabla-titulo">4️⃣ Más Pókers</div>
+            <div class="tabla-count" id="count-poker"></div>
+          </div>
+          <div class="tabla-scroll scroll-forzado">
+          <table style="width:100%;border-collapse:collapse;min-width:300px;">
+            <thead><tr>
+              <th style="width:40px;">#</th>
+              <th>Jugador</th>
+              <th style="text-align:center;width:100px;">Pókers</th>
+            </tr></thead>
+            <tbody id="tabla-poker-stats"></tbody>
+          </table>
+          </div>
+          <div class="paginacion" id="pag-poker"></div>
+        </div>
+
+        <!-- MÁS RE-PÓKERS -->
+        <div class="tabla-wrapper">
+          <div class="tabla-header">
+            <div class="tabla-titulo">5️⃣ Más Re-Pókers</div>
+            <div class="tabla-count" id="count-repoker"></div>
+          </div>
+          <div class="tabla-scroll scroll-forzado">
+          <table style="width:100%;border-collapse:collapse;min-width:300px;">
+            <thead><tr>
+              <th style="width:40px;">#</th>
+              <th>Jugador</th>
+              <th style="text-align:center;width:100px;">Re-Pókers</th>
+            </tr></thead>
+            <tbody id="tabla-repoker-stats"></tbody>
+          </table>
+          </div>
+          <div class="paginacion" id="pag-repoker"></div>
+        </div>
+
+        <!-- MÁS DOBLE HAT-TRICK -->
+        <div class="tabla-wrapper">
+          <div class="tabla-header">
+            <div class="tabla-titulo">🔥 Más Doble Hat-Trick</div>
+            <div class="tabla-count" id="count-doblehattrick"></div>
+          </div>
+          <div class="tabla-scroll scroll-forzado">
+          <table style="width:100%;border-collapse:collapse;min-width:300px;">
+            <thead><tr>
+              <th style="width:40px;">#</th>
+              <th>Jugador</th>
+              <th style="text-align:center;width:100px;">Doble HT</th>
+            </tr></thead>
+            <tbody id="tabla-doblehattrick-stats"></tbody>
+          </table>
+          </div>
+          <div class="paginacion" id="pag-doblehattrick"></div>
+        </div>
+
+        <!-- MÁS PARTIDOS CON 7 GOLES -->
+        <div class="tabla-wrapper">
+          <div class="tabla-header">
+            <div class="tabla-titulo">🌟 7 Goles en un Partido</div>
+            <div class="tabla-count" id="count-siete"></div>
+          </div>
+          <div class="tabla-scroll scroll-forzado">
+          <table style="width:100%;border-collapse:collapse;min-width:300px;">
+            <thead><tr>
+              <th style="width:40px;">#</th>
+              <th>Jugador</th>
+              <th style="text-align:center;width:100px;">Cantidad</th>
+            </tr></thead>
+            <tbody id="tabla-siete-stats"></tbody>
+          </table>
+          </div>
+          <div class="paginacion" id="pag-siete"></div>
+        </div>
+
       </div>
     </div>
 
@@ -3859,6 +3973,40 @@ function parsearGoleadores(equipoId, torneoId) {
   return { goles, ec, nacionalidades, equiposGoles, equiposEC, nombresDisplay };
 }
 
+// Cuenta, por jugador, en cuántos partidos distintos convirtió exactamente 2 (doblete),
+// 3 (hat-trick), 4 (póker), 5 (repóker), 6 (doble hat-trick) o 7 goles. Los autogoles (EC)
+// no cuentan como gol propio del jugador. Devuelve { 2:{clave:cant}, 3:{...}, ..., 7:{...} }.
+function parsearGoleadasMultiples(equipoId, torneoId) {
+  const conteo = { 2:{}, 3:{}, 4:{}, 5:{}, 6:{}, 7:{} };
+  partidos.forEach(p => {
+    if (!esPartidoJugado(p)) return;
+    if (torneoId && p.ID_Temporada != torneoId) return;
+    if (torneoId && ['Promoción Ida','Promoción Vuelta','Promocion Ida','Promocion Vuelta'].includes(p.Fase)) return;
+    const raw = p['Goleadores'] || '';
+    if (!raw) return;
+    raw.split('/').forEach((parte, idx) => {
+      const idEquipo = idx === 0 ? p.Local_ID : p.Visitante_ID;
+      if (equipoId && idEquipo !== equipoId) return;
+      const golesPartido = {};
+      parte.split('-').forEach(entrada => {
+        entrada = entrada.trim();
+        if (!entrada || entrada.toLowerCase() === 'ninguno') return;
+        if (/\(EC\)/i.test(entrada)) return; // autogol: no es un gol propio del jugador
+        const nac = extraerNacionalidad(entrada);
+        const nombreLimpio = limpiarNombre(entrada);
+        const nombre = nombreCanonico(nombreLimpio);
+        if (!nombre || nombre.length < 2) return;
+        const clave = claveJugador(nombreLimpio, nac);
+        golesPartido[clave] = (golesPartido[clave] || 0) + 1;
+      });
+      Object.entries(golesPartido).forEach(([clave, cant]) => {
+        if (cant >= 2 && cant <= 7) conteo[cant][clave] = (conteo[cant][clave] || 0) + 1;
+      });
+    });
+  });
+  return conteo;
+}
+
 function parsearTarjetas(campo, equipoId, torneoId) {
   const conteo = {};
   const nacionalidades = {};
@@ -3892,9 +4040,9 @@ function parsearTarjetas(campo, equipoId, torneoId) {
 }
 
 // Estado de paginación
-const paginas = { goleadores:1, gc:1, amonestados:1, expulsados:1, pj:1 };
+const paginas = { goleadores:1, gc:1, amonestados:1, expulsados:1, pj:1, doblete:1, hattrick:1, poker:1, repoker:1, doblehattrick:1, siete:1 };
 const POR_PAG = 30;
-let datosStats = { goleadores:[], gc:[], amonestados:[], expulsados:[], pj:[], nacGoleadores:{}, nacGC:{}, nacAmon:{}, nacExpu:{}, nacPJ:{}, eqGoleadores:{}, eqGC:{}, eqAmon:{}, eqExpu:{}, eqPJ:{}, nombresDisplay:{} };
+let datosStats = { goleadores:[], gc:[], amonestados:[], expulsados:[], pj:[], doblete:[], hattrick:[], poker:[], repoker:[], doblehattrick:[], siete:[], nacGoleadores:{}, nacGC:{}, nacAmon:{}, nacExpu:{}, nacPJ:{}, eqGoleadores:{}, eqGC:{}, eqAmon:{}, eqExpu:{}, eqPJ:{}, nombresDisplay:{} };
 
 // Renderiza los escuditos de los equipos para los que un jugador aportó en una tabla de estadísticas
 function renderEscudosJugador(equiposIds) {
@@ -4016,6 +4164,22 @@ function renderTablaStat(tipo) {
     document.getElementById('count-pj').textContent = datosStats.pj.length + ' jugadores';
     renderPaginacion('pj', datosStats.pj.length, paginas.pj, 'cambiarPaginaStats');
   }
+
+  else if (['doblete','hattrick','poker','repoker','doblehattrick','siete'].includes(tipo)) {
+    const COLOR = { doblete:'var(--celeste)', hattrick:'var(--verde)', poker:'var(--amarillo)', repoker:'var(--oro)', doblehattrick:'var(--azul)', siete:'var(--rojo)' };
+    const slice = datosStats[tipo].slice(inicio, fin);
+    const tbody = document.getElementById('tabla-'+tipo+'-stats');
+    if (!tbody) return;
+    tbody.innerHTML = slice.length === 0
+      ? '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>'
+      : slice.map(([clave, cant], i) =>
+          filaJugador(inicio+i, datosStats.nombresDisplay[clave] || clave, datosStats.nacGoleadores[clave],
+            `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:${COLOR[tipo]};">${cant}</td>`,
+            datosStats.eqGoleadores[clave])
+        ).join('');
+    document.getElementById('count-'+tipo).textContent = datosStats[tipo].length + ' jugadores';
+    renderPaginacion(tipo, datosStats[tipo].length, paginas[tipo], 'cambiarPaginaStats');
+  }
 }
 
 function renderEstadisticasDebounced() {
@@ -4046,6 +4210,7 @@ function renderEstadisticas() {
 
   // Resetear páginas al cambiar filtro
   paginas.goleadores = 1; paginas.gc = 1; paginas.amonestados = 1; paginas.expulsados = 1; paginas.pj = 1;
+  paginas.doblete = 1; paginas.hattrick = 1; paginas.poker = 1; paginas.repoker = 1; paginas.doblehattrick = 1; paginas.siete = 1;
 
   datosStats.goleadores = aplicarFiltros(Object.entries(goles)
     .sort((a, b) => (b[1].normales + b[1].penales) - (a[1].normales + a[1].penales)));
@@ -4061,6 +4226,15 @@ function renderEstadisticas() {
   datosStats.nacExpu = nacExpu;
   datosStats.eqAmon = eqAmon;
   datosStats.eqExpu = eqExpu;
+
+  // Dobletes / Hat-Tricks / Pókers / Re-Pókers / Doble Hat-Trick / 7 goles en un partido
+  const multigol = parsearGoleadasMultiples(equipoId);
+  datosStats.doblete      = aplicarFiltros(Object.entries(multigol[2]).sort((a,b)=>b[1]-a[1]));
+  datosStats.hattrick     = aplicarFiltros(Object.entries(multigol[3]).sort((a,b)=>b[1]-a[1]));
+  datosStats.poker        = aplicarFiltros(Object.entries(multigol[4]).sort((a,b)=>b[1]-a[1]));
+  datosStats.repoker      = aplicarFiltros(Object.entries(multigol[5]).sort((a,b)=>b[1]-a[1]));
+  datosStats.doblehattrick= aplicarFiltros(Object.entries(multigol[6]).sort((a,b)=>b[1]-a[1]));
+  datosStats.siete        = aplicarFiltros(Object.entries(multigol[7]).sort((a,b)=>b[1]-a[1]));
 
   // Calcular PJ desde columna Jugadores de partidos
   const pjConteo = {};
@@ -4103,7 +4277,7 @@ function renderEstadisticas() {
       return true;
     });
 
-  ['goleadores','gc','amonestados','expulsados','pj'].forEach(renderTablaStat);
+  ['goleadores','gc','amonestados','expulsados','pj','doblete','hattrick','poker','repoker','doblehattrick','siete'].forEach(renderTablaStat);
 }
 
 // (nota: la definición de filaJugador vive más arriba, junto a renderEscudosJugador)
@@ -4147,9 +4321,13 @@ function verFichaJugador(nombre, nacionalidadBuscada) {
   // Goles recibidos (solo se acumulan en los partidos donde este jugador figura como ARQ)
   let concedidosTotal = 0;
   const concedidosPorRival = {};
+  // Partidos en los que este jugador convirtió exactamente 2/3/4/5/6/7 goles (dobletes, hat-tricks, etc.)
+  const multigolConteo = { 2:0, 3:0, 4:0, 5:0, 6:0, 7:0 };
 
   partidos.forEach(p => {
     const anio = p.Fecha ? parseInt(p.Fecha.split('/')[2] || p.Fecha.split('-')[0]) : null;
+    // Goles propios de este jugador en ESTE partido (para detectar dobletes/hat-tricks/etc.)
+    let golesEsteMatch = 0;
     ['Goleadores','Amonestados','Expulsados'].forEach(campo => {
       const raw = p[campo] || '';
       if (!raw) return;
@@ -4178,8 +4356,8 @@ function verFichaJugador(nombre, nacionalidadBuscada) {
           }
           if (campo === 'Goleadores') {
             if (esEC) { r.ec++; rv.ec++; }
-            else if (/\(P\)/i.test(entrada)) { r.goles++; r.penales++; rv.goles++; rv.penales++; }
-            else { r.goles++; rv.goles++; }
+            else if (/\(P\)/i.test(entrada)) { r.goles++; r.penales++; rv.goles++; rv.penales++; golesEsteMatch++; }
+            else { r.goles++; rv.goles++; golesEsteMatch++; }
             if (anio && !esEC) porAnio[anio].goles++;
           }
           if (campo === 'Amonestados') { r.amonestados++; rv.amonestados++; if (anio) porAnio[anio].amonestados++; }
@@ -4187,6 +4365,7 @@ function verFichaJugador(nombre, nacionalidadBuscada) {
         });
       });
     });
+    if (golesEsteMatch >= 2 && golesEsteMatch <= 7) multigolConteo[golesEsteMatch]++;
 
     // Extraer posición, PJ y NACIONALIDAD desde columna Jugadores
     const rawJ = p.Jugadores || '';
@@ -4355,6 +4534,21 @@ function verFichaJugador(nombre, nacionalidadBuscada) {
   ];
   // Si el arquero además convirtió algún gol (muy poco frecuente), lo mostramos aparte para no perder el dato
   if (esArquero && totales.goles > 0) stats.push(['⚽ Convertidos', totales.goles, 'var(--verde)']);
+  // Dobletes / Hat-Tricks / Pókers / Re-Pókers / Doble Hat-Trick / 7 goles (solo si tiene al menos uno)
+  const MULTIGOL_LABELS = {
+    2: ['🎯 Dobletes', 'var(--celeste)'],
+    3: ['🎩 Hat-Tricks', 'var(--verde)'],
+    4: ['4️⃣ Pókers', 'var(--amarillo)'],
+    5: ['5️⃣ Re-Pókers', 'var(--oro)'],
+    6: ['🔥 Doble Hat-Trick', 'var(--azul)'],
+    7: ['🌟 7 Goles', 'var(--rojo)'],
+  };
+  [2,3,4,5,6,7].forEach(n => {
+    if (multigolConteo[n] > 0) {
+      const [label, color] = MULTIGOL_LABELS[n];
+      stats.push([label, multigolConteo[n], color]);
+    }
+  });
   document.getElementById('ficha-stats').innerHTML = stats.map(([label, val, color]) => `
     <div class="ficha-stat-pill">
       <span class="ficha-stat-num" style="color:${color};">${val}</span>
