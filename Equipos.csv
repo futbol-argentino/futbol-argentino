@@ -77,7 +77,7 @@ ID_Equipo,Nombre_Equipo,Division,Provincia,Liga
 76,Atlanta,Primera Nacional,,
 77,Union San Vicente,Ligas Regionales,Cordoba,Liga Cordobesa de Futbol
 78,Atletico Santa Rosa,Torneo Regional Federal Amateur,La Pampa,
-79,Renato Cesarini,Ligas Regionales,Rosario,Liga Rosarina de Futbol
+79,Renato Cesarini,Ligas Regionales,Santa Fe,Liga Rosarina de Futbol
 80,Atletico Concepcion,Ligas Regionales,Tucuman,Liga Tucumana de Futbol
 81,Loma Negra,Ligas Regionales,Buenos Aires,Liga de Olavarria
 82,Andino,Ligas Regionales,La Rioja,Liga Riojana de Futbol
@@ -85,3 +85,18 @@ ID_Equipo,Nombre_Equipo,Division,Provincia,Liga
 84,Estudiantes de Santiago del Estero,Ligas Regionales,Santiago del Estero,Liga Santiagueña de Futbol
 85,San Lorenzo de Mar del Plata,Ligas Regionales,Buenos Aires,Liga Marplatense de Futbol
 86,Deportivo General Roca,Ligas Regionales,Rio Negro,Liga Deportiva Confluencia
+87,Huracan de San Rafael,Ligas Regionales,Mendoza,Liga Sanrafaelina de Futbol
+88,Juventud Unida Universitario,Federal A,,
+89,Alvarado,Federal A,,
+90,Estudiantes de Caseros,Primera Nacional,,
+91,Los Andes de San Juan,Extinto,,
+92,Sarmiento de Resistencia,Federal A,,
+93,San Telmo,Primera Nacional,,
+94,Sportivo Patria,Ligas Regionales,Formosa,Liga Formoseña de Futbol
+95,Huracan de Comodoro Rivadavia,Torneo Regional Federal Amateur,Chubut,
+96,Jorge Newbery de Junin,Ligas Regionales,Buenos Aires,Liga Deportiva del Oeste
+97,Bartolome Mitre,Federal A,,
+98,Desamparados,Ligas Regionales,San Juan,Liga Sanjuanina de Futbol
+99,Puerto Comercial,Ligas Regionales,Buenos Aires,Liga del Sur
+100,Atletico Regina,Ligas Regionales,Rio Negro,Liga Deportiva Confluencia
+101,Independiente de Trelew,Torneo Regional Federal Amateur,Chubut,
