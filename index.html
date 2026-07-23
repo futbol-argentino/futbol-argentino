@@ -4337,12 +4337,12 @@ function cambiarEstadisticasSubTab(tab) {
   }
 }
 
-// Llena el <select> de división con las divisiones presentes en el CSV de equipos,
-// respetando el orden fijo (DIVISIONES_ORDEN) y agregando al final las que no estén ahí.
+// Llena el <select> de división con las divisiones en las que efectivamente se disputaron
+// temporadas/torneos (campo Division de TEMPORADAS.csv), no con la división actual del equipo.
 function llenarFiltroDivisionEquiposStats() {
   const sel = document.getElementById('stats-eq-filtro-division');
   if (!sel || sel.dataset.cargado) return;
-  const divsEnCSV = new Set(equiposArr.map(e => e.Division).filter(Boolean));
+  const divsEnCSV = new Set(temporadasArr.map(t => t.Division).filter(Boolean));
   const divsOrdenadas = DIVISIONES_ORDEN.filter(d => divsEnCSV.has(d));
   divsEnCSV.forEach(d => { if (!DIVISIONES_ORDEN.includes(d)) divsOrdenadas.push(d); });
   divsOrdenadas.forEach(div => {
@@ -4355,29 +4355,47 @@ function llenarFiltroDivisionEquiposStats() {
   sel.dataset.cargado = '1';
 }
 
+// Config de columnas de cada tabla de estadísticas por equipo
+const EQST_CONFIG = {
+  pg:   { titulo:'🏆 Más Partidos Ganados',      col:'PG',    color:'var(--verde)' },
+  pe:   { titulo:'🤝 Más Partidos Empatados',    col:'PE',    color:'var(--amarillo)' },
+  pp:   { titulo:'❌ Más Partidos Perdidos',     col:'PP',    color:'var(--rojo)' },
+  gf:   { titulo:'⚽ Más Goles a Favor',         col:'GF',    color:'var(--verde)' },
+  gc:   { titulo:'🥅 Más Goles Recibidos',       col:'GC',    color:'var(--rojo)' },
+  dg:   { titulo:'💪 Mejor Diferencia de Gol',   col:'DG',    color:'var(--celeste)' },
+  pj:   { titulo:'📋 Más Partidos Jugados',      col:'PJ',    color:'var(--texto-1)' },
+  amon: { titulo:'🟨 Más Amonestados',           col:'Amar.', color:'var(--amarillo)' },
+  expu: { titulo:'🟥 Más Expulsados',            col:'Rojas', color:'var(--rojo)' },
+  gcEq: { titulo:'↩️ Más Goles en Contra',       col:'EC',    color:'var(--rojo)' },
+};
+const POR_PAG_EQ = 20;
+let paginasEq = { pg:1, pe:1, pp:1, gf:1, gc:1, dg:1, pj:1, amon:1, expu:1, gcEq:1 };
+let datosStatsEquipos = { stats:{}, listas:{} };
+
 // Calcula y renderiza las tablas de estadísticas por equipo (PG, PE, PP, GF, GC, DG, tarjetas, etc.),
-// opcionalmente filtradas por división.
+// filtradas opcionalmente por la división en la que se jugaron esos partidos (según la temporada,
+// no según la división actual del equipo).
 function renderEstadisticasEquipos() {
   const container = document.getElementById('stats-equipos-container');
   const filtro = document.getElementById('stats-eq-filtro-division')?.value || '';
 
-  let idsFiltro = null;
-  if (filtro) idsFiltro = new Set(equiposArr.filter(e => e.Division === filtro).map(e => e.ID_Equipo));
+  // Mapa ID_Temporada → División en la que se disputó esa temporada/torneo
+  const divisionPorTemporada = {};
+  temporadasArr.forEach(t => { divisionPorTemporada[t.ID_Temporada] = t.Division; });
 
   const stats = {};
   const iniciar = (id) => { if (!stats[id]) stats[id] = { pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, amon:0, expu:0, gcEq:0 }; };
 
   partidos.forEach(p => {
     if (!esPartidoJugado(p)) return;
+    if (filtro && divisionPorTemporada[p.ID_Temporada] !== filtro) return;
     const l = p.Local_ID, v = p.Visitante_ID;
     if (!l || !v) return;
-    const lOk = !idsFiltro || idsFiltro.has(l);
-    const vOk = !idsFiltro || idsFiltro.has(v);
-    if (!lOk && !vOk) return;
+    iniciar(l); iniciar(v);
 
     const gl = parseInt(p.Goles_Local)||0, gv = parseInt(p.Goles_Visitante)||0;
-    if (lOk) { iniciar(l); stats[l].pj++; stats[l].gf += gl; stats[l].gc += gv; }
-    if (vOk) { iniciar(v); stats[v].pj++; stats[v].gf += gv; stats[v].gc += gl; }
+    stats[l].pj++; stats[l].gf += gl; stats[l].gc += gv;
+    stats[v].pj++; stats[v].gf += gv; stats[v].gc += gl;
 
     let resultado; // 'l' gana, 'v' gana, 'e' empate/definición no decisiva
     if (esDefinicionDecisiva(p.Tipo_Definicion)) {
@@ -4386,22 +4404,14 @@ function renderEstadisticasEquipos() {
       else resultado = 'e';
     } else resultado = 'e';
 
-    if (lOk) {
-      if (resultado === 'l') stats[l].pg++;
-      else if (resultado === 'v') stats[l].pp++;
-      else stats[l].pe++;
-    }
-    if (vOk) {
-      if (resultado === 'v') stats[v].pg++;
-      else if (resultado === 'l') stats[v].pp++;
-      else stats[v].pe++;
-    }
+    if (resultado === 'l') { stats[l].pg++; stats[v].pp++; }
+    else if (resultado === 'v') { stats[v].pg++; stats[l].pp++; }
+    else { stats[l].pe++; stats[v].pe++; }
 
     // Goles en contra (autogoles) a favor del equipo beneficiado
     const rawG = p.Goleadores || '';
     rawG.split('/').forEach((parte, idx) => {
       const benefId = idx === 0 ? l : v;
-      if ((benefId === l && !lOk) || (benefId === v && !vOk)) return;
       parte.split('-').forEach(entrada => {
         if (/\(EC\)/i.test(entrada)) stats[benefId].gcEq = (stats[benefId].gcEq||0) + 1;
       });
@@ -4412,7 +4422,6 @@ function renderEstadisticasEquipos() {
       const raw = p[campo] || '';
       raw.split('/').forEach((parte, idx) => {
         const teamId = idx === 0 ? l : v;
-        if ((teamId === l && !lOk) || (teamId === v && !vOk)) return;
         parte.split('-').forEach(e => {
           const n = limpiarNombre(e);
           if (n && n.length > 1 && n.toLowerCase() !== 'ninguno') stats[teamId][key]++;
@@ -4421,49 +4430,78 @@ function renderEstadisticasEquipos() {
     });
   });
 
-  const makeTablaEq = (titulo, datos, colVal, colorVal) => {
-    const rows = datos.map(([id, val], i) => {
-      const nombre = equipos[id] || id;
-      const esc = ESCUDOS[nombre] ? `<img src="${ESCUDOS[nombre]}" style="width:18px;height:18px;object-fit:contain;" onerror="this.style.display='none'">` : '';
-      return `<tr style="cursor:pointer;" onclick="verDetalleEquipo('${id}')">
-        <td style="padding:8px 12px;color:var(--texto-3);font-size:13px;width:36px;">${i+1}</td>
-        <td style="padding:8px 12px;"><div style="display:flex;align-items:center;gap:8px;">${esc}<span style="font-size:13px;font-weight:600;">${nombre}</span></div></td>
-        <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;color:${colorVal};">${val}</td>
-        <td style="text-align:center;font-size:12px;color:var(--texto-3);">${stats[id].pj}</td>
-      </tr>`;
-    }).join('');
-    return `<div class="tabla-wrapper" style="margin-bottom:16px;">
-      <div class="tabla-header"><div class="tabla-titulo">${titulo}</div><div class="tabla-count">${datos.length} equipos</div></div>
-      <div class="tabla-scroll scroll-forzado"><table style="width:100%;border-collapse:collapse;min-width:320px;">
-        <thead><tr><th style="width:36px;">#</th><th>Equipo</th><th style="text-align:center;width:70px;">${colVal}</th><th style="text-align:center;width:60px;">PJ</th></tr></thead>
-        <tbody>${rows || '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos</td></tr>'}</tbody>
-      </table></div>
-    </div>`;
-  };
+  if (Object.keys(stats).length === 0) {
+    container.innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">Sin datos de partidos para esta división.</div>';
+    return;
+  }
 
   const sorted = (key, desc=true) => Object.entries(stats)
     .filter(([,v]) => v.pj > 0)
     .sort((a,b) => desc ? b[1][key]-a[1][key] : a[1][key]-b[1][key])
     .map(([id,v]) => [id, v[key]]);
 
-  if (Object.keys(stats).length === 0) {
-    container.innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">Sin datos de partidos para esta división.</div>';
-    return;
-  }
+  datosStatsEquipos.stats = stats;
+  datosStatsEquipos.listas = {
+    pg: sorted('pg'), pe: sorted('pe'), pp: sorted('pp'),
+    gf: sorted('gf'), gc: sorted('gc'),
+    dg: Object.entries(stats).filter(([,v])=>v.pj>0).sort((a,b)=>(b[1].gf-b[1].gc)-(a[1].gf-a[1].gc)).map(([id,v])=>[id,v.gf-v.gc]),
+    pj: sorted('pj'), amon: sorted('amon'), expu: sorted('expu'), gcEq: sorted('gcEq'),
+  };
+  Object.keys(paginasEq).forEach(k => paginasEq[k] = 1);
 
-  container.innerHTML =
-    makeTablaEq('🏆 Más Partidos Ganados', sorted('pg'), 'PG', 'var(--verde)') +
-    makeTablaEq('🤝 Más Partidos Empatados', sorted('pe'), 'PE', 'var(--amarillo)') +
-    makeTablaEq('❌ Más Partidos Perdidos', sorted('pp'), 'PP', 'var(--rojo)') +
-    makeTablaEq('⚽ Más Goles a Favor', sorted('gf'), 'GF', 'var(--verde)') +
-    makeTablaEq('🥅 Más Goles Recibidos', sorted('gc'), 'GC', 'var(--rojo)') +
-    makeTablaEq('💪 Mejor Diferencia de Gol',
-      Object.entries(stats).filter(([,v])=>v.pj>0).sort((a,b)=>(b[1].gf-b[1].gc)-(a[1].gf-a[1].gc)).map(([id,v])=>[id,v.gf-v.gc]),
-      'DG', 'var(--celeste)') +
-    makeTablaEq('📋 Más Partidos Jugados', sorted('pj'), 'PJ', 'var(--texto-1)') +
-    makeTablaEq('🟨 Más Amonestados', sorted('amon'), 'Amar.', 'var(--amarillo)') +
-    makeTablaEq('🟥 Más Expulsados', sorted('expu'), 'Rojas', 'var(--rojo)') +
-    makeTablaEq('↩️ Más Goles en Contra', sorted('gcEq'), 'EC', 'var(--rojo)');
+  container.innerHTML = Object.entries(EQST_CONFIG).map(([key, cfg]) => `
+    <div class="tabla-wrapper" style="margin-bottom:16px;">
+      <div class="tabla-header"><div class="tabla-titulo">${cfg.titulo}</div><div class="tabla-count" id="eqst-count-${key}"></div></div>
+      <div class="tabla-scroll scroll-forzado"><table style="width:100%;border-collapse:collapse;min-width:320px;">
+        <thead><tr><th style="width:36px;">#</th><th>Equipo</th><th style="text-align:center;width:70px;">${cfg.col}</th><th style="text-align:center;width:60px;">PJ</th></tr></thead>
+        <tbody id="eqst-body-${key}"></tbody>
+      </table></div>
+      <div class="paginacion" id="eqst-pag-${key}"></div>
+    </div>`).join('');
+
+  Object.keys(EQST_CONFIG).forEach(renderTablaStatEquipo);
+}
+
+function renderTablaStatEquipo(key) {
+  const cfg = EQST_CONFIG[key];
+  const datos = datosStatsEquipos.listas[key] || [];
+  const stats = datosStatsEquipos.stats;
+  const pag = paginasEq[key];
+  const total = datos.length;
+  const totalPags = Math.ceil(total / POR_PAG_EQ) || 1;
+  const inicio = (pag - 1) * POR_PAG_EQ;
+  const slice = datos.slice(inicio, inicio + POR_PAG_EQ);
+
+  const filas = slice.map(([id, val], i) => {
+    const nombre = equipos[id] || id;
+    const esc = ESCUDOS[nombre] ? `<img src="${ESCUDOS[nombre]}" style="width:18px;height:18px;object-fit:contain;" onerror="this.style.display='none'">` : '';
+    return `<tr style="cursor:pointer;" onclick="verDetalleEquipo('${id}')">
+      <td style="padding:8px 12px;color:var(--texto-3);font-size:13px;width:36px;">${inicio+i+1}</td>
+      <td style="padding:8px 12px;"><div style="display:flex;align-items:center;gap:8px;">${esc}<span style="font-size:13px;font-weight:600;">${nombre}</span></div></td>
+      <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;color:${cfg.color};">${val}</td>
+      <td style="text-align:center;font-size:12px;color:var(--texto-3);">${stats[id].pj}</td>
+    </tr>`;
+  }).join('');
+
+  const bodyEl = document.getElementById('eqst-body-'+key);
+  if (bodyEl) bodyEl.innerHTML = filas || `<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos</td></tr>`;
+
+  const countEl = document.getElementById('eqst-count-'+key);
+  if (countEl) countEl.textContent = total + ' equipos';
+
+  const pagEl = document.getElementById('eqst-pag-'+key);
+  if (pagEl) {
+    if (totalPags <= 1) { pagEl.innerHTML = ''; return; }
+    pagEl.innerHTML = `
+      <button class="pag-btn" onclick="cambiarPaginaEquiposStat(${pag-1},'${key}')" ${pag===1?'disabled':''}>← Anterior</button>
+      <span class="pag-info">Página ${pag} de ${totalPags}</span>
+      <button class="pag-btn" onclick="cambiarPaginaEquiposStat(${pag+1},'${key}')" ${pag===totalPags?'disabled':''}>Siguiente →</button>`;
+  }
+}
+
+function cambiarPaginaEquiposStat(pag, key) {
+  paginasEq[key] = pag;
+  renderTablaStatEquipo(key);
 }
 
 // ── FICHA JUGADOR ──
