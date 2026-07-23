@@ -1270,6 +1270,14 @@ select option{background:#080F20;color:#F0F6FF}
   <!-- ══ TAB ESTADÍSTICAS ══ -->
   <div class="tab-panel" id="panel-estadisticas">
 
+    <!-- Sub-tabs: Jugadores / Equipos -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <button id="estab-tab-jugadores" onclick="cambiarEstadisticasSubTab('jugadores')" style="font-family:var(--fuente-cuerpo);font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;border:none;cursor:pointer;background:var(--azul);color:white;transition:var(--trans);">👤 Jugadores</button>
+      <button id="estab-tab-equipos" onclick="cambiarEstadisticasSubTab('equipos')" style="font-family:var(--fuente-cuerpo);font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;border:none;cursor:pointer;background:transparent;color:var(--texto-2);transition:var(--trans);">🛡️ Equipos</button>
+    </div>
+
+    <div id="stats-vista-jugadores">
+
     <!-- Filtro por equipo -->
     <div class="filtros-panel" style="margin-bottom:20px;">
       <div class="filtros-titulo">📊 Filtros</div>
@@ -1510,6 +1518,24 @@ select option{background:#080F20;color:#F0F6FF}
         </div>
 
       </div>
+    </div>
+
+    </div><!-- fin stats-vista-jugadores -->
+
+    <!-- VISTA DE ESTADÍSTICAS DE EQUIPOS -->
+    <div id="stats-vista-equipos" style="display:none;">
+      <div class="filtros-panel" style="margin-bottom:20px;">
+        <div class="filtros-titulo">📊 Filtros</div>
+        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+          <div class="filtro-grupo" style="flex:1;min-width:220px;">
+            <label class="filtro-label">División</label>
+            <select id="stats-eq-filtro-division" class="filtro-select" onchange="renderEstadisticasEquipos()">
+              <option value="">Todas las divisiones</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div id="stats-equipos-container"></div>
     </div>
 
   </div><!-- fin panel-estadisticas -->
@@ -2173,7 +2199,21 @@ const ESCUDOS = {
   'Loma Negra':'escudos/loma_negra.png',
   'Atletico Concepcion':'escudos/atletico_concepcion.png',
   'Renato Cesarini':'escudos/renato_cesarini.png',
-  'Atletico Santa Rosa':'escudos/atletico_santa_rosa.png'
+  'Atletico Santa Rosa':'escudos/atletico_santa_rosa.png',
+  'Estudiantes de Caseros':'escudos/estudiantes_de_caseros.png',
+  'San Telmo':'escudos/san_telmo.png',
+  'Alvarado':'escudos/alvarado.png',
+  'Bartolome Mitre':'escudos/bartolome_mitre.png',
+  'Sarmiento de Resistencia':'escudos/sarmiento_de_resistencia.png',
+  'Huracan de Comodoro Rivadavia':'escudos/huracan_de_comodoro_rivadavia.png',
+  'Independiente de Trelew':'escudos/independiente_de_trelew.png',
+  'Jorge Newbery de Junin':'escudos/jorge_newbery_de_junin.png',
+  'Puerto Comercial':'escudos/puerto_comercial.png',
+  'Sportivo Patria':'escudos/sportivo_patria.png',
+  'Huracan de San Rafael':'escudos/huracan_de_san_rafael.png',
+  'Atletico Regina':'escudos/atletico_regina.png',
+  'Desamparados':'escudos/desamparados.png',
+  'Los Andes de San Juan':'escudos/los_andes_de_san_juan.png'
 };
 
 let partidos = [], equipos = {}, temporadas = {};
@@ -4282,6 +4322,150 @@ function renderEstadisticas() {
 
 // (nota: la definición de filaJugador vive más arriba, junto a renderEscudosJugador)
 
+// ── ESTADÍSTICAS DE EQUIPOS (sub-tab "Equipos" dentro de la pestaña Estadísticas) ──
+function cambiarEstadisticasSubTab(tab) {
+  const esJug = tab === 'jugadores';
+  document.getElementById('estab-tab-jugadores').style.background = esJug ? 'var(--azul)' : 'transparent';
+  document.getElementById('estab-tab-jugadores').style.color = esJug ? 'white' : 'var(--texto-2)';
+  document.getElementById('estab-tab-equipos').style.background = !esJug ? 'var(--azul)' : 'transparent';
+  document.getElementById('estab-tab-equipos').style.color = !esJug ? 'white' : 'var(--texto-2)';
+  document.getElementById('stats-vista-jugadores').style.display = esJug ? 'block' : 'none';
+  document.getElementById('stats-vista-equipos').style.display = esJug ? 'none' : 'block';
+  if (!esJug) {
+    llenarFiltroDivisionEquiposStats();
+    renderEstadisticasEquipos();
+  }
+}
+
+// Llena el <select> de división con las divisiones presentes en el CSV de equipos,
+// respetando el orden fijo (DIVISIONES_ORDEN) y agregando al final las que no estén ahí.
+function llenarFiltroDivisionEquiposStats() {
+  const sel = document.getElementById('stats-eq-filtro-division');
+  if (!sel || sel.dataset.cargado) return;
+  const divsEnCSV = new Set(equiposArr.map(e => e.Division).filter(Boolean));
+  const divsOrdenadas = DIVISIONES_ORDEN.filter(d => divsEnCSV.has(d));
+  divsEnCSV.forEach(d => { if (!DIVISIONES_ORDEN.includes(d)) divsOrdenadas.push(d); });
+  divsOrdenadas.forEach(div => {
+    const cfg = DIVISIONES_CONFIG[div] || {};
+    const opt = document.createElement('option');
+    opt.value = div;
+    opt.textContent = cfg.label || div;
+    sel.appendChild(opt);
+  });
+  sel.dataset.cargado = '1';
+}
+
+// Calcula y renderiza las tablas de estadísticas por equipo (PG, PE, PP, GF, GC, DG, tarjetas, etc.),
+// opcionalmente filtradas por división.
+function renderEstadisticasEquipos() {
+  const container = document.getElementById('stats-equipos-container');
+  const filtro = document.getElementById('stats-eq-filtro-division')?.value || '';
+
+  let idsFiltro = null;
+  if (filtro) idsFiltro = new Set(equiposArr.filter(e => e.Division === filtro).map(e => e.ID_Equipo));
+
+  const stats = {};
+  const iniciar = (id) => { if (!stats[id]) stats[id] = { pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, amon:0, expu:0, gcEq:0 }; };
+
+  partidos.forEach(p => {
+    if (!esPartidoJugado(p)) return;
+    const l = p.Local_ID, v = p.Visitante_ID;
+    if (!l || !v) return;
+    const lOk = !idsFiltro || idsFiltro.has(l);
+    const vOk = !idsFiltro || idsFiltro.has(v);
+    if (!lOk && !vOk) return;
+
+    const gl = parseInt(p.Goles_Local)||0, gv = parseInt(p.Goles_Visitante)||0;
+    if (lOk) { iniciar(l); stats[l].pj++; stats[l].gf += gl; stats[l].gc += gv; }
+    if (vOk) { iniciar(v); stats[v].pj++; stats[v].gf += gv; stats[v].gc += gl; }
+
+    let resultado; // 'l' gana, 'v' gana, 'e' empate/definición no decisiva
+    if (esDefinicionDecisiva(p.Tipo_Definicion)) {
+      if (p.ID_Ganador === l) resultado = 'l';
+      else if (p.ID_Ganador === v) resultado = 'v';
+      else resultado = 'e';
+    } else resultado = 'e';
+
+    if (lOk) {
+      if (resultado === 'l') stats[l].pg++;
+      else if (resultado === 'v') stats[l].pp++;
+      else stats[l].pe++;
+    }
+    if (vOk) {
+      if (resultado === 'v') stats[v].pg++;
+      else if (resultado === 'l') stats[v].pp++;
+      else stats[v].pe++;
+    }
+
+    // Goles en contra (autogoles) a favor del equipo beneficiado
+    const rawG = p.Goleadores || '';
+    rawG.split('/').forEach((parte, idx) => {
+      const benefId = idx === 0 ? l : v;
+      if ((benefId === l && !lOk) || (benefId === v && !vOk)) return;
+      parte.split('-').forEach(entrada => {
+        if (/\(EC\)/i.test(entrada)) stats[benefId].gcEq = (stats[benefId].gcEq||0) + 1;
+      });
+    });
+
+    // Tarjetas
+    [['Amonestados','amon'],['Expulsados','expu']].forEach(([campo, key]) => {
+      const raw = p[campo] || '';
+      raw.split('/').forEach((parte, idx) => {
+        const teamId = idx === 0 ? l : v;
+        if ((teamId === l && !lOk) || (teamId === v && !vOk)) return;
+        parte.split('-').forEach(e => {
+          const n = limpiarNombre(e);
+          if (n && n.length > 1 && n.toLowerCase() !== 'ninguno') stats[teamId][key]++;
+        });
+      });
+    });
+  });
+
+  const makeTablaEq = (titulo, datos, colVal, colorVal) => {
+    const rows = datos.map(([id, val], i) => {
+      const nombre = equipos[id] || id;
+      const esc = ESCUDOS[nombre] ? `<img src="${ESCUDOS[nombre]}" style="width:18px;height:18px;object-fit:contain;" onerror="this.style.display='none'">` : '';
+      return `<tr style="cursor:pointer;" onclick="verDetalleEquipo('${id}')">
+        <td style="padding:8px 12px;color:var(--texto-3);font-size:13px;width:36px;">${i+1}</td>
+        <td style="padding:8px 12px;"><div style="display:flex;align-items:center;gap:8px;">${esc}<span style="font-size:13px;font-weight:600;">${nombre}</span></div></td>
+        <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;color:${colorVal};">${val}</td>
+        <td style="text-align:center;font-size:12px;color:var(--texto-3);">${stats[id].pj}</td>
+      </tr>`;
+    }).join('');
+    return `<div class="tabla-wrapper" style="margin-bottom:16px;">
+      <div class="tabla-header"><div class="tabla-titulo">${titulo}</div><div class="tabla-count">${datos.length} equipos</div></div>
+      <div class="tabla-scroll scroll-forzado"><table style="width:100%;border-collapse:collapse;min-width:320px;">
+        <thead><tr><th style="width:36px;">#</th><th>Equipo</th><th style="text-align:center;width:70px;">${colVal}</th><th style="text-align:center;width:60px;">PJ</th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos</td></tr>'}</tbody>
+      </table></div>
+    </div>`;
+  };
+
+  const sorted = (key, desc=true) => Object.entries(stats)
+    .filter(([,v]) => v.pj > 0)
+    .sort((a,b) => desc ? b[1][key]-a[1][key] : a[1][key]-b[1][key])
+    .map(([id,v]) => [id, v[key]]);
+
+  if (Object.keys(stats).length === 0) {
+    container.innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">Sin datos de partidos para esta división.</div>';
+    return;
+  }
+
+  container.innerHTML =
+    makeTablaEq('🏆 Más Partidos Ganados', sorted('pg'), 'PG', 'var(--verde)') +
+    makeTablaEq('🤝 Más Partidos Empatados', sorted('pe'), 'PE', 'var(--amarillo)') +
+    makeTablaEq('❌ Más Partidos Perdidos', sorted('pp'), 'PP', 'var(--rojo)') +
+    makeTablaEq('⚽ Más Goles a Favor', sorted('gf'), 'GF', 'var(--verde)') +
+    makeTablaEq('🥅 Más Goles Recibidos', sorted('gc'), 'GC', 'var(--rojo)') +
+    makeTablaEq('💪 Mejor Diferencia de Gol',
+      Object.entries(stats).filter(([,v])=>v.pj>0).sort((a,b)=>(b[1].gf-b[1].gc)-(a[1].gf-a[1].gc)).map(([id,v])=>[id,v.gf-v.gc]),
+      'DG', 'var(--celeste)') +
+    makeTablaEq('📋 Más Partidos Jugados', sorted('pj'), 'PJ', 'var(--texto-1)') +
+    makeTablaEq('🟨 Más Amonestados', sorted('amon'), 'Amar.', 'var(--amarillo)') +
+    makeTablaEq('🟥 Más Expulsados', sorted('expu'), 'Rojas', 'var(--rojo)') +
+    makeTablaEq('↩️ Más Goles en Contra', sorted('gcEq'), 'EC', 'var(--rojo)');
+}
+
 // ── FICHA JUGADOR ──
 function formatearAnios(aniosSet) {
   const anios = [...aniosSet].sort();
@@ -5151,16 +5335,18 @@ function renderTablaTorneo(tipo) {
   const nacE = datosStatsTorneo.nacExpu || {};
   const nac = { ...nacG, ...nacA, ...nacE };
   const nombresDisplay = datosStatsTorneo.nombresDisplay || {};
+  const eqPorJugador = datosStatsTorneo.eqPorJugador || {};
 
   const filas = slice.map(([clave, val], i) => {
     const nombre = nombresDisplay[clave] || clave;
     const nacCode = nac[clave];
     const bandera = nacCode ? `<span style="display:inline-flex;align-items:center;flex-shrink:0;">${getBandera(nacCode)}</span>` : '';
+    const escudos = renderEscudosJugador(eqPorJugador[clave]);
     if (tipo === 'goleadores') {
       const total2 = val.normales + val.penales;
       return `<tr>
         <td style="color:var(--texto-2);font-size:13px;width:36px;padding:8px 12px;">${inicio+i+1}</td>
-        <td style="padding:8px 12px;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}','${(nacCode||'').replace(/'/g,"\\'")}')"><div style="display:flex;align-items:center;gap:6px;">${bandera}<span>${nombre}</span></div></td>
+        <td style="padding:8px 12px;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}','${(nacCode||'').replace(/'/g,"\\'")}')"><div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;min-width:0;">${bandera}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${nombre}</span>${escudos}</div></td>
         <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;color:var(--celeste);">${total2}</td>
         <td style="text-align:center;font-size:13px;color:var(--texto-2);">${val.normales||'—'}</td>
         <td style="text-align:center;font-size:13px;color:var(--amarillo);">${val.penales||'—'}</td>
@@ -5168,7 +5354,7 @@ function renderTablaTorneo(tipo) {
     } else {
       return `<tr>
         <td style="color:var(--texto-2);font-size:13px;width:36px;padding:8px 12px;">${inicio+i+1}</td>
-        <td style="padding:8px 12px;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}','${(nacCode||'').replace(/'/g,"\\'")}')"><div style="display:flex;align-items:center;gap:6px;">${bandera}<span>${nombre}</span></div></td>
+        <td style="padding:8px 12px;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}','${(nacCode||'').replace(/'/g,"\\'")}')"><div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;min-width:0;">${bandera}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${nombre}</span>${escudos}</div></td>
         <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;color:${color};">${val}</td>
       </tr>`;
     }
@@ -5394,9 +5580,9 @@ function renderStatsTorneo(idTemporada) {
   paginasTorneo.goleadores = 1; paginasTorneo.ec = 1;
   paginasTorneo.amonestados = 1; paginasTorneo.expulsados = 1;
 
-  const { goles, ec, nacionalidades, nombresDisplay: ndGol } = parsearGoleadores(null, idTemporada);
-  const { datos: amon, nacionalidades: nacAmon, nombresDisplay: ndAmon } = parsearTarjetas('Amonestados', null, idTemporada);
-  const { datos: expu, nacionalidades: nacExpu, nombresDisplay: ndExpu } = parsearTarjetas('Expulsados', null, idTemporada);
+  const { goles, ec, nacionalidades, equiposGoles, equiposEC, nombresDisplay: ndGol } = parsearGoleadores(null, idTemporada);
+  const { datos: amon, nacionalidades: nacAmon, equiposPorJugador: eqAmon, nombresDisplay: ndAmon } = parsearTarjetas('Amonestados', null, idTemporada);
+  const { datos: expu, nacionalidades: nacExpu, equiposPorJugador: eqExpu, nombresDisplay: ndExpu } = parsearTarjetas('Expulsados', null, idTemporada);
   const ecDatos = Object.entries(ec).sort((a,b)=>b[1]-a[1]);
   const golesDatos = Object.entries(goles).sort((a,b)=>(b[1].normales+b[1].penales)-(a[1].normales+a[1].penales));
 
@@ -5407,6 +5593,7 @@ function renderStatsTorneo(idTemporada) {
     expulsados:  { datos: expu,      headers: ['#','Jugador','Rojas'],               color:'var(--rojo)',   colSpan:3 },
     nacGoleadores: nacionalidades, nacAmon, nacExpu,
     nombresDisplay: { ...ndGol, ...ndAmon, ...ndExpu },
+    eqPorJugador: { ...equiposGoles, ...equiposEC, ...eqAmon, ...eqExpu },
   };
 
   const makeTabla = (tipo, titulo, headers) => `
@@ -6215,6 +6402,7 @@ const DIVISIONES_CONFIG = {
   'Promocional Amateur':           { logo:'div_promocional.png',       label:'Promocional Amateur' },
   'Torneo Regional Federal Amateur':{ logo:'div_regional_federal.png', label:'Torneo Regional Federal Amateur' },
   'Ligas Regionales':              { logo:'div_ligas_regionales.png',  label:'Ligas Regionales' },
+  'Extintos':                      { logo:'div_extintos.png',          label:'Equipos Extintos' },
 };
 
 // Orden fijo de divisiones
@@ -6227,6 +6415,7 @@ const DIVISIONES_ORDEN = [
   'Promocional Amateur',
   'Torneo Regional Federal Amateur',
   'Ligas Regionales',
+  'Extintos',
 ];
 
 let divisionActual = null;
