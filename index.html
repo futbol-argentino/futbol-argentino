@@ -2714,7 +2714,7 @@ function filtrar() {
     let okRes = true;
     if (res === 'local') okRes = parseInt(p.Goles_Local) > parseInt(p.Goles_Visitante);
     if (res === 'visitante') okRes = parseInt(p.Goles_Visitante) > parseInt(p.Goles_Local);
-    if (res === 'empate') okRes = p.Goles_Local === p.Goles_Visitante;
+    if (res === 'empate') okRes = esPartidoJugado(p) && p.Goles_Local === p.Goles_Visitante;
     return okEq1 && okEq2 && okRes;
   });
 
@@ -2736,7 +2736,7 @@ function filtrar() {
   if (eq1 && eq2) {
     const n1 = equipos[eq1], n2 = equipos[eq2];
     const pe = partidos.filter(p =>
-      (p.Local_ID===eq1 && p.Visitante_ID===eq2)||(p.Local_ID===eq2 && p.Visitante_ID===eq1));
+      esPartidoJugado(p) && ((p.Local_ID===eq1 && p.Visitante_ID===eq2)||(p.Local_ID===eq2 && p.Visitante_ID===eq1)));
     const pj = pe.length;
     const g1 = pe.filter(p=>esDefinicionDecisiva(p.Tipo_Definicion)&&p.ID_Ganador===eq1).length;
     const g2 = pe.filter(p=>esDefinicionDecisiva(p.Tipo_Definicion)&&p.ID_Ganador===eq2).length;
@@ -2757,7 +2757,7 @@ function filtrar() {
     renderH2H(eq1, eq2, 'h2h-panel-buscador');
   } else if (eq1) {
     const nombre = equipos[eq1];
-    const pe = partidos.filter(p=>p.Local_ID===eq1||p.Visitante_ID===eq1);
+    const pe = partidos.filter(p=>esPartidoJugado(p) && (p.Local_ID===eq1||p.Visitante_ID===eq1));
     const pj = pe.length;
     const pg = pe.filter(p=>esDefinicionDecisiva(p.Tipo_Definicion)&&p.ID_Ganador===eq1).length;
     const pp = pe.filter(p=>esDefinicionDecisiva(p.Tipo_Definicion)&&p.ID_Ganador!==eq1&&p.ID_Ganador!=='').length;
@@ -3184,17 +3184,18 @@ function filtrarDetalle() {
       (p.Local_ID===id&&p.Visitante_ID===rival)||(p.Local_ID===rival&&p.Visitante_ID===id));
   }
 
-  if (res === 'victoria') lista = lista.filter(p=>esDefinicionDecisiva(p.Tipo_Definicion)&&p.ID_Ganador===id);
-  if (res === 'victoria-rival') lista = lista.filter(p=>esDefinicionDecisiva(p.Tipo_Definicion)&&p.ID_Ganador===rival);
-  if (res === 'derrota') lista = lista.filter(p=>esDefinicionDecisiva(p.Tipo_Definicion)&&p.ID_Ganador!==id&&p.ID_Ganador!=='');
-  if (res === 'empate') lista = lista.filter(p=>resultadoParaEquipo(p, id) === 'E');
+  if (res === 'victoria') lista = lista.filter(p=>esPartidoJugado(p)&&esDefinicionDecisiva(p.Tipo_Definicion)&&p.ID_Ganador===id);
+  if (res === 'victoria-rival') lista = lista.filter(p=>esPartidoJugado(p)&&esDefinicionDecisiva(p.Tipo_Definicion)&&p.ID_Ganador===rival);
+  if (res === 'derrota') lista = lista.filter(p=>esPartidoJugado(p)&&esDefinicionDecisiva(p.Tipo_Definicion)&&p.ID_Ganador!==id&&p.ID_Ganador!=='');
+  if (res === 'empate') lista = lista.filter(p=>esPartidoJugado(p)&&resultadoParaEquipo(p, id) === 'E');
 
   // Mostrar stats vs rival cuando está seleccionado
   const rivalCard = document.getElementById('detalle-stats-rival');
   if (rival) {
     const nombreRival = equipos[rival] || rival;
     const lisAll = partidos.filter(p =>
-      (p.Local_ID===id&&p.Visitante_ID===rival)||(p.Local_ID===rival&&p.Visitante_ID===id));
+      esPartidoJugado(p) &&
+      ((p.Local_ID===id&&p.Visitante_ID===rival)||(p.Local_ID===rival&&p.Visitante_ID===id)));
     const pj = lisAll.length;
     let pg=0, pe=0, pp=0, gf=0, gc=0;
     lisAll.forEach(p => {
@@ -4465,14 +4466,14 @@ function renderEstadisticasEquipos() {
 
   const sorted = (key, desc=true) => Object.entries(stats)
     .filter(([,v]) => v.pj > 0)
-    .sort((a,b) => desc ? b[1][key]-a[1][key] : a[1][key]-b[1][key])
+    .sort((a,b) => desc ? (b[1][key]-a[1][key] || b[1].pj-a[1].pj) : (a[1][key]-b[1][key] || b[1].pj-a[1].pj))
     .map(([id,v]) => [id, v[key]]);
 
   datosStatsEquipos.stats = stats;
   datosStatsEquipos.listas = {
     pg: sorted('pg'), pe: sorted('pe'), pp: sorted('pp'),
     gf: sorted('gf'), gc: sorted('gc'),
-    dg: Object.entries(stats).filter(([,v])=>v.pj>0).sort((a,b)=>(b[1].gf-b[1].gc)-(a[1].gf-a[1].gc)).map(([id,v])=>[id,v.gf-v.gc]),
+    dg: Object.entries(stats).filter(([,v])=>v.pj>0).sort((a,b)=>((b[1].gf-b[1].gc)-(a[1].gf-a[1].gc)) || (b[1].pj-a[1].pj)).map(([id,v])=>[id,v.gf-v.gc]),
     pj: sorted('pj'), amon: sorted('amon'), expu: sorted('expu'), gcEq: sorted('gcEq'),
   };
   Object.keys(paginasEq).forEach(k => paginasEq[k] = 1);
@@ -6444,7 +6445,7 @@ function renderStatsEquiposTorneo(idTemporada) {
 
   const sorted = (key, desc=true) => Object.entries(stats)
     .filter(([,v]) => v.pj > 0)
-    .sort((a,b) => desc ? b[1][key]-a[1][key] : a[1][key]-b[1][key])
+    .sort((a,b) => desc ? (b[1][key]-a[1][key] || b[1].pj-a[1].pj) : (a[1][key]-b[1][key] || b[1].pj-a[1].pj))
     .map(([id,v]) => [id, v[key]]);
 
   container.innerHTML =
@@ -6453,7 +6454,7 @@ function renderStatsEquiposTorneo(idTemporada) {
     makeTablaEq('🥅 Más Goles Recibidos', sorted('gc'), 'GC', 'var(--rojo)',
       id => `<td style="text-align:center;font-size:12px;color:var(--texto-3);">${stats[id].pj}</td>`) +
     makeTablaEq('💪 Mejor Diferencia de Gol',
-      Object.entries(stats).filter(([,v])=>v.pj>0).sort((a,b)=>(b[1].gf-b[1].gc)-(a[1].gf-a[1].gc)).map(([id,v])=>[id,v.gf-v.gc]),
+      Object.entries(stats).filter(([,v])=>v.pj>0).sort((a,b)=>((b[1].gf-b[1].gc)-(a[1].gf-a[1].gc)) || (b[1].pj-a[1].pj)).map(([id,v])=>[id,v.gf-v.gc]),
       'DG', 'var(--celeste)') +
     makeTablaEq('🟨 Más Amonestados', sorted('amon'), 'Amarillas', 'var(--amarillo)') +
     makeTablaEq('🟥 Más Expulsados', sorted('expu'), 'Rojas', 'var(--rojo)') +
@@ -7052,8 +7053,9 @@ function toggleHoyDetalle(id) {
 
 function renderHoyHistorial(idL, idV, nombreL, nombreV) {
   const enfrentamientos = partidos.filter(p =>
-    (p.Local_ID === idL && p.Visitante_ID === idV) ||
-    (p.Local_ID === idV && p.Visitante_ID === idL)
+    esPartidoJugado(p) &&
+    ((p.Local_ID === idL && p.Visitante_ID === idV) ||
+     (p.Local_ID === idV && p.Visitante_ID === idL))
   ).sort((a,b) => {
     const fa = a.Fecha ? a.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/,'$3-$2-$1') : '0';
     const fb = b.Fecha ? b.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/,'$3-$2-$1') : '0';
