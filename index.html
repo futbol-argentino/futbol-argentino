@@ -2482,7 +2482,9 @@ function filaPartido(p, equipoRef) {
 
   const scorePen = jugado && esDefinicionPorPenales(p.Tipo_Definicion) && p.Penales ? calcularScorePenales(p.Penales) : null;
   const resultadoTxt = !jugado
-    ? `<span style="color:var(--texto-3);font-size:12px;">${p.Hora || p.hora || 'vs'}</span>`
+    ? (esPartidoSuspendido(p)
+        ? `<span style="color:var(--rojo);font-weight:700;font-size:11px;letter-spacing:0.5px;">SUSPENDIDO</span>`
+        : `<span style="color:var(--texto-3);font-size:12px;">${p.Hora || p.hora || 'vs'}</span>`)
     : (scorePen
       ? `${p.Goles_Local}<span style="color:var(--amarillo);">(${scorePen.local})</span> - <span style="color:var(--amarillo);">(${scorePen.visita})</span>${p.Goles_Visitante}`
       : `${p.Goles_Local} - ${p.Goles_Visitante}`);
@@ -3414,7 +3416,17 @@ function verPartido(id) {
   const fecha = p.Fecha ? p.Fecha.split('T')[0] : '';
 
   document.getElementById('modal-titulo').textContent = local+' vs '+visita;
-  document.getElementById('modal-resultado').textContent = p.Goles_Local+' - '+p.Goles_Visitante;
+  const elResultado = document.getElementById('modal-resultado');
+  if (esPartidoJugado(p)) {
+    elResultado.textContent = p.Goles_Local+' - '+p.Goles_Visitante;
+    elResultado.style.color = '';
+  } else if (esPartidoSuspendido(p)) {
+    elResultado.textContent = 'SUSPENDIDO';
+    elResultado.style.color = 'var(--rojo)';
+  } else {
+    elResultado.textContent = p.Hora || p.hora || 'vs';
+    elResultado.style.color = '';
+  }
 
   // Mostrar resultado de penales si aplica
   const penalesTxt = document.getElementById('modal-penales-txt');
@@ -3870,6 +3882,22 @@ function nombreCanonico(n) {
 function esPartidoJugado(p) {
   return p.Goles_Local !== '' && p.Goles_Local !== null && p.Goles_Local !== undefined &&
          p.Goles_Visitante !== '' && p.Goles_Visitante !== null && p.Goles_Visitante !== undefined;
+}
+
+// Año de un partido a partir de su fecha (admite DD/MM/AAAA o AAAA-MM-DD)
+function anioPartido(p) {
+  if (!p.Fecha) return null;
+  const a = parseInt(p.Fecha.split('/')[2] || p.Fecha.split('-')[0]);
+  return isNaN(a) ? null : a;
+}
+
+// Último año considerado "cerrado": cualquier partido de esa temporada o anteriores que no
+// tenga resultado cargado no es un partido "a jugar", sino uno que quedó SUSPENDIDO.
+const ANIO_LIMITE_SUSPENDIDO = 2025;
+function esPartidoSuspendido(p) {
+  if (esPartidoJugado(p)) return false;
+  const anio = anioPartido(p);
+  return anio !== null && anio <= ANIO_LIMITE_SUSPENDIDO;
 }
 
 // Tipo_Definicion del CSV de Partidos:
@@ -5304,7 +5332,9 @@ function verTorneo(idTemporada) {
             ? (scorePen
                 ? `<span class="${rc}" style="font-family:var(--fuente-titulo);font-size:17px;">${p.Goles_Local}<span style="color:var(--amarillo);">(${scorePen.local})</span> - <span style="color:var(--amarillo);">(${scorePen.visita})</span>${p.Goles_Visitante}</span>`
                 : `<span class="${rc}" style="font-family:var(--fuente-titulo);font-size:17px;">${p.Goles_Local} - ${p.Goles_Visitante}</span>`)
-            : `<span style="color:var(--texto-2);font-size:13px;">${p.Fecha ? p.Fecha.split('T')[0] : '—'}</span>`;
+            : (esPartidoSuspendido(p)
+                ? `<span style="color:var(--rojo);font-weight:700;font-size:11px;letter-spacing:0.5px;">SUSPENDIDO</span>`
+                : `<span style="color:var(--texto-2);font-size:13px;">${p.Fecha ? p.Fecha.split('T')[0] : '—'}</span>`);
           const golData = construirGolData(p, local, visita, 4);
           return `<tr onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
             <td style="padding:8px 12px;overflow:hidden;"><div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;overflow:hidden;"><span style="font-size:13px;font-weight:500;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${local}</span>${escL}</div></td>
@@ -7474,7 +7504,7 @@ function renderH2H(eq1, eq2, contenedorId) {
 
   // ── Último / Próximo ──
   const ultimo  = h2hDesc.find(p => esPartidoJugado(p));
-  const proximo = todos.filter(p => !esPartidoJugado(p))
+  const proximo = todos.filter(p => !esPartidoJugado(p) && !esPartidoSuspendido(p))
     .sort((a,b)=>normFecha(a.Fecha).localeCompare(normFecha(b.Fecha)))[0];
 
   // ── Goleadores / Tarjetas ──
@@ -7602,7 +7632,11 @@ function renderH2H(eq1, eq2, contenedorId) {
     const local=equipos[p.Local_ID]||p.Local_ID, visita=equipos[p.Visitante_ID]||p.Visitante_ID;
     const fecha=(p.Fecha||'').split('T')[0];
     const rc=resClase(p.Goles_Local,p.Goles_Visitante);
-    const res=esPartidoJugado(p)?`<span class="${rc}" style="font-family:var(--fuente-titulo);font-size:28px;">${p.Goles_Local} - ${p.Goles_Visitante}</span>`:`<span style="color:var(--texto-3);font-size:22px;">vs</span>`;
+    const res=esPartidoJugado(p)
+      ?`<span class="${rc}" style="font-family:var(--fuente-titulo);font-size:28px;">${p.Goles_Local} - ${p.Goles_Visitante}</span>`
+      :(esPartidoSuspendido(p)
+        ?`<span style="color:var(--rojo);font-weight:700;font-size:15px;letter-spacing:0.5px;">SUSPENDIDO</span>`
+        :`<span style="color:var(--texto-3);font-size:22px;">vs</span>`);
     return `
       <div class="tabla-wrapper" style="cursor:pointer;margin-bottom:14px;" onclick="verPartido(${p.ID_Partido})">
         <div class="tabla-header">
