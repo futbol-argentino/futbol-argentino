@@ -463,8 +463,8 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 .record-card-label{font-size:11px;letter-spacing:0.6px;color:var(--texto-3);margin-bottom:10px;font-weight:600;text-transform:uppercase;position:relative;z-index:1}
 .record-card-body{position:relative;z-index:1}
 .camp-año{font-size:10px;color:var(--texto-3);margin-bottom:4px;text-transform:uppercase;letter-spacing:1.2px;font-weight:600}
-@media(max-width:900px){#campeones-grid{grid-template-columns:repeat(2,1fr)!important;gap:14px}.camp-foto{width:120px;height:120px}.camp-foto-wrap{min-height:160px;padding:16px}}
-@media(max-width:500px){#campeones-grid{grid-template-columns:repeat(2,1fr)!important;gap:10px}.camp-foto{width:90px;height:90px}.camp-foto-wrap{min-height:130px;padding:12px}.camp-nombre{font-size:14px}}
+@media(max-width:900px){.campeones-year-grid{grid-template-columns:repeat(2,1fr)!important;gap:14px}.camp-foto{width:120px;height:120px}.camp-foto-wrap{min-height:160px;padding:16px}}
+@media(max-width:500px){.campeones-year-grid{grid-template-columns:repeat(2,1fr)!important;gap:10px}.camp-foto{width:90px;height:90px}.camp-foto-wrap{min-height:130px;padding:12px}.camp-nombre{font-size:14px}}
 
 /* PAGINACION */
 .paginacion{display:flex;align-items:center;justify-content:center;gap:10px;padding:14px;border-top:1px solid var(--borde)}
@@ -1547,12 +1547,25 @@ select option{background:#080F20;color:#F0F6FF}
     <div id="vista-campeones">
       <div class="filtros-panel" style="margin-bottom:20px;">
         <div class="filtros-titulo">🏆 Campeones Históricos</div>
-        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
           <div class="filtro-grupo" style="flex:1;min-width:180px;">
             <label class="filtro-label">División</label>
-            <select id="camp-filtro-division" class="filtro-select" onchange="filtrarCampeones()">
+            <select id="camp-filtro-division" class="filtro-select" onchange="cargarAniosCampeones();filtrarCampeones();">
               <option value="">Todas las divisiones</option>
             </select>
+          </div>
+          <div class="filtro-grupo" style="min-width:160px;">
+            <label class="filtro-label">Año</label>
+            <select id="camp-filtro-anio" class="filtro-select" onchange="filtrarCampeones()">
+              <option value="">Todos los años</option>
+            </select>
+          </div>
+          <div class="filtro-grupo" style="flex:0 0 auto;">
+            <label class="filtro-label">&nbsp;</label>
+            <div style="display:flex;gap:6px;">
+              <button id="camp-anio-prev" class="btn-volver" onclick="navegarAnioCampeones(-1)" title="Año anterior">← Año</button>
+              <button id="camp-anio-next" class="btn-volver" onclick="navegarAnioCampeones(1)" title="Año siguiente">Año →</button>
+            </div>
           </div>
           <div class="filtro-grupo" style="flex:2;min-width:200px;">
             <label class="filtro-label">Buscar torneo</label>
@@ -1560,7 +1573,7 @@ select option{background:#080F20;color:#F0F6FF}
           </div>
         </div>
       </div>
-      <div id="campeones-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:18px;"></div>
+      <div id="campeones-grid"></div>
     </div>
 
     <!-- Vista detalle de un torneo -->
@@ -5095,6 +5108,19 @@ function renderTablasPosiciones(idTemporada) {
 }
 
 // ── CAMPEONES ──
+// Año de una temporada: primero el campo Año de la hoja; si no está cargado,
+// se estima con la fecha máxima entre los partidos de ese torneo.
+function anioTemporada(t) {
+  if (t.Año && parseInt(t.Año) > 0) return parseInt(t.Año);
+  const ps = partidos.filter(p => p.ID_Temporada == t.ID_Temporada && p.Fecha);
+  const anios = ps.map(p => {
+    const f = (p.Fecha||'').split('T')[0];
+    const m = f.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    return m ? parseInt(m[3]) : parseInt((f.split('-')[0])||0);
+  }).filter(a => a > 1800);
+  return anios.length ? Math.max(...anios) : null;
+}
+
 function cargarCampeones() {
   const selDiv = document.getElementById('camp-filtro-division');
   const divActual = selDiv.value;
@@ -5106,47 +5132,107 @@ function cargarCampeones() {
     selDiv.appendChild(opt);
   });
   selDiv.value = divActual;
+  cargarAniosCampeones();
+  filtrarCampeones();
+}
+
+// Llena el <select> de año con los años en los que hay campeones cargados,
+// respetando el filtro de división activo, de más reciente a más antiguo.
+function cargarAniosCampeones() {
+  const division = document.getElementById('camp-filtro-division').value;
+  const selAnio = document.getElementById('camp-filtro-anio');
+  const anioActual = selAnio.value;
+
+  const anios = [...new Set(
+    temporadasArr
+      .filter(t => t.Campeon && (!division || t.Division === division))
+      .map(t => anioTemporada(t))
+      .filter(a => a !== null)
+  )].sort((a,b) => b - a);
+
+  selAnio.innerHTML = '<option value="">Todos los años</option>' +
+    anios.map(a => `<option value="${a}">${a}</option>`).join('');
+  selAnio.value = anios.includes(parseInt(anioActual)) ? anioActual : '';
+}
+
+// Navega al año anterior/siguiente que tenga campeones cargados (respetando la división elegida)
+function navegarAnioCampeones(delta) {
+  const selAnio = document.getElementById('camp-filtro-anio');
+  const anios = [...selAnio.options].map(o => o.value).filter(v => v !== '').map(Number).sort((a,b)=>b-a);
+  if (!anios.length) return;
+
+  const actual = selAnio.value ? parseInt(selAnio.value) : null;
+  let idx;
+  if (actual === null) {
+    idx = 0; // desde "Todos los años", cualquier flecha arranca por el año más reciente
+  } else {
+    idx = anios.indexOf(actual) - delta; // años ordenados desc: "año siguiente" = más reciente = índice menor
+    if (idx < 0) idx = 0;
+    if (idx > anios.length - 1) idx = anios.length - 1;
+  }
+  selAnio.value = anios[idx];
   filtrarCampeones();
 }
 
 function filtrarCampeones() {
   const division = document.getElementById('camp-filtro-division').value;
+  const anioSel = document.getElementById('camp-filtro-anio').value;
   const buscar = (document.getElementById('camp-buscar')?.value || '').toLowerCase().trim();
-  const lista = temporadasArr.filter(t => {
+
+  const fechaMax = (idTemp) => {
+    const ps = partidos.filter(p => p.ID_Temporada == idTemp && p.Fecha);
+    if (!ps.length) return '';
+    return ps.map(p => {
+      const f = p.Fecha.split('T')[0];
+      const m = f.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      return m ? `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}` : f;
+    }).sort().pop();
+  };
+
+  let lista = temporadasArr.filter(t => {
     if (!t.Campeon) return false;
     if (division && t.Division !== division) return false;
     if (buscar && !(t.Competencia||'').toLowerCase().includes(buscar) && !(t.Campeon||'').toLowerCase().includes(buscar)) return false;
     return true;
-  }).sort((a, b) => {
-    // Ordenar por última fecha jugada en el torneo (más reciente primero)
-    // Fallback: por ID_Temporada descendente
-    const fechaMax = (idTemp) => {
-      const ps = partidos.filter(p => p.ID_Temporada == idTemp && p.Fecha);
-      if (!ps.length) return '';
-      return ps.map(p => {
-        const f = p.Fecha.split('T')[0];
-        // Normalizar dd/mm/yyyy → yyyy-mm-dd para comparar
-        const m = f.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-        return m ? `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}` : f;
-      }).sort().pop();
-    };
-    const fa = fechaMax(a.ID_Temporada);
-    const fb = fechaMax(b.ID_Temporada);
+  }).map(t => ({ t, anio: anioTemporada(t) }));
+
+  if (anioSel) lista = lista.filter(x => x.anio === parseInt(anioSel));
+
+  // Orden principal: año descendente. Dentro del mismo año: fecha más reciente primero.
+  lista.sort((a, b) => {
+    if ((b.anio||0) !== (a.anio||0)) return (b.anio||0) - (a.anio||0);
+    const fa = fechaMax(a.t.ID_Temporada);
+    const fb = fechaMax(b.t.ID_Temporada);
     if (fa && fb) return fb.localeCompare(fa);
-    // Si no hay fechas, usar ID descendente
-    return parseInt(b.ID_Temporada||0) - parseInt(a.ID_Temporada||0);
+    return parseInt(b.t.ID_Temporada||0) - parseInt(a.t.ID_Temporada||0);
   });
+
   const grid = document.getElementById('campeones-grid');
 
+  // Habilitar/deshabilitar botones de navegación de año
+  const btnPrev = document.getElementById('camp-anio-prev');
+  const btnNext = document.getElementById('camp-anio-next');
+  const aniosDisponibles = [...document.getElementById('camp-filtro-anio').options].map(o=>o.value).filter(v=>v!=='').map(Number).sort((a,b)=>b-a);
+  if (btnPrev && btnNext) {
+    if (!anioSel) {
+      btnPrev.disabled = aniosDisponibles.length === 0;
+      btnNext.disabled = aniosDisponibles.length === 0;
+    } else {
+      const idx = aniosDisponibles.indexOf(parseInt(anioSel));
+      btnNext.disabled = idx <= 0;                              // no hay año más reciente
+      btnPrev.disabled = idx === -1 || idx >= aniosDisponibles.length - 1; // no hay año más antiguo
+    }
+  }
+
   if (lista.length === 0) {
-    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--texto-3);">
+    grid.innerHTML = `<div style="text-align:center;padding:60px;color:var(--texto-3);">
       <div style="font-size:48px;margin-bottom:16px;">🏆</div>
       <div style="font-size:15px;">No hay torneos cargados aún.<br>Agregá las columnas Division, Campeon y Foto_Trofeo a tu hoja Temporadas.</div>
     </div>`;
     return;
   }
 
-  grid.innerHTML = lista.map(t => {
+  const cardHTML = (t) => {
     const foto = t.Foto_Trofeo ? `trofeos/${t.Foto_Trofeo}` : '';
     const escCampeon = ESCUDOS[t.Campeon] ? `<img src="${ESCUDOS[t.Campeon]}" style="width:22px;height:22px;object-fit:contain;" onerror="this.style.display='none'">` : '';
     const imgTrofeo = foto
@@ -5160,7 +5246,34 @@ function filtrarCampeones() {
         <div class="camp-campeon">${escCampeon}${t.Campeon}</div>
       </div>
     </div>`;
-  }).join('');
+  };
+
+  if (anioSel) {
+    // Año específico ya elegido: grilla simple, sin encabezados repetidos
+    grid.innerHTML = `<div class="campeones-year-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:18px;">
+      ${lista.map(x => cardHTML(x.t)).join('')}
+    </div>`;
+  } else {
+    // "Todos los años": agrupado en secciones por año, de más reciente a más antiguo
+    const grupos = [];
+    let grupoActual = null;
+    lista.forEach(x => {
+      if (!grupoActual || grupoActual.anio !== x.anio) {
+        grupoActual = { anio: x.anio, items: [] };
+        grupos.push(grupoActual);
+      }
+      grupoActual.items.push(x.t);
+    });
+    grid.innerHTML = grupos.map(g => `
+      <div style="display:flex;align-items:center;gap:10px;margin:${grupos.indexOf(g)===0?'0':'28px'} 0 14px;">
+        <div style="font-family:var(--fuente-titulo);font-size:22px;letter-spacing:1px;color:var(--celeste);">${g.anio ?? 'Sin año'}</div>
+        <div style="flex:1;height:1px;background:var(--borde);"></div>
+        <div style="font-size:12px;color:var(--texto-3);">${g.items.length} torneo${g.items.length===1?'':'s'}</div>
+      </div>
+      <div class="campeones-year-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:18px;">
+        ${g.items.map(cardHTML).join('')}
+      </div>`).join('');
+  }
 }
 
 let torneoActualId = null;
