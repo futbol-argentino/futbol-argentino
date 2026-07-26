@@ -1744,6 +1744,24 @@ select option{background:#080F20;color:#F0F6FF}
           </div>
         </div>
 
+        <div class="tabla-wrapper" id="estadio-equipos-goles-wrap" style="display:none;">
+          <div class="tabla-header">
+            <div class="tabla-titulo">🛡️⚽ Equipos que más goles hicieron en este estadio</div>
+            <div class="tabla-count" id="estadio-equipos-goles-count"></div>
+          </div>
+          <div class="tabla-scroll scroll-forzado">
+            <table style="width:100%;border-collapse:collapse;min-width:280px;">
+              <thead><tr>
+                <th style="width:40px;">#</th>
+                <th>Equipo</th>
+                <th style="text-align:center;width:80px;">Goles</th>
+                <th style="text-align:center;width:60px;">PJ</th>
+              </tr></thead>
+              <tbody id="estadio-equipos-goles-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
         <div class="tabla-wrapper" id="estadio-pj-wrap" style="display:none;">
           <div class="tabla-header">
             <div class="tabla-titulo">📋 Más partidos jugados en este estadio</div>
@@ -7021,11 +7039,41 @@ function partidosJugadosPorJugador(idsPartidosSet) {
   return Object.entries(conteo).sort((a, b) => b[1] - a[1]);
 }
 
+// Cuenta goles hechos por equipo (local + visitante) dentro de un conjunto de partidos,
+// junto con la cantidad de partidos jugados de cada equipo en ese conjunto.
+function golesPorEquipoEnPartidos(listaPartidos) {
+  const stats = {};
+  const iniciar = (id) => { if (!stats[id]) stats[id] = { goles: 0, pj: 0 }; };
+  listaPartidos.forEach(p => {
+    if (!esPartidoJugado(p)) return;
+    const l = p.Local_ID, v = p.Visitante_ID;
+    if (!l || !v) return;
+    iniciar(l); iniciar(v);
+    stats[l].goles += parseInt(p.Goles_Local) || 0;
+    stats[l].pj++;
+    stats[v].goles += parseInt(p.Goles_Visitante) || 0;
+    stats[v].pj++;
+  });
+  return Object.entries(stats)
+    .sort((a, b) => b[1].goles - a[1].goles || b[1].pj - a[1].pj);
+}
+
 function filaRankingEstadio(i, nombre, valor) {
   return `<tr onclick="verFichaJugador('${nombre.replace(/'/g, "\\'")}')" style="cursor:pointer;">
     <td style="color:var(--texto-2);font-size:13px;width:36px;padding:8px 10px;">${i + 1}</td>
     <td style="font-size:14px;font-weight:500;">${nombre}</td>
     <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;font-weight:700;color:var(--celeste);">${valor}</td>
+  </tr>`;
+}
+
+function filaRankingEstadioEquipo(i, id, goles, pj) {
+  const nombre = equipos[id] || id;
+  const esc = ESCUDOS[nombre] ? `<img src="${ESCUDOS[nombre]}" style="width:20px;height:20px;object-fit:contain;" onerror="this.style.display='none'">` : '';
+  return `<tr onclick="verDetalleEquipo('${id}')" style="cursor:pointer;">
+    <td style="color:var(--texto-2);font-size:13px;width:36px;padding:8px 10px;">${i + 1}</td>
+    <td style="font-size:14px;font-weight:500;"><div style="display:flex;align-items:center;gap:8px;">${esc}<span>${nombre}</span></div></td>
+    <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;font-weight:700;color:var(--celeste);">${goles}</td>
+    <td style="text-align:center;font-size:12px;color:var(--texto-3);">${pj}</td>
   </tr>`;
 }
 
@@ -7057,6 +7105,17 @@ function renderHistorialEstadio(e) {
     document.getElementById('estadio-goleadores-tbody').innerHTML = goleadores.map(([nombre, goles], i) => filaRankingEstadio(i, nombre, goles)).join('');
   } else {
     golWrap.style.display = 'none';
+  }
+
+  // Equipos que más goles hicieron en este estadio
+  const equiposGoles = golesPorEquipoEnPartidos(partidosJugados).slice(0, 15);
+  const eqGolWrap = document.getElementById('estadio-equipos-goles-wrap');
+  if (equiposGoles.length) {
+    eqGolWrap.style.display = 'block';
+    document.getElementById('estadio-equipos-goles-count').textContent = equiposGoles.length + (equiposGoles.length === 1 ? ' equipo' : ' equipos');
+    document.getElementById('estadio-equipos-goles-tbody').innerHTML = equiposGoles.map(([id, v], i) => filaRankingEstadioEquipo(i, id, v.goles, v.pj)).join('');
+  } else {
+    eqGolWrap.style.display = 'none';
   }
 
   // Jugadores con más partidos en este estadio
