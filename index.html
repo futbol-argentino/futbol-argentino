@@ -1711,8 +1711,26 @@ select option{background:#080F20;color:#F0F6FF}
 
       <!-- Últimos partidos jugados en el estadio -->
       <div id="estadio-partidos-wrap" style="display:none;">
-        <div class="estadio-seccion-titulo">🕒 Últimos partidos en este estadio</div>
+        <div class="estadio-seccion-titulo">🕒 Partidos en este estadio</div>
+        <div class="filtros-panel" style="margin-bottom:14px;">
+          <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="filtro-grupo" style="flex:2;min-width:200px;">
+              <label class="filtro-label">Buscar equipo</label>
+              <input type="text" id="estadio-filtro-equipo" class="filtro-input" placeholder="Ej: Boca, River..." oninput="filtrarPartidosEstadioDebounced()">
+            </div>
+            <div class="filtro-grupo" style="min-width:140px;">
+              <label class="filtro-label">Año</label>
+              <select id="estadio-filtro-anio" class="filtro-select" onchange="filtrarPartidosEstadio()">
+                <option value="">Todos los años</option>
+              </select>
+            </div>
+          </div>
+        </div>
         <div class="tabla-wrapper">
+          <div class="tabla-header">
+            <div class="tabla-titulo">Partidos</div>
+            <div class="tabla-count" id="estadio-partidos-count"></div>
+          </div>
           <div class="tabla-scroll scroll-forzado">
             <table class="tabla-partidos" style="width:100%;border-collapse:collapse;">
               <thead><tr>
@@ -1721,6 +1739,7 @@ select option{background:#080F20;color:#F0F6FF}
               <tbody id="estadio-partidos-tbody"></tbody>
             </table>
           </div>
+          <div class="paginacion" id="estadio-partidos-pag"></div>
         </div>
       </div>
 
@@ -7058,6 +7077,52 @@ function golesPorEquipoEnPartidos(listaPartidos) {
     .sort((a, b) => b[1].goles - a[1].goles || b[1].pj - a[1].pj);
 }
 
+function filtrarPartidosEstadio() {
+  const buscar = (document.getElementById('estadio-filtro-equipo').value || '').toLowerCase().trim();
+  const anioSel = document.getElementById('estadio-filtro-anio').value;
+
+  let lista = estadioHistorial.partidos;
+  if (buscar) {
+    lista = lista.filter(p =>
+      (equipos[p.Local_ID] || '').toLowerCase().includes(buscar) ||
+      (equipos[p.Visitante_ID] || '').toLowerCase().includes(buscar)
+    );
+  }
+  if (anioSel) {
+    lista = lista.filter(p => {
+      const f = normalizarFechaISO(p.Fecha) || '';
+      return f.split('-')[0] === anioSel;
+    });
+  }
+
+  const total = lista.length;
+  const totalPags = Math.ceil(total / POR_PAG_ESTADIO) || 1;
+  if (estadioHistorial.pagina > totalPags) estadioHistorial.pagina = totalPags;
+  if (estadioHistorial.pagina < 1) estadioHistorial.pagina = 1;
+  const inicio = (estadioHistorial.pagina - 1) * POR_PAG_ESTADIO;
+  const slice = lista.slice(inicio, inicio + POR_PAG_ESTADIO);
+
+  document.getElementById('estadio-partidos-count').textContent = total + (total === 1 ? ' partido' : ' partidos');
+  document.getElementById('estadio-partidos-tbody').innerHTML = slice.length
+    ? slice.map(p => filaPartido(p)).join('')
+    : `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--texto-3);">No se encontraron partidos con ese filtro.</td></tr>`;
+
+  const pagEl = document.getElementById('estadio-partidos-pag');
+  if (totalPags <= 1) {
+    pagEl.innerHTML = '';
+  } else {
+    pagEl.innerHTML = `
+      <button class="pag-btn" onclick="cambiarPaginaEstadio(${estadioHistorial.pagina - 1})" ${estadioHistorial.pagina === 1 ? 'disabled' : ''}>← Anterior</button>
+      <span class="pag-info">Página ${estadioHistorial.pagina} de ${totalPags}</span>
+      <button class="pag-btn" onclick="cambiarPaginaEstadio(${estadioHistorial.pagina + 1})" ${estadioHistorial.pagina === totalPags ? 'disabled' : ''}>Siguiente →</button>`;
+  }
+}
+
+function cambiarPaginaEstadio(pag) {
+  estadioHistorial.pagina = pag;
+  filtrarPartidosEstadio();
+}
+
 function filaRankingEstadio(i, nombre, valor) {
   return `<tr onclick="verFichaJugador('${nombre.replace(/'/g, "\\'")}')" style="cursor:pointer;">
     <td style="color:var(--texto-2);font-size:13px;width:36px;padding:8px 10px;">${i + 1}</td>
@@ -7077,24 +7142,42 @@ function filaRankingEstadioEquipo(i, id, goles, pj) {
   </tr>`;
 }
 
+// Estado del historial de partidos del estadio actualmente abierto
+const POR_PAG_ESTADIO = 20;
+let estadioHistorial = { partidos: [], pagina: 1 };
+let _estadioDebounceTimer = null;
+function filtrarPartidosEstadioDebounced() {
+  clearTimeout(_estadioDebounceTimer);
+  _estadioDebounceTimer = setTimeout(filtrarPartidosEstadio, 250);
+}
+
 function renderHistorialEstadio(e) {
   const partidosEstadio = partidosDeEstadio(e);
   const partidosJugados = partidosEstadio.filter(esPartidoJugado);
 
-  // Últimos partidos (más recientes primero)
-  const ultimos = [...partidosJugados].sort((a, b) => {
+  // Guardamos todos los partidos jugados en este estadio (más recientes primero)
+  // para poder filtrarlos por equipo/año y paginarlos sin recalcular todo.
+  estadioHistorial.partidos = [...partidosJugados].sort((a, b) => {
     const fa = normalizarFechaISO(a.Fecha) || '';
     const fb = normalizarFechaISO(b.Fecha) || '';
     return fb.localeCompare(fa);
-  }).slice(0, 15);
+  });
+  estadioHistorial.pagina = 1;
+
+  // Llenar el <select> de años presentes en el historial de este estadio
+  const selAnio = document.getElementById('estadio-filtro-anio');
+  const anioDe = (p) => {
+    const f = normalizarFechaISO(p.Fecha) || '';
+    const a = parseInt(f.split('-')[0]);
+    return isNaN(a) ? null : a;
+  };
+  const anios = [...new Set(estadioHistorial.partidos.map(anioDe).filter(a => a !== null))].sort((a,b) => b - a);
+  selAnio.innerHTML = '<option value="">Todos los años</option>' + anios.map(a => `<option value="${a}">${a}</option>`).join('');
+  document.getElementById('estadio-filtro-equipo').value = '';
 
   const partidosWrap = document.getElementById('estadio-partidos-wrap');
-  if (ultimos.length) {
-    partidosWrap.style.display = 'block';
-    document.getElementById('estadio-partidos-tbody').innerHTML = ultimos.map(p => filaPartido(p)).join('');
-  } else {
-    partidosWrap.style.display = 'none';
-  }
+  partidosWrap.style.display = estadioHistorial.partidos.length ? 'block' : 'none';
+  if (estadioHistorial.partidos.length) filtrarPartidosEstadio();
 
   // Goleadores en este estadio
   const goleadores = golesPorJugadorEnPartidos(partidosJugados).slice(0, 15);
