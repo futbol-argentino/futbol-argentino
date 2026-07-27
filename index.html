@@ -1681,6 +1681,22 @@ select option{background:#080F20;color:#F0F6FF}
     <div id="estadios-vista-grilla">
       <div class="filtros-panel" style="margin-bottom:20px;">
         <div class="filtros-titulo">🏟️ Estadios</div>
+        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+          <div class="filtro-grupo" style="min-width:180px;">
+            <label class="filtro-label">Provincia</label>
+            <select id="estadio-filtro-provincia" class="filtro-select" onchange="renderEstadiosGrid()">
+              <option value="">Todas las provincias</option>
+            </select>
+          </div>
+          <div class="filtro-grupo" style="min-width:200px;">
+            <label class="filtro-label">Ordenar por</label>
+            <select id="estadio-orden" class="filtro-select" onchange="renderEstadiosGrid()">
+              <option value="nombre">Nombre (A-Z)</option>
+              <option value="capacidad">Mayor capacidad</option>
+              <option value="partidos">Más partidos jugados</option>
+            </select>
+          </div>
+        </div>
       </div>
       <div class="equipos-buscar">
         <span class="equipos-buscar-icon">🔍</span>
@@ -1714,9 +1730,19 @@ select option{background:#080F20;color:#F0F6FF}
         <div class="estadio-seccion-titulo">🕒 Partidos en este estadio</div>
         <div class="filtros-panel" style="margin-bottom:14px;">
           <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
-            <div class="filtro-grupo" style="flex:2;min-width:200px;">
-              <label class="filtro-label">Buscar equipo</label>
-              <input type="text" id="estadio-filtro-equipo" class="filtro-input" placeholder="Ej: Boca, River..." oninput="filtrarPartidosEstadioDebounced()">
+            <div class="filtro-grupo" style="position:relative;flex:1;min-width:180px;">
+              <label class="filtro-label">Equipo</label>
+              <input type="text" id="estadio1-equipo-input" class="filtro-input" placeholder="Todos los equipos..." autocomplete="off"
+                oninput="filtrarEquipoDropdown('estadio1')" onfocus="mostrarDropdown('estadio1')" onblur="setTimeout(()=>ocultarDropdown('estadio1'),200)">
+              <input type="hidden" id="estadio1-buscar-equipo" value="">
+              <div id="estadio1-equipo-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:9999;background:var(--fondo-2);border:1px solid var(--borde-activo);border-radius:10px;max-height:220px;overflow-y:auto;box-shadow:var(--sombra-card);margin-top:3px;"></div>
+            </div>
+            <div class="filtro-grupo" style="position:relative;flex:1;min-width:180px;">
+              <label class="filtro-label">Contra</label>
+              <input type="text" id="estadio2-equipo-input" class="filtro-input" placeholder="Cualquier equipo..." autocomplete="off"
+                oninput="filtrarEquipoDropdown('estadio2')" onfocus="mostrarDropdown('estadio2')" onblur="setTimeout(()=>ocultarDropdown('estadio2'),200)">
+              <input type="hidden" id="estadio2-buscar-equipo" value="">
+              <div id="estadio2-equipo-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:9999;background:var(--fondo-2);border:1px solid var(--borde-activo);border-radius:10px;max-height:220px;overflow-y:auto;box-shadow:var(--sombra-card);margin-top:3px;"></div>
             </div>
             <div class="filtro-grupo" style="min-width:140px;">
               <label class="filtro-label">Año</label>
@@ -1724,6 +1750,7 @@ select option{background:#080F20;color:#F0F6FF}
                 <option value="">Todos los años</option>
               </select>
             </div>
+            <button class="btn-limpiar" onclick="limpiarFiltrosEstadio()">✕ Limpiar</button>
           </div>
         </div>
         <div class="tabla-wrapper">
@@ -6074,6 +6101,7 @@ function filtrarEquipoDropdown(contexto) {
     if (contexto === 'jugador') buscarJugador();
     else if (contexto === 'dt') buscarDT();
     else if (contexto === 'match1' || contexto === 'match2') filtrar();
+    else if (contexto === 'estadio1' || contexto === 'estadio2') filtrarPartidosEstadio();
     else renderEstadisticas();
   }
 
@@ -6109,6 +6137,7 @@ function seleccionarEquipoDropdown(contexto, id, nombre) {
   if (contexto === 'jugador') buscarJugador();
   else if (contexto === 'dt') buscarDT();
   else if (contexto === 'match1' || contexto === 'match2') filtrar();
+  else if (contexto === 'estadio1' || contexto === 'estadio2') filtrarPartidosEstadio();
   else renderEstadisticas();
 }
 
@@ -6902,15 +6931,38 @@ async function cargarEstadios() {
     estadiosArr = [];
   }
   estadiosCargados = true;
+  cargarProvinciasEstadios();
   renderEstadiosGrid();
+}
+
+// Llena el <select> de provincias con las presentes en el CSV de estadios
+function cargarProvinciasEstadios() {
+  const sel = document.getElementById('estadio-filtro-provincia');
+  if (!sel || sel.dataset.cargado) return;
+  const provincias = [...new Set(estadiosArr.map(e => e.Provincia).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+  provincias.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p; opt.textContent = p;
+    sel.appendChild(opt);
+  });
+  sel.dataset.cargado = '1';
+}
+
+// Cantidad de partidos jugados (con resultado) en un estadio dado
+function partidosJugadosEnEstadio(e) {
+  return partidosDeEstadio(e).filter(esPartidoJugado).length;
 }
 
 function renderEstadiosGrid() {
   const grid = document.getElementById('estadios-grid');
   if (!grid) return;
   const filtro = (document.getElementById('buscar-estadio').value || '').toLowerCase().trim();
+  const provincia = document.getElementById('estadio-filtro-provincia')?.value || '';
+  const orden = document.getElementById('estadio-orden')?.value || 'nombre';
 
-  let lista = [...estadiosArr].sort((a, b) => (a.Nombre || '').localeCompare(b.Nombre || '', 'es'));
+  let lista = [...estadiosArr];
+
+  if (provincia) lista = lista.filter(e => e.Provincia === provincia);
 
   if (filtro) {
     lista = lista.filter(e =>
@@ -6918,6 +6970,15 @@ function renderEstadiosGrid() {
       (e.Equipo || '').toLowerCase().includes(filtro) ||
       (e.Ciudad || '').toLowerCase().includes(filtro)
     );
+  }
+
+  if (orden === 'capacidad') {
+    const cap = (e) => parseInt((e.Capacidad || '').toString().replace(/\D/g, '')) || 0;
+    lista.sort((a, b) => cap(b) - cap(a) || (a.Nombre || '').localeCompare(b.Nombre || '', 'es'));
+  } else if (orden === 'partidos') {
+    lista.sort((a, b) => partidosJugadosEnEstadio(b) - partidosJugadosEnEstadio(a) || (a.Nombre || '').localeCompare(b.Nombre || '', 'es'));
+  } else {
+    lista.sort((a, b) => (a.Nombre || '').localeCompare(b.Nombre || '', 'es'));
   }
 
   if (lista.length === 0) {
@@ -6931,11 +6992,18 @@ function renderEstadiosGrid() {
       ? `<img src="${rutaFoto}" loading="lazy" onerror="this.parentElement.innerHTML='<div style=\\'font-size:40px;\\'>🏟️</div>'">`
       : `<div style="font-size:40px;">🏟️</div>`;
     const escudo = escudoImg(e.Equipo, 16);
+    const capDigits = (e.Capacidad || '').toString().replace(/\D/g, '');
+    const subInfo = orden === 'capacidad'
+      ? (capDigits ? `<div class="estadio-card-equipo" style="color:var(--texto-3);">👥 ${Number(capDigits).toLocaleString('es-AR')}</div>` : '')
+      : orden === 'partidos'
+        ? `<div class="estadio-card-equipo" style="color:var(--texto-3);">📋 ${partidosJugadosEnEstadio(e)} partidos</div>`
+        : '';
     return `<div class="estadio-card" onclick="verEstadio('${e.ID_Estadio}')">
       <div class="estadio-card-foto-wrap">${fotoHtml}</div>
       <div class="estadio-card-info">
         <div class="estadio-card-nombre">${e.Nombre || ''}</div>
         ${e.Equipo ? `<div class="estadio-card-equipo">${escudo}<span>${e.Equipo}</span></div>` : ''}
+        ${subInfo}
       </div>
     </div>`;
   }).join('');
@@ -7078,15 +7146,20 @@ function golesPorEquipoEnPartidos(listaPartidos) {
 }
 
 function filtrarPartidosEstadio() {
-  const buscar = (document.getElementById('estadio-filtro-equipo').value || '').toLowerCase().trim();
+  const eq1 = document.getElementById('estadio1-buscar-equipo').value;
+  const eq2 = document.getElementById('estadio2-buscar-equipo').value;
   const anioSel = document.getElementById('estadio-filtro-anio').value;
 
   let lista = estadioHistorial.partidos;
-  if (buscar) {
+  if (eq1 && eq2) {
     lista = lista.filter(p =>
-      (equipos[p.Local_ID] || '').toLowerCase().includes(buscar) ||
-      (equipos[p.Visitante_ID] || '').toLowerCase().includes(buscar)
+      (p.Local_ID === eq1 && p.Visitante_ID === eq2) ||
+      (p.Local_ID === eq2 && p.Visitante_ID === eq1)
     );
+  } else if (eq1) {
+    lista = lista.filter(p => p.Local_ID === eq1 || p.Visitante_ID === eq1);
+  } else if (eq2) {
+    lista = lista.filter(p => p.Local_ID === eq2 || p.Visitante_ID === eq2);
   }
   if (anioSel) {
     lista = lista.filter(p => {
@@ -7118,6 +7191,16 @@ function filtrarPartidosEstadio() {
   }
 }
 
+function limpiarFiltrosEstadio() {
+  document.getElementById('estadio1-equipo-input').value = '';
+  document.getElementById('estadio1-buscar-equipo').value = '';
+  document.getElementById('estadio2-equipo-input').value = '';
+  document.getElementById('estadio2-buscar-equipo').value = '';
+  document.getElementById('estadio-filtro-anio').value = '';
+  estadioHistorial.pagina = 1;
+  filtrarPartidosEstadio();
+}
+
 function cambiarPaginaEstadio(pag) {
   estadioHistorial.pagina = pag;
   filtrarPartidosEstadio();
@@ -7145,11 +7228,6 @@ function filaRankingEstadioEquipo(i, id, goles, pj) {
 // Estado del historial de partidos del estadio actualmente abierto
 const POR_PAG_ESTADIO = 20;
 let estadioHistorial = { partidos: [], pagina: 1 };
-let _estadioDebounceTimer = null;
-function filtrarPartidosEstadioDebounced() {
-  clearTimeout(_estadioDebounceTimer);
-  _estadioDebounceTimer = setTimeout(filtrarPartidosEstadio, 250);
-}
 
 function renderHistorialEstadio(e) {
   const partidosEstadio = partidosDeEstadio(e);
@@ -7173,7 +7251,10 @@ function renderHistorialEstadio(e) {
   };
   const anios = [...new Set(estadioHistorial.partidos.map(anioDe).filter(a => a !== null))].sort((a,b) => b - a);
   selAnio.innerHTML = '<option value="">Todos los años</option>' + anios.map(a => `<option value="${a}">${a}</option>`).join('');
-  document.getElementById('estadio-filtro-equipo').value = '';
+  document.getElementById('estadio1-equipo-input').value = '';
+  document.getElementById('estadio1-buscar-equipo').value = '';
+  document.getElementById('estadio2-equipo-input').value = '';
+  document.getElementById('estadio2-buscar-equipo').value = '';
 
   const partidosWrap = document.getElementById('estadio-partidos-wrap');
   partidosWrap.style.display = estadioHistorial.partidos.length ? 'block' : 'none';
