@@ -6956,6 +6956,7 @@ function partidosJugadosEnEstadio(e) {
 function renderEstadiosGrid() {
   const grid = document.getElementById('estadios-grid');
   if (!grid) return;
+  cargarProvinciasEstadios();
   const filtro = (document.getElementById('buscar-estadio').value || '').toLowerCase().trim();
   const provincia = document.getElementById('estadio-filtro-provincia')?.value || '';
   const orden = document.getElementById('estadio-orden')?.value || 'nombre';
