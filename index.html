@@ -349,6 +349,10 @@ th.center{text-align:center}
 tbody tr{border-bottom:1px solid var(--borde);transition:background 0.15s,box-shadow 0.15s;cursor:pointer}
 tbody tr:last-child{border-bottom:none}
 tbody tr:hover{background:rgba(14,165,233,0.04);box-shadow:inset 3px 0 0 var(--celeste)}
+/* La fila del desplegable de goleadores no debe sumar su propia línea divisoria:
+   cuando está cerrada (altura 0) igual mostraba un borde extra debajo de la fila
+   del partido. La línea real de separación la sigue poniendo la fila del partido. */
+tbody tr.fila-gol-preview{border-bottom:none}
 td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 .td-fecha{color:var(--texto-3);font-size:12px;white-space:nowrap;font-family:var(--fuente-mono)}
 .td-equipo{display:flex;align-items:center;gap:10px;white-space:nowrap}
