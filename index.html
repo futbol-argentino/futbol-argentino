@@ -156,8 +156,8 @@
   table.tabla-partidos .td-equipo img { width: 18px !important; height: 18px !important; }
   table.tabla-partidos .td-resultado { font-size: 15px !important; }
   table.tabla-partidos .badge-torneo { font-size: 10px; padding: 2px 5px; white-space: nowrap; }
-  table.tabla-partidos:not(.tabla-partidos-hoy) td:nth-child(2),
-  table.tabla-partidos:not(.tabla-partidos-hoy) td:nth-child(4) { min-width: 130px; }
+  table.tabla-partidos td:nth-child(2),
+  table.tabla-partidos td:nth-child(4) { min-width: 130px; }
   .fila-gol-preview td { padding: 3px 12px 8px !important; white-space: normal !important; }
 
   td { font-size: 13px; padding: 8px 8px; }
@@ -366,24 +366,29 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 .res-neutro{color:var(--texto-1)}
 .badge-torneo{display:inline-block;background:rgba(14,165,233,0.07);border:1px solid rgba(14,165,233,0.15);border-radius:6px;padding:3px 8px;font-size:11px;color:var(--texto-2);white-space:nowrap;font-weight:500}
 
-/* Tabla de partidos agrupada por torneo (pestaña Hoy → navegar por fecha):
-   misma estructura y alineación normal que el resto de tablas de partidos
-   de la app, solo que la columna de la flecha de goleadores queda al final
-   sin forzar anchos raros (evita huecos deformados). */
-table.tabla-partidos-hoy td.td-arrow{width:1%;white-space:nowrap;text-align:right}
-/* Todas las filas de partido (con o sin goleadores cargados) miden lo mismo:
-   la altura la fija el td, no el ícono de la flecha ni la fila oculta del detalle. */
-table.tabla-partidos-hoy tbody tr:not(.fila-gol-preview) td{height:44px;box-sizing:border-box}
-/* Solo en esta tabla (agrupada por torneo en "Hoy"): la fila oculta del desplegable
-   de goleadores no debe sumar su propia línea divisoria mientras está cerrada.
-   Cuando el usuario la abre, el propio JS le vuelve a poner el borde (ver arrow onclick). */
-table.tabla-partidos-hoy tbody tr.fila-gol-preview{border-bottom:none}
-
-/* Listado de partidos dentro de un torneo (Campeones → entrar a un torneo → Fecha X):
-   nombres completos sin recortar (se puede deslizar horizontalmente si no entran),
-   y sin la línea extra debajo de los partidos con goleadores cargados. */
-table.tabla-torneo-fechas tbody tr.fila-gol-preview{border-bottom:none}
-table.tabla-torneo-fechas tbody tr td:has(> div){white-space:nowrap!important}
+/* ═══ Filas de partido armadas con CSS Grid (no <table>), usadas en la vista
+   "Hoy" agrupada por torneo y en el listado de partidos de un torneo dentro
+   de Campeones. Con grid las columnas quedan garantizadas idénticas en todas
+   las filas (a diferencia del auto-layout de una tabla HTML), y una misma
+   clase (.grid-partidos) asegura el mismo grosor en los dos lugares. ═══ */
+.grid-partidos{display:grid}
+/* Compacta (Campeones): columnas al ancho justo del contenido, pegadas a la
+   izquierda, nombres completos sin recortar — igual espíritu que el Buscador.
+   Si no entra en el ancho de pantalla, el contenedor padre permite scroll. */
+.grid-partidos.grid-compacta{grid-template-columns:auto auto auto 1fr;width:max-content;min-width:100%}
+/* Simétrica (Hoy): local y visitante ocupan el mismo ancho (1fr cada uno),
+   con el resultado exactamente centrado entre los dos. */
+.grid-partidos.grid-simetrica{grid-template-columns:1fr auto 1fr auto;width:100%}
+.grid-partidos .gp-celda{display:flex;align-items:center;padding:10px 12px;font-size:13px;font-weight:500;border-bottom:1px solid var(--borde);cursor:pointer;box-sizing:border-box;transition:background 0.15s}
+.grid-partidos .gp-celda:hover{background:rgba(14,165,233,0.04)}
+.grid-partidos .gp-local{gap:8px;white-space:nowrap}
+.grid-partidos .gp-visita{gap:8px;white-space:nowrap}
+.grid-partidos .gp-resultado{justify-content:center;font-family:var(--fuente-titulo);font-size:17px;font-weight:400;white-space:nowrap;padding:10px 8px;letter-spacing:1px}
+.grid-partidos .gp-arrow{justify-content:flex-end;padding-right:16px;cursor:default}
+.grid-partidos.grid-simetrica .gp-local{justify-content:flex-end;text-align:right}
+.grid-partidos.grid-simetrica .gp-visita{justify-content:flex-start}
+.grid-partidos .gp-dia-header{grid-column:1/-1;padding:6px 12px;background:var(--fondo-3);color:var(--texto-2);font-size:12px;font-weight:600;letter-spacing:0.5px;border-top:1px solid var(--borde);border-bottom:1px solid var(--borde);cursor:default}
+.grid-partidos .gp-goleadores{grid-column:1/-1;cursor:default}
 .loading-row td{text-align:center;padding:48px;color:var(--texto-3);font-size:14px}
 
 /* EQUIPOS */
@@ -2774,11 +2779,7 @@ function actualizarVistaHoyFecha() {
       <span style="font-size:14px;font-weight:700;color:var(--texto-1);">🏆 ${g.torneo}</span>
       <span style="margin-left:auto;font-size:11px;color:var(--texto-3);background:var(--fondo-4);padding:2px 8px;border-radius:10px;">${g.partidos.length} partido${g.partidos.length === 1 ? '' : 's'}</span>
     </div>
-    <div class="tabla-scroll">
-      <table class="tabla-partidos tabla-partidos-hoy" style="width:100%;border-collapse:collapse;">
-        <tbody>${g.partidos.map(p => filaPartido(p, null, { ocultarFecha:true, ocultarTorneo:true })).join('')}</tbody>
-      </table>
-    </div>
+    <div class="grid-partidos grid-simetrica">${g.partidos.map(filaPartidoGrid).join('')}</div>
   `).join('');
 }
 
@@ -5551,30 +5552,10 @@ function verTorneo(idTemporada) {
 
       const fechasHTML = Object.entries(porFecha).map(([fecha, pFecha]) => {
         const filas = pFecha.map(p => {
-          const local = equipos[p.Local_ID] || p.Local_ID;
-          const visita = equipos[p.Visitante_ID] || p.Visitante_ID;
-          const escL = ESCUDOS[local] ? `<img src="${ESCUDOS[local]}" style="width:18px;height:18px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">` : '';
-          const escV = ESCUDOS[visita] ? `<img src="${ESCUDOS[visita]}" style="width:18px;height:18px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">` : '';
-          const rc = resClase(p.Goles_Local, p.Goles_Visitante);
-          const esJugado = p.Goles_Local !== '' && p.Goles_Visitante !== '';
-          const scorePen = esDefinicionPorPenales(p.Tipo_Definicion) && p.Penales ? calcularScorePenales(p.Penales) : null;
-          const resultado = esJugado
-            ? (scorePen
-                ? `<span class="${rc}" style="font-family:var(--fuente-titulo);font-size:17px;">${p.Goles_Local}<span style="color:var(--amarillo);">(${scorePen.local})</span> - <span style="color:var(--amarillo);">(${scorePen.visita})</span>${p.Goles_Visitante}</span>`
-                : `<span class="${rc}" style="font-family:var(--fuente-titulo);font-size:17px;">${p.Goles_Local} - ${p.Goles_Visitante}</span>`)
-            : (esPartidoSuspendido(p)
-                ? `<span style="color:var(--rojo);font-weight:700;font-size:11px;letter-spacing:0.5px;">SUSPENDIDO</span>`
-                : `<span style="color:var(--texto-2);font-size:13px;">${p.Fecha ? p.Fecha.split('T')[0] : '—'}</span>`);
-          const golData = construirGolData(p, local, visita, 4);
-          return `<tr onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
-            <td style="padding:8px 12px;"><div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;"><span style="font-size:13px;font-weight:500;text-align:right;white-space:nowrap;">${local}</span>${escL}</div></td>
-            <td style="padding:8px 6px;text-align:center;white-space:nowrap;">${resultado}</td>
-            <td style="padding:8px 12px;"><div style="display:flex;align-items:center;gap:6px;">${escV}<span style="font-size:13px;font-weight:500;white-space:nowrap;">${visita}</span></div></td>
-            <td style="padding:8px 16px 8px 6px;text-align:center;">${golData ? golData.arrow : ''}</td>
-          </tr>${golData ? golData.drop : ''}`;
+          return filaPartidoGrid(p);
         }).join('');
         const diaFormateado = formatearFechaDia(fecha);
-        return `<tr><td colspan="4" style="padding:6px 12px;background:var(--fondo-3);color:var(--texto-2);font-size:12px;font-weight:600;letter-spacing:0.5px;border-top:1px solid var(--borde);border-bottom:1px solid var(--borde);">${diaFormateado}</td></tr>${filas}`;
+        return `<div class="gp-dia-header">${diaFormateado}</div>${filas}`;
       }).join('');
 
       const esFinal = !grupoNombre.startsWith('Fecha');
@@ -5588,9 +5569,7 @@ function verTorneo(idTemporada) {
         </div>
         <div id="${gid}" style="display:none;">
           <div style="overflow-x:auto;">
-            <table class="tabla-torneo-fechas" style="border-collapse:collapse;min-width:100%;">
-              <tbody>${fechasHTML}</tbody>
-            </table>
+            <div class="grid-partidos grid-compacta">${fechasHTML}</div>
           </div>
         </div>
       </div>`;
@@ -7256,6 +7235,66 @@ function limpiarFiltrosEstadio() {
 function cambiarPaginaEstadio(pag) {
   estadioHistorial.pagina = pag;
   filtrarPartidosEstadio();
+}
+
+// Versión de construirGolData para filas armadas con CSS Grid (en vez de <table>/<tr>/<td>).
+function construirGolDataGrid(p, local, visita) {
+  const raw = p.Goleadores || '';
+  if (!raw || raw.trim() === '' || raw.toLowerCase() === 'ninguno') return null;
+  const partes = raw.split('/');
+  const escL = ESCUDOS[local] ? `<img src="${ESCUDOS[local]}" style="width:14px;height:14px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">` : '';
+  const escV = ESCUDOS[visita] ? `<img src="${ESCUDOS[visita]}" style="width:14px;height:14px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">` : '';
+  function parseGoles(raw, esc) {
+    return (raw||'').split('-').map(e=>e.trim()).filter(e=>e&&e.toLowerCase()!=='ninguno'&&e.length>1).map(entrada => {
+      const minMatch = entrada.match(/(\d+)\s*(?:\+\s*\d+)?\s*[''`´'′]/);
+      const minuto = minMatch ? parseInt(minMatch[1]) : 999;
+      const nombre = limpiarNombre(entrada);
+      let badge = '';
+      if (/\(P\)/i.test(entrada)) badge = `<span style="background:var(--amarillo);color:#000;font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;margin-left:3px;">P</span>`;
+      if (/\(EC\)/i.test(entrada)) badge = `<span style="background:var(--rojo);color:#fff;font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;margin-left:3px;">EC</span>`;
+      const minTxt = minMatch ? `<span style="color:var(--texto-3);font-size:10px;min-width:28px;">${minMatch[0]}</span>` : '';
+      return { minuto, html: `<div style="display:flex;align-items:center;gap:5px;padding:2px 0;">${esc}${minTxt}<span style="color:var(--texto-2);font-size:12px;">${nombre}</span>${badge}</div>` };
+    });
+  }
+  const todos = [...parseGoles(partes[0], escL), ...parseGoles(partes[1], escV)].sort((a,b)=>a.minuto-b.minuto);
+  if (!todos.length) return null;
+  const uid = 'golg_' + p.ID_Partido + '_' + (_golUidSeq++);
+  const wrapId = 'golwrap_' + uid;
+  const arrow = `<span onclick="event.stopPropagation();var c=document.getElementById('${uid}');var wrap=document.getElementById('${wrapId}');var a=document.getElementById('arr_${uid}');var open=c.style.display==='block';c.style.display=open?'none':'block';wrap.style.padding=open?'0':'4px 20px 8px 20px';wrap.style.borderBottom=open?'none':'1px solid var(--borde)';a.style.transform=open?'rotate(0deg)':'rotate(180deg)';"
+    style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:1px solid var(--borde);border-radius:6px;cursor:pointer;flex-shrink:0;transition:border-color 0.15s;"
+    onmouseover="this.style.borderColor='var(--celeste)'" onmouseout="this.style.borderColor='var(--borde)'"><span id="arr_${uid}" style="font-size:12px;color:var(--texto-2);transition:transform 0.2s;display:inline-block;line-height:1;">▼</span></span>`;
+  const drop = `<div id="${wrapId}" class="gp-goleadores" style="padding:0;border-bottom:none;"><div id="${uid}" style="display:none;">${todos.map(g=>g.html).join('')}</div></div>`;
+  return { arrow, drop };
+}
+
+// Fila de partido armada con CSS Grid: local | resultado | visitante | flecha.
+// La usan tanto la vista "Hoy" (agrupada por torneo) como el listado de partidos
+// de un torneo en Campeones, así las dos quedan siempre con el mismo aspecto y
+// grosor exacto — el contenedor padre decide con su clase (grid-simetrica o
+// grid-compacta) si el diseño es simétrico o compacto tipo Buscador.
+function filaPartidoGrid(p) {
+  const local = equipos[p.Local_ID] || p.Local_ID;
+  const visita = equipos[p.Visitante_ID] || p.Visitante_ID;
+  const escL = escudoImg(local, 20);
+  const escV = escudoImg(visita, 20);
+  const jugado = esPartidoJugado(p);
+  const rc = jugado ? resClase(p.Goles_Local, p.Goles_Visitante) : 'res-neutro';
+  const scorePen = jugado && esDefinicionPorPenales(p.Tipo_Definicion) && p.Penales ? calcularScorePenales(p.Penales) : null;
+  const resultadoTxt = jugado
+    ? (scorePen
+        ? `${p.Goles_Local}<span style="color:var(--amarillo);">(${scorePen.local})</span> - <span style="color:var(--amarillo);">(${scorePen.visita})</span>${p.Goles_Visitante}`
+        : `${p.Goles_Local} - ${p.Goles_Visitante}`)
+    : (esPartidoSuspendido(p)
+        ? `<span style="color:var(--rojo);font-weight:700;font-size:11px;letter-spacing:0.5px;">SUSPENDIDO</span>`
+        : `<span style="color:var(--texto-3);font-size:12px;">${p.Hora || p.hora || 'vs'}</span>`);
+  const golData = jugado ? construirGolDataGrid(p, local, visita) : null;
+  const click = p.ID_Partido != null ? ` onclick="verPartido(${p.ID_Partido})"` : '';
+  return `
+    <div class="gp-celda gp-local"${click}>${escL}<span>${local}</span></div>
+    <div class="gp-celda gp-resultado"${click}><span class="${rc}">${resultadoTxt}</span></div>
+    <div class="gp-celda gp-visita"${click}>${escV}<span>${visita}</span></div>
+    <div class="gp-celda gp-arrow">${golData ? golData.arrow : ''}</div>
+    ${golData ? golData.drop : ''}`;
 }
 
 function filaRankingEstadio(i, nombre, valor) {
