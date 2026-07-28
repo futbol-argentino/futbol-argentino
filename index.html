@@ -938,18 +938,7 @@ select option{background:#080F20;color:#F0F6FF}
           <div class="tabla-titulo" id="hoy-fecha-titulo">Partidos</div>
           <div class="tabla-count" id="hoy-fecha-count"></div>
         </div>
-        <div class="tabla-scroll">
-          <table class="tabla-partidos">
-            <thead>
-              <tr>
-                <th>Fecha</th><th>Local</th>
-                <th class="center">Resultado</th>
-                <th>Visitante</th><th>Torneo</th>
-              </tr>
-            </thead>
-            <tbody id="hoy-fecha-tabla"></tbody>
-          </table>
-        </div>
+        <div id="hoy-fecha-grupos"></div>
       </div>
     </div>
 
@@ -2537,7 +2526,9 @@ function construirGolData(p, local, visita, colspan) {
   return { arrow, drop };
 }
 
-function filaPartido(p, equipoRef) {
+function filaPartido(p, equipoRef, opciones) {
+  const ocultarFecha = opciones && opciones.ocultarFecha;
+  const ocultarTorneo = opciones && opciones.ocultarTorneo;
   const local = equipos[p.Local_ID] || p.Local || p.Local_ID;
   const visita = equipos[p.Visitante_ID] || p.Visitante || p.Visitante_ID;
   const fecha = p.Fecha ? p.Fecha.split('T')[0] : '';
@@ -2555,7 +2546,8 @@ function filaPartido(p, equipoRef) {
   const claseExtra = esFav ? ' class="equipo-favorito-row"' : '';
 
   // Goleadores desplegables ordenados por minuto con escudo de equipo (solo si el partido ya se jugó)
-  const golData = jugado ? construirGolData(p, local, visita, 5) : null;
+  const colspanFila = 3 + (ocultarFecha ? 0 : 1) + (ocultarTorneo ? 0 : 1);
+  const golData = jugado ? construirGolData(p, local, visita, colspanFila) : null;
 
   const scorePen = jugado && esDefinicionPorPenales(p.Tipo_Definicion) && p.Penales ? calcularScorePenales(p.Penales) : null;
   const resultadoTxt = !jugado
@@ -2570,11 +2562,11 @@ function filaPartido(p, equipoRef) {
   const clickAttr = p.ID_Partido ? ` onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;"` : '';
 
   return `<tr${claseExtra}${clickAttr}>
-    <td class="td-fecha">${fecha}</td>
+    ${ocultarFecha ? '' : `<td class="td-fecha">${fecha}</td>`}
     <td><div class="td-equipo">${escudoImg(local,22)}<span>${local}</span></div></td>
-    <td class="td-resultado"><span class="${rc}">${resultadoTxt}</span></td>
+    <td class="td-resultado"><span class="${rc}">${resultadoTxt}</span>${(ocultarTorneo && golData) ? golData.arrow : ''}</td>
     <td><div class="td-equipo">${escudoImg(visita,22)}<span>${visita}</span></div></td>
-    <td><div style="display:flex;align-items:center;"><span class="badge-torneo">${torneo}</span>${golData ? golData.arrow : ''}</div></td>
+    ${ocultarTorneo ? '' : `<td><div style="display:flex;align-items:center;"><span class="badge-torneo">${torneo}</span>${golData ? golData.arrow : ''}</div></td>`}
   </tr>${golData ? golData.drop : ''}`;
 }
 
@@ -2725,9 +2717,42 @@ function actualizarVistaHoyFecha() {
 
   document.getElementById('hoy-fecha-titulo').textContent = 'Partidos del ' + formatearFechaDisplay(fechaNavActiva);
   document.getElementById('hoy-fecha-count').textContent = filtrados.length.toLocaleString() + ' partidos';
-  document.getElementById('hoy-fecha-tabla').innerHTML = filtrados.length === 0
-    ? '<tr class="loading-row"><td colspan="5">No se encontraron partidos para esta fecha.</td></tr>'
-    : filtrados.map(filaPartido).join('');
+
+  const grupos = document.getElementById('hoy-fecha-grupos');
+  if (filtrados.length === 0) {
+    grupos.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto-3);">No se encontraron partidos para esta fecha.</div>';
+    return;
+  }
+
+  // Agrupar por torneo, respetando el orden de aparición según la hora de cada partido,
+  // y dentro de cada torneo priorizando la división más importante (DIVISIONES_ORDEN).
+  const divisionPorTemporada = {};
+  temporadasArr.forEach(t => { divisionPorTemporada[t.ID_Temporada] = t.Division; });
+
+  const gruposMap = new Map();
+  filtrados.forEach(p => {
+    const torneo = temporadas[p.ID_Temporada] || p.Competencia || p.Torneo || p.Fase || 'Sin torneo';
+    if (!gruposMap.has(torneo)) {
+      const division = divisionPorTemporada[p.ID_Temporada] || '';
+      const rango = DIVISIONES_ORDEN.indexOf(division);
+      gruposMap.set(torneo, { torneo, rango: rango === -1 ? 999 : rango, partidos: [] });
+    }
+    gruposMap.get(torneo).partidos.push(p);
+  });
+
+  const listaGrupos = [...gruposMap.values()].sort((a, b) => a.rango - b.rango || a.torneo.localeCompare(b.torneo, 'es'));
+
+  grupos.innerHTML = listaGrupos.map(g => `
+    <div class="hoy-fecha-torneo-header" style="display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--fondo-3);border-bottom:1px solid var(--borde);">
+      <span style="font-size:14px;font-weight:700;color:var(--texto-1);">🏆 ${g.torneo}</span>
+      <span style="margin-left:auto;font-size:11px;color:var(--texto-3);background:var(--fondo-4);padding:2px 8px;border-radius:10px;">${g.partidos.length} partido${g.partidos.length === 1 ? '' : 's'}</span>
+    </div>
+    <div class="tabla-scroll">
+      <table class="tabla-partidos" style="width:100%;border-collapse:collapse;">
+        <tbody>${g.partidos.map(p => filaPartido(p, null, { ocultarFecha:true, ocultarTorneo:true })).join('')}</tbody>
+      </table>
+    </div>
+  `).join('');
 }
 
 function actualizarUIFechaNav() {
