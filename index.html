@@ -365,10 +365,19 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
    de la app, solo que la columna de la flecha de goleadores queda al final
    sin forzar anchos raros (evita huecos deformados). */
 table.tabla-partidos-hoy td.td-arrow{width:1%;white-space:nowrap;text-align:right}
+/* Todas las filas de partido (con o sin goleadores cargados) miden lo mismo:
+   la altura la fija el td, no el ícono de la flecha ni la fila oculta del detalle. */
+table.tabla-partidos-hoy tbody tr:not(.fila-gol-preview) td{height:44px;box-sizing:border-box}
 /* Solo en esta tabla (agrupada por torneo en "Hoy"): la fila oculta del desplegable
    de goleadores no debe sumar su propia línea divisoria mientras está cerrada.
    Cuando el usuario la abre, el propio JS le vuelve a poner el borde (ver arrow onclick). */
 table.tabla-partidos-hoy tbody tr.fila-gol-preview{border-bottom:none}
+
+/* Listado de partidos dentro de un torneo (Campeones → entrar a un torneo → Fecha X):
+   nombres completos sin recortar (se puede deslizar horizontalmente si no entran),
+   y sin la línea extra debajo de los partidos con goleadores cargados. */
+table.tabla-torneo-fechas tbody tr.fila-gol-preview{border-bottom:none}
+table.tabla-torneo-fechas tbody tr td:has(> div){white-space:nowrap!important}
 .loading-row td{text-align:center;padding:48px;color:var(--texto-3);font-size:14px}
 
 /* EQUIPOS */
@@ -5552,9 +5561,9 @@ function verTorneo(idTemporada) {
                 : `<span style="color:var(--texto-2);font-size:13px;">${p.Fecha ? p.Fecha.split('T')[0] : '—'}</span>`);
           const golData = construirGolData(p, local, visita, 4);
           return `<tr onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
-            <td style="padding:8px 12px;overflow:hidden;"><div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;overflow:hidden;"><span style="font-size:13px;font-weight:500;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${local}</span>${escL}</div></td>
+            <td style="padding:8px 12px;"><div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;"><span style="font-size:13px;font-weight:500;text-align:right;white-space:nowrap;">${local}</span>${escL}</div></td>
             <td style="padding:8px 6px;text-align:center;white-space:nowrap;">${resultado}</td>
-            <td style="padding:8px 12px;overflow:hidden;"><div style="display:flex;align-items:center;gap:6px;overflow:hidden;">${escV}<span style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${visita}</span></div></td>
+            <td style="padding:8px 12px;"><div style="display:flex;align-items:center;gap:6px;">${escV}<span style="font-size:13px;font-weight:500;white-space:nowrap;">${visita}</span></div></td>
             <td style="padding:8px 16px 8px 6px;text-align:center;">${golData ? golData.arrow : ''}</td>
           </tr>${golData ? golData.drop : ''}`;
         }).join('');
@@ -5573,8 +5582,7 @@ function verTorneo(idTemporada) {
         </div>
         <div id="${gid}" style="display:none;">
           <div style="overflow-x:auto;">
-            <table style="width:100%;border-collapse:collapse;min-width:340px;table-layout:fixed;">
-              <colgroup><col style="width:auto"><col style="width:120px"><col style="width:auto"><col style="width:54px"></colgroup>
+            <table class="tabla-torneo-fechas" style="border-collapse:collapse;min-width:100%;">
               <tbody>${fechasHTML}</tbody>
             </table>
           </div>
