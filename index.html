@@ -129,6 +129,10 @@
      deslizar hacia los costados en vez de deformar la tabla. ═══ */
   .tabla-scroll { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
   .tabla-scroll table { width: max-content !important; min-width: 100% !important; }
+  /* La tabla simétrica de "Hoy" no necesita scroll horizontal: mantiene sus
+     columnas porcentuales para que la flecha de goleadores quede pegada al
+     borde derecho de la pantalla en vez de flotar en el medio. */
+  .tabla-scroll table.tabla-partidos-simetrica { width: 100% !important; min-width: 0 !important; }
 
   table thead th {
     font-size: 10.5px !important;
@@ -150,8 +154,8 @@
   table.tabla-partidos .td-equipo img { width: 18px !important; height: 18px !important; }
   table.tabla-partidos .td-resultado { font-size: 15px !important; }
   table.tabla-partidos .badge-torneo { font-size: 10px; padding: 2px 5px; white-space: nowrap; }
-  table.tabla-partidos td:nth-child(2),
-  table.tabla-partidos td:nth-child(4) { min-width: 130px; }
+  table.tabla-partidos:not(.tabla-partidos-simetrica) td:nth-child(2),
+  table.tabla-partidos:not(.tabla-partidos-simetrica) td:nth-child(4) { min-width: 130px; }
   .fila-gol-preview td { padding: 3px 12px 8px !important; white-space: normal !important; }
 
   td { font-size: 13px; padding: 8px 8px; }
@@ -359,6 +363,18 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 .res-visita{color:var(--rojo)}
 .res-neutro{color:var(--texto-1)}
 .badge-torneo{display:inline-block;background:rgba(14,165,233,0.07);border:1px solid rgba(14,165,233,0.15);border-radius:6px;padding:3px 8px;font-size:11px;color:var(--texto-2);white-space:nowrap;font-weight:500}
+
+/* Tabla de partidos agrupada por torneo (pestaña Hoy → navegar por fecha):
+   Local | Resultado | Visitante | flecha de goleadores, con columnas simétricas
+   para que el resultado quede siempre centrado y ambos equipos con el mismo ancho. */
+table.tabla-partidos-simetrica{table-layout:fixed}
+table.tabla-partidos-simetrica td:nth-child(1){width:39%;text-align:right}
+table.tabla-partidos-simetrica td:nth-child(1) .td-equipo{justify-content:flex-end}
+table.tabla-partidos-simetrica td:nth-child(2){width:16%;text-align:center}
+table.tabla-partidos-simetrica td:nth-child(3){width:39%;text-align:left}
+table.tabla-partidos-simetrica td:nth-child(4).td-arrow{width:6%;padding:0 10px 0 0}
+table.tabla-partidos-simetrica .td-equipo{white-space:normal}
+table.tabla-partidos-simetrica .td-arrow{text-align:right;vertical-align:middle}
 .loading-row td{text-align:center;padding:48px;color:var(--texto-3);font-size:14px}
 
 /* EQUIPOS */
@@ -2546,7 +2562,7 @@ function filaPartido(p, equipoRef, opciones) {
   const claseExtra = esFav ? ' class="equipo-favorito-row"' : '';
 
   // Goleadores desplegables ordenados por minuto con escudo de equipo (solo si el partido ya se jugó)
-  const colspanFila = 3 + (ocultarFecha ? 0 : 1) + (ocultarTorneo ? 0 : 1);
+  const colspanFila = (ocultarFecha ? 0 : 1) + 4; // local + resultado + visitante + (torneo o flecha)
   const golData = jugado ? construirGolData(p, local, visita, colspanFila) : null;
 
   const scorePen = jugado && esDefinicionPorPenales(p.Tipo_Definicion) && p.Penales ? calcularScorePenales(p.Penales) : null;
@@ -2564,9 +2580,11 @@ function filaPartido(p, equipoRef, opciones) {
   return `<tr${claseExtra}${clickAttr}>
     ${ocultarFecha ? '' : `<td class="td-fecha">${fecha}</td>`}
     <td><div class="td-equipo">${escudoImg(local,22)}<span>${local}</span></div></td>
-    <td class="td-resultado"><span class="${rc}">${resultadoTxt}</span>${(ocultarTorneo && golData) ? golData.arrow : ''}</td>
+    <td class="td-resultado"><span class="${rc}">${resultadoTxt}</span></td>
     <td><div class="td-equipo">${escudoImg(visita,22)}<span>${visita}</span></div></td>
-    ${ocultarTorneo ? '' : `<td><div style="display:flex;align-items:center;"><span class="badge-torneo">${torneo}</span>${golData ? golData.arrow : ''}</div></td>`}
+    ${ocultarTorneo
+      ? `<td class="td-arrow">${golData ? golData.arrow : ''}</td>`
+      : `<td><div style="display:flex;align-items:center;"><span class="badge-torneo">${torneo}</span>${golData ? golData.arrow : ''}</div></td>`}
   </tr>${golData ? golData.drop : ''}`;
 }
 
@@ -2748,7 +2766,7 @@ function actualizarVistaHoyFecha() {
       <span style="margin-left:auto;font-size:11px;color:var(--texto-3);background:var(--fondo-4);padding:2px 8px;border-radius:10px;">${g.partidos.length} partido${g.partidos.length === 1 ? '' : 's'}</span>
     </div>
     <div class="tabla-scroll">
-      <table class="tabla-partidos" style="width:100%;border-collapse:collapse;">
+      <table class="tabla-partidos tabla-partidos-simetrica" style="width:100%;border-collapse:collapse;">
         <tbody>${g.partidos.map(p => filaPartido(p, null, { ocultarFecha:true, ocultarTorneo:true })).join('')}</tbody>
       </table>
     </div>
