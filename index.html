@@ -135,11 +135,17 @@
     padding: 8px 8px !important;
     white-space: nowrap;
   }
-  table tbody tr td {
+  table tbody tr:not(.fila-gol-preview) td {
     font-size: 12.5px !important;
     padding: 8px 8px !important;
     white-space: nowrap;
   }
+  /* La fila oculta del desplegable de goleadores queda afuera de la regla de
+     arriba a propósito: su padding real (0 cerrada, o el que le pone el JS al
+     abrirla) es el que decide si tiene contenido visible o no. Si el !important
+     de arriba la pisara, todo partido con goleadores cargados quedaría ~16px
+     más "grueso" que uno sin goles aunque el desplegable esté cerrado, y al
+     abrirlo el contenido quedaría sin aire. */
   /* La celda con nombre de jugador/equipo (escudo o bandera + texto) puede
      partir en más de una línea si hace falta, el resto se mantiene compacto */
   table tbody tr td:has(> div) {
