@@ -7301,7 +7301,7 @@ function filaPartidoGrid(p) {
   const golData = jugado ? construirGolDataGrid(p, local, visita) : null;
   const click = p.ID_Partido != null ? ` onclick="verPartido(${p.ID_Partido})"` : '';
   return `
-    <div class="gp-celda gp-local"${click}>${escL}<span>${local}</span></div>
+    <div class="gp-celda gp-local"${click}><span>${local}</span>${escL}</div>
     <div class="gp-celda gp-resultado"${click}><span class="${rc}">${resultadoTxt}</span></div>
     <div class="gp-celda gp-visita"${click}>${escV}<span>${visita}</span></div>
     <div class="gp-celda gp-arrow">${golData ? golData.arrow : ''}</div>
