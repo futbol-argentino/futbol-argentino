@@ -5366,9 +5366,15 @@ function filtrarCampeones() {
   const cardHTML = (t) => {
     const foto = t.Foto_Trofeo ? `trofeos/${t.Foto_Trofeo}` : '';
     const escCampeon = ESCUDOS[t.Campeon] ? `<img src="${ESCUDOS[t.Campeon]}" style="width:22px;height:22px;object-fit:contain;" onerror="this.style.display='none'">` : '';
-    const imgTrofeo = foto
-      ? `<img src="${foto}" class="camp-foto" loading="lazy" decoding="async" alt="${t.Competencia}" onerror="this.innerHTML='<div style=font-size:72px>🏆</div>';this.style.display='none';">`
+    // Si el torneo no tiene foto de trofeo cargada (ej: no se entregó copa), mostramos
+    // el escudo del equipo campeón bien grande como portada, en vez del ícono genérico.
+    const escGrande = ESCUDOS[t.Campeon];
+    const fallbackSinFoto = escGrande
+      ? `<img src="${escGrande}" style="width:80px;height:80px;object-fit:contain;" loading="lazy" decoding="async" alt="${t.Campeon}" onerror="this.parentElement.innerHTML='<div style=font-size:72px>🏆</div>'">`
       : `<div style="font-size:72px;">🏆</div>`;
+    const imgTrofeo = foto
+      ? `<img src="${foto}" class="camp-foto" loading="lazy" decoding="async" alt="${t.Competencia}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{innerHTML:'🏆',style:'font-size:72px'}))">`
+      : fallbackSinFoto;
     return `<div class="camp-card" onclick="verTorneo('${t.ID_Temporada}')">
       <div class="camp-foto-wrap">${imgTrofeo}</div>
       <div class="camp-info">
