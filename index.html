@@ -1214,20 +1214,6 @@ select option{background:#080F20;color:#F0F6FF}
         </div>
       </div>
 
-      <!-- Filtro rival -->
-      <div class="detalle-filtro">
-        <span class="detalle-filtro-label">Filtrar rival:</span>
-        <select id="detalle-filtro-rival" onchange="filtrarDetalle()">
-          <option value="">Todos los rivales</option>
-        </select>
-        <select id="detalle-filtro-resultado" onchange="filtrarDetalle()">
-          <option value="">Todos los resultados</option>
-          <option value="victoria" id="opt-victoria">Victorias</option>
-          <option value="empate">Empates</option>
-          <option value="derrota" id="opt-derrota">Derrotas</option>
-        </select>
-      </div>
-
       <!-- Directores Técnicos -->
       <div class="tabla-wrapper" style="margin-bottom:16px;">
         <div class="tabla-header" onclick="toggleDTsEquipo()" style="cursor:pointer;user-select:none;">
@@ -1251,6 +1237,20 @@ select option{background:#080F20;color:#F0F6FF}
           </div>
           <div id="tabla-dts-equipo"></div>
         </div>
+      </div>
+
+      <!-- Filtro rival -->
+      <div class="detalle-filtro">
+        <span class="detalle-filtro-label">Filtrar rival:</span>
+        <select id="detalle-filtro-rival" onchange="filtrarDetalle()">
+          <option value="">Todos los rivales</option>
+        </select>
+        <select id="detalle-filtro-resultado" onchange="filtrarDetalle()">
+          <option value="">Todos los resultados</option>
+          <option value="victoria" id="opt-victoria">Victorias</option>
+          <option value="empate">Empates</option>
+          <option value="derrota" id="opt-derrota">Derrotas</option>
+        </select>
       </div>
 
       <!-- Stats vs rival específico -->
@@ -2788,9 +2788,10 @@ function actualizarVistaHoyFecha() {
   const listaGrupos = [...gruposMap.values()].sort((a, b) => a.rango - b.rango || a.torneo.localeCompare(b.torneo, 'es'));
 
   grupos.innerHTML = listaGrupos.map(g => `
-    <div class="hoy-fecha-torneo-header" style="display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--fondo-3);border-bottom:1px solid var(--borde);">
-      <span style="font-size:14px;font-weight:700;color:var(--texto-1);">🏆 ${g.torneo}</span>
-      <span style="margin-left:auto;font-size:11px;color:var(--texto-3);background:var(--fondo-4);padding:2px 8px;border-radius:10px;">${g.partidos.length} partido${g.partidos.length === 1 ? '' : 's'}</span>
+    <div class="hoy-fecha-torneo-header" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:12px 16px;background:var(--fondo-3);border-bottom:1px solid var(--borde);">
+      <span></span>
+      <span style="font-size:14px;font-weight:700;color:var(--texto-1);text-align:center;white-space:nowrap;">🏆 ${g.torneo}</span>
+      <span style="justify-self:end;font-size:11px;color:var(--texto-3);background:var(--fondo-4);padding:2px 8px;border-radius:10px;">${g.partidos.length} partido${g.partidos.length === 1 ? '' : 's'}</span>
     </div>
     <div class="grid-simetrica-scroll"><div class="grid-partidos grid-simetrica">${g.partidos.map(filaPartidoGrid).join('')}</div></div>
   `).join('');
