@@ -160,6 +160,13 @@
   table.tabla-partidos td:nth-child(4) { min-width: 130px; }
   .fila-gol-preview td { padding: 3px 12px 8px !important; white-space: normal !important; }
 
+  /* En mobile no mostramos la flechita de "goleadores" de cada partido (ni su
+     fila/panel desplegable): en pantallas chicas agrega mucho ruido visual a
+     los listados de partidos. En PC se mantiene igual que siempre. */
+  .gol-arrow-toggle { display: none !important; }
+  tr.fila-gol-preview { display: none !important; }
+  .gp-goleadores { display: none !important; }
+
   td { font-size: 13px; padding: 8px 8px; }
   .td-fecha { font-size: 11px; white-space: nowrap; }
 
@@ -505,6 +512,23 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 .record-card:hover::before{opacity:1}
 .record-card-label{font-size:11px;letter-spacing:0.6px;color:var(--texto-3);margin-bottom:10px;font-weight:600;text-transform:uppercase;position:relative;z-index:1}
 .record-card-body{position:relative;z-index:1}
+.records-carousel{display:flex;gap:12px;overflow-x:auto;scroll-behavior:smooth;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+.records-carousel::-webkit-scrollbar{display:none;}
+.records-carousel .record-card{flex:0 0 calc(25% - 9px);min-width:150px;}
+.records-arrow{position:absolute;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:50%;background:var(--fondo-2);border:1px solid var(--borde);color:var(--texto-2);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;font-size:18px;line-height:1;transition:var(--trans);box-shadow:0 2px 10px rgba(0,0,0,0.25);}
+.records-arrow:hover{background:var(--azul);color:#fff;border-color:var(--azul);}
+.records-arrow-left{left:-14px;}
+.records-arrow-right{right:-14px;}
+.records-mas-btn{display:none;}
+@media(max-width:600px){
+  .records-arrow{display:none;}
+  .records-carousel{flex-wrap:wrap;overflow-x:visible;}
+  .records-carousel .record-card{flex:0 0 calc(50% - 6px);min-width:0;}
+  .records-carousel .record-card-extra{display:none;}
+  .records-carousel.records-expandido .record-card-extra{display:block;}
+  .records-mas-btn{display:block;width:100%;margin-top:10px;background:var(--fondo-3);border:1px solid var(--borde);border-radius:8px;color:var(--texto-2);font-family:var(--fuente-cuerpo);font-size:12px;font-weight:600;padding:9px;cursor:pointer;transition:var(--trans);}
+  .records-mas-btn:hover{border-color:var(--borde-hover);color:var(--texto-1);}
+}
 .camp-año{font-size:10px;color:var(--texto-3);margin-bottom:4px;text-transform:uppercase;letter-spacing:1.2px;font-weight:600}
 @media(max-width:900px){.campeones-year-grid{grid-template-columns:repeat(2,1fr)!important;gap:14px}.camp-foto{width:120px;height:120px}.camp-foto-wrap{min-height:160px;padding:16px}}
 @media(max-width:600px){.movimiento-grid{grid-template-columns:1fr!important;gap:14px!important;}}
@@ -2589,7 +2613,7 @@ function construirGolData(p, local, visita, colspan) {
   if (!todos.length) return null;
   const uid = 'gol_' + p.ID_Partido + '_' + (_golUidSeq++);
   const tdId = 'goltd_' + uid;
-  const arrow = `<span onclick="event.stopPropagation();var c=document.getElementById('${uid}');var td=document.getElementById('${tdId}');var a=document.getElementById('arr_${uid}');var open=c.style.display==='block';c.style.display=open?'none':'block';td.style.padding=open?'0':'4px 20px 8px 20px';td.style.borderBottom=open?'none':'1px solid var(--borde)';a.style.transform=open?'rotate(0deg)':'rotate(180deg)';"
+  const arrow = `<span class="gol-arrow-toggle" onclick="event.stopPropagation();var c=document.getElementById('${uid}');var td=document.getElementById('${tdId}');var a=document.getElementById('arr_${uid}');var open=c.style.display==='block';c.style.display=open?'none':'block';td.style.padding=open?'0':'4px 20px 8px 20px';td.style.borderBottom=open?'none':'1px solid var(--borde)';a.style.transform=open?'rotate(0deg)':'rotate(180deg)';"
     style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:1px solid var(--borde);border-radius:6px;cursor:pointer;margin-left:5px;flex-shrink:0;transition:border-color 0.15s;vertical-align:middle;"
     onmouseover="this.style.borderColor='var(--celeste)'" onmouseout="this.style.borderColor='var(--borde)'"><span id="arr_${uid}" style="font-size:12px;color:var(--texto-2);transition:transform 0.2s;display:inline-block;line-height:1;">▼</span></span>`;
   const drop = `<tr class="fila-gol-preview"><td id="${tdId}" colspan="${colspan}" style="padding:0;border-bottom:none;"><div id="${uid}" style="display:none;">${todos.map(g=>g.html).join('')}</div></td></tr>`;
@@ -3104,6 +3128,10 @@ function calcularRecordsEquipo(id, partidosEquipo) {
   let bufferInv = [], rachaInvictaPartidos = [];
   let rachaVictAct = 0, rachaVictMax = 0, rachaVictIni = null, rachaVictFin = null;
   let bufferVict = [], rachaVictPartidos = [];
+  let rachaEmpatesAct = 0, rachaEmpatesMax = 0, rachaEmpatesIni = null, rachaEmpatesFin = null;
+  let bufferEmpates = [], rachaEmpatesPartidos = [];
+  let rachaDerrotasAct = 0, rachaDerrotasMax = 0, rachaDerrotasIni = null, rachaDerrotasFin = null;
+  let bufferDerrotas = [], rachaDerrotasPartidos = [];
   let mejorGoleada = null, peorDerrota = null;
 
   ordenados.forEach(p => {
@@ -3145,6 +3173,36 @@ function calcularRecordsEquipo(id, partidosEquipo) {
       rachaVictAct = 0;
     }
 
+    // Racha de empates
+    if (resultado === 'E') {
+      bufferEmpates.push(p);
+      rachaEmpatesAct = bufferEmpates.length;
+      if (rachaEmpatesAct > rachaEmpatesMax) {
+        rachaEmpatesMax = rachaEmpatesAct;
+        rachaEmpatesPartidos = [...bufferEmpates];
+        rachaEmpatesIni = rachaEmpatesPartidos[0];
+        rachaEmpatesFin = rachaEmpatesPartidos[rachaEmpatesPartidos.length-1];
+      }
+    } else {
+      bufferEmpates = [];
+      rachaEmpatesAct = 0;
+    }
+
+    // Racha de derrotas
+    if (resultado === 'P') {
+      bufferDerrotas.push(p);
+      rachaDerrotasAct = bufferDerrotas.length;
+      if (rachaDerrotasAct > rachaDerrotasMax) {
+        rachaDerrotasMax = rachaDerrotasAct;
+        rachaDerrotasPartidos = [...bufferDerrotas];
+        rachaDerrotasIni = rachaDerrotasPartidos[0];
+        rachaDerrotasFin = rachaDerrotasPartidos[rachaDerrotasPartidos.length-1];
+      }
+    } else {
+      bufferDerrotas = [];
+      rachaDerrotasAct = 0;
+    }
+
     // Goleada más grande / peor derrota (solo partidos con resultado normal, no definiciones por penales)
     if (esResultadoNormal(p.Tipo_Definicion)) {
       if (resultado === 'G' && (!mejorGoleada || dif > mejorGoleada.dif)) mejorGoleada = { dif, p, gf, gc };
@@ -3163,10 +3221,14 @@ function calcularRecordsEquipo(id, partidosEquipo) {
   };
   const corteInvicta = encontrarCorte(rachaInvictaPartidos);
   const corteVictorias = encontrarCorte(rachaVictPartidos);
+  const corteEmpates = encontrarCorte(rachaEmpatesPartidos);
+  const corteDerrotas = encontrarCorte(rachaDerrotasPartidos);
 
   return {
     rachaInvictaMax, rachaInvictaIni, rachaInvictaFin, rachaInvictaPartidos, corteInvicta,
     rachaVictMax, rachaVictIni, rachaVictFin, rachaVictPartidos, corteVictorias,
+    rachaEmpatesMax, rachaEmpatesIni, rachaEmpatesFin, rachaEmpatesPartidos, corteEmpates,
+    rachaDerrotasMax, rachaDerrotasIni, rachaDerrotasFin, rachaDerrotasPartidos, corteDerrotas,
     mejorGoleada, peorDerrota
   };
 }
@@ -3213,47 +3275,80 @@ function renderRecordsEquipo(id, r) {
 
   const clickInvicta = r.rachaInvictaMax ? `onclick="abrirModalRacha('invicta')"` : '';
   const clickVict = r.rachaVictMax ? `onclick="abrirModalRacha('victorias')"` : '';
+  const clickEmpates = r.rachaEmpatesMax ? `onclick="abrirModalRacha('empates')"` : '';
+  const clickDerrotasRacha = r.rachaDerrotasMax ? `onclick="abrirModalRacha('derrotas')"` : '';
   const clickGoleada = r.mejorGoleada ? `onclick="verPartido('${r.mejorGoleada.p.ID_Partido}')"` : '';
   const clickDerrota = r.peorDerrota ? `onclick="verPartido('${r.peorDerrota.p.ID_Partido}')"` : '';
 
   cont.innerHTML = `
     <div class="tabla-titulo" style="margin-bottom:14px;">🏅 Récords del Equipo</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
-      <div class="record-card" ${clickInvicta}>
-        <div class="record-card-label">🔥 Racha invicta más larga</div>
-        ${fmtRacha(r.rachaInvictaMax, r.rachaInvictaIni, r.rachaInvictaFin, !!r.rachaInvictaMax)}
+    <div class="records-wrap" style="position:relative;">
+      <button class="records-arrow records-arrow-left" onclick="scrollRecords(-1)" aria-label="Ver récords anteriores">‹</button>
+      <div class="records-carousel" id="records-carousel">
+        <div class="record-card" ${clickInvicta}>
+          <div class="record-card-label">🔥 Racha invicta más larga</div>
+          ${fmtRacha(r.rachaInvictaMax, r.rachaInvictaIni, r.rachaInvictaFin, !!r.rachaInvictaMax)}
+        </div>
+        <div class="record-card" ${clickVict}>
+          <div class="record-card-label">✅ Racha de victorias</div>
+          ${fmtRacha(r.rachaVictMax, r.rachaVictIni, r.rachaVictFin, !!r.rachaVictMax)}
+        </div>
+        <div class="record-card" ${clickGoleada}>
+          <div class="record-card-label">🎯 Mayor goleada</div>
+          ${fmtPartido(r.mejorGoleada, true)}
+        </div>
+        <div class="record-card" ${clickDerrota}>
+          <div class="record-card-label">😖 Peor derrota</div>
+          ${fmtPartido(r.peorDerrota, false)}
+        </div>
+        <div class="record-card record-card-extra" ${clickEmpates}>
+          <div class="record-card-label">🤝 Racha de empates</div>
+          ${fmtRacha(r.rachaEmpatesMax, r.rachaEmpatesIni, r.rachaEmpatesFin, !!r.rachaEmpatesMax)}
+        </div>
+        <div class="record-card record-card-extra" ${clickDerrotasRacha}>
+          <div class="record-card-label">❌ Racha de derrotas</div>
+          ${fmtRacha(r.rachaDerrotasMax, r.rachaDerrotasIni, r.rachaDerrotasFin, !!r.rachaDerrotasMax)}
+        </div>
       </div>
-      <div class="record-card" ${clickVict}>
-        <div class="record-card-label">✅ Racha de victorias</div>
-        ${fmtRacha(r.rachaVictMax, r.rachaVictIni, r.rachaVictFin, !!r.rachaVictMax)}
-      </div>
-      <div class="record-card" ${clickGoleada}>
-        <div class="record-card-label">🎯 Mayor goleada</div>
-        ${fmtPartido(r.mejorGoleada, true)}
-      </div>
-      <div class="record-card" ${clickDerrota}>
-        <div class="record-card-label">😖 Peor derrota</div>
-        ${fmtPartido(r.peorDerrota, false)}
-      </div>
+      <button class="records-arrow records-arrow-right" onclick="scrollRecords(1)" aria-label="Ver más récords">›</button>
+      <button class="records-mas-btn" id="records-mas-btn" onclick="toggleRecordsMas()">▼ Mostrar más</button>
     </div>
   `;
+}
+
+// ── Carrusel de récords: flechas laterales (desktop) + "mostrar más" (mobile) ──
+function scrollRecords(dir) {
+  const el = document.getElementById('records-carousel');
+  if (!el) return;
+  el.scrollBy({ left: dir * (el.clientWidth * 0.9), behavior: 'smooth' });
+}
+function toggleRecordsMas() {
+  const el = document.getElementById('records-carousel');
+  const btn = document.getElementById('records-mas-btn');
+  if (!el || !btn) return;
+  const expandido = el.classList.toggle('records-expandido');
+  btn.textContent = expandido ? '▲ Mostrar menos' : '▼ Mostrar más';
 }
 
 // ── MODAL DE RACHA (lista de partidos de una racha) ──
 function abrirModalRacha(tipo) {
   if (!recordsEquipoActual) return;
   const { id, nombre, r } = recordsEquipoActual;
-  const esInvicta = tipo === 'invicta';
-  const lista = esInvicta ? r.rachaInvictaPartidos : r.rachaVictPartidos;
-  const corte = esInvicta ? r.corteInvicta : r.corteVictorias;
+  const CONF = {
+    invicta:   { partidos: r.rachaInvictaPartidos,  corte: r.corteInvicta,   titulo: `🔥 Racha invicta de ${nombre}`,      vigente: 'sigue invicto' },
+    victorias: { partidos: r.rachaVictPartidos,      corte: r.corteVictorias, titulo: `✅ Racha de victorias de ${nombre}`, vigente: 'sigue ganando' },
+    empates:   { partidos: r.rachaEmpatesPartidos,   corte: r.corteEmpates,   titulo: `🤝 Racha de empates de ${nombre}`,   vigente: 'sigue empatando' },
+    derrotas:  { partidos: r.rachaDerrotasPartidos,  corte: r.corteDerrotas,  titulo: `❌ Racha de derrotas de ${nombre}`,  vigente: 'sigue perdiendo' },
+  }[tipo];
+  if (!CONF) return;
+  const lista = CONF.partidos;
+  const corte = CONF.corte;
   if (!lista || !lista.length) return;
 
   const ini = fechaCortaGlobal(lista[0].Fecha);
   const fin = fechaCortaGlobal(lista[lista.length-1].Fecha);
 
-  document.getElementById('modal-racha-titulo').textContent = esInvicta
-    ? `🔥 Racha invicta de ${nombre}`
-    : `✅ Racha de victorias de ${nombre}`;
+  document.getElementById('modal-racha-titulo').textContent = CONF.titulo;
   document.getElementById('modal-racha-subtitulo').textContent =
     `${lista.length} partido${lista.length>1?'s':''} · ${ini}${fin!==ini?' → '+fin:''}`;
 
@@ -3307,7 +3402,7 @@ function abrirModalRacha(tipo) {
       </div>`;
   })() : `
     <div style="margin-top:6px;padding-top:16px;border-top:1px dashed var(--borde);text-align:center;color:var(--texto-3);font-size:12px;">
-      🟢 Racha vigente — ${nombre} sigue ${esInvicta?'invicto':'ganando'} desde el último partido registrado
+      🟢 Racha vigente — ${nombre} ${CONF.vigente} desde el último partido registrado
     </div>`;
 
   document.getElementById('modal-racha-lista').innerHTML = filasHtml + corteHtml;
@@ -7307,7 +7402,7 @@ function construirGolDataGrid(p, local, visita) {
   if (!todos.length) return null;
   const uid = 'golg_' + p.ID_Partido + '_' + (_golUidSeq++);
   const wrapId = 'golwrap_' + uid;
-  const arrow = `<span onclick="event.stopPropagation();var c=document.getElementById('${uid}');var wrap=document.getElementById('${wrapId}');var a=document.getElementById('arr_${uid}');var open=c.style.display==='block';c.style.display=open?'none':'block';wrap.style.padding=open?'0':'4px 20px 8px 20px';wrap.style.borderBottom=open?'none':'1px solid var(--borde)';a.style.transform=open?'rotate(0deg)':'rotate(180deg)';"
+  const arrow = `<span class="gol-arrow-toggle" onclick="event.stopPropagation();var c=document.getElementById('${uid}');var wrap=document.getElementById('${wrapId}');var a=document.getElementById('arr_${uid}');var open=c.style.display==='block';c.style.display=open?'none':'block';wrap.style.padding=open?'0':'4px 20px 8px 20px';wrap.style.borderBottom=open?'none':'1px solid var(--borde)';a.style.transform=open?'rotate(0deg)':'rotate(180deg)';"
     style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:1px solid var(--borde);border-radius:6px;cursor:pointer;flex-shrink:0;transition:border-color 0.15s;"
     onmouseover="this.style.borderColor='var(--celeste)'" onmouseout="this.style.borderColor='var(--borde)'"><span id="arr_${uid}" style="font-size:12px;color:var(--texto-2);transition:transform 0.2s;display:inline-block;line-height:1;">▼</span></span>`;
   const drop = `<div id="${wrapId}" class="gp-goleadores" style="padding:0;border-bottom:none;"><div id="${uid}" style="display:none;">${todos.map(g=>g.html).join('')}</div></div>`;
