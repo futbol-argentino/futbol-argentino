@@ -507,6 +507,7 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 .record-card-body{position:relative;z-index:1}
 .camp-año{font-size:10px;color:var(--texto-3);margin-bottom:4px;text-transform:uppercase;letter-spacing:1.2px;font-weight:600}
 @media(max-width:900px){.campeones-year-grid{grid-template-columns:repeat(2,1fr)!important;gap:14px}.camp-foto{width:120px;height:120px}.camp-foto-wrap{min-height:160px;padding:16px}}
+@media(max-width:600px){.movimiento-grid{grid-template-columns:1fr!important;gap:14px!important;}}
 @media(max-width:500px){.campeones-year-grid{grid-template-columns:repeat(2,1fr)!important;gap:10px}.camp-foto{width:90px;height:90px}.camp-foto-wrap{min-height:130px;padding:12px}.camp-nombre{font-size:14px}}
 
 /* PAGINACION */
@@ -1184,6 +1185,10 @@ select option{background:#080F20;color:#F0F6FF}
           style="flex-shrink:0;font-size:13px;padding:8px 16px;border-radius:8px;border:1px solid var(--borde);background:var(--fondo-3);color:var(--texto-2);cursor:pointer;font-family:var(--fuente-cuerpo);transition:var(--trans);">
           🥇 Palmarés
         </button>
+        <button id="dtab-linea" onclick="cambiarDetalleTab('linea')"
+          style="flex-shrink:0;font-size:13px;padding:8px 16px;border-radius:8px;border:1px solid var(--borde);background:var(--fondo-3);color:var(--texto-2);cursor:pointer;font-family:var(--fuente-cuerpo);transition:var(--trans);">
+          📈 Línea de tiempo
+        </button>
       </div>
 
       <!-- Panel Partidos (todo lo de antes) -->
@@ -1293,6 +1298,11 @@ select option{background:#080F20;color:#F0F6FF}
       <!-- Panel Palmarés -->
       <div id="dpanel-palmares" style="display:none;">
         <div id="palmares-lista"></div>
+      </div>
+
+      <!-- Panel Línea de tiempo (ascensos/descensos) -->
+      <div id="dpanel-linea" style="display:none;">
+        <div id="linea-tiempo-lista"></div>
       </div>
 
     </div><!-- fin vista-detalle -->
@@ -1575,6 +1585,12 @@ select option{background:#080F20;color:#F0F6FF}
   <!-- ══ TAB CAMPEONES ══ -->
   <div class="tab-panel" id="panel-campeones">
 
+    <!-- Sub-tabs: Campeones / Ascensos y Descensos -->
+    <div style="display:flex;gap:2px;background:var(--fondo-3);border:1px solid var(--borde);border-radius:10px;padding:4px;margin-bottom:16px;width:fit-content;">
+      <button class="torneo-tab-btn activo" id="ctab-campeones" onclick="cambiarCampeonesSubTab('campeones')">🏆 Campeones</button>
+      <button class="torneo-tab-btn" id="ctab-movimientos" onclick="cambiarCampeonesSubTab('movimientos')">📈 Ascensos y Descensos</button>
+    </div>
+
     <!-- Vista grilla de torneos -->
     <div id="vista-campeones">
       <div class="filtros-panel" style="margin-bottom:20px;">
@@ -1643,6 +1659,17 @@ select option{background:#080F20;color:#F0F6FF}
         <div id="torneo-stats-container"></div>
         <div id="torneo-stats-equipos-container" style="display:none;"></div>
       </div>
+    </div>
+
+    <!-- Vista global de Ascensos y Descensos -->
+    <div id="vista-movimientos" style="display:none;">
+      <div class="filtros-panel" style="margin-bottom:20px;">
+        <div class="filtros-titulo">📈 Ascensos y Descensos por Temporada</div>
+        <div style="color:var(--texto-3);font-size:13px;margin-top:6px;">
+          Movimientos entre Primera División y la categoría inferior, temporada por temporada.
+        </div>
+      </div>
+      <div id="movimientos-lista"></div>
     </div>
 
   </div><!-- fin panel-campeones -->
@@ -5446,6 +5473,8 @@ function verTorneo(idTemporada) {
   cambiarStatsSubTab('jugadores');
 
   document.getElementById('vista-campeones').style.display = 'none';
+  const vMov = document.getElementById('vista-movimientos');
+  if (vMov) vMov.style.display = 'none';
   document.getElementById('vista-torneo').style.display = 'block';
   cambiarTorneoTab('tablas');
   // Mostrar/ocultar el tab de Cuadro según si hay fases eliminatorias
@@ -7682,7 +7711,7 @@ function renderBadgeUsuario() {
 
 // ── TABS DEL DETALLE EQUIPO ──
 function cambiarDetalleTab(tab) {
-  ['partidos','torneos','palmares'].forEach(t => {
+  ['partidos','torneos','palmares','linea'].forEach(t => {
     document.getElementById('dpanel-'+t).style.display = t===tab ? 'block' : 'none';
     const btn = document.getElementById('dtab-'+t);
     if (!btn) return;
@@ -7691,6 +7720,128 @@ function cambiarDetalleTab(tab) {
   });
   if (tab === 'torneos') renderHistorialTorneos(equipoDetalleID);
   if (tab === 'palmares') renderPalmares(equipoDetalleID);
+  if (tab === 'linea') renderLineaTiempoEquipo(equipoDetalleID);
+}
+
+// Devuelve el año numérico de una temporada (campo Año si existe, si no lo infiere de los partidos)
+function obtenerAnioTemporada(t) {
+  if (t.Año && parseInt(t.Año) > 0) return parseInt(t.Año);
+  const psTorneo = partidos.filter(p => p.ID_Temporada == t.ID_Temporada && p.Fecha);
+  const anios = psTorneo.map(p => {
+    const f = (p.Fecha||'').split('T')[0];
+    const m = f.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    return m ? parseInt(m[3]) : parseInt((f.split('-')[0])||0);
+  }).filter(a => a > 2000);
+  return anios.length ? Math.max(...anios) : null;
+}
+
+// Busca el ID de un equipo a partir de su nombre (tal como figura en Ascensos/Descensos del CSV)
+function idEquipoPorNombre(nombre) {
+  const norm = (nombre||'').toLowerCase().replace(/\s+/g,'');
+  if (!norm) return null;
+  return Object.keys(equipos).find(id => (equipos[id]||'').toLowerCase().replace(/\s+/g,'') === norm) || null;
+}
+
+// Abre el perfil de un equipo directamente en su Línea de tiempo (usado desde la vista global de Ascensos/Descensos)
+function irAEquipoLinea(nombre) {
+  const id = idEquipoPorNombre(nombre);
+  if (!id) return;
+  verDetalleEquipo(id);
+  cambiarDetalleTab('linea');
+}
+
+// ── LÍNEA DE TIEMPO DE UN EQUIPO (ascensos / descensos / títulos por año) ──
+function renderLineaTiempoEquipo(equipoId) {
+  const cont = document.getElementById('linea-tiempo-lista');
+  if (!cont) return;
+
+  const nmEq = equipos[equipoId] || equipoId;
+  const nmEqNorm = nmEq.toLowerCase().replace(/\s+/g,'');
+
+  // Agrupar por año, igual que en Historial de Torneos, uniendo las marcas de todos los torneos de ese año
+  const porAnio = {};
+  temporadasArr.forEach(t => {
+    const juega = partidos.some(p => p.ID_Temporada == t.ID_Temporada && (p.Local_ID===equipoId || p.Visitante_ID===equipoId));
+    if (!juega) return;
+
+    const anio = obtenerAnioTemporada(t);
+    if (!anio) return;
+
+    const fueCampeon = (t.Campeon||'').toLowerCase().replace(/\s+/g,'') === nmEqNorm;
+    const fueSubcampeon = !fueCampeon && (t.Subcampeon||'').toLowerCase().replace(/\s+/g,'') === nmEqNorm;
+    const listaAscensos = (t.Ascensos||'').split(';').map(s => s.toLowerCase().replace(/\s+/g,''));
+    const listaDescensos = (t.Descensos||'').split(';').map(s => s.toLowerCase().replace(/\s+/g,''));
+    const fueAscenso = listaAscensos.includes(nmEqNorm);
+    const fueDescenso = !fueAscenso && listaDescensos.includes(nmEqNorm);
+
+    if (!porAnio[anio]) porAnio[anio] = { anio, divisiones: new Set(), campeon:false, subcampeon:false, ascenso:false, descenso:false };
+    const reg = porAnio[anio];
+    if (t.Division) reg.divisiones.add(t.Division);
+    reg.campeon    = reg.campeon    || fueCampeon;
+    reg.subcampeon = reg.subcampeon || fueSubcampeon;
+    reg.ascenso    = reg.ascenso    || fueAscenso;
+    reg.descenso   = reg.descenso   || fueDescenso;
+  });
+
+  const anios = Object.values(porAnio).sort((a,b) => b.anio - a.anio);
+
+  if (!anios.length) {
+    cont.innerHTML = `<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">
+      <div style="font-size:48px;margin-bottom:16px;">📈</div>
+      <div style="font-size:15px;">No hay datos suficientes para armar la línea de tiempo de este equipo.</div>
+    </div>`;
+    return;
+  }
+
+  const filas = anios.map((reg, i) => {
+    let dotColor = 'var(--texto-3)', dotBg = 'var(--fondo-3)', icono = '●';
+    let etiqueta = '';
+    if (reg.campeon) { dotColor = 'var(--oro)'; dotBg = 'rgba(251,191,36,0.15)'; icono = '🏆'; etiqueta = 'CAMPEÓN'; }
+    else if (reg.ascenso) { dotColor = 'var(--verde)'; dotBg = 'rgba(74,222,128,0.15)'; icono = '▲'; etiqueta = 'ASCENSO'; }
+    else if (reg.descenso) { dotColor = 'var(--rojo)'; dotBg = 'rgba(244,63,94,0.15)'; icono = '▼'; etiqueta = 'DESCENSO'; }
+    else if (reg.subcampeon) { dotColor = '#C0C0C0'; dotBg = 'rgba(192,192,192,0.15)'; icono = '🥈'; etiqueta = 'SUBCAMPEÓN'; }
+
+    // Si además del hito principal también descendió/ascendió (raro pero posible), lo mostramos como badge secundario
+    const extraBadges = [];
+    if (reg.campeon && reg.ascenso) extraBadges.push(`<span style="font-size:10px;background:rgba(74,222,128,0.15);color:var(--verde);padding:2px 7px;border-radius:5px;border:1px solid rgba(74,222,128,0.35);font-weight:700;">▲ ASCENSO</span>`);
+    if (reg.campeon && reg.descenso) extraBadges.push(`<span style="font-size:10px;background:rgba(244,63,94,0.15);color:var(--rojo);padding:2px 7px;border-radius:5px;border:1px solid rgba(244,63,94,0.35);font-weight:700;">▼ DESCENSO</span>`);
+
+    // Hueco respecto al año siguiente más reciente en la lista (posible paso por otra categoría o falta de datos)
+    const anterior = anios[i-1]; // más reciente
+    let hueco = '';
+    if (anterior && (anterior.anio - reg.anio) > 1) {
+      hueco = `<div style="display:flex;gap:0;padding-left:19px;">
+        <div style="width:2px;background:repeating-linear-gradient(180deg,var(--borde) 0,var(--borde) 4px,transparent 4px,transparent 8px);margin:0 19px;align-self:stretch;"></div>
+        <div style="padding:6px 0 6px 14px;color:var(--texto-3);font-size:12px;font-style:italic;">
+          ${anterior.anio - reg.anio - 1 === 1 ? '1 año' : (anterior.anio - reg.anio - 1) + ' años'} sin registros en esta división — posiblemente en otra categoría
+        </div>
+      </div>`;
+    }
+
+    return `${hueco}<div style="display:flex;gap:14px;">
+      <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;">
+        <div style="width:40px;height:40px;border-radius:50%;background:${dotBg};border:2px solid ${dotColor};display:flex;align-items:center;justify-content:center;font-size:16px;">${icono}</div>
+        ${i < anios.length-1 ? `<div style="width:2px;flex:1;min-height:18px;background:var(--borde);"></div>` : ''}
+      </div>
+      <div style="flex:1;min-width:0;padding-bottom:22px;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
+          <span style="font-family:var(--fuente-titulo);font-size:18px;color:${dotColor};">${reg.anio}</span>
+          ${etiqueta ? `<span style="font-size:10px;background:${dotBg};color:${dotColor};padding:2px 7px;border-radius:5px;border:1px solid ${dotColor};font-weight:700;">${etiqueta}</span>` : ''}
+          ${extraBadges.join('')}
+        </div>
+        <div style="font-size:13px;color:var(--texto-2);">${[...reg.divisiones].join(' · ') || '—'}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  cont.innerHTML = `
+    <div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;padding:20px;">
+      ${filas}
+    </div>
+    <div style="text-align:center;margin-top:14px;color:var(--texto-3);font-size:12px;">
+      Los ascensos se irán completando a medida que se carguen los datos de las divisiones inferiores.
+    </div>
+  `;
 }
 
 // ── HISTORIAL DE TORNEOS ──
@@ -7875,6 +8026,86 @@ function renderPalmares(equipoId) {
           <div style="color:var(--texto-3);font-size:20px;flex-shrink:0;">›</div>
         </div>`;
     }).join('')}
+  `;
+}
+
+// ── Sub-tabs del panel Campeones: Campeones vs Ascensos/Descensos ──
+function cambiarCampeonesSubTab(tab) {
+  const esMov = tab === 'movimientos';
+  document.getElementById('vista-campeones').style.display = esMov ? 'none' : 'block';
+  document.getElementById('vista-torneo').style.display = 'none';
+  document.getElementById('vista-movimientos').style.display = esMov ? 'block' : 'none';
+  document.getElementById('ctab-campeones').classList.toggle('activo', !esMov);
+  document.getElementById('ctab-movimientos').classList.toggle('activo', esMov);
+  if (esMov) renderMovimientosAscensoDescenso();
+}
+
+// ── VISTA GLOBAL: Ascensos y Descensos por temporada ──
+function renderMovimientosAscensoDescenso() {
+  const cont = document.getElementById('movimientos-lista');
+  if (!cont) return;
+
+  // Agrupar por año, uniendo ascensos/descensos de todos los torneos de esa temporada
+  const porAnio = {};
+  temporadasArr.forEach(t => {
+    const ascensos  = (t.Ascensos||'').split(';').map(s=>s.trim()).filter(Boolean);
+    const descensos = (t.Descensos||'').split(';').map(s=>s.trim()).filter(Boolean);
+    if (!ascensos.length && !descensos.length) return;
+
+    const anio = obtenerAnioTemporada(t);
+    const anioLabel = t.Año || anio || '?';
+    const key = anioLabel;
+    if (!porAnio[key]) porAnio[key] = { anioLabel, anioNum: anio||0, division: t.Division||'', ascensos: new Set(), descensos: new Set() };
+    ascensos.forEach(e => porAnio[key].ascensos.add(e));
+    descensos.forEach(e => porAnio[key].descensos.add(e));
+  });
+
+  const temporadas = Object.values(porAnio).sort((a,b) => b.anioNum - a.anioNum);
+
+  if (!temporadas.length) {
+    cont.innerHTML = `<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">
+      <div style="font-size:48px;margin-bottom:16px;">📈</div>
+      <div style="font-size:15px;">Todavía no hay movimientos de ascenso/descenso cargados.</div>
+    </div>`;
+    return;
+  }
+
+  const chip = (nombre, tipo) => {
+    const id = idEquipoPorNombre(nombre);
+    const color = tipo === 'asc' ? 'var(--verde)' : 'var(--rojo)';
+    const bg = tipo === 'asc' ? 'rgba(74,222,128,0.10)' : 'rgba(244,63,94,0.10)';
+    return `<div ${id ? `onclick="irAEquipoLinea('${nombre.replace(/'/g,"\\'")}')" style="cursor:pointer;` : `style="`}
+        display:flex;align-items:center;gap:8px;background:${bg};border:1px solid ${color};border-radius:8px;padding:6px 10px;font-size:13px;">
+      ${escudoImg(nombre, 20)}
+      <span>${nombre}</span>
+    </div>`;
+  };
+
+  cont.innerHTML = temporadas.map(reg => `
+    <div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;padding:18px 20px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+        <span style="font-family:var(--fuente-titulo);font-size:20px;letter-spacing:0.5px;">${reg.anioLabel}</span>
+        ${reg.division ? `<span style="font-size:12px;color:var(--texto-3);">${reg.division}</span>` : ''}
+      </div>
+      <div class="movimiento-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--verde);margin-bottom:8px;">▲ ASCIENDEN</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            ${reg.ascensos.size ? [...reg.ascensos].map(e => chip(e,'asc')).join('') : `<span style="font-size:12px;color:var(--texto-3);font-style:italic;">Aún no cargado</span>`}
+          </div>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--rojo);margin-bottom:8px;">▼ DESCIENDEN</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            ${reg.descensos.size ? [...reg.descensos].map(e => chip(e,'desc')).join('') : `<span style="font-size:12px;color:var(--texto-3);font-style:italic;">Sin descensos registrados</span>`}
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('') + `
+    <div style="text-align:center;margin-top:6px;color:var(--texto-3);font-size:12px;">
+      Los ascensos se irán completando a medida que se carguen los datos de las divisiones inferiores.
+    </div>
   `;
 }
 
