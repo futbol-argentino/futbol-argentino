@@ -160,13 +160,6 @@
   table.tabla-partidos td:nth-child(4) { min-width: 130px; }
   .fila-gol-preview td { padding: 3px 12px 8px !important; white-space: normal !important; }
 
-  /* En mobile no mostramos la flechita de "goleadores" de cada partido (ni su
-     fila/panel desplegable): en pantallas chicas agrega mucho ruido visual a
-     los listados de partidos. En PC se mantiene igual que siempre. */
-  .gol-arrow-toggle { display: none !important; }
-  tr.fila-gol-preview { display: none !important; }
-  .gp-goleadores { display: none !important; }
-
   td { font-size: 13px; padding: 8px 8px; }
   .td-fecha { font-size: 11px; white-space: nowrap; }
 
@@ -360,6 +353,7 @@ thead tr{background:var(--fondo-3);border-bottom:1px solid var(--borde);position
 th{padding:10px 16px;text-align:left;font-family:var(--fuente-cuerpo);font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--texto-3);white-space:nowrap}
 th.center{text-align:center}
 tbody tr{border-bottom:1px solid var(--borde);transition:background 0.15s,box-shadow 0.15s;cursor:pointer}
+tbody tr.fila-gol-preview{border-bottom:none;cursor:default}
 tbody tr:last-child{border-bottom:none}
 tbody tr:hover{background:rgba(14,165,233,0.04);box-shadow:inset 3px 0 0 var(--celeste)}
 td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
@@ -523,7 +517,7 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 @media(max-width:600px){
   .records-arrow{display:none;}
   .records-carousel{flex-wrap:wrap;overflow-x:visible;}
-  .records-carousel .record-card{flex:0 0 calc(50% - 6px);min-width:0;}
+  .records-carousel .record-card{flex:0 0 100%;min-width:0;}
   .records-carousel .record-card-extra{display:none;}
   .records-carousel.records-expandido .record-card-extra{display:block;}
   .records-mas-btn{display:block;width:100%;margin-top:10px;background:var(--fondo-3);border:1px solid var(--borde);border-radius:8px;color:var(--texto-2);font-family:var(--fuente-cuerpo);font-size:12px;font-weight:600;padding:9px;cursor:pointer;transition:var(--trans);}
@@ -3147,7 +3141,7 @@ function calcularRecordsEquipo(id, partidosEquipo) {
     if (resultado !== 'P') {
       bufferInv.push(p);
       rachaInvictaAct = bufferInv.length;
-      if (rachaInvictaAct > rachaInvictaMax) {
+      if (rachaInvictaAct >= rachaInvictaMax) {
         rachaInvictaMax = rachaInvictaAct;
         rachaInvictaPartidos = [...bufferInv];
         rachaInvictaIni = rachaInvictaPartidos[0];
@@ -3162,7 +3156,7 @@ function calcularRecordsEquipo(id, partidosEquipo) {
     if (resultado === 'G') {
       bufferVict.push(p);
       rachaVictAct = bufferVict.length;
-      if (rachaVictAct > rachaVictMax) {
+      if (rachaVictAct >= rachaVictMax) {
         rachaVictMax = rachaVictAct;
         rachaVictPartidos = [...bufferVict];
         rachaVictIni = rachaVictPartidos[0];
@@ -3177,7 +3171,7 @@ function calcularRecordsEquipo(id, partidosEquipo) {
     if (resultado === 'E') {
       bufferEmpates.push(p);
       rachaEmpatesAct = bufferEmpates.length;
-      if (rachaEmpatesAct > rachaEmpatesMax) {
+      if (rachaEmpatesAct >= rachaEmpatesMax) {
         rachaEmpatesMax = rachaEmpatesAct;
         rachaEmpatesPartidos = [...bufferEmpates];
         rachaEmpatesIni = rachaEmpatesPartidos[0];
@@ -3192,7 +3186,7 @@ function calcularRecordsEquipo(id, partidosEquipo) {
     if (resultado === 'P') {
       bufferDerrotas.push(p);
       rachaDerrotasAct = bufferDerrotas.length;
-      if (rachaDerrotasAct > rachaDerrotasMax) {
+      if (rachaDerrotasAct >= rachaDerrotasMax) {
         rachaDerrotasMax = rachaDerrotasAct;
         rachaDerrotasPartidos = [...bufferDerrotas];
         rachaDerrotasIni = rachaDerrotasPartidos[0];
@@ -3243,12 +3237,12 @@ function renderRecordsEquipo(id, r) {
 
   const fechaCorta = f => f ? (f.split('T')[0] || f) : '';
 
-  const fmtRacha = (max, ini, fin, clickable) => {
+  const fmtRacha = (max, ini, fin, clickable, color) => {
     if (!max) return `<div class="record-card-body"><div style="color:var(--texto-3);font-size:12px;">Sin datos suficientes</div></div>`;
     const fIni = fechaCorta(ini?.Fecha), fFin = fechaCorta(fin?.Fecha);
     return `
       <div class="record-card-body">
-        <div style="font-family:var(--fuente-titulo);font-size:30px;color:var(--oro);line-height:1;margin-bottom:6px;">${max}</div>
+        <div style="font-family:var(--fuente-titulo);font-size:30px;color:${color||'var(--oro)'};line-height:1;margin-bottom:6px;">${max}</div>
         <div style="font-size:12px;color:var(--texto-2);margin-bottom:4px;">partido${max>1?'s':''}</div>
         <div style="font-size:11px;color:var(--texto-3);">${fIni}${fFin && fFin!==fIni ? ' → '+fFin : ''}</div>
         ${clickable ? '<div style="font-size:10px;color:var(--celeste);margin-top:8px;">Ver partidos →</div>' : ''}
@@ -3307,7 +3301,7 @@ function renderRecordsEquipo(id, r) {
         </div>
         <div class="record-card record-card-extra" ${clickDerrotasRacha}>
           <div class="record-card-label">❌ Racha de derrotas</div>
-          ${fmtRacha(r.rachaDerrotasMax, r.rachaDerrotasIni, r.rachaDerrotasFin, !!r.rachaDerrotasMax)}
+          ${fmtRacha(r.rachaDerrotasMax, r.rachaDerrotasIni, r.rachaDerrotasFin, !!r.rachaDerrotasMax, 'var(--rojo)')}
         </div>
       </div>
       <button class="records-arrow records-arrow-right" onclick="scrollRecords(1)" aria-label="Ver más récords">›</button>
@@ -3614,39 +3608,51 @@ function aplicarOrdenDTsEquipo() {
 
 function volverEquipos() {
   torneoOrigenEquipo = null;
-  document.getElementById('vista-detalle').classList.remove('visible');
+  const vDetalle = document.getElementById('vista-detalle');
+  if (vDetalle) vDetalle.classList.remove('visible');
   equipoDetalleID = null;
-  document.getElementById('vista-divisiones').style.display = 'block';
+
+  const show = (id, disp) => { const el = document.getElementById(id); if (el) el.style.display = disp; };
+
+  show('vista-divisiones', 'block');
   if (ligaActual !== null) {
     // Vino desde una liga regional
-    document.getElementById('vista-ligas').style.display = 'block';
-    document.getElementById('vista-provincias').style.display = 'none';
-    document.getElementById('divisiones-grid').style.display = 'none';
-    document.getElementById('todos-equipos-wrap').style.display = 'none';
-    document.getElementById('vista-equipos').style.display = 'none';
+    show('vista-ligas', 'block');
+    show('vista-provincias', 'none');
+    show('divisiones-grid', 'none');
+    show('todos-equipos-wrap', 'none');
+    show('vista-equipos', 'none');
   } else if (provinciaActual !== null) {
     // Vino desde una provincia
-    document.getElementById('vista-provincias').style.display = 'block';
-    document.getElementById('vista-ligas').style.display = 'none';
-    document.getElementById('divisiones-grid').style.display = 'none';
-    document.getElementById('todos-equipos-wrap').style.display = 'none';
-    document.getElementById('vista-equipos').style.display = 'none';
+    show('vista-provincias', 'block');
+    show('vista-ligas', 'none');
+    show('divisiones-grid', 'none');
+    show('todos-equipos-wrap', 'none');
+    show('vista-equipos', 'none');
   } else if (equiposDivision !== null) {
-    document.getElementById('vista-equipos').style.display = 'block';
-    document.getElementById('vista-ligas').style.display = 'none';
-    document.getElementById('divisiones-grid').style.display = 'none';
-    document.getElementById('todos-equipos-wrap').style.display = 'none';
+    show('vista-equipos', 'block');
+    show('vista-ligas', 'none');
+    show('divisiones-grid', 'none');
+    show('todos-equipos-wrap', 'none');
   } else if (vistaEquiposModo === 'todos') {
-    document.getElementById('todos-equipos-wrap').style.display = 'block';
-    document.getElementById('vista-ligas').style.display = 'none';
-    document.getElementById('divisiones-grid').style.display = 'none';
-    document.getElementById('vista-equipos').style.display = 'none';
+    show('todos-equipos-wrap', 'block');
+    show('vista-ligas', 'none');
+    show('divisiones-grid', 'none');
+    show('vista-equipos', 'none');
   } else {
-    document.getElementById('divisiones-grid').style.display = 'grid';
-    document.getElementById('vista-ligas').style.display = 'none';
-    document.getElementById('todos-equipos-wrap').style.display = 'none';
-    document.getElementById('vista-equipos').style.display = 'none';
+    show('divisiones-grid', 'grid');
+    show('vista-ligas', 'none');
+    show('todos-equipos-wrap', 'none');
+    show('vista-equipos', 'none');
   }
+
+  // Algunos navegadores móviles (Chrome/Android) no repintan el área recién
+  // mostrada hasta la siguiente interacción, dejándola en blanco un instante.
+  // Forzamos un reflow para que se vea de entrada, sin necesitar un segundo toque.
+  requestAnimationFrame(() => {
+    const area = document.getElementById('vista-divisiones');
+    if (area) void area.offsetHeight;
+  });
 }
 
 // ── MODAL ──
@@ -5072,6 +5078,15 @@ function verFichaJugador(nombre, nacionalidadBuscada) {
       <span class="ficha-stat-label">${label}</span>
     </div>`).join('');
 
+  // Debut profesional: el partido más antiguo de TODA la carrera del jugador (cualquier equipo)
+  let debutCarreraPartidoId = null, debutCarreraFecha = null;
+  Object.values(fichaPartidosPorEquipo).forEach(lista => {
+    lista.forEach(({partido:p}) => {
+      const f = normalizarFechaISO(p.Fecha) || '';
+      if (f && (!debutCarreraFecha || f < debutCarreraFecha)) { debutCarreraFecha = f; debutCarreraPartidoId = p.ID_Partido; }
+    });
+  });
+
   document.getElementById('ficha-tabla-equipos').innerHTML = Object.entries(porEquipo)
     .sort((a,b) => (b[1].pj||0) - (a[1].pj||0))
     .map(([eid, r]) => {
@@ -5085,6 +5100,8 @@ function verFichaJugador(nombre, nacionalidadBuscada) {
         return fb.localeCompare(fa);
       });
       const uid = 'peq_' + eid + '_' + (_golUidSeq++);
+      // Debut de equipo: el partido más antiguo registrado con ESTE club puntual
+      const debutEquipoPartidoId = partidosEquipo.length ? partidosEquipo[partidosEquipo.length-1].partido.ID_Partido : null;
       const iconosMap = { gol:'⚽', penal:'🅿️', ec:'🔴', amarilla:'🟨', roja:'🟥' };
       const filasPartidos = partidosEquipo.length ? partidosEquipo.map(({partido:p, incidencias}) => {
         const local = equipos[p.Local_ID]||p.Local_ID;
@@ -5095,12 +5112,20 @@ function verFichaJugador(nombre, nacionalidadBuscada) {
         const incTxt = incidencias.length
           ? incidencias.map(inc => `<span title="${inc.label}${inc.minuto?' '+inc.minuto:''}" style="margin-right:4px;white-space:nowrap;">${iconosMap[inc.tipo]}${inc.minuto?`<span style="font-size:9px;color:var(--texto-3);">${inc.minuto}</span>`:''}</span>`).join('')
           : `<span style="color:var(--texto-3);font-size:11px;">—</span>`;
+        const esDebutCarrera = debutCarreraPartidoId != null && p.ID_Partido === debutCarreraPartidoId;
+        const esDebutEquipo = !esDebutCarrera && debutEquipoPartidoId != null && p.ID_Partido === debutEquipoPartidoId;
+        const badgeDebut = esDebutCarrera
+          ? `<div style="grid-column:1/-1;text-align:center;font-size:10px;font-weight:700;letter-spacing:0.3px;color:var(--oro);background:rgba(251,191,36,0.12);border-top:1px dashed rgba(251,191,36,0.35);padding:3px 0;margin-top:2px;">⭐ DEBUT PROFESIONAL</div>`
+          : esDebutEquipo
+            ? `<div style="grid-column:1/-1;text-align:center;font-size:10px;font-weight:700;letter-spacing:0.3px;color:var(--celeste);background:rgba(14,165,233,0.10);border-top:1px dashed rgba(14,165,233,0.3);padding:3px 0;margin-top:2px;">⭐ DEBUT EN EL CLUB</div>`
+            : '';
         return `<div onclick="event.stopPropagation();verPartido(${p.ID_Partido})" style="display:grid;grid-template-columns:52px minmax(0,1fr) 46px minmax(0,1fr) 130px;align-items:center;column-gap:2px;padding:7px 10px;border-bottom:1px solid var(--borde);cursor:pointer;">
           <span style="font-size:10px;color:var(--texto-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${fecha}</span>
           <span style="display:flex;align-items:center;gap:4px;min-width:0;font-size:12px;overflow:hidden;">${escudoImg(local,14)}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${local}</span></span>
           <span class="${rc}" style="font-weight:700;font-size:12px;text-align:center;white-space:nowrap;">${p.Goles_Local}-${p.Goles_Visitante}</span>
           <span style="display:flex;align-items:center;gap:4px;min-width:0;justify-content:flex-end;font-size:12px;overflow:hidden;"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${visita}</span>${escudoImg(visita,14)}</span>
           <span style="display:flex;flex-wrap:nowrap;justify-content:flex-end;align-items:center;overflow:hidden;">${incTxt}</span>
+          ${badgeDebut}
         </div>`;
       }).join('') : `<div style="padding:10px;text-align:center;color:var(--texto-3);font-size:12px;">Sin partidos registrados</div>`;
 
