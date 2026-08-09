@@ -3126,6 +3126,8 @@ function calcularRecordsEquipo(id, partidosEquipo) {
   let bufferEmpates = [], rachaEmpatesPartidos = [];
   let rachaDerrotasAct = 0, rachaDerrotasMax = 0, rachaDerrotasIni = null, rachaDerrotasFin = null;
   let bufferDerrotas = [], rachaDerrotasPartidos = [];
+  let rachaSinGanarAct = 0, rachaSinGanarMax = 0, rachaSinGanarIni = null, rachaSinGanarFin = null;
+  let bufferSinGanar = [], rachaSinGanarPartidos = [];
   let mejorGoleada = null, peorDerrota = null;
 
   ordenados.forEach(p => {
@@ -3197,6 +3199,21 @@ function calcularRecordsEquipo(id, partidosEquipo) {
       rachaDerrotasAct = 0;
     }
 
+    // Racha más larga sin ganar (empata o pierde; se corta solo con una victoria)
+    if (resultado !== 'G') {
+      bufferSinGanar.push(p);
+      rachaSinGanarAct = bufferSinGanar.length;
+      if (rachaSinGanarAct >= rachaSinGanarMax) {
+        rachaSinGanarMax = rachaSinGanarAct;
+        rachaSinGanarPartidos = [...bufferSinGanar];
+        rachaSinGanarIni = rachaSinGanarPartidos[0];
+        rachaSinGanarFin = rachaSinGanarPartidos[rachaSinGanarPartidos.length-1];
+      }
+    } else {
+      bufferSinGanar = [];
+      rachaSinGanarAct = 0;
+    }
+
     // Goleada más grande / peor derrota (solo partidos con resultado normal, no definiciones por penales)
     if (esResultadoNormal(p.Tipo_Definicion)) {
       if (resultado === 'G' && (!mejorGoleada || dif > mejorGoleada.dif)) mejorGoleada = { dif, p, gf, gc };
@@ -3217,12 +3234,14 @@ function calcularRecordsEquipo(id, partidosEquipo) {
   const corteVictorias = encontrarCorte(rachaVictPartidos);
   const corteEmpates = encontrarCorte(rachaEmpatesPartidos);
   const corteDerrotas = encontrarCorte(rachaDerrotasPartidos);
+  const corteSinGanar = encontrarCorte(rachaSinGanarPartidos);
 
   return {
     rachaInvictaMax, rachaInvictaIni, rachaInvictaFin, rachaInvictaPartidos, corteInvicta,
     rachaVictMax, rachaVictIni, rachaVictFin, rachaVictPartidos, corteVictorias,
     rachaEmpatesMax, rachaEmpatesIni, rachaEmpatesFin, rachaEmpatesPartidos, corteEmpates,
     rachaDerrotasMax, rachaDerrotasIni, rachaDerrotasFin, rachaDerrotasPartidos, corteDerrotas,
+    rachaSinGanarMax, rachaSinGanarIni, rachaSinGanarFin, rachaSinGanarPartidos, corteSinGanar,
     mejorGoleada, peorDerrota
   };
 }
@@ -3271,6 +3290,7 @@ function renderRecordsEquipo(id, r) {
   const clickVict = r.rachaVictMax ? `onclick="abrirModalRacha('victorias')"` : '';
   const clickEmpates = r.rachaEmpatesMax ? `onclick="abrirModalRacha('empates')"` : '';
   const clickDerrotasRacha = r.rachaDerrotasMax ? `onclick="abrirModalRacha('derrotas')"` : '';
+  const clickSinGanar = r.rachaSinGanarMax ? `onclick="abrirModalRacha('singanar')"` : '';
   const clickGoleada = r.mejorGoleada ? `onclick="verPartido('${r.mejorGoleada.p.ID_Partido}')"` : '';
   const clickDerrota = r.peorDerrota ? `onclick="verPartido('${r.peorDerrota.p.ID_Partido}')"` : '';
 
@@ -3303,6 +3323,10 @@ function renderRecordsEquipo(id, r) {
           <div class="record-card-label">❌ Racha de derrotas</div>
           ${fmtRacha(r.rachaDerrotasMax, r.rachaDerrotasIni, r.rachaDerrotasFin, !!r.rachaDerrotasMax, 'var(--rojo)')}
         </div>
+        <div class="record-card record-card-extra" ${clickSinGanar}>
+          <div class="record-card-label">📉 Racha más larga sin ganar</div>
+          ${fmtRacha(r.rachaSinGanarMax, r.rachaSinGanarIni, r.rachaSinGanarFin, !!r.rachaSinGanarMax, 'var(--rojo)')}
+        </div>
       </div>
       <button class="records-arrow records-arrow-right" onclick="scrollRecords(1)" aria-label="Ver más récords">›</button>
       <button class="records-mas-btn" id="records-mas-btn" onclick="toggleRecordsMas()">▼ Mostrar más</button>
@@ -3333,6 +3357,7 @@ function abrirModalRacha(tipo) {
     victorias: { partidos: r.rachaVictPartidos,      corte: r.corteVictorias, titulo: `✅ Racha de victorias de ${nombre}`, vigente: 'sigue ganando' },
     empates:   { partidos: r.rachaEmpatesPartidos,   corte: r.corteEmpates,   titulo: `🤝 Racha de empates de ${nombre}`,   vigente: 'sigue empatando' },
     derrotas:  { partidos: r.rachaDerrotasPartidos,  corte: r.corteDerrotas,  titulo: `❌ Racha de derrotas de ${nombre}`,  vigente: 'sigue perdiendo' },
+    singanar:  { partidos: r.rachaSinGanarPartidos,  corte: r.corteSinGanar,  titulo: `📉 Racha sin ganar de ${nombre}`,    vigente: 'sigue sin ganar' },
   }[tipo];
   if (!CONF) return;
   const lista = CONF.partidos;
@@ -3352,7 +3377,8 @@ function abrirModalRacha(tipo) {
     const torneo = temporadas[p.ID_Temporada] || p.Fase || '';
     const esc = ESCUDOS[rivalNombre] ? `<img src="${ESCUDOS[rivalNombre]}" style="width:20px;height:20px;object-fit:contain;" onerror="this.style.display='none'">` : '';
     const esVictoria = esDefinicionDecisiva(p.Tipo_Definicion) && p.ID_Ganador === id;
-    const colorRes = esVictoria ? 'var(--verde)' : 'var(--amarillo)';
+    const esEmpateP = esDefinicionDecisiva(p.Tipo_Definicion) ? !p.ID_Ganador : p.Goles_Local===p.Goles_Visitante;
+    const colorRes = esVictoria ? 'var(--verde)' : (esEmpateP ? 'var(--amarillo)' : 'var(--rojo)');
     return `
       <div onclick="verPartido('${p.ID_Partido}')"
         style="background:var(--fondo-3);border:1px solid var(--borde);border-radius:10px;padding:10px 14px;
@@ -3373,17 +3399,19 @@ function abrirModalRacha(tipo) {
     const rivalNombre = equipos[rivalId] || rivalId;
     const torneo = temporadas[corte.ID_Temporada] || corte.Fase || '';
     const esc = ESCUDOS[rivalNombre] ? `<img src="${ESCUDOS[rivalNombre]}" style="width:20px;height:20px;object-fit:contain;" onerror="this.style.display='none'">` : '';
-    const esEmpate = esDefinicionDecisiva(corte.Tipo_Definicion) ? !corte.ID_Ganador : corte.Goles_Local===corte.Goles_Visitante;
-    const label = esEmpate ? 'Empate' : 'Derrota';
-    const colorLabel = esEmpate ? 'var(--amarillo)' : 'var(--rojo)';
+    const esVictoriaCorte = esDefinicionDecisiva(corte.Tipo_Definicion) && corte.ID_Ganador === id;
+    const esEmpate = !esVictoriaCorte && (esDefinicionDecisiva(corte.Tipo_Definicion) ? !corte.ID_Ganador : corte.Goles_Local===corte.Goles_Visitante);
+    const label = esVictoriaCorte ? 'Victoria' : (esEmpate ? 'Empate' : 'Derrota');
+    const colorLabel = esVictoriaCorte ? 'var(--verde)' : (esEmpate ? 'var(--amarillo)' : 'var(--rojo)');
+    const tintRgb = esVictoriaCorte ? '74,222,128' : (esEmpate ? '251,191,36' : '244,63,94');
     return `
       <div style="margin-top:6px;padding-top:16px;border-top:1px dashed var(--borde);">
         <div style="font-size:12px;color:var(--texto-3);margin-bottom:8px;">✂️ Partido que cortó la racha</div>
         <div onclick="verPartido('${corte.ID_Partido}')"
-          style="background:rgba(244,63,94,0.06);border:1px solid rgba(244,63,94,0.25);border-radius:10px;padding:10px 14px;
+          style="background:rgba(${tintRgb},0.06);border:1px solid rgba(${tintRgb},0.25);border-radius:10px;padding:10px 14px;
                  cursor:pointer;transition:var(--trans);display:flex;align-items:center;gap:12px;"
-          onmouseenter="this.style.borderColor='rgba(244,63,94,0.5)'"
-          onmouseleave="this.style.borderColor='rgba(244,63,94,0.25)'">
+          onmouseenter="this.style.borderColor='rgba(${tintRgb},0.5)'"
+          onmouseleave="this.style.borderColor='rgba(${tintRgb},0.25)'">
           <div style="flex-shrink:0;width:28px;text-align:center;">${esc}</div>
           <div style="flex:1;min-width:0;">
             <div style="font-size:13px;font-weight:500;">vs ${rivalNombre}
@@ -7044,18 +7072,22 @@ function verLiga(liga) {
 
 function volverALigas() {
   ligaActual = null;
-  document.getElementById('vista-equipos').style.display = 'none';
-  document.getElementById('vista-ligas').style.display = 'block';
-  document.getElementById('buscar-equipo').value = '';
+  const show = (id, disp) => { const el = document.getElementById(id); if (el) el.style.display = disp; };
+  show('vista-equipos', 'none');
+  show('vista-ligas', 'block');
+  const buscar = document.getElementById('buscar-equipo');
+  if (buscar) buscar.value = '';
 }
 
 function volverAProvincias() {
   provinciaActual = null;
   ligaActual = null;
-  document.getElementById('vista-equipos').style.display = 'none';
-  document.getElementById('vista-ligas').style.display = 'none';
-  document.getElementById('vista-provincias').style.display = 'block';
-  document.getElementById('buscar-equipo').value = '';
+  const show = (id, disp) => { const el = document.getElementById(id); if (el) el.style.display = disp; };
+  show('vista-equipos', 'none');
+  show('vista-ligas', 'none');
+  show('vista-provincias', 'block');
+  const buscar = document.getElementById('buscar-equipo');
+  if (buscar) buscar.value = '';
 }
 
 function volverADivision() {
@@ -7073,11 +7105,25 @@ function volverDivisiones() {
   provinciaActual = null;
   ligaActual = null;
   equiposDivision = null;
-  document.getElementById('vista-equipos').style.display = 'none';
-  document.getElementById('vista-provincias').style.display = 'none';
-  document.getElementById('vista-ligas').style.display = 'none';
-  document.getElementById('vista-divisiones').style.display = 'block';
-  document.getElementById('buscar-equipo').value = '';
+
+  const show = (id, disp) => { const el = document.getElementById(id); if (el) el.style.display = disp; };
+
+  show('vista-equipos', 'none');
+  show('vista-provincias', 'none');
+  show('vista-ligas', 'none');
+  show('vista-divisiones', 'block');
+  // Restauramos explícitamente el grid o el listado "Todos" según el modo activo,
+  // en vez de asumir que quedaron como estaban — así nunca queda en blanco.
+  show('divisiones-grid', vistaEquiposModo === 'todos' ? 'none' : 'grid');
+  show('todos-equipos-wrap', vistaEquiposModo === 'todos' ? 'block' : 'none');
+  const buscar = document.getElementById('buscar-equipo');
+  if (buscar) buscar.value = '';
+
+  // Por si el navegador no repinta el área recién mostrada a la primera.
+  requestAnimationFrame(() => {
+    const grid = document.getElementById('divisiones-grid');
+    if (grid) void grid.offsetHeight;
+  });
 }
 
 // ── ESTADIOS ──
