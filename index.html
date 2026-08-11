@@ -5144,14 +5144,16 @@ function verFichaJugador(nombre, nacionalidadBuscada) {
         const esDebutEquipo = !esDebutCarrera && debutEquipoPartidoId != null && p.ID_Partido === debutEquipoPartidoId;
         const debutColor = esDebutCarrera ? 'var(--oro)' : (esDebutEquipo ? 'var(--celeste)' : null);
         const debutTitle = esDebutCarrera ? 'Debut profesional' : (esDebutEquipo ? 'Debut en el club' : '');
-        const debutStar = debutColor ? `<span title="${debutTitle}" style="color:${debutColor};font-size:9px;margin-left:3px;">⭐</span>` : '';
+        const debutStar = debutColor ? `<span style="color:${debutColor};font-size:9px;margin-left:3px;">⭐</span>` : '';
         const borderAccent = debutColor ? `border-left:2px solid ${debutColor};` : '';
+        const debutTexto = debutColor ? `<div style="grid-column:1/-1;font-size:10px;color:${debutColor};padding:1px 0 0 2px;">⭐ ${debutTitle}</div>` : '';
         return `<div onclick="event.stopPropagation();verPartido(${p.ID_Partido})" style="display:grid;grid-template-columns:52px minmax(0,1fr) 46px minmax(0,1fr) 130px;align-items:center;column-gap:2px;padding:7px 10px;border-bottom:1px solid var(--borde);${borderAccent}cursor:pointer;">
           <span style="font-size:10px;color:var(--texto-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${fecha}${debutStar}</span>
           <span style="display:flex;align-items:center;gap:4px;min-width:0;font-size:12px;overflow:hidden;">${escudoImg(local,14)}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${local}</span></span>
           <span class="${rc}" style="font-weight:700;font-size:12px;text-align:center;white-space:nowrap;">${p.Goles_Local}-${p.Goles_Visitante}</span>
           <span style="display:flex;align-items:center;gap:4px;min-width:0;justify-content:flex-end;font-size:12px;overflow:hidden;"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${visita}</span>${escudoImg(visita,14)}</span>
           <span style="display:flex;flex-wrap:nowrap;justify-content:flex-end;align-items:center;overflow:hidden;">${incTxt}</span>
+          ${debutTexto}
         </div>`;
       }).join('') : `<div style="padding:10px;text-align:center;color:var(--texto-3);font-size:12px;">Sin partidos registrados</div>`;
 
