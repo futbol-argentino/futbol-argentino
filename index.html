@@ -3003,7 +3003,7 @@ function filtrarEquipos() {
   renderizarEquipos(document.getElementById('buscar-equipo').value);
 }
 
-function verDetalleEquipo(id) {
+function verDetalleEquipo(id, moverScrollArriba = true) {
   equipoDetalleID = id;
   const nombre = equipos[id];
 
@@ -3014,7 +3014,7 @@ function verDetalleEquipo(id) {
   document.getElementById('vista-divisiones').style.display = 'none';
   document.getElementById('vista-equipos').style.display = 'none';
   document.getElementById('vista-detalle').classList.add('visible');
-  window.scrollTo(0, 0);
+  if (moverScrollArriba) window.scrollTo(0, 0);
 
   document.getElementById('detalle-nombre').textContent = nombre;
   const escEl = document.getElementById('detalle-escudo');
@@ -4246,6 +4246,7 @@ let NOMBRES_AMBIGUOS = new Set();
 // ese nombre). Sirve de resguardo: si algún lugar del sitio abre la ficha sin especificar
 // nacionalidad, se muestra el jugador más frecuente en vez de dejar todo en cero.
 let NACIONALIDAD_PRIMARIA = {};
+let NACIONALIDAD_POR_NOMBRE = {}; // nombreNormalizado -> nacionalidad más frecuente (todos los jugadores)
 function construirIndiceNacionalidades() {
   const mapa = {}; // nombreNormalizado -> Set(nacionalidades vistas)
   const conteo = {}; // nombreNormalizado -> { nacionalidad -> cantidad de apariciones }
@@ -4276,6 +4277,12 @@ function construirIndiceNacionalidades() {
     const porNac = conteo[norm];
     const principal = Object.entries(porNac).sort((a,b) => b[1]-a[1])[0][0];
     NACIONALIDAD_PRIMARIA[norm] = principal;
+  });
+  // Nacionalidad más frecuente para CADA jugador con nacionalidad registrada (ambiguo o no),
+  // usada para mostrar banderas en tablas que no distinguen homónimos (ej. rankings de estadio).
+  NACIONALIDAD_POR_NOMBRE = {};
+  Object.entries(conteo).forEach(([norm, porNac]) => {
+    NACIONALIDAD_POR_NOMBRE[norm] = Object.entries(porNac).sort((a,b) => b[1]-a[1])[0][0];
   });
 }
 
@@ -7553,9 +7560,11 @@ function filaPartidoGrid(p) {
 }
 
 function filaRankingEstadio(i, nombre, valor) {
+  const nac = NACIONALIDAD_POR_NOMBRE[normalizarNombre(nombre)];
+  const bandera = nac ? `<span style="display:inline-flex;align-items:center;flex-shrink:0;">${getBandera(nac)}</span>` : '';
   return `<tr onclick="verFichaJugador('${nombre.replace(/'/g, "\\'")}')" style="cursor:pointer;">
     <td style="color:var(--texto-2);font-size:13px;width:36px;padding:8px 10px;">${i + 1}</td>
-    <td style="font-size:14px;font-weight:500;">${nombre}</td>
+    <td style="font-size:14px;font-weight:500;"><div style="display:flex;align-items:center;gap:8px;">${bandera}<span>${nombre}</span></div></td>
     <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;font-weight:700;color:var(--celeste);">${valor}</td>
   </tr>`;
 }
@@ -7563,7 +7572,7 @@ function filaRankingEstadio(i, nombre, valor) {
 function filaRankingEstadioEquipo(i, id, goles, pj) {
   const nombre = equipos[id] || id;
   const esc = ESCUDOS[nombre] ? `<img src="${ESCUDOS[nombre]}" style="width:20px;height:20px;object-fit:contain;" onerror="this.style.display='none'">` : '';
-  return `<tr onclick="verDetalleEquipo('${id}')" style="cursor:pointer;">
+  return `<tr onclick="verDetalleEquipo('${id}', false)" style="cursor:pointer;">
     <td style="color:var(--texto-2);font-size:13px;width:36px;padding:8px 10px;">${i + 1}</td>
     <td style="font-size:14px;font-weight:500;"><div style="display:flex;align-items:center;gap:8px;">${esc}<span>${nombre}</span></div></td>
     <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;font-weight:700;color:var(--celeste);">${goles}</td>
@@ -8709,9 +8718,9 @@ const _orig_volverCampeones   = volverCampeones;
 const _orig_volverEquipos     = volverEquipos;
 
 // Entrar a vistas → empujar retroceso
-verDetalleEquipo = function(id) {
+verDetalleEquipo = function(id, moverScrollArriba) {
   _pushAtras(() => _orig_volverEquipos());
-  _orig_verDetalleEquipo(id);
+  _orig_verDetalleEquipo(id, moverScrollArriba);
 };
 verTorneo = function(id) {
   _pushAtras(() => _orig_volverCampeones());
