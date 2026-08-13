@@ -7405,16 +7405,24 @@ function golesPorJugadorEnPartidos(listaPartidos) {
   return Object.entries(goles).sort((a, b) => b[1] - a[1]);
 }
 
-// Cuenta partidos jugados por jugador dentro de un conjunto de IDs de partido
-function partidosJugadosPorJugador(idsPartidosSet) {
+// Cuenta partidos jugados por jugador dentro de una lista de partidos, usando la columna
+// "Jugadores" de Partidos.csv (misma fuente que usa el resto del sitio para calcular PJ),
+// en vez de depender de Jugadores.csv, que no tiene cobertura completa.
+function partidosJugadosPorJugadorEnPartidos(listaPartidos) {
   const conteo = {};
-  Object.keys(jugadoresData).forEach(nombre => {
-    const porEquipo = jugadoresData[nombre];
-    let count = 0;
-    Object.values(porEquipo).forEach(setIds => {
-      setIds.forEach(idPartido => { if (idsPartidosSet.has(idPartido)) count++; });
+  listaPartidos.forEach(p => {
+    if (!esPartidoJugado(p)) return;
+    const rawJ = p.Jugadores || '';
+    if (!rawJ) return;
+    rawJ.split('/').forEach(parte => {
+      (parte || '').split('-').forEach(entradaRaw => {
+        const entrada = entradaRaw.trim();
+        if (!entrada || entrada.toLowerCase() === 'ninguno') return;
+        const nombre = nombreCanonico(limpiarNombre(entrada));
+        if (!nombre || nombre.length < 2) return;
+        conteo[nombre] = (conteo[nombre] || 0) + 1;
+      });
     });
-    if (count > 0) conteo[nombre] = count;
   });
   return Object.entries(conteo).sort((a, b) => b[1] - a[1]);
 }
@@ -7638,8 +7646,7 @@ function renderHistorialEstadio(e) {
   }
 
   // Jugadores con más partidos en este estadio
-  const idsSet = new Set(partidosEstadio.map(p => p.ID_Partido));
-  const pjLista = partidosJugadosPorJugador(idsSet).slice(0, 15);
+  const pjLista = partidosJugadosPorJugadorEnPartidos(partidosJugados).slice(0, 15);
   const pjWrap = document.getElementById('estadio-pj-wrap');
   if (pjLista.length) {
     pjWrap.style.display = 'block';
