@@ -1780,6 +1780,7 @@ select option{background:#080F20;color:#F0F6FF}
         <input type="text" id="buscar-estadio" placeholder="Buscar estadio o equipo..." oninput="filtrarEstadiosDebounced()">
       </div>
       <div class="estadios-grid" id="estadios-grid"></div>
+      <div class="paginacion" id="estadios-grid-pag"></div>
     </div>
 
     <!-- Vista detalle de un estadio -->
@@ -7196,9 +7197,15 @@ function partidosJugadosEnEstadio(e) {
   return partidosDeEstadio(e).filter(esPartidoJugado).length;
 }
 
-function renderEstadiosGrid() {
+let paginaEstadios = 1;
+function porPaginaEstadios() {
+  return window.innerWidth <= 768 ? 10 : 20;
+}
+
+function renderEstadiosGrid(resetPag = true) {
   const grid = document.getElementById('estadios-grid');
   if (!grid) return;
+  if (resetPag) paginaEstadios = 1;
   cargarProvinciasEstadios();
   const filtro = (document.getElementById('buscar-estadio').value || '').toLowerCase().trim();
   const provincia = document.getElementById('estadio-filtro-provincia')?.value || '';
@@ -7225,12 +7232,22 @@ function renderEstadiosGrid() {
     lista.sort((a, b) => (a.Nombre || '').localeCompare(b.Nombre || '', 'es'));
   }
 
+  const pagEl = document.getElementById('estadios-grid-pag');
+
   if (lista.length === 0) {
     grid.innerHTML = '<div style="color:var(--texto-2);padding:20px;">No se encontraron estadios.</div>';
+    if (pagEl) pagEl.innerHTML = '';
     return;
   }
 
-  grid.innerHTML = lista.map(e => {
+  const porPag = porPaginaEstadios();
+  const totalPags = Math.ceil(lista.length / porPag) || 1;
+  if (paginaEstadios > totalPags) paginaEstadios = totalPags;
+  if (paginaEstadios < 1) paginaEstadios = 1;
+  const inicio = (paginaEstadios - 1) * porPag;
+  const listaPag = lista.slice(inicio, inicio + porPag);
+
+  grid.innerHTML = listaPag.map(e => {
     const rutaFoto = rutaFotoEstadio(e.Foto);
     const fotoHtml = rutaFoto
       ? `<img src="${rutaFoto}" loading="lazy" onerror="this.parentElement.innerHTML='<div style=\\'font-size:40px;\\'>🏟️</div>'">`
@@ -7251,9 +7268,34 @@ function renderEstadiosGrid() {
       </div>
     </div>`;
   }).join('');
+
+  if (pagEl) {
+    pagEl.innerHTML = totalPags > 1 ? `
+      <button class="pag-btn" onclick="cambiarPaginaEstadios(${paginaEstadios - 1})" ${paginaEstadios === 1 ? 'disabled' : ''}>← Anterior</button>
+      <span class="pag-info">Página ${paginaEstadios} de ${totalPags}</span>
+      <button class="pag-btn" onclick="cambiarPaginaEstadios(${paginaEstadios + 1})" ${paginaEstadios === totalPags ? 'disabled' : ''}>Siguiente →</button>
+    ` : '';
+  }
 }
 
-const filtrarEstadiosDebounced = debounce(renderEstadiosGrid, 250);
+function cambiarPaginaEstadios(pag) {
+  paginaEstadios = pag;
+  renderEstadiosGrid(false);
+  document.getElementById('estadios-vista-grilla').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Al cambiar el ancho de ventana (ej. rotar el celular) puede cambiar la cantidad
+// de estadios por página, así que recalculamos manteniendo la búsqueda/filtros.
+let _resizeEstadiosTimeout = null;
+window.addEventListener('resize', () => {
+  clearTimeout(_resizeEstadiosTimeout);
+  _resizeEstadiosTimeout = setTimeout(() => {
+    const panel = document.getElementById('panel-estadios');
+    if (panel && panel.classList.contains('activo')) renderEstadiosGrid(false);
+  }, 250);
+});
+
+const filtrarEstadiosDebounced = debounce(() => renderEstadiosGrid(true), 250);
 
 function verEstadio(id) {
   const e = estadiosArr.find(x => x.ID_Estadio === id);
