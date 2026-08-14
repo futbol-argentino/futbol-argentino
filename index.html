@@ -534,6 +534,9 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 .pag-btn:hover{border-color:var(--celeste);color:var(--celeste);background:rgba(56,189,248,0.06)}
 .pag-btn:disabled{opacity:0.25;cursor:default;pointer-events:none}
 .pag-info{font-size:12px;color:var(--texto-3);font-family:var(--fuente-mono)}
+.fila-stat-hit{background:rgba(56,189,248,0.10) !important;}
+.fila-stat-hit td{border-color:rgba(56,189,248,0.35) !important;}
+.fila-stat-hit-activa{background:rgba(250,204,21,0.20) !important;box-shadow:inset 0 0 0 2px var(--amarillo);}
 
 /* RESPONSIVE */
 @media(max-width:900px){.filtros-grid{grid-template-columns:1fr 1fr}.btn-limpiar{grid-column:span 2}}
@@ -1345,6 +1348,11 @@ select option{background:#080F20;color:#F0F6FF}
         <div class="filtro-grupo" style="flex:1;min-width:160px;">
           <label class="filtro-label">Buscar jugador</label>
           <input type="text" id="stats-filtro-nombre" class="filtro-input" placeholder="Nombre..." oninput="renderEstadisticasDebounced()">
+          <div id="stats-busqueda-nav" style="display:none;align-items:center;gap:8px;margin-top:6px;font-size:12px;color:var(--texto-2);">
+            <button class="pag-btn" style="padding:3px 10px;font-size:11px;" onclick="moverBusquedaStats(-1)">← Ant.</button>
+            <span id="stats-busqueda-contador">0 de 0</span>
+            <button class="pag-btn" style="padding:3px 10px;font-size:11px;" onclick="moverBusquedaStats(1)">Sig. →</button>
+          </div>
         </div>
         <div class="filtro-grupo" style="flex:1;min-width:180px;position:relative;">
           <label class="filtro-label">Equipo</label>
@@ -4446,6 +4454,10 @@ function parsearTarjetas(campo, equipoId, torneoId) {
 // Estado de paginación
 const paginas = { goleadores:1, gc:1, amonestados:1, expulsados:1, pj:1, doblete:1, hattrick:1, poker:1, repoker:1, doblehattrick:1, siete:1 };
 const POR_PAG = 30;
+// Estado de la búsqueda de jugador dentro de Estadísticas: en vez de filtrar las tablas
+// (lo que rompía el ranking, mostrando siempre "posición 1"), se navega hasta cada aparición
+// del jugador en cada tabla, resaltándolo, y se puede saltar entre todas las coincidencias.
+let busquedaStats = { termino: '', resultados: [], indice: -1 };
 let datosStats = { goleadores:[], gc:[], amonestados:[], expulsados:[], pj:[], doblete:[], hattrick:[], poker:[], repoker:[], doblehattrick:[], siete:[], nacGoleadores:{}, nacGC:{}, nacAmon:{}, nacExpu:{}, nacPJ:{}, eqGoleadores:{}, eqGC:{}, eqAmon:{}, eqExpu:{}, eqPJ:{}, nombresDisplay:{} };
 
 // Renderiza los escuditos de los equipos para los que un jugador aportó en una tabla de estadísticas
@@ -4463,13 +4475,25 @@ function renderEscudosJugador(equiposIds) {
   return `<span style="display:inline-flex;align-items:center;gap:3px;flex-shrink:0;">${imgs}${extraHtml}</span>`;
 }
 
-function filaJugador(i, nombre, nac, cols, equiposIds) {
+function filaJugador(i, nombre, nac, cols, equiposIds, resaltado) {
   const bandera = nac ? `<span style="display:inline-flex;align-items:center;flex-shrink:0;">${getBandera(nac)}</span>` : '';
   const escudos = renderEscudosJugador(equiposIds);
   const nameCell = `<td style="font-size:14px;font-weight:500;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}','${(nac||'').replace(/'/g,"\\'")}')">
     <div style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap;min-width:0;">${bandera}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${nombre}</span>${escudos}</div>
   </td>`;
-  return `<tr><td style="color:var(--texto-2);font-size:13px;width:36px;padding:8px 10px;">${i+1}</td>${nameCell}${cols}</tr>`;
+  const trAttrs = resaltado
+    ? ` id="${resaltado.id}" class="fila-stat-hit${resaltado.activo ? ' fila-stat-hit-activa' : ''}"`
+    : '';
+  return `<tr${trAttrs}><td style="color:var(--texto-2);font-size:13px;width:36px;padding:8px 10px;">${i+1}</td>${nameCell}${cols}</tr>`;
+}
+
+// Si (tipo, idx) corresponde a una coincidencia de la búsqueda actual, devuelve el id de fila
+// y si es la coincidencia "activa" (la seleccionada con Anterior/Siguiente), para resaltarla.
+function infoResaltadoStats(tipo, idx) {
+  if (!busquedaStats.resultados.length) return null;
+  const posicion = busquedaStats.resultados.findIndex(r => r.tipo === tipo && r.indice === idx);
+  if (posicion === -1) return null;
+  return { id: 'stat-hit-' + tipo + '-' + idx, activo: posicion === busquedaStats.indice };
 }
 
 function renderPaginacion(id, total, pagActual, onChange) {
@@ -4506,7 +4530,7 @@ function renderTablaStat(tipo) {
             `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--celeste);">${total}</td>
              <td style="text-align:center;font-size:13px;color:var(--texto-2);">${d.normales > 0 ? d.normales : '—'}</td>
              <td style="text-align:center;font-size:13px;color:var(--amarillo);">${d.penales > 0 ? d.penales : '—'}</td>`,
-            datosStats.eqGoleadores[clave]);
+            datosStats.eqGoleadores[clave], infoResaltadoStats('goleadores', inicio+i));
         }).join('');
     document.getElementById('count-goleadores').textContent = datosStats.goleadores.length + ' jugadores';
     renderPaginacion('goleadores', datosStats.goleadores.length, paginas.goleadores, 'cambiarPaginaStats');
@@ -4520,7 +4544,7 @@ function renderTablaStat(tipo) {
       : slice.map(([clave, cant], i) =>
           filaJugador(inicio+i, datosStats.nombresDisplay[clave] || clave, datosStats.nacGC[clave],
             `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--rojo);">${cant}</td>`,
-            datosStats.eqGC[clave])
+            datosStats.eqGC[clave], infoResaltadoStats('gc', inicio+i))
         ).join('');
     document.getElementById('count-gc').textContent = datosStats.gc.length + ' jugadores';
     renderPaginacion('gc', datosStats.gc.length, paginas.gc, 'cambiarPaginaStats');
@@ -4534,7 +4558,7 @@ function renderTablaStat(tipo) {
       : slice.map(([clave, cant], i) =>
           filaJugador(inicio+i, datosStats.nombresDisplay[clave] || clave, datosStats.nacAmon[clave],
             `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--amarillo);">${cant}</td>`,
-            datosStats.eqAmon[clave])
+            datosStats.eqAmon[clave], infoResaltadoStats('amonestados', inicio+i))
         ).join('');
     document.getElementById('count-amonestados').textContent = datosStats.amonestados.length + ' jugadores';
     renderPaginacion('amonestados', datosStats.amonestados.length, paginas.amonestados, 'cambiarPaginaStats');
@@ -4548,7 +4572,7 @@ function renderTablaStat(tipo) {
       : slice.map(([clave, cant], i) =>
           filaJugador(inicio+i, datosStats.nombresDisplay[clave] || clave, datosStats.nacExpu[clave],
             `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--rojo);">${cant}</td>`,
-            datosStats.eqExpu[clave])
+            datosStats.eqExpu[clave], infoResaltadoStats('expulsados', inicio+i))
         ).join('');
     document.getElementById('count-expulsados').textContent = datosStats.expulsados.length + ' jugadores';
     renderPaginacion('expulsados', datosStats.expulsados.length, paginas.expulsados, 'cambiarPaginaStats');
@@ -4563,7 +4587,7 @@ function renderTablaStat(tipo) {
       : slice.map(([clave, cant], i) => {
           return filaJugador(inicio+i, datosStats.nombresDisplay[clave] || clave, datosStats.nacPJ[clave],
             `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--texto-1);">${cant}</td>`,
-            datosStats.eqPJ[clave]);
+            datosStats.eqPJ[clave], infoResaltadoStats('pj', inicio+i));
         }).join('');
     document.getElementById('count-pj').textContent = datosStats.pj.length + ' jugadores';
     renderPaginacion('pj', datosStats.pj.length, paginas.pj, 'cambiarPaginaStats');
@@ -4579,7 +4603,7 @@ function renderTablaStat(tipo) {
       : slice.map(([clave, cant], i) =>
           filaJugador(inicio+i, datosStats.nombresDisplay[clave] || clave, datosStats.nacGoleadores[clave],
             `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:${COLOR[tipo]};">${cant}</td>`,
-            datosStats.eqGoleadores[clave])
+            datosStats.eqGoleadores[clave], infoResaltadoStats(tipo, inicio+i))
         ).join('');
     document.getElementById('count-'+tipo).textContent = datosStats[tipo].length + ' jugadores';
     renderPaginacion(tipo, datosStats[tipo].length, paginas[tipo], 'cambiarPaginaStats');
@@ -4604,17 +4628,12 @@ function renderEstadisticas() {
   const todosNac = { ...nacionalidades, ...nacAmon, ...nacExpu };
   const nombresDisplay = { ...ndGol, ...ndAmon, ...ndExpu };
 
-  // Función que filtra un array [clave, valor] por nombre visible y/o nacionalidad
+  // Función que filtra un array [clave, valor] solo por nacionalidad (el nombre buscado
+  // ya NO excluye jugadores acá: se resalta y se navega hasta ellos, ver más abajo)
   const aplicarFiltros = (arr) => arr.filter(([clave]) => {
-    const nombreVisible = nombresDisplay[clave] || clave;
-    if (filtroNom && !normalizarNombre(nombreVisible).includes(normalizarNombre(filtroNom))) return false;
     if (filtroNac && todosNac[clave] !== filtroNac) return false;
     return true;
   });
-
-  // Resetear páginas al cambiar filtro
-  paginas.goleadores = 1; paginas.gc = 1; paginas.amonestados = 1; paginas.expulsados = 1; paginas.pj = 1;
-  paginas.doblete = 1; paginas.hattrick = 1; paginas.poker = 1; paginas.repoker = 1; paginas.doblehattrick = 1; paginas.siete = 1;
 
   datosStats.goleadores = aplicarFiltros(Object.entries(goles)
     .sort((a, b) => (b[1].normales + b[1].penales) - (a[1].normales + a[1].penales)));
@@ -4667,7 +4686,7 @@ function renderEstadisticas() {
     });
   });
   datosStats.eqPJ = eqPorJugadorPJ;
-  // Aplicar filtros de nombre y nac a PJ también
+  // Aplicar filtro de nacionalidad a PJ también (el de nombre ya no filtra, ver arriba)
   const nombresDisplayPJ = { ...ndPJ, ...nombresDisplay };
   const todosNacPJMerged = { ...todosNacPJ, ...nacionalidades, ...nacAmon, ...nacExpu };
   datosStats.nacPJ = todosNacPJMerged;
@@ -4675,13 +4694,80 @@ function renderEstadisticas() {
   datosStats.pj = Object.entries(pjConteo)
     .sort((a,b) => b[1]-a[1])
     .filter(([clave]) => {
-      const nombreVisible = nombresDisplayPJ[clave] || clave;
-      if (filtroNom && !normalizarNombre(nombreVisible).includes(normalizarNombre(filtroNom))) return false;
       if (filtroNac && todosNacPJMerged[clave] !== filtroNac) return false;
       return true;
     });
 
+  // Buscar todas las apariciones del jugador buscado en cada tabla (ya con los datos completos
+  // y sin excluir a nadie), y saltar automáticamente cada tabla a la página donde aparece.
+  calcularResultadosBusquedaStats(filtroNom);
+  aplicarPaginasBusquedaStats();
+
   ['goleadores','gc','amonestados','expulsados','pj','doblete','hattrick','poker','repoker','doblehattrick','siete'].forEach(renderTablaStat);
+
+  actualizarNavBusquedaStats();
+  if (filtroNom && busquedaStats.resultados.length) {
+    requestAnimationFrame(() => {
+      const r = busquedaStats.resultados[busquedaStats.indice];
+      const el = r && document.getElementById('stat-hit-' + r.tipo + '-' + r.indice);
+      if (el) el.scrollIntoView({ behavior:'smooth', block:'center' });
+    });
+  }
+}
+
+// Recorre las tablas ya calculadas (en el mismo orden en que aparecen en pantalla) buscando
+// cada fila cuyo nombre visible coincide con el término buscado.
+function calcularResultadosBusquedaStats(filtroNom) {
+  busquedaStats.termino = filtroNom;
+  busquedaStats.resultados = [];
+  if (!filtroNom) { busquedaStats.indice = -1; return; }
+  const ordenTablas = ['goleadores','pj','gc','amonestados','expulsados','doblete','hattrick','poker','repoker','doblehattrick','siete'];
+  const filtroNorm = normalizarNombre(filtroNom);
+  ordenTablas.forEach(tipo => {
+    (datosStats[tipo] || []).forEach(([clave], idx) => {
+      const nombreVisible = datosStats.nombresDisplay[clave] || clave;
+      if (normalizarNombre(nombreVisible).includes(filtroNorm)) {
+        busquedaStats.resultados.push({ tipo, clave, indice: idx });
+      }
+    });
+  });
+  busquedaStats.indice = busquedaStats.resultados.length ? 0 : -1;
+}
+
+// Para cada tabla, si tiene alguna coincidencia salta a la página de la primera; si no, página 1
+function aplicarPaginasBusquedaStats() {
+  const primeraPorTabla = {};
+  busquedaStats.resultados.forEach(r => {
+    if (!(r.tipo in primeraPorTabla)) primeraPorTabla[r.tipo] = r.indice;
+  });
+  Object.keys(paginas).forEach(tipo => {
+    paginas[tipo] = (tipo in primeraPorTabla) ? Math.floor(primeraPorTabla[tipo]/POR_PAG)+1 : 1;
+  });
+}
+
+function actualizarNavBusquedaStats() {
+  const nav = document.getElementById('stats-busqueda-nav');
+  if (!nav) return;
+  if (!busquedaStats.termino) { nav.style.display = 'none'; return; }
+  nav.style.display = 'flex';
+  const cont = document.getElementById('stats-busqueda-contador');
+  cont.textContent = busquedaStats.resultados.length
+    ? (busquedaStats.indice + 1) + ' de ' + busquedaStats.resultados.length
+    : 'Sin resultados';
+}
+
+// Salta a la coincidencia anterior/siguiente entre TODAS las tablas donde aparece el jugador
+function moverBusquedaStats(delta) {
+  if (!busquedaStats.resultados.length) return;
+  busquedaStats.indice = (busquedaStats.indice + delta + busquedaStats.resultados.length) % busquedaStats.resultados.length;
+  const r = busquedaStats.resultados[busquedaStats.indice];
+  paginas[r.tipo] = Math.floor(r.indice / POR_PAG) + 1;
+  renderTablaStat(r.tipo);
+  actualizarNavBusquedaStats();
+  requestAnimationFrame(() => {
+    const el = document.getElementById('stat-hit-' + r.tipo + '-' + r.indice);
+    if (el) el.scrollIntoView({ behavior:'smooth', block:'center' });
+  });
 }
 
 // (nota: la definición de filaJugador vive más arriba, junto a renderEscudosJugador)
