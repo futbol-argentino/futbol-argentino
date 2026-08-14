@@ -1101,7 +1101,7 @@ select option{background:#080F20;color:#F0F6FF}
         <table class="tabla-partidos">
           <thead>
             <tr>
-              <th>Fecha</th><th>Local</th>
+              <th>Fecha</th><th style="text-align:right;">Local</th>
               <th class="center">Resultado</th>
               <th>Visitante</th><th>Torneo</th>
             </tr>
@@ -2641,6 +2641,7 @@ function construirGolData(p, local, visita, colspan) {
 function filaPartido(p, equipoRef, opciones) {
   const ocultarFecha = opciones && opciones.ocultarFecha;
   const ocultarTorneo = opciones && opciones.ocultarTorneo;
+  const escudoLocalDerecha = opciones && opciones.escudoLocalDerecha;
   const local = equipos[p.Local_ID] || p.Local || p.Local_ID;
   const visita = equipos[p.Visitante_ID] || p.Visitante || p.Visitante_ID;
   const fecha = p.Fecha ? p.Fecha.split('T')[0] : '';
@@ -2675,7 +2676,9 @@ function filaPartido(p, equipoRef, opciones) {
 
   return `<tr${claseExtra}${clickAttr}>
     ${ocultarFecha ? '' : `<td class="td-fecha">${fecha}</td>`}
-    <td><div class="td-equipo">${escudoImg(local,22)}<span>${local}</span></div></td>
+    <td>${escudoLocalDerecha
+      ? `<div class="td-equipo" style="justify-content:flex-end;text-align:right;"><span>${local}</span>${escudoImg(local,22)}</div>`
+      : `<div class="td-equipo">${escudoImg(local,22)}<span>${local}</span></div>`}</td>
     <td class="td-resultado"><span class="${rc}">${resultadoTxt}</span></td>
     <td><div class="td-equipo">${escudoImg(visita,22)}<span>${visita}</span></div></td>
     ${ocultarTorneo
@@ -2934,16 +2937,17 @@ function filtrar() {
   const tbody = document.getElementById('tabla-partidos');
   document.getElementById('tabla-count').textContent = filtrados.length.toLocaleString() + ' partidos';
 
-  // Ordenar por fecha
+  // Ordenar por fecha (usa normalizarFechaISO, igual que el resto del sitio, para soportar
+  // tanto fechas ISO como DD/MM/YYYY sin depender de un formato fijo)
   filtrados.sort((a, b) => {
-    const fa = a.Fecha ? a.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$2-$1') : '0';
-    const fb = b.Fecha ? b.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$2-$1') : '0';
+    const fa = normalizarFechaISO(a.Fecha) || '0';
+    const fb = normalizarFechaISO(b.Fecha) || '0';
     return ordenDesc ? fb.localeCompare(fa) : fa.localeCompare(fb);
   });
 
   tbody.innerHTML = filtrados.length === 0
     ? '<tr class="loading-row"><td colspan="5">No se encontraron partidos.</td></tr>'
-    : filtrados.slice(0, 200).map(p => filaPartido(p, eq1 || null)).join('');
+    : filtrados.slice(0, 200).map(p => filaPartido(p, eq1 || null, { escudoLocalDerecha: true })).join('');
 
   // Stats
   if (eq1 && eq2) {
