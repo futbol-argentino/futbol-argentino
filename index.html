@@ -2399,7 +2399,50 @@ const ESCUDOS = {
   'Huracan de San Rafael':'escudos/huracan_de_san_rafael.png',
   'Atletico Regina':'escudos/atletico_regina.png',
   'Desamparados':'escudos/desamparados.png',
-  'Los Andes de San Juan':'escudos/los_andes_de_san_juan.png'
+  'Los Andes de San Juan':'escudos/los_andes_de_san_juan.png',
+  'Acassuso':'escudos/acassuso.png',
+  'Almirante Brown':'escudos/almirante_brown.png',
+  'Colegiales':'escudos/colegiales.png',
+  'Defensores de Belgrano':'escudos/defensores_de_belgrano.png',
+  'Deportivo Moron':'escudos/deportivo_moron.png',
+  'Argentino de Quilmes':'escudos/argentino_de_quilmes.png',
+  'Dock Sud':'escudos/dock_sud.png',
+  'Excursionistas':'escudos/excursionistas.png',
+  'Talleres RDE':'escudos/talleres_rde.png',
+  'Juventud Unida Universitario':'escudos/juventud_unida_universitario.png',
+  'Central Cordoba de Rosario':'escudos/central_cordoba_de_rosario.png',
+  'El Porvenir':'escudos/el_porvenir.png',
+  'Sportivo Barracas':'escudos/sportivo_barracas.png',
+  'Huracan de Ingeniero White':'escudos/huracan_de_ingeniero_white.png',
+  'Don Orione':'escudos/don_orione.png',
+  'Sportivo Guzman':'escudos/sportivo_guzman.png',
+  'Alvear':'escudos/alvear.png',
+  'Argentino de Banfield':'escudos/argentino_de_banfield.png',
+  'Argentino de Temperley':'escudos/argentino_de_temperley.png',
+  'Argentino del Sud':'escudos/argentino_del_sud.png',
+  'Atletico Palermo':'escudos/atletico_palermo.png',
+  'Balcarce':'escudos/balcarce.png',
+  'Boca Alumni':'escudos/boca_alumni.png',
+  'Del Plata':'escudos/del_plata.png',
+  'Estudiantil Porteño':'escudos/estudiantil_porteño.png',
+  'General Mitre':'escudos/general_mitre.png',
+  'General San Martin':'escudos/general_san_martin.png',
+  'Gutenberg':'escudos/gutenberg.png',
+  'Honor y Patria':'escudos/honor_y_patria.png',
+  'Liberal Argentino':'escudos/liberal_argentino.png',
+  'Porteño':'escudos/porteño.png',
+  'Progresista':'escudos/progresista.png',
+  'Ramsar Sports Club':'escudos/ramsar_sports_club.png',
+  'San Fernando':'escudos/san_fernando.png',
+  'San Isidro':'escudos/san_isidro.png',
+  'Sportivo Alsina':'escudos/sportivo_alsina.png',
+  'Sportivo Buenos Aires':'escudos/sportivo_buenos_aires.png',
+  'Sportivo del Norte':'escudos/sportivo_del_norte.png',
+  'Sportsman':'escudos/sportsman.png',
+  'Union Atlanta-Argentinos Juniors':'escudos/union_atlanta_argentinos_juniors.png',
+  'Union Lanus-Talleres RDE':'escudos/union_lanus_talleres_rde.png',
+  'Universal':'escudos/universal.png',
+  'Villa Urquiza':'escudos/villa_urquiza.png'
 };
 
 let partidos = [], equipos = {}, temporadas = {};
@@ -7352,6 +7395,7 @@ function partidosJugadosEnEstadio(e) {
 }
 
 let paginaEstadios = 1;
+let scrollAntesDeEstadio = 0; // posición de scroll en el listado, para restaurarla al volver
 function porPaginaEstadios() {
   return window.innerWidth <= 768 ? 10 : 20;
 }
@@ -7458,6 +7502,8 @@ function verEstadio(id) {
   const e = estadiosArr.find(x => x.ID_Estadio === id);
   if (!e) return;
 
+  scrollAntesDeEstadio = window.scrollY;
+
   document.getElementById('estadios-vista-grilla').style.display = 'none';
   document.getElementById('estadio-vista-detalle').classList.add('visible');
 
@@ -7520,6 +7566,8 @@ function verEstadio(id) {
   }
 
   renderHistorialEstadio(e);
+
+  window.scrollTo(0, 0);
 }
 
 // Devuelve todos los partidos jugados en un estadio dado (por nombre o alias)
@@ -7844,6 +7892,7 @@ function renderHistorialEstadio(e) {
 function volverEstadiosGrilla() {
   document.getElementById('estadio-vista-detalle').classList.remove('visible');
   document.getElementById('estadios-vista-grilla').style.display = 'block';
+  requestAnimationFrame(() => window.scrollTo(0, scrollAntesDeEstadio));
 }
 
 
