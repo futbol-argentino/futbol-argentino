@@ -70,7 +70,7 @@ ID_Equipo,Nombre_Equipo,Division,Provincia,Liga
 69,Juventud Antoniana,Federal A,,
 70,Ferro Carril Oeste (GP),Torneo Regional Federal Amateur,La Pampa,
 71,Gimnasia de Mendoza,Liga Profesional,,
-72,Union de General Pinedo,Ligas Regionales,Chaco,Liga del Sudoeste
+72,Union de General Pinedo,Ligas Regionales,Chaco,Liga del Noroeste Chaqueño
 73,Atletico Uruguay,Ligas Regionales,Entre Rios,Liga de Futbol de Concepcion del Uruguay
 74,Kimberley,Federal A,,
 75,Atletico Ledesma,Ligas Regionales,Jujuy,Liga Regional Jujeña de Futbol
@@ -89,7 +89,7 @@ ID_Equipo,Nombre_Equipo,Division,Provincia,Liga
 88,Juventud Unida Universitario,Federal A,,
 89,Alvarado,Federal A,,
 90,Estudiantes de Caseros,Primera Nacional,,
-91,Los Andes de San Juan,Extinto,,
+91,Los Andes de San Juan,Extintos,,
 92,Sarmiento de Resistencia,Federal A,,
 93,San Telmo,Primera Nacional,,
 94,Sportivo Patria,Ligas Regionales,Formosa,Liga Formoseña de Futbol
@@ -100,3 +100,45 @@ ID_Equipo,Nombre_Equipo,Division,Provincia,Liga
 99,Puerto Comercial,Ligas Regionales,Buenos Aires,Liga del Sur
 100,Atletico Regina,Ligas Regionales,Rio Negro,Liga Deportiva Confluencia
 101,Independiente de Trelew,Torneo Regional Federal Amateur,Chubut,
+102,Don Orione,Ligas Regionales,Chaco,Liga Chaqueña de Futbol
+103,Huracan de Ingeniero White,Ligas Regionales,Buenos Aires,Liga del Sur
+104,Almirante Brown,Primera Nacional,,
+105,Deportivo Moron,Primera Nacional,,
+106,Defensores de Belgrano,Primera Nacional,,
+107,Sportivo Guzman,Ligas Regionales,Tucuman,Liga Tucumana de Futbol
+108,Central Cordoba de Rosario,Primera C,,
+109,Argentino de Quilmes,Primera B Metropolitana,,
+110,Talleres RdE,Primera B Metropolitana,,
+111,Union Atlanta-Argentinos Juniors,Extintos,,
+112,Union Lanus-Talleres RdE,Extintos,,
+113,Argentino de Temperley,Extintos,,
+114,Colegiales,Primera Nacional,,
+115,El Porvenir,Primera C,,
+116,Estudiantil Porteño,Extintos,,
+117,Excursionistas,Primera B Metropolitana,,
+118,General San Martin,Extintos,,
+119,Gutenberg,Extintos,,
+120,Liberal Argentino,Extintos,,
+121,Atletico Palermo,Extintos,,
+122,Ramsar Sports Club,Extintos,,
+123,Acassuso,Primera Nacional,,
+124,Sportivo Alsina,Extintos,,
+125,Sportivo Barracas,Primera C,,
+126,Sportivo Buenos Aires,Extintos,,
+127,Dock Sud,Primera B Metropolitana,,
+128,San Fernando,Extintos,,
+129,San Isidro,Extintos,,
+130,Argentino del Sud,Extintos,,
+131,Honor y Patria,Extintos,,
+132,Porteño,Extintos,,
+133,Alvear,Extintos,,
+134,Boca Alumni,Extintos,,
+135,Del Plata,Extintos,,
+136,Progresista,Extintos,,
+137,Balcarce,Extintos,,
+138,Sportsman,Extintos,,
+139,Universal,Extintos,,
+140,Argentino de Banfield,Extintos,,
+141,Villa Urquiza,Extintos,,
+142,Sportivo del Norte,Extintos,,
+143,General Mitre,Extintos,,
