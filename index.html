@@ -1386,8 +1386,8 @@ select option{background:#080F20;color:#F0F6FF}
               <th style="width:40px;">#</th>
               <th>Jugador</th>
               <th style="text-align:center;width:80px;">Total</th>
-              <th style="text-align:center;width:90px;">Normales</th>
               <th style="text-align:center;width:80px;">Penales</th>
+              <th style="text-align:center;width:70px;">PJ</th>
             </tr></thead>
             <tbody id="tabla-goleadores-stats"></tbody>
           </table>
@@ -1426,6 +1426,7 @@ select option{background:#080F20;color:#F0F6FF}
               <th style="width:40px;">#</th>
               <th>Jugador</th>
               <th style="text-align:center;width:100px;">Cantidad</th>
+              <th style="text-align:center;width:70px;">PJ</th>
             </tr></thead>
             <tbody id="tabla-gc-stats"></tbody>
           </table>
@@ -1445,6 +1446,7 @@ select option{background:#080F20;color:#F0F6FF}
               <th style="width:40px;">#</th>
               <th>Jugador</th>
               <th style="text-align:center;width:100px;">Amarillas</th>
+              <th style="text-align:center;width:70px;">PJ</th>
             </tr></thead>
             <tbody id="tabla-amonestados-stats"></tbody>
           </table>
@@ -1464,6 +1466,7 @@ select option{background:#080F20;color:#F0F6FF}
               <th style="width:40px;">#</th>
               <th>Jugador</th>
               <th style="text-align:center;width:100px;">Rojas</th>
+              <th style="text-align:center;width:70px;">PJ</th>
             </tr></thead>
             <tbody id="tabla-expulsados-stats"></tbody>
           </table>
@@ -1483,6 +1486,7 @@ select option{background:#080F20;color:#F0F6FF}
               <th style="width:40px;">#</th>
               <th>Jugador</th>
               <th style="text-align:center;width:100px;">Dobletes</th>
+              <th style="text-align:center;width:70px;">PJ</th>
             </tr></thead>
             <tbody id="tabla-doblete-stats"></tbody>
           </table>
@@ -1502,6 +1506,7 @@ select option{background:#080F20;color:#F0F6FF}
               <th style="width:40px;">#</th>
               <th>Jugador</th>
               <th style="text-align:center;width:100px;">Hat-Tricks</th>
+              <th style="text-align:center;width:70px;">PJ</th>
             </tr></thead>
             <tbody id="tabla-hattrick-stats"></tbody>
           </table>
@@ -1521,6 +1526,7 @@ select option{background:#080F20;color:#F0F6FF}
               <th style="width:40px;">#</th>
               <th>Jugador</th>
               <th style="text-align:center;width:100px;">Pókers</th>
+              <th style="text-align:center;width:70px;">PJ</th>
             </tr></thead>
             <tbody id="tabla-poker-stats"></tbody>
           </table>
@@ -1540,6 +1546,7 @@ select option{background:#080F20;color:#F0F6FF}
               <th style="width:40px;">#</th>
               <th>Jugador</th>
               <th style="text-align:center;width:100px;">Re-Pókers</th>
+              <th style="text-align:center;width:70px;">PJ</th>
             </tr></thead>
             <tbody id="tabla-repoker-stats"></tbody>
           </table>
@@ -1559,6 +1566,7 @@ select option{background:#080F20;color:#F0F6FF}
               <th style="width:40px;">#</th>
               <th>Jugador</th>
               <th style="text-align:center;width:100px;">Doble HT</th>
+              <th style="text-align:center;width:70px;">PJ</th>
             </tr></thead>
             <tbody id="tabla-doblehattrick-stats"></tbody>
           </table>
@@ -1578,6 +1586,7 @@ select option{background:#080F20;color:#F0F6FF}
               <th style="width:40px;">#</th>
               <th>Jugador</th>
               <th style="text-align:center;width:100px;">Cantidad</th>
+              <th style="text-align:center;width:70px;">PJ</th>
             </tr></thead>
             <tbody id="tabla-siete-stats"></tbody>
           </table>
@@ -4507,7 +4516,7 @@ const POR_PAG = 30;
 // (lo que rompía el ranking, mostrando siempre "posición 1"), se navega hasta cada aparición
 // del jugador en cada tabla, resaltándolo, y se puede saltar entre todas las coincidencias.
 let busquedaStats = { termino: '', resultados: [], indice: -1 };
-let datosStats = { goleadores:[], gc:[], amonestados:[], expulsados:[], pj:[], doblete:[], hattrick:[], poker:[], repoker:[], doblehattrick:[], siete:[], nacGoleadores:{}, nacGC:{}, nacAmon:{}, nacExpu:{}, nacPJ:{}, eqGoleadores:{}, eqGC:{}, eqAmon:{}, eqExpu:{}, eqPJ:{}, nombresDisplay:{}, posAntes:{} };
+let datosStats = { goleadores:[], gc:[], amonestados:[], expulsados:[], pj:[], doblete:[], hattrick:[], poker:[], repoker:[], doblehattrick:[], siete:[], nacGoleadores:{}, nacGC:{}, nacAmon:{}, nacExpu:{}, nacPJ:{}, eqGoleadores:{}, eqGC:{}, eqAmon:{}, eqExpu:{}, eqPJ:{}, nombresDisplay:{}, posAntes:{}, pjConteo:{} };
 
 // Renderiza los escuditos de los equipos para los que un jugador aportó en una tabla de estadísticas
 function renderEscudosJugador(equiposIds) {
@@ -4599,8 +4608,8 @@ function renderTablaStat(tipo) {
           const nombre = datosStats.nombresDisplay[clave] || clave;
           return filaJugador(inicio+i, nombre, datosStats.nacGoleadores[clave],
             `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--celeste);">${total}</td>
-             <td style="text-align:center;font-size:13px;color:var(--texto-2);">${d.normales > 0 ? d.normales : '—'}</td>
-             <td style="text-align:center;font-size:13px;color:var(--amarillo);">${d.penales > 0 ? d.penales : '—'}</td>`,
+             <td style="text-align:center;font-size:13px;color:var(--amarillo);">${d.penales > 0 ? d.penales : '—'}</td>
+             <td style="text-align:center;font-size:13px;color:var(--texto-2);">${datosStats.pjConteo[clave] || '—'}</td>`,
             datosStats.eqGoleadores[clave], infoResaltadoStats('goleadores', inicio+i), cambioPosicionStats('goleadores', clave, inicio+i+1));
         }).join('');
     document.getElementById('count-goleadores').textContent = datosStats.goleadores.length + ' jugadores';
@@ -4611,10 +4620,11 @@ function renderTablaStat(tipo) {
     const slice = datosStats.gc.slice(inicio, fin);
     const tbody = document.getElementById('tabla-gc-stats');
     tbody.innerHTML = slice.length === 0
-      ? '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>'
+      ? '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>'
       : slice.map(([clave, cant], i) =>
           filaJugador(inicio+i, datosStats.nombresDisplay[clave] || clave, datosStats.nacGC[clave],
-            `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--rojo);">${cant}</td>`,
+            `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--rojo);">${cant}</td>
+             <td style="text-align:center;font-size:13px;color:var(--texto-2);">${datosStats.pjConteo[clave] || '—'}</td>`,
             datosStats.eqGC[clave], infoResaltadoStats('gc', inicio+i), cambioPosicionStats('gc', clave, inicio+i+1))
         ).join('');
     document.getElementById('count-gc').textContent = datosStats.gc.length + ' jugadores';
@@ -4625,10 +4635,11 @@ function renderTablaStat(tipo) {
     const slice = datosStats.amonestados.slice(inicio, fin);
     const tbody = document.getElementById('tabla-amonestados-stats');
     tbody.innerHTML = slice.length === 0
-      ? '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>'
+      ? '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>'
       : slice.map(([clave, cant], i) =>
           filaJugador(inicio+i, datosStats.nombresDisplay[clave] || clave, datosStats.nacAmon[clave],
-            `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--amarillo);">${cant}</td>`,
+            `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--amarillo);">${cant}</td>
+             <td style="text-align:center;font-size:13px;color:var(--texto-2);">${datosStats.pjConteo[clave] || '—'}</td>`,
             datosStats.eqAmon[clave], infoResaltadoStats('amonestados', inicio+i), cambioPosicionStats('amonestados', clave, inicio+i+1))
         ).join('');
     document.getElementById('count-amonestados').textContent = datosStats.amonestados.length + ' jugadores';
@@ -4639,10 +4650,11 @@ function renderTablaStat(tipo) {
     const slice = datosStats.expulsados.slice(inicio, fin);
     const tbody = document.getElementById('tabla-expulsados-stats');
     tbody.innerHTML = slice.length === 0
-      ? '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>'
+      ? '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>'
       : slice.map(([clave, cant], i) =>
           filaJugador(inicio+i, datosStats.nombresDisplay[clave] || clave, datosStats.nacExpu[clave],
-            `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--rojo);">${cant}</td>`,
+            `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--rojo);">${cant}</td>
+             <td style="text-align:center;font-size:13px;color:var(--texto-2);">${datosStats.pjConteo[clave] || '—'}</td>`,
             datosStats.eqExpu[clave], infoResaltadoStats('expulsados', inicio+i), cambioPosicionStats('expulsados', clave, inicio+i+1))
         ).join('');
     document.getElementById('count-expulsados').textContent = datosStats.expulsados.length + ' jugadores';
@@ -4670,10 +4682,11 @@ function renderTablaStat(tipo) {
     const tbody = document.getElementById('tabla-'+tipo+'-stats');
     if (!tbody) return;
     tbody.innerHTML = slice.length === 0
-      ? '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>'
+      ? '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--texto-3);">Sin datos cargados aún</td></tr>'
       : slice.map(([clave, cant], i) =>
           filaJugador(inicio+i, datosStats.nombresDisplay[clave] || clave, datosStats.nacGoleadores[clave],
-            `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:${COLOR[tipo]};">${cant}</td>`,
+            `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:${COLOR[tipo]};">${cant}</td>
+             <td style="text-align:center;font-size:13px;color:var(--texto-2);">${datosStats.pjConteo[clave] || '—'}</td>`,
             datosStats.eqGoleadores[clave], infoResaltadoStats(tipo, inicio+i), cambioPosicionStats(tipo, clave, inicio+i+1))
         ).join('');
     document.getElementById('count-'+tipo).textContent = datosStats[tipo].length + ' jugadores';
@@ -4690,30 +4703,7 @@ function calcularPosicionesAntes(equipoId, filtroNac) {
   const partidosAntes = partidos.filter(p => Number(p.ID_Partido) <= ID_PARTIDO_CORTE_STATS);
   if (!partidosAntes.length) return resultado;
 
-  const { goles, ec, nacionalidades: nacG } = parsearGoleadores(equipoId, null, partidosAntes);
-  const { datos: amon, nacionalidades: nacAmon } = parsearTarjetas('Amonestados', equipoId, null, partidosAntes);
-  const { datos: expu, nacionalidades: nacExpu } = parsearTarjetas('Expulsados', equipoId, null, partidosAntes);
-  const todosNac = { ...nacG, ...nacAmon, ...nacExpu };
-  const pasaNac = (clave) => !filtroNac || todosNac[clave] === filtroNac;
-
-  const asignarPos = (tipo, entradas) => {
-    entradas.filter(([clave]) => pasaNac(clave)).forEach(([clave], idx) => { resultado[tipo][clave] = idx + 1; });
-  };
-
-  asignarPos('goleadores', Object.entries(goles).sort((a,b) => (b[1].normales+b[1].penales) - (a[1].normales+a[1].penales)));
-  asignarPos('gc', Object.entries(ec).sort((a,b) => b[1]-a[1]));
-  asignarPos('amonestados', amon);
-  asignarPos('expulsados', expu);
-
-  const multigol = parsearGoleadasMultiples(equipoId, null, partidosAntes);
-  asignarPos('doblete', Object.entries(multigol[2]).sort((a,b)=>b[1]-a[1]));
-  asignarPos('hattrick', Object.entries(multigol[3]).sort((a,b)=>b[1]-a[1]));
-  asignarPos('poker', Object.entries(multigol[4]).sort((a,b)=>b[1]-a[1]));
-  asignarPos('repoker', Object.entries(multigol[5]).sort((a,b)=>b[1]-a[1]));
-  asignarPos('doblehattrick', Object.entries(multigol[6]).sort((a,b)=>b[1]-a[1]));
-  asignarPos('siete', Object.entries(multigol[7]).sort((a,b)=>b[1]-a[1]));
-
-  // PJ (misma lógica que en renderEstadisticas, pero sobre partidosAntes)
+  // PJ primero, porque ahora es el criterio de desempate del resto de las tablas
   const pjConteo = {};
   const todosNacPJ = {};
   partidosAntes.forEach(p => {
@@ -4734,8 +4724,33 @@ function calcularPosicionesAntes(equipoId, filtroNac) {
       });
     });
   });
-  const todosNacPJMerged = { ...todosNacPJ, ...todosNac };
-  asignarPos('pj', Object.entries(pjConteo).filter(([clave]) => !filtroNac || todosNacPJMerged[clave] === filtroNac).sort((a,b)=>b[1]-a[1]));
+  const conPJ = (arr) => arr.slice().sort((a,b) => b[1]-a[1] || (pjConteo[b[0]]||0)-(pjConteo[a[0]]||0));
+
+  const { goles, ec, nacionalidades: nacG } = parsearGoleadores(equipoId, null, partidosAntes);
+  const { datos: amon, nacionalidades: nacAmon } = parsearTarjetas('Amonestados', equipoId, null, partidosAntes);
+  const { datos: expu, nacionalidades: nacExpu } = parsearTarjetas('Expulsados', equipoId, null, partidosAntes);
+  const todosNac = { ...nacG, ...nacAmon, ...nacExpu, ...todosNacPJ };
+  const pasaNac = (clave) => !filtroNac || todosNac[clave] === filtroNac;
+
+  const asignarPos = (tipo, entradas) => {
+    entradas.filter(([clave]) => pasaNac(clave)).forEach(([clave], idx) => { resultado[tipo][clave] = idx + 1; });
+  };
+
+  asignarPos('goleadores', Object.entries(goles)
+    .sort((a,b) => (b[1].normales+b[1].penales) - (a[1].normales+a[1].penales) || (pjConteo[b[0]]||0)-(pjConteo[a[0]]||0)));
+  asignarPos('gc', conPJ(Object.entries(ec)));
+  asignarPos('amonestados', conPJ(amon));
+  asignarPos('expulsados', conPJ(expu));
+
+  const multigol = parsearGoleadasMultiples(equipoId, null, partidosAntes);
+  asignarPos('doblete', conPJ(Object.entries(multigol[2])));
+  asignarPos('hattrick', conPJ(Object.entries(multigol[3])));
+  asignarPos('poker', conPJ(Object.entries(multigol[4])));
+  asignarPos('repoker', conPJ(Object.entries(multigol[5])));
+  asignarPos('doblehattrick', conPJ(Object.entries(multigol[6])));
+  asignarPos('siete', conPJ(Object.entries(multigol[7])));
+
+  asignarPos('pj', Object.entries(pjConteo).filter(([clave]) => !filtroNac || todosNacPJ[clave] === filtroNac).sort((a,b)=>b[1]-a[1]));
 
   return resultado;
 }
@@ -4750,46 +4765,9 @@ function renderEstadisticas() {
   const filtroNom = (document.getElementById('stats-filtro-nombre')?.value || '').toLowerCase().trim();
   const filtroNac = document.getElementById('stats-filtro-nac')?.value || '';
 
-  const { goles, ec, nacionalidades, equiposGoles, equiposEC, nombresDisplay: ndGol } = parsearGoleadores(equipoId);
-  const { datos: amon, nacionalidades: nacAmon, equiposPorJugador: eqAmon, nombresDisplay: ndAmon } = parsearTarjetas('Amonestados', equipoId);
-  const { datos: expu, nacionalidades: nacExpu, equiposPorJugador: eqExpu, nombresDisplay: ndExpu } = parsearTarjetas('Expulsados', equipoId);
-
-  // Combinar todos los diccionarios de nac y de nombre-para-mostrar (claveInterna -> texto visible)
-  const todosNac = { ...nacionalidades, ...nacAmon, ...nacExpu };
-  const nombresDisplay = { ...ndGol, ...ndAmon, ...ndExpu };
-
-  // Función que filtra un array [clave, valor] solo por nacionalidad (el nombre buscado
-  // ya NO excluye jugadores acá: se resalta y se navega hasta ellos, ver más abajo)
-  const aplicarFiltros = (arr) => arr.filter(([clave]) => {
-    if (filtroNac && todosNac[clave] !== filtroNac) return false;
-    return true;
-  });
-
-  datosStats.goleadores = aplicarFiltros(Object.entries(goles)
-    .sort((a, b) => (b[1].normales + b[1].penales) - (a[1].normales + a[1].penales)));
-  datosStats.gc = aplicarFiltros(Object.entries(ec).sort((a,b) => b[1]-a[1]));
-  datosStats.nacGoleadores = nacionalidades;
-  datosStats.nacGC = nacionalidades;
-  datosStats.eqGoleadores = equiposGoles;
-  datosStats.eqGC = equiposEC;
-
-  datosStats.amonestados = aplicarFiltros(amon);
-  datosStats.expulsados  = aplicarFiltros(expu);
-  datosStats.nacAmon = nacAmon;
-  datosStats.nacExpu = nacExpu;
-  datosStats.eqAmon = eqAmon;
-  datosStats.eqExpu = eqExpu;
-
-  // Dobletes / Hat-Tricks / Pókers / Re-Pókers / Doble Hat-Trick / 7 goles en un partido
-  const multigol = parsearGoleadasMultiples(equipoId);
-  datosStats.doblete      = aplicarFiltros(Object.entries(multigol[2]).sort((a,b)=>b[1]-a[1]));
-  datosStats.hattrick     = aplicarFiltros(Object.entries(multigol[3]).sort((a,b)=>b[1]-a[1]));
-  datosStats.poker        = aplicarFiltros(Object.entries(multigol[4]).sort((a,b)=>b[1]-a[1]));
-  datosStats.repoker      = aplicarFiltros(Object.entries(multigol[5]).sort((a,b)=>b[1]-a[1]));
-  datosStats.doblehattrick= aplicarFiltros(Object.entries(multigol[6]).sort((a,b)=>b[1]-a[1]));
-  datosStats.siete        = aplicarFiltros(Object.entries(multigol[7]).sort((a,b)=>b[1]-a[1]));
-
-  // Calcular PJ desde columna Jugadores de partidos
+  // Calcular PJ primero: ahora es el criterio de desempate de TODAS las demás tablas
+  // (a igual cantidad, queda arriba quien tiene más partidos jugados) y también se muestra
+  // como columna en cada una de ellas (menos en la propia tabla de "Más Partidos Jugados").
   const pjConteo = {};
   const todosNacPJ = {};
   const eqPorJugadorPJ = {};
@@ -4815,16 +4793,57 @@ function renderEstadisticas() {
       });
     });
   });
+  datosStats.pjConteo = pjConteo;
   datosStats.eqPJ = eqPorJugadorPJ;
-  // Aplicar filtro de nacionalidad a PJ también (el de nombre ya no filtra, ver arriba)
-  const nombresDisplayPJ = { ...ndPJ, ...nombresDisplay };
-  const todosNacPJMerged = { ...todosNacPJ, ...nacionalidades, ...nacAmon, ...nacExpu };
-  datosStats.nacPJ = todosNacPJMerged;
-  datosStats.nombresDisplay = nombresDisplayPJ;
+  // Ordena por cantidad y, a igualdad, por PJ (más partidos jugados queda arriba)
+  const conPJ = (arr) => arr.slice().sort((a,b) => b[1]-a[1] || (pjConteo[b[0]]||0)-(pjConteo[a[0]]||0));
+
+  const { goles, ec, nacionalidades, equiposGoles, equiposEC, nombresDisplay: ndGol } = parsearGoleadores(equipoId);
+  const { datos: amon, nacionalidades: nacAmon, equiposPorJugador: eqAmon, nombresDisplay: ndAmon } = parsearTarjetas('Amonestados', equipoId);
+  const { datos: expu, nacionalidades: nacExpu, equiposPorJugador: eqExpu, nombresDisplay: ndExpu } = parsearTarjetas('Expulsados', equipoId);
+
+  // Combinar todos los diccionarios de nac y de nombre-para-mostrar (claveInterna -> texto visible)
+  const todosNac = { ...nacionalidades, ...nacAmon, ...nacExpu, ...todosNacPJ };
+  const nombresDisplay = { ...ndGol, ...ndAmon, ...ndExpu, ...ndPJ };
+  datosStats.nombresDisplay = nombresDisplay;
+
+  // Función que filtra un array [clave, valor] solo por nacionalidad (el nombre buscado
+  // ya NO excluye jugadores acá: se resalta y se navega hasta ellos, ver más abajo)
+  const aplicarFiltros = (arr) => arr.filter(([clave]) => {
+    if (filtroNac && todosNac[clave] !== filtroNac) return false;
+    return true;
+  });
+
+  datosStats.goleadores = aplicarFiltros(Object.entries(goles)
+    .sort((a, b) => (b[1].normales + b[1].penales) - (a[1].normales + a[1].penales) || (pjConteo[b[0]]||0)-(pjConteo[a[0]]||0)));
+  datosStats.gc = aplicarFiltros(conPJ(Object.entries(ec)));
+  datosStats.nacGoleadores = nacionalidades;
+  datosStats.nacGC = nacionalidades;
+  datosStats.eqGoleadores = equiposGoles;
+  datosStats.eqGC = equiposEC;
+
+  datosStats.amonestados = aplicarFiltros(conPJ(amon));
+  datosStats.expulsados  = aplicarFiltros(conPJ(expu));
+  datosStats.nacAmon = nacAmon;
+  datosStats.nacExpu = nacExpu;
+  datosStats.eqAmon = eqAmon;
+  datosStats.eqExpu = eqExpu;
+
+  // Dobletes / Hat-Tricks / Pókers / Re-Pókers / Doble Hat-Trick / 7 goles en un partido
+  const multigol = parsearGoleadasMultiples(equipoId);
+  datosStats.doblete      = aplicarFiltros(conPJ(Object.entries(multigol[2])));
+  datosStats.hattrick     = aplicarFiltros(conPJ(Object.entries(multigol[3])));
+  datosStats.poker        = aplicarFiltros(conPJ(Object.entries(multigol[4])));
+  datosStats.repoker      = aplicarFiltros(conPJ(Object.entries(multigol[5])));
+  datosStats.doblehattrick= aplicarFiltros(conPJ(Object.entries(multigol[6])));
+  datosStats.siete        = aplicarFiltros(conPJ(Object.entries(multigol[7])));
+
+  // La propia tabla de PJ no cambia: se ordena solo por PJ, sin desempate
+  datosStats.nacPJ = todosNac;
   datosStats.pj = Object.entries(pjConteo)
     .sort((a,b) => b[1]-a[1])
     .filter(([clave]) => {
-      if (filtroNac && todosNacPJMerged[clave] !== filtroNac) return false;
+      if (filtroNac && todosNac[clave] !== filtroNac) return false;
       return true;
     });
 
