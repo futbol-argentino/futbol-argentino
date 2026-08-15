@@ -7868,35 +7868,53 @@ function filaPartidoGrid(p) {
     ${golData ? golData.drop : ''}`;
 }
 
-function filaRankingEstadio(i, nombre, valor) {
+function filaRankingEstadio(i, nombre, valor, cambio) {
   const nac = NACIONALIDAD_POR_NOMBRE[normalizarNombre(nombre)];
   const bandera = nac ? `<span style="display:inline-flex;align-items:center;flex-shrink:0;">${getBandera(nac)}</span>` : '';
   return `<tr onclick="verFichaJugador('${nombre.replace(/'/g, "\\'")}')" style="cursor:pointer;">
     <td style="color:var(--texto-2);font-size:13px;width:36px;padding:8px 10px;">${i + 1}</td>
-    <td style="font-size:14px;font-weight:500;"><div style="display:flex;align-items:center;gap:8px;">${bandera}<span>${nombre}</span></div></td>
+    <td style="font-size:14px;font-weight:500;"><div style="display:flex;align-items:center;gap:8px;">${renderCambioPosicion(cambio)}${bandera}<span>${nombre}</span></div></td>
     <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;font-weight:700;color:var(--celeste);">${valor}</td>
   </tr>`;
 }
 
-function filaRankingEstadioEquipo(i, id, goles, pj) {
+function filaRankingEstadioEquipo(i, id, goles, pj, cambio) {
   const nombre = equipos[id] || id;
   const esc = ESCUDOS[nombre] ? `<img src="${ESCUDOS[nombre]}" style="width:20px;height:20px;object-fit:contain;" onerror="this.style.display='none'">` : '';
   return `<tr onclick="verDetalleEquipo('${id}', false)" style="cursor:pointer;">
     <td style="color:var(--texto-2);font-size:13px;width:36px;padding:8px 10px;">${i + 1}</td>
-    <td style="font-size:14px;font-weight:500;"><div style="display:flex;align-items:center;gap:8px;">${esc}<span>${nombre}</span></div></td>
+    <td style="font-size:14px;font-weight:500;"><div style="display:flex;align-items:center;gap:8px;">${renderCambioPosicion(cambio)}${esc}<span>${nombre}</span></div></td>
     <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;font-weight:700;color:var(--celeste);">${goles}</td>
     <td style="text-align:center;font-size:12px;color:var(--texto-3);">${pj}</td>
   </tr>`;
 }
 
-function filaRankingEstadioEquipoPJ(i, id, pj) {
+function filaRankingEstadioEquipoPJ(i, id, pj, cambio) {
   const nombre = equipos[id] || id;
   const esc = ESCUDOS[nombre] ? `<img src="${ESCUDOS[nombre]}" style="width:20px;height:20px;object-fit:contain;" onerror="this.style.display='none'">` : '';
   return `<tr onclick="verDetalleEquipo('${id}', false)" style="cursor:pointer;">
     <td style="color:var(--texto-2);font-size:13px;width:36px;padding:8px 10px;">${i + 1}</td>
-    <td style="font-size:14px;font-weight:500;"><div style="display:flex;align-items:center;gap:8px;">${esc}<span>${nombre}</span></div></td>
+    <td style="font-size:14px;font-weight:500;"><div style="display:flex;align-items:center;gap:8px;">${renderCambioPosicion(cambio)}${esc}<span>${nombre}</span></div></td>
     <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;font-weight:700;color:var(--celeste);">${pj}</td>
   </tr>`;
+}
+
+// Igual que en Estadísticas: posición de cada jugador/equipo en las 4 tablas del estadio,
+// pero usando solo los partidos con ID hasta ID_PARTIDO_CORTE_STATS (el "antes" automático).
+function posicionesAntesEstadio(partidosJugados) {
+  const antes = partidosJugados.filter(p => Number(p.ID_Partido) <= ID_PARTIDO_CORTE_STATS);
+  const pos = { pj: {}, goleadores: {}, equiposPJ: {}, equiposGoles: {} };
+  partidosJugadosPorJugadorEnPartidos(antes).forEach(([nombre], idx) => { pos.pj[nombre] = idx + 1; });
+  golesPorJugadorEnPartidos(antes).forEach(([nombre], idx) => { pos.goleadores[nombre] = idx + 1; });
+  partidosJugadosPorEquipoEnPartidos(antes).forEach(([id], idx) => { pos.equiposPJ[id] = idx + 1; });
+  golesPorEquipoEnPartidos(antes).forEach(([id], idx) => { pos.equiposGoles[id] = idx + 1; });
+  return pos;
+}
+
+// Cuántos puestos subió (positivo) o bajó (negativo) según su posición "antes"; 0 si no
+// tenía posición previa o no se movió (renderCambioPosicion no muestra flecha en ese caso).
+function calcularCambio(posAnt, posActual) {
+  return posAnt ? posAnt - posActual : 0;
 }
 
 // Estado del historial de partidos del estadio actualmente abierto
@@ -7935,12 +7953,13 @@ function renderHistorialEstadio(e) {
   if (estadioHistorial.partidos.length) filtrarPartidosEstadio();
 
   // Jugadores con más partidos en este estadio
+  const posAntesEstadio = posicionesAntesEstadio(partidosJugados);
   const pjLista = partidosJugadosPorJugadorEnPartidos(partidosJugados).slice(0, 15);
   const pjWrap = document.getElementById('estadio-pj-wrap');
   if (pjLista.length) {
     pjWrap.style.display = 'block';
     document.getElementById('estadio-pj-count').textContent = pjLista.length + (pjLista.length === 1 ? ' jugador' : ' jugadores');
-    document.getElementById('estadio-pj-tbody').innerHTML = pjLista.map(([nombre, pj], i) => filaRankingEstadio(i, nombre, pj)).join('');
+    document.getElementById('estadio-pj-tbody').innerHTML = pjLista.map(([nombre, pj], i) => filaRankingEstadio(i, nombre, pj, calcularCambio(posAntesEstadio.pj[nombre], i+1))).join('');
   } else {
     pjWrap.style.display = 'none';
   }
@@ -7951,7 +7970,7 @@ function renderHistorialEstadio(e) {
   if (goleadores.length) {
     golWrap.style.display = 'block';
     document.getElementById('estadio-goleadores-count').textContent = goleadores.length + (goleadores.length === 1 ? ' jugador' : ' jugadores');
-    document.getElementById('estadio-goleadores-tbody').innerHTML = goleadores.map(([nombre, goles], i) => filaRankingEstadio(i, nombre, goles)).join('');
+    document.getElementById('estadio-goleadores-tbody').innerHTML = goleadores.map(([nombre, goles], i) => filaRankingEstadio(i, nombre, goles, calcularCambio(posAntesEstadio.goleadores[nombre], i+1))).join('');
   } else {
     golWrap.style.display = 'none';
   }
@@ -7962,7 +7981,7 @@ function renderHistorialEstadio(e) {
   if (equiposPJ.length) {
     eqPjWrap.style.display = 'block';
     document.getElementById('estadio-equipos-pj-count').textContent = equiposPJ.length + (equiposPJ.length === 1 ? ' equipo' : ' equipos');
-    document.getElementById('estadio-equipos-pj-tbody').innerHTML = equiposPJ.map(([id, pj], i) => filaRankingEstadioEquipoPJ(i, id, pj)).join('');
+    document.getElementById('estadio-equipos-pj-tbody').innerHTML = equiposPJ.map(([id, pj], i) => filaRankingEstadioEquipoPJ(i, id, pj, calcularCambio(posAntesEstadio.equiposPJ[id], i+1))).join('');
   } else {
     eqPjWrap.style.display = 'none';
   }
@@ -7973,7 +7992,7 @@ function renderHistorialEstadio(e) {
   if (equiposGoles.length) {
     eqGolWrap.style.display = 'block';
     document.getElementById('estadio-equipos-goles-count').textContent = equiposGoles.length + (equiposGoles.length === 1 ? ' equipo' : ' equipos');
-    document.getElementById('estadio-equipos-goles-tbody').innerHTML = equiposGoles.map(([id, v], i) => filaRankingEstadioEquipo(i, id, v.goles, v.pj)).join('');
+    document.getElementById('estadio-equipos-goles-tbody').innerHTML = equiposGoles.map(([id, v], i) => filaRankingEstadioEquipo(i, id, v.goles, v.pj, calcularCambio(posAntesEstadio.equiposGoles[id], i+1))).join('');
   } else {
     eqGolWrap.style.display = 'none';
   }
