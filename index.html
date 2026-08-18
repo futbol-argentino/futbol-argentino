@@ -897,6 +897,14 @@ select option{background:#080F20;color:#F0F6FF}
       <span class="sidebar-nav-icon">👤</span>
       <span class="sidebar-nav-texto">Jugadores</span>
     </div>
+    <div class="sidebar-nav-item" onclick="cambiarTab('dts'); cerrarSidebar();" id="menu-dts">
+      <span class="sidebar-nav-icon">🧑‍💼</span>
+      <span class="sidebar-nav-texto">Directores Técnicos</span>
+    </div>
+    <div class="sidebar-nav-item" onclick="cambiarTab('arbitros'); cerrarSidebar();" id="menu-arbitros">
+      <span class="sidebar-nav-icon">🧑‍⚖️</span>
+      <span class="sidebar-nav-texto">Árbitros</span>
+    </div>
     <div class="sidebar-nav-item" onclick="cambiarTab('estadios'); cerrarSidebar();" id="menu-estadios">
       <span class="sidebar-nav-icon">🏟️</span>
       <span class="sidebar-nav-texto">Estadios</span>
@@ -1712,12 +1720,6 @@ select option{background:#080F20;color:#F0F6FF}
   <!-- ══ TAB BUSCADOR JUGADORES ══ -->
   <!-- ══ TAB JUGADORES (buscador + álbum) ══ -->
   <div class="tab-panel" id="panel-jugadores">
-    <!-- Sub-tabs Jugadores / DTs -->
-    <div style="display:flex;gap:2px;background:var(--fondo-3);border:1px solid var(--borde);border-radius:10px;padding:4px;width:fit-content;margin-bottom:20px;">
-      <button id="subtab-jugadores" onclick="cambiarSubtabJugadores('jugadores')" style="font-family:var(--fuente-cuerpo);font-size:13px;font-weight:500;padding:7px 18px;border-radius:7px;border:none;cursor:pointer;background:var(--azul);color:white;transition:var(--trans);">👤 Jugadores</button>
-      <button id="subtab-dts"       onclick="cambiarSubtabJugadores('dts')"       style="font-family:var(--fuente-cuerpo);font-size:13px;font-weight:500;padding:7px 18px;border-radius:7px;border:none;cursor:pointer;background:transparent;color:var(--texto-2);transition:var(--trans);">🧑‍💼 Directores Técnicos</button>
-    </div>
-
     <!-- Sección Jugadores -->
     <div id="seccion-jugadores">
       <div class="filtros-panel" style="margin-bottom:20px;">
@@ -1745,9 +1747,11 @@ select option{background:#080F20;color:#F0F6FF}
       <div id="jugador-resultados"></div>
       <div id="jugador-stats-equipo" style="display:none;margin-top:24px;"></div>
     </div>
+  </div><!-- fin panel-jugadores -->
 
-    <!-- Sección DTs -->
-    <div id="seccion-dts" style="display:none;">
+  <!-- ══ TAB DIRECTORES TÉCNICOS ══ -->
+  <div class="tab-panel" id="panel-dts">
+    <div id="seccion-dts">
       <div class="filtros-panel" style="margin-bottom:20px;">
         <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
           <div class="filtro-grupo" style="flex:2;min-width:200px;">
@@ -1766,7 +1770,30 @@ select option{background:#080F20;color:#F0F6FF}
       <div id="dt-resultados"></div>
       <div id="dt-stats-equipo" style="display:none;margin-top:24px;"></div>
     </div>
-  </div><!-- fin panel-jugadores -->
+  </div><!-- fin panel-dts -->
+
+  <!-- ══ TAB ÁRBITROS ══ -->
+  <div class="tab-panel" id="panel-arbitros">
+    <div id="seccion-arbitros">
+      <div class="filtros-panel" style="margin-bottom:20px;">
+        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+          <div class="filtro-grupo" style="flex:2;min-width:200px;">
+            <label class="filtro-label">Buscar por nombre</label>
+            <input type="text" id="arbitro-buscar-input" class="filtro-input" placeholder="Ej: Echavarría, Merlos..." oninput="buscarArbitroDebounced()">
+          </div>
+          <div class="filtro-grupo" style="flex:1;min-width:160px;position:relative;">
+            <label class="filtro-label">Filtrar por equipo</label>
+            <input type="text" id="arbitro-equipo-input" class="filtro-input" placeholder="Escribí el equipo..." autocomplete="off"
+              oninput="filtrarEquipoDropdown('arbitro')" onfocus="mostrarDropdown('arbitro')" onblur="setTimeout(()=>ocultarDropdown('arbitro'),200)">
+            <input type="hidden" id="arbitro-buscar-equipo" value="">
+            <div id="arbitro-equipo-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:9999;background:var(--fondo-2);border:1px solid var(--borde-activo);border-radius:10px;max-height:220px;overflow-y:auto;box-shadow:var(--sombra-card);margin-top:3px;"></div>
+          </div>
+        </div>
+      </div>
+      <div id="arbitro-resultados"></div>
+      <div id="arbitro-stats-equipo" style="display:none;margin-top:24px;"></div>
+    </div>
+  </div><!-- fin panel-arbitros -->
 
   <!-- ══ TAB ESTADIOS ══ -->
   <div class="tab-panel" id="panel-estadios">
@@ -2160,6 +2187,60 @@ select option{background:#080F20;color:#F0F6FF}
   </div>
 </div>
 
+<!-- FICHA ÁRBITRO -->
+<div class="modal-overlay" id="modal-arbitro" onclick="cerrarFichaArbitro()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-top">
+      <div></div>
+      <button class="modal-cerrar" onclick="cerrarFichaArbitro()">✕</button>
+    </div>
+    <div class="ficha-header">
+      <div class="ficha-foto-wrap">
+        <img id="arbitro-foto" src="" alt="" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22180%22 height=%22180%22><rect width=%22180%22 height=%22180%22 fill=%22%230D1628%22 rx=%2216%22/><text x=%2290%22 y=%22105%22 font-size=%2264%22 text-anchor=%22middle%22>🧑‍⚖️</text></svg>'">
+      </div>
+      <div class="ficha-info">
+        <div class="ficha-nombre-row">
+          <span id="arbitro-bandera"></span>
+          <span id="arbitro-nombre" style="font-family:var(--fuente-titulo);font-size:28px;letter-spacing:1px;line-height:1;"></span>
+        </div>
+        <div style="font-size:12px;color:var(--celeste);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;margin-top:4px;">Árbitro</div>
+        <div id="arbitro-nacionalidad" style="font-size:13px;color:var(--texto-2);margin-bottom:4px;"></div>
+        <div id="arbitro-equipos-lista" style="font-size:13px;color:var(--texto-3);line-height:1.5;"></div>
+        <!-- Miniaturas de fotos por equipo -->
+        <div id="arbitro-fotos-equipos" style="display:none;flex-wrap:wrap;gap:6px;margin-top:10px;"></div>
+        <!-- Resumen de tarjetas -->
+        <div id="arbitro-resumen-tarjetas" style="display:flex;gap:14px;margin-top:12px;flex-wrap:wrap;"></div>
+      </div>
+    </div>
+    <div class="ficha-seccion-titulo">Equipos dirigidos</div>
+    <div class="tabla-scroll scroll-forzado">
+      <table style="width:100%;border-collapse:collapse;min-width:340px;">
+        <thead><tr>
+          <th>Equipo</th>
+          <th style="text-align:center;width:60px;">PD</th>
+          <th style="text-align:center;width:70px;">🟨</th>
+          <th style="text-align:center;width:70px;">🟥</th>
+        </tr></thead>
+        <tbody id="arbitro-tabla-equipos"></tbody>
+      </table>
+    </div>
+    <!-- Últimos partidos -->
+    <div class="ficha-seccion-titulo" style="margin-top:20px;">Últimos partidos dirigidos</div>
+    <div class="tabla-scroll">
+      <table class="tabla-partidos" style="width:100%;border-collapse:collapse;">
+        <thead><tr>
+          <th>Fecha</th><th>Local</th>
+          <th style="text-align:center;">Res.</th>
+          <th>Visitante</th><th>Torneo</th>
+          <th style="text-align:center;width:40px;">🟨</th>
+          <th style="text-align:center;width:40px;">🟥</th>
+        </tr></thead>
+        <tbody id="arbitro-tabla-partidos"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL PARTIDO -->
 <div class="modal-overlay" id="modal" onclick="cerrarModal()">
   <div class="modal-box" onclick="event.stopPropagation()">
@@ -2282,6 +2363,12 @@ select option{background:#080F20;color:#F0F6FF}
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- ÁRBITRO (debajo de alineaciones) -->
+      <div class="modal-dato full" id="modal-arbitro-wrap" style="display:none;">
+        <div class="modal-dato-label">🧑‍⚖️ Árbitro</div>
+        <div class="modal-dato-valor" id="modal-arbitro-valor"></div>
       </div>
 
       <!-- DESPLEGABLE NOTAS (al final) -->
@@ -3943,6 +4030,19 @@ function verPartido(id) {
     alinWrap.style.display = 'none';
   }
 
+  // Árbitro (debajo de alineaciones)
+  const arbWrap = document.getElementById('modal-arbitro-wrap');
+  const arbRaw = (p.ARBITRO || '').trim();
+  if (arbRaw) {
+    const arbNac = extraerNacionalidad(arbRaw);
+    const arbNombre = limpiarNombre(arbRaw) || arbRaw;
+    const arbBandera = arbNac ? getBandera(arbNac) + ' ' : '';
+    document.getElementById('modal-arbitro-valor').innerHTML = `<span onclick="event.stopPropagation();verFichaArbitro('${arbNombre.replace(/'/g,"\\'")}')" style="cursor:pointer;color:var(--celeste);text-decoration:underline dotted;">${arbBandera}${arbNombre}</span>`;
+    arbWrap.style.display = 'block';
+  } else {
+    arbWrap.style.display = 'none';
+  }
+
   traerModalAlFrente('modal');
   document.getElementById('modal').classList.add('visible');
 }
@@ -4227,6 +4327,25 @@ function cambiarFichaFotoDT(dtKey, eqKey) {
   foto.onerror = function() {
     if (!this.dataset.tried) { this.dataset.tried = '1'; this.src = `dts/${dtKey}.jpg`; }
     else { this.onerror = null; this.src = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22180%22 height=%22180%22><rect width=%22180%22 height=%22180%22 fill=%22%230D1628%22 rx=%2216%22/><text x=%2290%22 y=%22105%22 font-size=%2264%22 text-anchor=%22middle%22>🧑‍💼</text></svg>'; }
+  };
+}
+
+// Returns img HTML that tries team-specific referee photo first, falls back to default (same system as jugadores/DTs)
+function fotoArbitroImg(nombre, equipoNombre, style, placeholder) {
+  const arbKey = toFotoKey(nombre);
+  const eqKey = equipoNombre ? toFotoKey(equipoNombre) : '';
+  const src      = eqKey ? `arbitros/${arbKey}_${eqKey}.jpg` : `arbitros/${arbKey}.jpg`;
+  const fallback = eqKey ? `arbitros/${arbKey}.jpg` : placeholder || 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22180%22 height=%22180%22><rect width=%22180%22 height=%22180%22 fill=%22%230D1628%22 rx=%2216%22/><text x=%2290%22 y=%22105%22 font-size=%2264%22 text-anchor=%22middle%22>🧑‍⚖️</text></svg>';
+  return `<img src="${src}" loading="lazy" decoding="async" style="${style}" onerror="if(this.dataset.tried){this.src='${placeholder||'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2256%22 height=%2256%22><rect width=%2256%22 height=%2256%22 fill=%22%230D1628%22 rx=%2210%22/><text x=%2228%22 y=%2234%22 font-size=%2224%22 text-anchor=%22middle%22>🧑‍⚖️</text></svg>'}'}else{this.dataset.tried=1;this.src='${fallback}'}">`;
+}
+
+function cambiarFichaFotoArbitro(arbKey, eqKey) {
+  const foto = document.getElementById('arbitro-foto');
+  foto.dataset.tried = '';
+  foto.src = `arbitros/${arbKey}_${eqKey}.jpg`;
+  foto.onerror = function() {
+    if (!this.dataset.tried) { this.dataset.tried = '1'; this.src = `arbitros/${arbKey}.jpg`; }
+    else { this.onerror = null; this.src = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22180%22 height=%22180%22><rect width=%22180%22 height=%22180%22 fill=%22%230D1628%22 rx=%2216%22/><text x=%2290%22 y=%22105%22 font-size=%2264%22 text-anchor=%22middle%22>🧑‍⚖️</text></svg>'; }
   };
 }
 
@@ -6578,6 +6697,8 @@ function inicializarBuscadorJugadores() {
 
   document.getElementById('jugador-resultados').innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">Escribí un nombre o elegí un equipo para buscar jugadores.</div>';
   document.getElementById('dt-resultados').innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">Escribí un nombre o elegí un equipo para buscar directores técnicos.</div>';
+  const arbRes = document.getElementById('arbitro-resultados');
+  if (arbRes) arbRes.innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">Escribí un nombre o elegí un equipo para buscar árbitros.</div>';
 }
 
 // ── Dropdown buscador de equipo ──
@@ -6600,6 +6721,7 @@ function filtrarEquipoDropdown(contexto) {
     document.getElementById(hidId).value = '';
     if (contexto === 'jugador') buscarJugador();
     else if (contexto === 'dt') buscarDT();
+    else if (contexto === 'arbitro') buscarArbitro();
     else if (contexto === 'match1' || contexto === 'match2') filtrar();
     else if (contexto === 'estadio1' || contexto === 'estadio2') filtrarPartidosEstadio();
     else renderEstadisticas();
@@ -6636,19 +6758,10 @@ function seleccionarEquipoDropdown(contexto, id, nombre) {
   document.getElementById(dropId).style.display = 'none';
   if (contexto === 'jugador') buscarJugador();
   else if (contexto === 'dt') buscarDT();
+  else if (contexto === 'arbitro') buscarArbitro();
   else if (contexto === 'match1' || contexto === 'match2') filtrar();
   else if (contexto === 'estadio1' || contexto === 'estadio2') filtrarPartidosEstadio();
   else renderEstadisticas();
-}
-
-function cambiarSubtabJugadores(tab) {
-  const isJug = tab === 'jugadores';
-  document.getElementById('subtab-jugadores').style.background = isJug ? 'var(--azul)' : 'transparent';
-  document.getElementById('subtab-jugadores').style.color = isJug ? 'white' : 'var(--texto-2)';
-  document.getElementById('subtab-dts').style.background = !isJug ? 'var(--azul)' : 'transparent';
-  document.getElementById('subtab-dts').style.color = !isJug ? 'white' : 'var(--texto-2)';
-  document.getElementById('seccion-jugadores').style.display = isJug ? 'block' : 'none';
-  document.getElementById('seccion-dts').style.display = isJug ? 'none' : 'block';
 }
 
 // ── STATS INLINE POR EQUIPO (sección Jugadores) ──
@@ -6976,6 +7089,265 @@ function verFichaDT(nombre) {
 
 function cerrarFichaDT() {
   document.getElementById('modal-dt').classList.remove('visible');
+}
+
+// ── ÁRBITROS ──
+// Cuenta cuántas tarjetas (amonestados o expulsados) hay en el campo indicado de un partido,
+// separando por lado (local/visita) igual que en el resto del sitio.
+function contarTarjetasPartido(p, campo) {
+  const raw = p[campo] || '';
+  if (!raw.trim()) return { local: 0, visita: 0, total: 0 };
+  const partes = raw.split('/');
+  const contarLado = (txt) => (txt||'').split('-').map(e=>e.trim()).filter(e=>e && e.toLowerCase()!=='ninguno' && e.length>1).length;
+  const local = contarLado(partes[0]||'');
+  const visita = contarLado(partes[1]||'');
+  return { local, visita, total: local+visita };
+}
+
+function recopilarArbitros() {
+  // nombre → { nac, partidos:[], equipos: { equipoId: { pd, anios:Set, amonestados, expulsados } } }
+  const arbMap = {};
+  partidos.forEach(p => {
+    const raw = (p.ARBITRO || '').trim();
+    if (!raw || raw.length < 2) return;
+    const nac = extraerNacionalidad(raw);
+    const nombre = limpiarNombre(raw) || raw;
+    const clave = nombreCanonico(nombre);
+    const anio = p.Fecha ? parseInt(p.Fecha.split('/')[2] || p.Fecha.split('-')[0]) : null;
+    if (!arbMap[clave]) arbMap[clave] = { equipos:{}, nac: null, partidos: [] };
+    if (nac && !arbMap[clave].nac) arbMap[clave].nac = nac;
+    arbMap[clave].partidos.push(p);
+
+    const amon = contarTarjetasPartido(p, 'Amonestados');
+    const expu = contarTarjetasPartido(p, 'Expulsados');
+
+    [[p.Local_ID, amon.local, expu.local], [p.Visitante_ID, amon.visita, expu.visita]].forEach(([equipoId, am, ex]) => {
+      if (!equipoId) return;
+      if (!arbMap[clave].equipos[equipoId]) arbMap[clave].equipos[equipoId] = { pd:0, anios:new Set(), amonestados:0, expulsados:0 };
+      const r = arbMap[clave].equipos[equipoId];
+      r.pd++;
+      if (anio) r.anios.add(anio);
+      r.amonestados += am;
+      r.expulsados += ex;
+    });
+  });
+  return arbMap;
+}
+
+function buscarArbitro() {
+  const q = (document.getElementById('arbitro-buscar-input')?.value || '').toLowerCase().trim();
+  const eqFiltro = document.getElementById('arbitro-buscar-equipo')?.value || '';
+  const container = document.getElementById('arbitro-resultados');
+
+  if (!q && !eqFiltro) {
+    container.innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">Escribí un nombre o elegí un equipo para buscar árbitros.</div>';
+    return;
+  }
+
+  const todos = recopilarArbitros();
+  const resultados = Object.entries(todos).filter(([nombre, data]) => {
+    if (q && !normalizarNombre(nombre).includes(normalizarNombre(q))) return false;
+    if (eqFiltro && !Object.keys(data.equipos).includes(eqFiltro)) return false;
+    return true;
+  }).sort(([a],[b]) => a.localeCompare(b));
+
+  const arbStatsEl = document.getElementById('arbitro-stats-equipo');
+  if (eqFiltro && arbStatsEl) {
+    arbStatsEl.style.display = 'block';
+    arbStatsEl.innerHTML = renderStatsArbitroEquipoInline(eqFiltro);
+  } else if (arbStatsEl) {
+    arbStatsEl.style.display = 'none';
+  }
+
+  if (!resultados.length) {
+    container.innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">No se encontraron árbitros.</div>';
+    return;
+  }
+
+  container.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;">` +
+    resultados.slice(0,60).map(([nombre, data]) => {
+      const equipoNombreFoto = eqFiltro ? (equipos[eqFiltro]||'') : '';
+      const pd = data.partidos.length;
+      const totalAmon = Object.values(data.equipos).reduce((s,r)=>s+r.amonestados,0);
+      const totalExpu = Object.values(data.equipos).reduce((s,r)=>s+r.expulsados,0);
+      const promAmon = pd > 0 ? (totalAmon/pd).toFixed(1) : '0.0';
+      const equiposChips = Object.keys(data.equipos).map(id => {
+        const anios = formatearAnios(data.equipos[id].anios);
+        const nombreEq = equipos[id]||id;
+        const esc = ESCUDOS[nombreEq] ? `<img src="${ESCUDOS[nombreEq]}" onerror="this.style.display='none'">` : '';
+        return `<span class="pers-equipo-chip">${esc}${nombreEq} <span class="anios">(${anios})</span></span>`;
+      }).join('');
+      const banderaArb = data.nac ? `<span style="display:inline-flex;">${getBandera(data.nac)}</span>` : '';
+      return `<div class="pers-card" onclick="verFichaArbitro('${nombre.replace(/'/g,"\\'")}')">
+        <div class="pers-card-top">
+          ${fotoArbitroImg(nombre, equipoNombreFoto, 'width:60px;height:60px;border-radius:12px;object-fit:cover;object-position:top;background:var(--fondo-3);flex-shrink:0;border:1px solid var(--borde);', 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><rect width=%2260%22 height=%2260%22 fill=%22%230D1628%22 rx=%2212%22/><text x=%2230%22 y=%2238%22 font-size=%2226%22 text-anchor=%22middle%22>🧑‍⚖️</text></svg>')}
+          <div class="pers-card-nombre">${banderaArb}${nombre}</div>
+        </div>
+        <div class="pers-card-stats">
+          <div class="pers-mini-stat"><span class="num" style="color:var(--celeste);">${pd}</span><span class="label">📋 PD</span></div>
+          <div class="pers-mini-stat"><span class="num" style="color:var(--amarillo);">${promAmon}</span><span class="label">🟨 /PJ</span></div>
+          <div class="pers-mini-stat"><span class="num" style="color:var(--rojo);">${totalExpu}</span><span class="label">🟥 Total</span></div>
+        </div>
+        <div class="pers-card-equipos">${equiposChips}</div>
+      </div>`;
+    }).join('') + '</div>' +
+    (resultados.length > 60 ? `<div style="text-align:center;padding:16px;color:var(--texto-3);font-size:13px;">Mostrando 60 de ${resultados.length}. Refiná la búsqueda.</div>` : '');
+}
+
+const buscarArbitroDebounced = debounce(buscarArbitro, 300);
+
+function renderStatsArbitroEquipoInline(equipoId) {
+  const nmEq = equipos[equipoId] || equipoId;
+  const todos = recopilarArbitros();
+  const esc = ESCUDOS[nmEq] ? `<img src="${ESCUDOS[nmEq]}" style="width:24px;height:24px;object-fit:contain;">` : '';
+
+  const arbEq = Object.entries(todos)
+    .filter(([, data]) => data.equipos[equipoId])
+    .map(([nombre, data]) => ({ nombre, ...data.equipos[equipoId] }))
+    .sort((a,b) => b.pd - a.pd);
+
+  if (!arbEq.length) return `<div style="text-align:center;padding:20px;color:var(--texto-3);">Sin datos de árbitros para este equipo.</div>`;
+
+  const rows = arbEq.map((r, i) => {
+    const aniosStr = formatearAnios(r.anios);
+    return `<tr style="cursor:pointer;" onclick="verFichaArbitro('${r.nombre.replace(/'/g,"\\'")}')">
+      <td style="padding:8px 10px;color:var(--texto-3);font-size:13px;">${i+1}</td>
+      <td style="padding:8px 10px;font-size:14px;font-weight:500;">${r.nombre}
+        <div style="font-size:11px;color:var(--texto-3);">${aniosStr}</div>
+      </td>
+      <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;">${r.pd}</td>
+      <td style="text-align:center;color:var(--amarillo);">${r.amonestados}</td>
+      <td style="text-align:center;color:var(--rojo);">${r.expulsados}</td>
+    </tr>`;
+  }).join('');
+
+  return `<div style="background:var(--fondo-2);border:1px solid var(--borde-activo);border-radius:14px;padding:18px 20px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;font-family:var(--fuente-titulo);font-size:22px;letter-spacing:1px;">
+      ${esc} Árbitros · ${nmEq}
+    </div>
+    <div class="tabla-scroll">
+      <table style="width:100%;border-collapse:collapse;min-width:360px;">
+        <thead><tr>
+          <th style="width:36px;">#</th><th>Árbitro</th>
+          <th style="text-align:center;width:55px;">PD</th>
+          <th style="text-align:center;width:55px;">🟨</th>
+          <th style="text-align:center;width:55px;">🟥</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function verFichaArbitro(nombre) {
+  const clave = nombreCanonico(nombre);
+  const todos = recopilarArbitros();
+  const data = todos[clave];
+  if (!data) return;
+
+  // Equipo principal = el que más veces vio dirigido por este árbitro
+  const equiposOrdenados = Object.entries(data.equipos).sort((a,b) => b[1].pd - a[1].pd);
+  const equipoPrincipalId = equiposOrdenados[0]?.[0];
+  const equipoPrincipalNombre = equipos[equipoPrincipalId] || '';
+
+  const arbKey = toFotoKey(nombre);
+  const eqKeyPrincipal = toFotoKey(equipoPrincipalNombre);
+  const arbFoto = document.getElementById('arbitro-foto');
+  arbFoto.dataset.tried = '';
+  arbFoto.src = `arbitros/${arbKey}_${eqKeyPrincipal}.jpg`;
+  arbFoto.onerror = function() {
+    if (!this.dataset.tried) { this.dataset.tried = '1'; this.src = `arbitros/${arbKey}.jpg`; }
+    else { this.onerror = null; this.src = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22180%22 height=%22180%22><rect width=%22180%22 height=%22180%22 fill=%22%230D1628%22 rx=%2216%22/><text x=%2290%22 y=%22105%22 font-size=%2264%22 text-anchor=%22middle%22>🧑‍⚖️</text></svg>'; }
+  };
+  document.getElementById('arbitro-nombre').textContent = nombre;
+  document.getElementById('arbitro-bandera').innerHTML = data.nac ? getBandera(data.nac) : '';
+  document.getElementById('arbitro-nacionalidad').textContent = data.nac ? getNombrePais(data.nac) : '';
+  document.getElementById('arbitro-equipos-lista').textContent = Object.keys(data.equipos).map(id => equipos[id]||id).join(' · ');
+
+  // Miniaturas por equipo (solo si dirigió a más de 1)
+  const arbFotos = document.getElementById('arbitro-fotos-equipos');
+  if (arbFotos) {
+    if (equiposOrdenados.length > 1) {
+      arbFotos.innerHTML = equiposOrdenados.map(([eid]) => {
+        const nm = equipos[eid]||eid;
+        const ek = toFotoKey(nm);
+        const escM = ESCUDOS[nm] ? `<img src="${ESCUDOS[nm]}" style="width:14px;height:14px;object-contain;">` : '';
+        return `<div title="${nm}" onclick="cambiarFichaFotoArbitro('${arbKey}','${ek}')" style="cursor:pointer;border:2px solid var(--borde);border-radius:8px;overflow:hidden;width:52px;flex-shrink:0;transition:var(--trans);" onmouseenter="this.style.borderColor='var(--celeste)'" onmouseleave="this.style.borderColor='var(--borde)'">
+          <img src="arbitros/${arbKey}_${ek}.jpg" style="width:52px;height:52px;object-fit:cover;object-position:top;display:block;" onerror="this.src='arbitros/${arbKey}.jpg'">
+          <div style="display:flex;align-items:center;justify-content:center;gap:3px;padding:2px;font-size:9px;color:var(--texto-3);background:var(--fondo-3);">${escM}</div>
+        </div>`;
+      }).join('');
+      arbFotos.style.display = 'flex';
+    } else {
+      arbFotos.innerHTML = '';
+      arbFotos.style.display = 'none';
+    }
+  }
+
+  // Resumen de tarjetas (partidos dirigidos, amonestados totales/promedio, expulsados totales)
+  const pd = data.partidos.length;
+  const totalAmon = Object.values(data.equipos).reduce((s,r)=>s+r.amonestados,0);
+  const totalExpu = Object.values(data.equipos).reduce((s,r)=>s+r.expulsados,0);
+  const promAmon = pd > 0 ? (totalAmon/pd).toFixed(1) : '0.0';
+  const resumenEl = document.getElementById('arbitro-resumen-tarjetas');
+  if (resumenEl) {
+    resumenEl.innerHTML = `
+      <div class="pers-mini-stat"><span class="num" style="color:var(--celeste);">${pd}</span><span class="label">📋 Partidos dirigidos</span></div>
+      <div class="pers-mini-stat"><span class="num" style="color:var(--amarillo);">${totalAmon}</span><span class="label">🟨 Amonestados</span></div>
+      <div class="pers-mini-stat"><span class="num" style="color:var(--texto-1);">${promAmon}</span><span class="label">🟨 Promedio/partido</span></div>
+      <div class="pers-mini-stat"><span class="num" style="color:var(--rojo);">${totalExpu}</span><span class="label">🟥 Expulsados</span></div>
+    `;
+  }
+
+  document.getElementById('arbitro-tabla-equipos').innerHTML = Object.entries(data.equipos)
+    .sort((a,b) => b[1].pd - a[1].pd)
+    .map(([eid, r]) => {
+      const nm = equipos[eid]||eid;
+      const escE = ESCUDOS[nm] ? `<img src="${ESCUDOS[nm]}" style="width:18px;height:18px;object-fit:contain;margin-right:6px;" onerror="this.style.display='none'">` : '';
+      const aniosStr = formatearAnios(r.anios);
+      return `<tr>
+        <td style="padding:10px 12px;">
+          <div style="display:flex;align-items:center;">${escE}<strong>${nm}</strong></div>
+          <div style="font-size:11px;color:var(--texto-3);margin-top:2px;">${aniosStr}</div>
+        </td>
+        <td style="text-align:center;font-weight:700;font-size:15px;">${r.pd}</td>
+        <td style="text-align:center;color:var(--amarillo);">${r.amonestados}</td>
+        <td style="text-align:center;color:var(--rojo);">${r.expulsados}</td>
+      </tr>`;
+    }).join('');
+
+  // Últimos 10 partidos dirigidos (partidos únicos, sin repetir por equipo)
+  const partidosOrdenados = data.partidos.slice().sort((a,b) => {
+    const fa = a.Fecha ? a.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/,'$3-$2-$1') : '0';
+    const fb = b.Fecha ? b.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/,'$3-$2-$1') : '0';
+    return fb.localeCompare(fa);
+  });
+  document.getElementById('arbitro-tabla-partidos').innerHTML = partidosOrdenados.slice(0,10).map(p => {
+    const local  = equipos[p.Local_ID]||p.Local_ID;
+    const visita = equipos[p.Visitante_ID]||p.Visitante_ID;
+    const rc = resClase(p.Goles_Local, p.Goles_Visitante);
+    const torneo = temporadas[p.ID_Temporada]||'';
+    const fecha = p.Fecha ? p.Fecha.split('T')[0] : '';
+    const amonP = contarTarjetasPartido(p, 'Amonestados').total;
+    const expuP = contarTarjetasPartido(p, 'Expulsados').total;
+    const golData = construirGolData(p, local, visita, 7);
+    return `<tr onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
+      <td class="td-fecha">${fecha}</td>
+      <td><div class="td-equipo">${escudoImg(local,18)}<span>${local}</span></div></td>
+      <td class="td-resultado"><span class="${rc}">${p.Goles_Local} - ${p.Goles_Visitante}</span></td>
+      <td><div class="td-equipo">${escudoImg(visita,18)}<span>${visita}</span></div></td>
+      <td style="font-size:12px;color:var(--texto-3);"><div style="display:flex;align-items:center;">${torneo}${golData ? golData.arrow : ''}</div></td>
+      <td style="text-align:center;color:var(--amarillo);">${amonP||''}</td>
+      <td style="text-align:center;color:var(--rojo);">${expuP||''}</td>
+    </tr>${golData ? golData.drop : ''}`;
+  }).join('');
+
+  traerModalAlFrente('modal-arbitro');
+  document.getElementById('modal-arbitro').classList.add('visible');
+}
+
+function cerrarFichaArbitro() {
+  document.getElementById('modal-arbitro').classList.remove('visible');
 }
 
 // ── MODO JUGADORES (lista / álbum) ──
@@ -9080,10 +9452,12 @@ const _orig_verDetalleEquipo  = verDetalleEquipo;
 const _orig_verTorneo         = verTorneo;
 const _orig_verFichaJugador   = verFichaJugador;
 const _orig_verFichaDT        = verFichaDT;
+const _orig_verFichaArbitro   = verFichaArbitro;
 const _orig_verPartido        = verPartido;
 const _orig_cerrarModal       = cerrarModal;
 const _orig_cerrarFichaJug    = cerrarFichaJugador;
 const _orig_cerrarFichaDT     = cerrarFichaDT;
+const _orig_cerrarFichaArbitro= cerrarFichaArbitro;
 const _orig_volverCampeones   = volverCampeones;
 const _orig_volverEquipos     = volverEquipos;
 
@@ -9104,6 +9478,10 @@ verFichaDT = function(nombre) {
   _pushAtras(() => _orig_cerrarFichaDT());
   _orig_verFichaDT(nombre);
 };
+verFichaArbitro = function(nombre) {
+  _pushAtras(() => _orig_cerrarFichaArbitro());
+  _orig_verFichaArbitro(nombre);
+};
 verPartido = function(id) {
   _pushAtras(() => _orig_cerrarModal());
   _orig_verPartido(id);
@@ -9121,6 +9499,10 @@ cerrarFichaJugador = function() {
 cerrarFichaDT = function() {
   _pilaAtras.pop();
   _orig_cerrarFichaDT();
+};
+cerrarFichaArbitro = function() {
+  _pilaAtras.pop();
+  _orig_cerrarFichaArbitro();
 };
 volverCampeones = function() {
   _pilaAtras.pop();
