@@ -2745,6 +2745,10 @@ function cambiarTab(tab) {
     document.getElementById('estadios-vista-grilla').style.display = 'block';
     cargarEstadios();
   }
+  if (tab === 'arbitros' && !window._arbitrosInicializado) {
+    window._arbitrosInicializado = true;
+    buscarArbitro();
+  }
 }
 
 // ── HELPERS ──
@@ -7147,17 +7151,27 @@ function buscarArbitro() {
   const eqFiltro = document.getElementById('arbitro-buscar-equipo')?.value || '';
   const container = document.getElementById('arbitro-resultados');
 
-  if (!q && !eqFiltro) {
-    container.innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">Escribí un nombre o elegí un equipo para buscar árbitros.</div>';
-    return;
-  }
-
   const todos = recopilarArbitros();
-  const resultados = Object.entries(todos).filter(([nombre, data]) => {
-    if (q && !normalizarNombre(nombre).includes(normalizarNombre(q))) return false;
-    if (eqFiltro && !Object.keys(data.equipos).includes(eqFiltro)) return false;
-    return true;
-  }).sort(([a],[b]) => a.localeCompare(b));
+  let resultados;
+
+  if (!q && !eqFiltro) {
+    // Sin búsqueda: mostramos directamente los árbitros con partidos en los últimos 2 años.
+    const hoy = new Date();
+    const limite = new Date(hoy.getFullYear() - 2, hoy.getMonth(), hoy.getDate());
+    const limiteISO = limite.toISOString().slice(0,10);
+    resultados = Object.entries(todos).filter(([, data]) => {
+      return data.partidos.some(p => {
+        const f = normalizarFechaISO(p.Fecha);
+        return f && f >= limiteISO;
+      });
+    }).sort(([a],[b]) => a.localeCompare(b));
+  } else {
+    resultados = Object.entries(todos).filter(([nombre, data]) => {
+      if (q && !normalizarNombre(nombre).includes(normalizarNombre(q))) return false;
+      if (eqFiltro && !Object.keys(data.equipos).includes(eqFiltro)) return false;
+      return true;
+    }).sort(([a],[b]) => a.localeCompare(b));
+  }
 
   const arbStatsEl = document.getElementById('arbitro-stats-equipo');
   if (eqFiltro && arbStatsEl) {
