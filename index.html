@@ -2209,7 +2209,19 @@ select option{background:#080F20;color:#F0F6FF}
         <div id="arbitro-resumen-tarjetas" style="display:flex;gap:14px;margin-top:12px;flex-wrap:wrap;"></div>
       </div>
     </div>
-    <div class="ficha-seccion-titulo">Partidos dirigidos por equipo</div>
+    <!-- Últimos partidos -->
+    <div class="ficha-seccion-titulo" id="arbitro-partidos-titulo" style="margin-top:0;">Últimos partidos dirigidos</div>
+    <div class="tabla-scroll">
+      <table class="tabla-partidos" style="width:100%;border-collapse:collapse;">
+        <thead><tr>
+          <th>Fecha</th><th style="text-align:right;">Local</th>
+          <th class="center">Resultado</th>
+          <th>Visitante</th><th>Torneo</th>
+        </tr></thead>
+        <tbody id="arbitro-tabla-partidos"></tbody>
+      </table>
+    </div>
+    <div class="ficha-seccion-titulo" style="margin-top:20px;">Partidos dirigidos por equipo</div>
     <div class="tabla-scroll scroll-forzado">
       <table style="width:100%;border-collapse:collapse;min-width:340px;">
         <thead><tr>
@@ -2221,18 +2233,27 @@ select option{background:#080F20;color:#F0F6FF}
         <tbody id="arbitro-tabla-equipos"></tbody>
       </table>
     </div>
-    <!-- Últimos partidos -->
-    <div class="ficha-seccion-titulo" id="arbitro-partidos-titulo" style="margin-top:20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">Últimos partidos dirigidos</div>
+  </div>
+</div>
+
+<!-- FICHA ÁRBITRO · PARTIDOS POR EQUIPO -->
+<div class="modal-overlay" id="modal-arb-equipo" onclick="cerrarModalArbEquipo()">
+  <div class="modal-box" style="max-width:520px;" onclick="event.stopPropagation()">
+    <div class="modal-top">
+      <div>
+        <div id="modal-arb-equipo-titulo" style="font-family:var(--fuente-titulo);font-size:20px;color:var(--texto-1);letter-spacing:0.5px;"></div>
+        <div id="modal-arb-equipo-subtitulo" style="font-size:12px;color:var(--texto-3);margin-top:4px;"></div>
+      </div>
+      <button class="modal-cerrar" onclick="cerrarModalArbEquipo()">✕</button>
+    </div>
     <div class="tabla-scroll">
       <table class="tabla-partidos" style="width:100%;border-collapse:collapse;">
         <thead><tr>
-          <th>Fecha</th><th>Local</th>
-          <th style="text-align:center;">Res.</th>
+          <th>Fecha</th><th style="text-align:right;">Local</th>
+          <th class="center">Resultado</th>
           <th>Visitante</th><th>Torneo</th>
-          <th style="text-align:center;width:40px;">🟨</th>
-          <th style="text-align:center;width:40px;">🟥</th>
         </tr></thead>
-        <tbody id="arbitro-tabla-partidos"></tbody>
+        <tbody id="modal-arb-equipo-tabla"></tbody>
       </table>
     </div>
   </div>
@@ -7277,8 +7298,8 @@ function verFichaArbitro(nombre) {
 
   // Últimos 10 partidos dirigidos (partidos únicos, sin repetir por equipo)
   const partidosOrdenados = ordenarPartidosPorFecha(data.partidos);
-  document.getElementById('arbitro-partidos-titulo').innerHTML = 'Últimos partidos dirigidos';
-  document.getElementById('arbitro-tabla-partidos').innerHTML = renderFilasPartidosArbitro(partidosOrdenados.slice(0,10));
+  document.getElementById('arbitro-tabla-partidos').innerHTML =
+    partidosOrdenados.slice(0,10).map(p => filaPartido(p, null, {escudoLocalDerecha:true})).join('');
 
   traerModalAlFrente('modal-arbitro');
   document.getElementById('modal-arbitro').classList.add('visible');
@@ -7292,46 +7313,24 @@ function ordenarPartidosPorFecha(lista) {
   });
 }
 
-function renderFilasPartidosArbitro(lista) {
-  return lista.map(p => {
-    const local  = equipos[p.Local_ID]||p.Local_ID;
-    const visita = equipos[p.Visitante_ID]||p.Visitante_ID;
-    const rc = resClase(p.Goles_Local, p.Goles_Visitante);
-    const torneo = temporadas[p.ID_Temporada]||'';
-    const fecha = p.Fecha ? p.Fecha.split('T')[0] : '';
-    const amonP = contarTarjetasPartido(p, 'Amonestados').total;
-    const expuP = contarTarjetasPartido(p, 'Expulsados').total;
-    const golData = construirGolData(p, local, visita, 7);
-    return `<tr onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
-      <td class="td-fecha">${fecha}</td>
-      <td><div class="td-equipo">${escudoImg(local,18)}<span>${local}</span></div></td>
-      <td class="td-resultado"><span class="${rc}">${p.Goles_Local} - ${p.Goles_Visitante}</span></td>
-      <td><div class="td-equipo">${escudoImg(visita,18)}<span>${visita}</span></div></td>
-      <td style="font-size:12px;color:var(--texto-3);"><div style="display:flex;align-items:center;">${torneo}${golData ? golData.arrow : ''}</div></td>
-      <td style="text-align:center;color:var(--amarillo);">${amonP||''}</td>
-      <td style="text-align:center;color:var(--rojo);">${expuP||''}</td>
-    </tr>${golData ? golData.drop : ''}`;
-  }).join('');
-}
-
 function verPartidosArbitroEquipo(eid) {
   const ctx = window._arbitroActual;
   if (!ctx) return;
   const nm = equipos[eid]||eid;
-  const escE = ESCUDOS[nm] ? `<img src="${ESCUDOS[nm]}" style="width:16px;height:16px;object-fit:contain;vertical-align:-3px;margin-right:4px;" onerror="this.style.display='none'">` : '';
+  const escE = ESCUDOS[nm] ? `<img src="${ESCUDOS[nm]}" style="width:18px;height:18px;object-fit:contain;vertical-align:-4px;margin-right:6px;" onerror="this.style.display='none'">` : '';
   const partidosEq = ordenarPartidosPorFecha(ctx.data.partidos.filter(p => p.Local_ID===eid || p.Visitante_ID===eid));
-  document.getElementById('arbitro-partidos-titulo').innerHTML =
-    `Partidos dirigidos · ${escE}${nm} <span onclick="event.stopPropagation();verFichaArbitroPartidosTodos()" style="font-size:11px;color:var(--celeste);cursor:pointer;text-decoration:underline dotted;text-transform:none;letter-spacing:normal;font-weight:600;">Ver todos</span>`;
-  document.getElementById('arbitro-tabla-partidos').innerHTML = renderFilasPartidosArbitro(partidosEq);
-  document.getElementById('arbitro-tabla-partidos').closest('.tabla-scroll')?.scrollIntoView({behavior:'smooth', block:'nearest'});
+
+  document.getElementById('modal-arb-equipo-titulo').innerHTML = `${escE}${nm}`;
+  document.getElementById('modal-arb-equipo-subtitulo').textContent =
+    `Partidos dirigidos por ${ctx.nombre} · ${partidosEq.length} partido${partidosEq.length===1?'':'s'}`;
+  document.getElementById('modal-arb-equipo-tabla').innerHTML = partidosEq.map(p => filaPartido(p, null, {escudoLocalDerecha:true})).join('');
+
+  traerModalAlFrente('modal-arb-equipo');
+  document.getElementById('modal-arb-equipo').classList.add('visible');
 }
 
-function verFichaArbitroPartidosTodos() {
-  const ctx = window._arbitroActual;
-  if (!ctx) return;
-  document.getElementById('arbitro-partidos-titulo').innerHTML = 'Últimos partidos dirigidos';
-  const partidosOrdenados = ordenarPartidosPorFecha(ctx.data.partidos);
-  document.getElementById('arbitro-tabla-partidos').innerHTML = renderFilasPartidosArbitro(partidosOrdenados.slice(0,10));
+function cerrarModalArbEquipo() {
+  document.getElementById('modal-arb-equipo').classList.remove('visible');
 }
 
 function cerrarFichaArbitro() {
