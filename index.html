@@ -2633,6 +2633,14 @@ async function cargarDatos() {
     renderDivisiones();
     cargarHoy();
 
+    // Si el usuario ya está parado en la pestaña Árbitros mientras cargaban los datos,
+    // refrescamos el listado por defecto ahora que "partidos" ya está disponible.
+    if (document.getElementById('panel-arbitros')?.classList.contains('activo')) {
+      const qArb = document.getElementById('arbitro-buscar-input')?.value || '';
+      const eqArb = document.getElementById('arbitro-buscar-equipo')?.value || '';
+      if (!qArb && !eqArb) buscarArbitro();
+    }
+
     // Cargar Jugadores.csv y Posiciones.csv en paralelo (opcionales)
     await Promise.allSettled([
       (async () => {
@@ -2745,9 +2753,10 @@ function cambiarTab(tab) {
     document.getElementById('estadios-vista-grilla').style.display = 'block';
     cargarEstadios();
   }
-  if (tab === 'arbitros' && !window._arbitrosInicializado) {
-    window._arbitrosInicializado = true;
-    buscarArbitro();
+  if (tab === 'arbitros') {
+    const qArb = document.getElementById('arbitro-buscar-input')?.value || '';
+    const eqArb = document.getElementById('arbitro-buscar-equipo')?.value || '';
+    if (!qArb && !eqArb) buscarArbitro();
   }
 }
 
