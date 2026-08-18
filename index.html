@@ -2205,7 +2205,6 @@ select option{background:#080F20;color:#F0F6FF}
         </div>
         <div style="font-size:12px;color:var(--celeste);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;margin-top:4px;">Árbitro</div>
         <div id="arbitro-nacionalidad" style="font-size:13px;color:var(--texto-2);margin-bottom:4px;"></div>
-        <div id="arbitro-equipos-lista" style="font-size:13px;color:var(--texto-3);line-height:1.5;"></div>
         <!-- Resumen de tarjetas -->
         <div id="arbitro-resumen-tarjetas" style="display:flex;gap:14px;margin-top:12px;flex-wrap:wrap;"></div>
       </div>
@@ -2223,7 +2222,7 @@ select option{background:#080F20;color:#F0F6FF}
       </table>
     </div>
     <!-- Últimos partidos -->
-    <div class="ficha-seccion-titulo" style="margin-top:20px;">Últimos partidos dirigidos</div>
+    <div class="ficha-seccion-titulo" id="arbitro-partidos-titulo" style="margin-top:20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">Últimos partidos dirigidos</div>
     <div class="tabla-scroll">
       <table class="tabla-partidos" style="width:100%;border-collapse:collapse;">
         <thead><tr>
@@ -7158,11 +7157,6 @@ function buscarArbitro() {
       const totalAmon = Object.values(data.equipos).reduce((s,r)=>s+r.amonestados,0);
       const totalExpu = Object.values(data.equipos).reduce((s,r)=>s+r.expulsados,0);
       const promAmon = pd > 0 ? (totalAmon/pd).toFixed(1) : '0.0';
-      const equiposChips = Object.entries(data.equipos).sort((a,b)=>b[1].pd-a[1].pd).map(([id, r]) => {
-        const nombreEq = equipos[id]||id;
-        const esc = ESCUDOS[nombreEq] ? `<img src="${ESCUDOS[nombreEq]}" onerror="this.style.display='none'">` : '';
-        return `<span class="pers-equipo-chip">${esc}${nombreEq} <span class="anios">(${r.pd} PD)</span></span>`;
-      }).join('');
       const banderaArb = data.nac ? `<span style="display:inline-flex;">${getBandera(data.nac)}</span>` : '';
       return `<div class="pers-card" onclick="verFichaArbitro('${nombre.replace(/'/g,"\\'")}')">
         <div class="pers-card-top">
@@ -7174,7 +7168,6 @@ function buscarArbitro() {
           <div class="pers-mini-stat"><span class="num" style="color:var(--amarillo);">${promAmon}</span><span class="label">🟨 /PJ</span></div>
           <div class="pers-mini-stat"><span class="num" style="color:var(--rojo);">${totalExpu}</span><span class="label">🟥 Total</span></div>
         </div>
-        <div class="pers-card-equipos">${equiposChips}</div>
       </div>`;
     }).join('') + '</div>' +
     (resultados.length > 60 ? `<div style="text-align:center;padding:16px;color:var(--texto-3);font-size:13px;">Mostrando 60 de ${resultados.length}. Refiná la búsqueda.</div>` : '');
@@ -7246,10 +7239,9 @@ function verFichaArbitro(nombre) {
   document.getElementById('arbitro-nombre').textContent = nombre;
   document.getElementById('arbitro-bandera').innerHTML = data.nac ? getBandera(data.nac) : '';
   document.getElementById('arbitro-nacionalidad').textContent = data.nac ? getNombrePais(data.nac) : '';
-  // Aclaración: es la lista de equipos cuyos partidos dirigió, no equipos a los que perteneció.
-  document.getElementById('arbitro-equipos-lista').textContent =
-    `Dirigió partidos de ${equiposOrdenados.length} equipo${equiposOrdenados.length===1?'':'s'}: ` +
-    equiposOrdenados.map(([id]) => equipos[id]||id).join(' · ');
+
+  // Guardamos el contexto actual para poder filtrar los partidos por equipo al hacer clic en la tabla.
+  window._arbitroActual = { nombre, data };
 
   // Resumen de tarjetas (partidos dirigidos, amonestados totales/promedio, expulsados totales)
   const pd = data.partidos.length;
@@ -7272,7 +7264,7 @@ function verFichaArbitro(nombre) {
       const nm = equipos[eid]||eid;
       const escE = ESCUDOS[nm] ? `<img src="${ESCUDOS[nm]}" style="width:18px;height:18px;object-fit:contain;margin-right:6px;" onerror="this.style.display='none'">` : '';
       const aniosStr = formatearAnios(r.anios);
-      return `<tr>
+      return `<tr onclick="verPartidosArbitroEquipo('${eid.replace(/'/g,"\\'")}')" style="cursor:pointer;">
         <td style="padding:10px 12px;">
           <div style="display:flex;align-items:center;">${escE}<strong>${nm}</strong></div>
           <div style="font-size:11px;color:var(--texto-3);margin-top:2px;">${aniosStr}</div>
@@ -7284,12 +7276,24 @@ function verFichaArbitro(nombre) {
     }).join('');
 
   // Últimos 10 partidos dirigidos (partidos únicos, sin repetir por equipo)
-  const partidosOrdenados = data.partidos.slice().sort((a,b) => {
+  const partidosOrdenados = ordenarPartidosPorFecha(data.partidos);
+  document.getElementById('arbitro-partidos-titulo').innerHTML = 'Últimos partidos dirigidos';
+  document.getElementById('arbitro-tabla-partidos').innerHTML = renderFilasPartidosArbitro(partidosOrdenados.slice(0,10));
+
+  traerModalAlFrente('modal-arbitro');
+  document.getElementById('modal-arbitro').classList.add('visible');
+}
+
+function ordenarPartidosPorFecha(lista) {
+  return lista.slice().sort((a,b) => {
     const fa = a.Fecha ? a.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/,'$3-$2-$1') : '0';
     const fb = b.Fecha ? b.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/,'$3-$2-$1') : '0';
     return fb.localeCompare(fa);
   });
-  document.getElementById('arbitro-tabla-partidos').innerHTML = partidosOrdenados.slice(0,10).map(p => {
+}
+
+function renderFilasPartidosArbitro(lista) {
+  return lista.map(p => {
     const local  = equipos[p.Local_ID]||p.Local_ID;
     const visita = equipos[p.Visitante_ID]||p.Visitante_ID;
     const rc = resClase(p.Goles_Local, p.Goles_Visitante);
@@ -7308,9 +7312,26 @@ function verFichaArbitro(nombre) {
       <td style="text-align:center;color:var(--rojo);">${expuP||''}</td>
     </tr>${golData ? golData.drop : ''}`;
   }).join('');
+}
 
-  traerModalAlFrente('modal-arbitro');
-  document.getElementById('modal-arbitro').classList.add('visible');
+function verPartidosArbitroEquipo(eid) {
+  const ctx = window._arbitroActual;
+  if (!ctx) return;
+  const nm = equipos[eid]||eid;
+  const escE = ESCUDOS[nm] ? `<img src="${ESCUDOS[nm]}" style="width:16px;height:16px;object-fit:contain;vertical-align:-3px;margin-right:4px;" onerror="this.style.display='none'">` : '';
+  const partidosEq = ordenarPartidosPorFecha(ctx.data.partidos.filter(p => p.Local_ID===eid || p.Visitante_ID===eid));
+  document.getElementById('arbitro-partidos-titulo').innerHTML =
+    `Partidos dirigidos · ${escE}${nm} <span onclick="event.stopPropagation();verFichaArbitroPartidosTodos()" style="font-size:11px;color:var(--celeste);cursor:pointer;text-decoration:underline dotted;text-transform:none;letter-spacing:normal;font-weight:600;">Ver todos</span>`;
+  document.getElementById('arbitro-tabla-partidos').innerHTML = renderFilasPartidosArbitro(partidosEq);
+  document.getElementById('arbitro-tabla-partidos').closest('.tabla-scroll')?.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function verFichaArbitroPartidosTodos() {
+  const ctx = window._arbitroActual;
+  if (!ctx) return;
+  document.getElementById('arbitro-partidos-titulo').innerHTML = 'Últimos partidos dirigidos';
+  const partidosOrdenados = ordenarPartidosPorFecha(ctx.data.partidos);
+  document.getElementById('arbitro-tabla-partidos').innerHTML = renderFilasPartidosArbitro(partidosOrdenados.slice(0,10));
 }
 
 function cerrarFichaArbitro() {
