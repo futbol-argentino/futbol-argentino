@@ -395,7 +395,10 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 .grid-partidos.grid-simetrica .gp-visita{justify-content:flex-start;overflow:hidden}
 .grid-partidos.grid-simetrica .gp-local span,.grid-partidos.grid-simetrica .gp-visita span{overflow:hidden;text-overflow:ellipsis}
 .grid-partidos .gp-dia-header{grid-column:1/-1;padding:6px 12px;background:var(--fondo-3);color:var(--texto-2);font-size:12px;font-weight:600;letter-spacing:0.5px;border-top:1px solid var(--borde);border-bottom:1px solid var(--borde);cursor:default}
-.grid-partidos .gp-goleadores{grid-column:1/-1;cursor:default}
+/* grid-column:2 (no 1/-1) a propósito: así el desplegable de goleadores queda
+   en la misma columna que gp-resultado (la 2da), centrado bajo el marcador,
+   en vez de centrado en todo el ancho de la fila como antes. */
+.grid-partidos .gp-goleadores{grid-column:2;cursor:default;overflow:visible;position:relative}
 /* En pantallas angostas, el grid simétrico no se achica más allá de un ancho
    mínimo: si no entran los nombres completos, se puede deslizar horizontalmente
    en vez de recortarlos con puntos suspensivos. El contenedor que lo envuelve
@@ -2897,8 +2900,12 @@ function calcularScorePenales(raw) {
 }
 
 // Construye el desplegable de goleadores (flecha + fila oculta) para un partido dado.
-// colspan indica cuántas columnas ocupa la tabla donde se va a insertar la fila oculta.
-function construirGolData(p, local, visita, colspan) {
+// celdasAntes/celdasDespues indican cuántas celdas vacías hay que poner antes y
+// después de la celda de goleadores para que quede EXACTAMENTE en la misma columna
+// que la celda de "Resultado" de la fila real (en vez de centrarse en todo el ancho
+// de la fila, que es lo que la desalineaba cuando local/visitante tenían distinto largo).
+function construirGolData(p, local, visita, celdasAntes, celdasDespues) {
+  if (celdasDespues === undefined) celdasDespues = 2;
   const raw = p.Goleadores || '';
   if (!raw || raw.trim() === '' || raw.toLowerCase() === 'ninguno') return null;
   const partes = raw.split('/');
@@ -2920,10 +2927,15 @@ function construirGolData(p, local, visita, colspan) {
   if (!todos.length) return null;
   const uid = 'gol_' + p.ID_Partido + '_' + (_golUidSeq++);
   const tdId = 'goltd_' + uid;
-  const arrow = `<span class="gol-arrow-toggle" onclick="event.stopPropagation();var c=document.getElementById('${uid}');var td=document.getElementById('${tdId}');var a=document.getElementById('arr_${uid}');var open=c.style.display==='flex';c.style.display=open?'none':'flex';td.style.padding=open?'0':'4px 20px 8px 20px';td.style.borderBottom=open?'none':'1px solid var(--borde)';a.style.transform=open?'rotate(0deg)':'rotate(180deg)';"
+  const arrow = `<span class="gol-arrow-toggle" onclick="event.stopPropagation();var c=document.getElementById('${uid}');var td=document.getElementById('${tdId}');var a=document.getElementById('arr_${uid}');var open=c.style.display==='flex';c.style.display=open?'none':'flex';td.style.padding=open?'0':'6px 6px 10px';td.style.borderBottom=open?'none':'1px solid var(--borde)';a.style.transform=open?'rotate(0deg)':'rotate(180deg)';"
     style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:1px solid var(--borde);border-radius:6px;cursor:pointer;margin-left:5px;flex-shrink:0;transition:border-color 0.15s;vertical-align:middle;"
     onmouseover="this.style.borderColor='var(--celeste)'" onmouseout="this.style.borderColor='var(--borde)'"><span id="arr_${uid}" style="font-size:12px;color:var(--texto-2);transition:transform 0.2s;display:inline-block;line-height:1;">▼</span></span>`;
-  const drop = `<tr class="fila-gol-preview"><td id="${tdId}" colspan="${colspan}" style="padding:0;border-bottom:none;"><div id="${uid}" style="display:none;flex-direction:column;align-items:center;">${todos.map(g=>g.html).join('')}</div></td></tr>`;
+  // La celda con los goleadores se ubica en la MISMA posición de columna que la celda
+  // "Resultado" real (celdasAntes celdas vacías antes, celdasDespues después), usando
+  // la clase td-resultado para que el navegador la trate como parte de esa misma columna
+  // y quede perfectamente centrada debajo del marcador, en vez de centrada en toda la fila.
+  const celdaVacia = '<td style="padding:0;border-bottom:none;"></td>';
+  const drop = `<tr class="fila-gol-preview">${celdaVacia.repeat(celdasAntes)}<td id="${tdId}" class="td-resultado" style="padding:0;border-bottom:none;white-space:normal;letter-spacing:normal;font-weight:400;vertical-align:top;overflow:visible;"><div id="${uid}" style="display:none;flex-direction:column;align-items:center;">${todos.map(g=>g.html).join('')}</div></td>${celdaVacia.repeat(celdasDespues)}</tr>`;
   return { arrow, drop };
 }
 
@@ -2948,8 +2960,8 @@ function filaPartido(p, equipoRef, opciones) {
   const claseExtra = esFav ? ' class="equipo-favorito-row"' : '';
 
   // Goleadores desplegables ordenados por minuto con escudo de equipo (solo si el partido ya se jugó)
-  const colspanFila = (ocultarFecha ? 0 : 1) + 4; // local + resultado + visitante + (torneo o flecha)
-  const golData = jugado ? construirGolData(p, local, visita, colspanFila) : null;
+  const celdasAntesGol = (ocultarFecha ? 0 : 1) + 1; // (fecha) + local, antes de la columna resultado
+  const golData = jugado ? construirGolData(p, local, visita, celdasAntesGol, 2) : null; // visita + (torneo o flecha), después
 
   const scorePen = jugado && esDefinicionPorPenales(p.Tipo_Definicion) && p.Penales ? calcularScorePenales(p.Penales) : null;
   const resultadoTxt = !jugado
@@ -7341,7 +7353,7 @@ function verFichaDT(nombre) {
     const rc = resClase(p.Goles_Local, p.Goles_Visitante);
     const torneo = temporadas[p.ID_Temporada]||'';
     const fecha = p.Fecha ? p.Fecha.split('T')[0] : '';
-    const golData = construirGolData(p, local, visita, 5);
+    const golData = construirGolData(p, local, visita, 2, 2);
     return `<tr onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
       <td class="td-fecha">${fecha}</td>
       <td><div class="td-equipo">${escudoImg(local,18)}<span>${local}</span></div></td>
@@ -8481,10 +8493,12 @@ function construirGolDataGrid(p, local, visita) {
   if (!todos.length) return null;
   const uid = 'golg_' + p.ID_Partido + '_' + (_golUidSeq++);
   const wrapId = 'golwrap_' + uid;
-  const arrow = `<span class="gol-arrow-toggle" onclick="event.stopPropagation();var c=document.getElementById('${uid}');var wrap=document.getElementById('${wrapId}');var a=document.getElementById('arr_${uid}');var open=c.style.display==='block';c.style.display=open?'none':'block';wrap.style.padding=open?'0':'4px 20px 8px 20px';wrap.style.borderBottom=open?'none':'1px solid var(--borde)';a.style.transform=open?'rotate(0deg)':'rotate(180deg)';"
+  const arrow = `<span class="gol-arrow-toggle" onclick="event.stopPropagation();var c=document.getElementById('${uid}');var wrap=document.getElementById('${wrapId}');var a=document.getElementById('arr_${uid}');var open=c.style.display==='flex';c.style.display=open?'none':'flex';wrap.style.padding=open?'0':'6px 4px 10px';wrap.style.borderBottom=open?'none':'1px solid var(--borde)';a.style.transform=open?'rotate(0deg)':'rotate(180deg)';"
     style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:1px solid var(--borde);border-radius:6px;cursor:pointer;flex-shrink:0;transition:border-color 0.15s;"
     onmouseover="this.style.borderColor='var(--celeste)'" onmouseout="this.style.borderColor='var(--borde)'"><span id="arr_${uid}" style="font-size:12px;color:var(--texto-2);transition:transform 0.2s;display:inline-block;line-height:1;">▼</span></span>`;
-  const drop = `<div id="${wrapId}" class="gp-goleadores" style="padding:0;border-bottom:none;"><div id="${uid}" style="display:none;">${todos.map(g=>g.html).join('')}</div></div>`;
+  // display:none -> flex (columna, centrado) igual que en la versión tabla, para que
+  // cada goleador quede centrado exactamente debajo del marcador (columna gp-resultado).
+  const drop = `<div id="${wrapId}" class="gp-goleadores" style="padding:0;border-bottom:none;"><div id="${uid}" style="display:none;flex-direction:column;align-items:center;">${todos.map(g=>g.html).join('')}</div></div>`;
   return { arrow, drop };
 }
 
@@ -9508,7 +9522,7 @@ function renderH2H(eq1, eq2, contenedorId) {
     const local=equipos[p.Local_ID]||p.Local_ID, visita=equipos[p.Visitante_ID]||p.Visitante_ID;
     const fecha=(p.Fecha||'').split('T')[0];
     const rc=resClase(p.Goles_Local,p.Goles_Visitante);
-    const golData = construirGolData(p, local, visita, 5);
+    const golData = construirGolData(p, local, visita, 2, 2);
     return `<tr onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
       <td class="td-fecha">${fecha}</td>
       <td><div class="td-equipo">${escudoImg(local,18)}<span>${local}</span></div></td>
