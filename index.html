@@ -395,10 +395,16 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 .grid-partidos.grid-simetrica .gp-visita{justify-content:flex-start;overflow:hidden}
 .grid-partidos.grid-simetrica .gp-local span,.grid-partidos.grid-simetrica .gp-visita span{overflow:hidden;text-overflow:ellipsis}
 .grid-partidos .gp-dia-header{grid-column:1/-1;padding:6px 12px;background:var(--fondo-3);color:var(--texto-2);font-size:12px;font-weight:600;letter-spacing:0.5px;border-top:1px solid var(--borde);border-bottom:1px solid var(--borde);cursor:default}
-/* grid-column:2 (no 1/-1) a propósito: así el desplegable de goleadores queda
-   en la misma columna que gp-resultado (la 2da), centrado bajo el marcador,
-   en vez de centrado en todo el ancho de la fila como antes. */
-.grid-partidos .gp-goleadores{grid-column:2;cursor:default;overflow:visible;position:relative}
+/* IMPORTANTE: todos los partidos de una misma sección (ej. todos los de una "Fecha")
+   comparten UN SOLO grid de CSS, uno abajo del otro — no es un grid por partido.
+   Por eso gp-goleadores NO puede tener una columna fija (ej. grid-column:2): eso
+   rompe el acomodo automático ("auto-flow") de los partidos siguientes y desordena
+   todo (visto en un caso real: equipos y resultados quedaban descolocados).
+   La solución es "subgrid": el desplegable ocupa la fila completa (1/-1, no molesta
+   el auto-flow) pero por dentro hereda las columnas exactas del grid padre, así su
+   contenido se puede ubicar en la columna 2 (la de resultado) con precisión real. */
+.grid-partidos .gp-goleadores{grid-column:1/-1;display:grid;grid-template-columns:subgrid;cursor:default}
+.grid-partidos .gp-gol-celda{grid-column:2;overflow:visible;display:flex;justify-content:center}
 /* En pantallas angostas, el grid simétrico no se achica más allá de un ancho
    mínimo: si no entran los nombres completos, se puede deslizar horizontalmente
    en vez de recortarlos con puntos suspensivos. El contenedor que lo envuelve
@@ -8503,8 +8509,9 @@ function construirGolDataGrid(p, local, visita) {
   const arrow = `<span class="gol-arrow-toggle" onclick="event.stopPropagation();var c=document.getElementById('${uid}');var wrap=document.getElementById('${wrapId}');var a=document.getElementById('arr_${uid}');var open=c.style.display==='inline-grid';c.style.display=open?'none':'inline-grid';wrap.style.padding=open?'0':'8px 4px 12px';wrap.style.borderBottom=open?'none':'1px solid var(--borde)';a.style.transform=open?'rotate(0deg)':'rotate(180deg)';"
     style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:1px solid var(--borde);border-radius:6px;cursor:pointer;flex-shrink:0;transition:border-color 0.15s;"
     onmouseover="this.style.borderColor='var(--celeste)'" onmouseout="this.style.borderColor='var(--borde)'"><span id="arr_${uid}" style="font-size:12px;color:var(--texto-2);transition:transform 0.2s;display:inline-block;line-height:1;">▼</span></span>`;
-  // display:none -> inline-grid (4 columnas), centrado en la columna gp-resultado.
-  const drop = `<div id="${wrapId}" class="gp-goleadores" style="padding:0;border-bottom:none;text-align:center;"><div id="${uid}" style="display:none;grid-template-columns:auto auto auto auto;column-gap:8px;row-gap:6px;align-items:center;">${todos.map(g=>g.html).join('')}</div></div>`;
+  // display:none -> inline-grid (4 columnas), dentro de gp-gol-celda que subgrid
+  // ubica exactamente en la columna de "Resultado" sin afectar a los demás partidos.
+  const drop = `<div id="${wrapId}" class="gp-goleadores" style="padding:0;border-bottom:none;"><div class="gp-gol-celda"><div id="${uid}" style="display:none;grid-template-columns:auto auto auto auto;column-gap:8px;row-gap:6px;align-items:center;">${todos.map(g=>g.html).join('')}</div></div></div>`;
   return { arrow, drop };
 }
 
