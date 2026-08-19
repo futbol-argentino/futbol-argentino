@@ -734,6 +734,22 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 .cancha-badge-gol { background:#F5FFF8; color:#0B2C16; }
 .cancha-badge-am  { background:var(--amarillo); color:#1A1200; }
 .cancha-badge-ro  { background:var(--rojo); color:#fff; }
+.cancha-suplentes-wrap { margin-top:14px; padding-top:12px; border-top:1px solid var(--borde); }
+.cancha-suplentes-titulo {
+  font-size:9px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase;
+  color:var(--texto-3); margin-bottom:10px;
+}
+.cancha-suplentes-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px 20px; }
+.cancha-suplentes-col { display:flex; flex-direction:column; gap:8px; }
+.cancha-suplente {
+  display:flex; align-items:center; gap:8px; cursor:pointer;
+  padding:3px 0; border-radius:6px; transition:background 0.15s;
+}
+.cancha-suplente:hover { background:var(--fondo-3); }
+.cancha-camiseta-mini { width:26px; height:26px; flex-shrink:0; }
+.cancha-camiseta-mini .cancha-badges { top:-4px; right:-6px; }
+.cancha-camiseta-mini .cancha-badge { font-size:8px; padding:1px 2px; }
+.cancha-suplente-nombre { font-size:12px; color:var(--texto-1); font-weight:500; }
 .cancha-dt-fila {
   display:flex; justify-content:space-between; gap:12px; margin-top:10px;
   font-size:11px; color:var(--texto-2);
@@ -745,6 +761,8 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
   .cancha-jugador { width:48px; }
   .cancha-nombre { max-width:48px; font-size:9px; }
   .cancha-camiseta { width:28px; height:28px; }
+  .cancha-suplentes-grid { gap:6px 10px; }
+  .cancha-suplente-nombre { font-size:11px; }
 }
 
 /* ── FICHA JUGADOR (redesign) ── */
@@ -4313,6 +4331,39 @@ function renderCanchaFormacion(rawLocal, rawVisita, incLocal, incVisita, dtLocal
   const lineasLocal  = construirLineas(rawLocal, incLocal, COLOR_LOCAL);
   const lineasVisita = construirLineas(rawVisita, incVisita, COLOR_VISITA);
 
+  const construirSuplentes = (raw, incidencias, colores) => {
+    const entradas = (raw||'').split('-').map(e => parsearJugadorAlin(e)).filter(Boolean).filter(j => j.suplente);
+    entradas.sort((a,b) => a.num - b.num);
+    if (!entradas.length) return '';
+    return entradas.map(j => {
+      const clave = normalizarNombre(j.nombre);
+      const inc = incidencias[clave];
+      let badges = '';
+      if (inc) {
+        if (inc.goles > 0) badges += `<span class="cancha-badge cancha-badge-gol">⚽${inc.goles>1?inc.goles:''}</span>`;
+        if (inc.amarillas > 0) badges += `<span class="cancha-badge cancha-badge-am">🟨</span>`;
+        if (inc.rojas > 0) badges += `<span class="cancha-badge cancha-badge-ro">🟥</span>`;
+      }
+      return `<div class="cancha-suplente" onclick="verFichaJugador('${j.nombre.replace(/'/g,"\\'")}','${(j.nac||'').replace(/'/g,"\\'")}')">
+        <div class="cancha-camiseta cancha-camiseta-mini">
+          ${svgCamiseta(colores.camiseta, colores.numero, j.num < 99 ? j.num : '')}
+          ${badges ? `<div class="cancha-badges">${badges}</div>` : ''}
+        </div>
+        <span class="cancha-suplente-nombre">${j.nombre}</span>
+      </div>`;
+    }).join('');
+  };
+
+  const supLocal  = construirSuplentes(rawLocal, incLocal, COLOR_LOCAL);
+  const supVisita = construirSuplentes(rawVisita, incVisita, COLOR_VISITA);
+  const suplentesFila = (supLocal || supVisita) ? `<div class="cancha-suplentes-wrap">
+      <div class="cancha-suplentes-titulo">Suplentes</div>
+      <div class="cancha-suplentes-grid">
+        <div class="cancha-suplentes-col">${supLocal}</div>
+        <div class="cancha-suplentes-col">${supVisita}</div>
+      </div>
+    </div>` : '';
+
   const dtLocal  = limpiarNombre((dtLocalRaw||'').trim());
   const dtVisita = limpiarNombre((dtVisitaRaw||'').trim());
   const dtFila = (dtLocal || dtVisita) ? `<div class="cancha-dt-fila">
@@ -4330,7 +4381,7 @@ function renderCanchaFormacion(rawLocal, rawVisita, incLocal, incVisita, dtLocal
       <div class="cancha-mitad">${lineasLocal}</div>
       <div class="cancha-mitad cancha-reversa">${lineasVisita}</div>
     </div>
-  </div>${dtFila}`;
+  </div>${suplentesFila}${dtFila}`;
 }
 
 function toggleVistaAlin(modo) {
