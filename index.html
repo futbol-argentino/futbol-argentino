@@ -676,6 +676,76 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 .alin-dt { margin-top:10px; padding-top:8px; border-top:1px solid var(--borde); font-size:12px; color:var(--texto-2); }
 .alin-dt strong { color:var(--texto-1); }
 
+/* Toggle Lista/Cancha */
+.alin-vista-btn {
+  font-family:var(--fuente-cuerpo); font-size:11px; font-weight:600;
+  padding:6px 12px; border-radius:8px; border:1px solid var(--borde);
+  background:var(--fondo-3); color:var(--texto-2); cursor:pointer;
+  transition:var(--trans);
+}
+.alin-vista-btn:hover { border-color:var(--borde-hover); color:var(--texto-1); }
+.alin-vista-btn-activo { background:var(--celeste); border-color:var(--celeste); color:#03170a; }
+
+/* ── CANCHA DE FORMACIÓN ── */
+.cancha-formacion {
+  position:relative; width:100%; border-radius:14px; overflow:hidden;
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0 40px, rgba(255,255,255,0) 40px 80px),
+    linear-gradient(180deg, #0F3D1E, #0B2C16);
+  border:1px solid var(--borde); padding:14px 6px;
+}
+.cancha-lineas { position:absolute; inset:14px 6px; pointer-events:none; }
+.cancha-lineas .borde {
+  position:absolute; inset:0; border:2px solid rgba(255,255,255,0.18); border-radius:4px;
+}
+.cancha-lineas .medio {
+  position:absolute; top:0; bottom:0; left:50%; width:0; border-left:2px solid rgba(255,255,255,0.18);
+}
+.cancha-lineas .circulo {
+  position:absolute; top:50%; left:50%; width:78px; height:78px;
+  border:2px solid rgba(255,255,255,0.18); border-radius:50%; transform:translate(-50%,-50%);
+}
+.cancha-equipos {
+  position:relative; display:flex; min-height:420px; z-index:1;
+}
+.cancha-mitad { flex:1; display:flex; }
+.cancha-mitad.cancha-reversa { flex-direction:row-reverse; }
+.cancha-linea {
+  flex:1; display:flex; flex-direction:column; align-items:center;
+  justify-content:space-evenly; gap:10px; padding:2px;
+}
+.cancha-jugador {
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  cursor:pointer; width:64px; flex-shrink:0;
+}
+.cancha-camiseta { position:relative; width:34px; height:34px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.45)); }
+.cancha-camiseta svg { display:block; width:100%; height:100%; }
+.cancha-nombre {
+  font-size:10px; font-weight:700; color:#F5FFF8; text-align:center; line-height:1.15;
+  text-shadow:0 1px 3px rgba(0,0,0,0.85); max-width:64px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.cancha-badges { position:absolute; top:-6px; right:-10px; display:flex; flex-direction:column; gap:1px; align-items:flex-end; }
+.cancha-badge {
+  font-size:9px; font-weight:800; line-height:1; border-radius:4px; padding:1px 3px;
+  display:flex; align-items:center; gap:1px; box-shadow:0 1px 3px rgba(0,0,0,0.5);
+}
+.cancha-badge-gol { background:#F5FFF8; color:#0B2C16; }
+.cancha-badge-am  { background:var(--amarillo); color:#1A1200; }
+.cancha-badge-ro  { background:var(--rojo); color:#fff; }
+.cancha-dt-fila {
+  display:flex; justify-content:space-between; gap:12px; margin-top:10px;
+  font-size:11px; color:var(--texto-2);
+}
+.cancha-dt-fila strong { color:var(--texto-1); cursor:pointer; }
+.cancha-dt-fila strong:hover { color:var(--celeste); }
+@media(max-width:600px){
+  .cancha-equipos { min-height:340px; }
+  .cancha-jugador { width:48px; }
+  .cancha-nombre { max-width:48px; font-size:9px; }
+  .cancha-camiseta { width:28px; height:28px; }
+}
+
 /* ── FICHA JUGADOR (redesign) ── */
 #modal-jugador .modal-box {
   max-width:760px !important;
@@ -2371,20 +2441,29 @@ select option{background:#080F20;color:#F0F6FF}
       </div>
 
       <!-- DESPLEGABLE ALINEACIONES -->
-      <div class="modal-dato full modal-desplegable" id="modal-alin-wrap" style="display:none;" onclick="toggleDesplegable('alineaciones')">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div class="modal-dato full modal-desplegable" id="modal-alin-wrap" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:center;" onclick="toggleDesplegable('alineaciones')">
           <div class="modal-dato-label">📋 Alineaciones</div>
           <span id="arrow-alineaciones" style="color:var(--texto-2);font-size:12px;transition:transform 0.2s;">▼</span>
         </div>
         <div id="modal-alineaciones" class="modal-desplegable-contenido">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;">
-            <div>
-              <div style="font-size:10px;color:var(--celeste);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;font-weight:600;" id="modal-alin-local-label"></div>
-              <div id="modal-alin-local"></div>
-            </div>
-            <div>
-              <div style="font-size:10px;color:var(--celeste);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;font-weight:600;" id="modal-alin-visita-label"></div>
-              <div id="modal-alin-visita"></div>
+          <div style="display:flex;gap:6px;margin:10px 0 4px;" onclick="event.stopPropagation();">
+            <button type="button" id="alin-btn-cancha" class="alin-vista-btn alin-vista-btn-activo" onclick="toggleVistaAlin('cancha')">⚽ Cancha</button>
+            <button type="button" id="alin-btn-lista" class="alin-vista-btn" onclick="toggleVistaAlin('lista')">📋 Lista</button>
+          </div>
+          <div id="modal-alin-cancha-wrap" style="margin-top:8px;">
+            <div id="modal-alin-cancha"></div>
+          </div>
+          <div id="modal-alin-lista-wrap" style="display:none;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;">
+              <div>
+                <div style="font-size:10px;color:var(--celeste);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;font-weight:600;" id="modal-alin-local-label"></div>
+                <div id="modal-alin-local"></div>
+              </div>
+              <div>
+                <div style="font-size:10px;color:var(--celeste);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;font-weight:600;" id="modal-alin-visita-label"></div>
+                <div id="modal-alin-visita"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -4061,6 +4140,14 @@ function verPartido(id) {
     document.getElementById('modal-alin-visita-label').textContent = visita;
     document.getElementById('modal-alin-local').innerHTML  = renderAlineacion(partes[0]||'', p.DT ? p.DT.split('/')[0] : '');
     document.getElementById('modal-alin-visita').innerHTML = renderAlineacion(partes[1]||'', p.DT ? p.DT.split('/')[1] : '');
+    const incidencias = parsearIncidenciasPartido(p);
+    document.getElementById('modal-alin-cancha').innerHTML = renderCanchaFormacion(
+      partes[0]||'', partes[1]||'',
+      incidencias.local, incidencias.visita,
+      p.DT ? p.DT.split('/')[0] : '', p.DT ? p.DT.split('/')[1] : ''
+    );
+    // Reiniciamos siempre en la vista de cancha al abrir un partido nuevo.
+    toggleVistaAlin('cancha');
     alinWrap.style.display = 'block';
     document.getElementById('modal-alineaciones').style.display = 'none';
     document.getElementById('arrow-alineaciones').style.transform = 'rotate(0deg)';
@@ -4154,6 +4241,107 @@ function renderAlineacion(raw, dtRaw) {
     html += `<div class="alin-dt">🧑‍💼 DT: <strong style="cursor:pointer;color:var(--celeste);" onclick="verFichaDT('${dtNombre.replace(/'/g,"\\'")}')">${dtNombre}</strong></div>`;
   }
   return html || '<div style="color:var(--texto-3);font-size:12px;">Sin datos</div>';
+}
+
+// ── Incidencias (goles/amarillas/rojas) por jugador, para superponer en la cancha ──
+function parsearIncidenciasPartido(p) {
+  const resultado = { local: {}, visita: {} };
+  const sumar = (lado, nombreCrudo, campo) => {
+    const nombre = limpiarNombre(nombreCrudo);
+    if (!nombre) return;
+    const clave = normalizarNombre(nombre);
+    if (!resultado[lado][clave]) resultado[lado][clave] = { goles:0, amarillas:0, rojas:0 };
+    resultado[lado][clave][campo]++;
+  };
+  [['Goleadores','goles'], ['Amonestados','amarillas'], ['Expulsados','rojas']].forEach(([campoCsv, campo]) => {
+    const raw = p[campoCsv] || '';
+    if (!raw || raw.trim() === '' || raw.toLowerCase() === 'ninguno') return;
+    const partes = raw.split('/');
+    (partes[0]||'').split('-').map(e=>e.trim()).filter(e=>e && e.toLowerCase()!=='ninguno' && e.length>1)
+      .forEach(entrada => sumar('local', entrada, campo));
+    (partes[1]||'').split('-').map(e=>e.trim()).filter(e=>e && e.toLowerCase()!=='ninguno' && e.length>1)
+      .forEach(entrada => sumar('visita', entrada, campo));
+  });
+  return resultado;
+}
+
+function svgCamiseta(color, numColor, numero) {
+  return `<svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 3 L3 9 L6.5 15.5 L10 13.5 L10 33 L26 33 L26 13.5 L29.5 15.5 L33 9 L24 3 L20.5 5.5 Q18 7.2 15.5 5.5 Z"
+      fill="${color}" stroke="rgba(0,0,0,0.4)" stroke-width="1"/>
+    <text x="18" y="24" text-anchor="middle" font-size="12" font-weight="800" fill="${numColor}" font-family="Arial, sans-serif">${numero}</text>
+  </svg>`;
+}
+
+// Arma la cancha completa con ambos equipos, mirando de frente uno al otro.
+function renderCanchaFormacion(rawLocal, rawVisita, incLocal, incVisita, dtLocalRaw, dtVisitaRaw) {
+  const COLOR_LOCAL  = { camiseta:'#2563EB', numero:'#F5FFF8' };
+  const COLOR_VISITA = { camiseta:'#F5FFF8', numero:'#111827' };
+
+  const construirLineas = (raw, incidencias, colores) => {
+    const entradas = (raw||'').split('-').map(e => parsearJugadorAlin(e)).filter(Boolean).filter(j => !j.suplente);
+    const porPos = { ARQ:[], DEF:[], MED:[], DEL:[] };
+    entradas.forEach(j => { (porPos[j.pos] || porPos.MED).push(j); });
+    Object.values(porPos).forEach(arr => arr.sort((a,b)=>a.num-b.num));
+
+    return ['ARQ','DEF','MED','DEL'].map(pos => {
+      const jugs = porPos[pos];
+      if (!jugs.length) return '<div class="cancha-linea"></div>';
+      const chips = jugs.map(j => {
+        const clave = normalizarNombre(j.nombre);
+        const inc = incidencias[clave];
+        let badges = '';
+        if (inc) {
+          if (inc.goles > 0) badges += `<span class="cancha-badge cancha-badge-gol">⚽${inc.goles>1?inc.goles:''}</span>`;
+          if (inc.amarillas > 0) badges += `<span class="cancha-badge cancha-badge-am">🟨</span>`;
+          if (inc.rojas > 0) badges += `<span class="cancha-badge cancha-badge-ro">🟥</span>`;
+        }
+        const nombreCorto = j.nombre.split(' ').pop();
+        return `<div class="cancha-jugador" onclick="verFichaJugador('${j.nombre.replace(/'/g,"\\'")}','${(j.nac||'').replace(/'/g,"\\'")}')">
+          <div class="cancha-camiseta">
+            ${svgCamiseta(colores.camiseta, colores.numero, j.num < 99 ? j.num : '')}
+            ${badges ? `<div class="cancha-badges">${badges}</div>` : ''}
+          </div>
+          <div class="cancha-nombre">${nombreCorto}</div>
+        </div>`;
+      }).join('');
+      return `<div class="cancha-linea">${chips}</div>`;
+    }).join('');
+  };
+
+  const lineasLocal  = construirLineas(rawLocal, incLocal, COLOR_LOCAL);
+  const lineasVisita = construirLineas(rawVisita, incVisita, COLOR_VISITA);
+
+  const dtLocal  = (dtLocalRaw||'').trim();
+  const dtVisita = (dtVisitaRaw||'').trim();
+  const dtFila = (dtLocal || dtVisita) ? `<div class="cancha-dt-fila">
+      <span>${dtLocal ? `🧑‍💼 <strong onclick="verFichaDT('${dtLocal.replace(/'/g,"\\'")}')">${dtLocal}</strong>` : ''}</span>
+      <span>${dtVisita ? `🧑‍💼 <strong onclick="verFichaDT('${dtVisita.replace(/'/g,"\\'")}')">${dtVisita}</strong>` : ''}</span>
+    </div>` : '';
+
+  return `<div class="cancha-formacion">
+    <div class="cancha-lineas">
+      <div class="borde"></div>
+      <div class="medio"></div>
+      <div class="circulo"></div>
+    </div>
+    <div class="cancha-equipos">
+      <div class="cancha-mitad">${lineasLocal}</div>
+      <div class="cancha-mitad cancha-reversa">${lineasVisita}</div>
+    </div>
+  </div>${dtFila}`;
+}
+
+function toggleVistaAlin(modo) {
+  const cancha = document.getElementById('modal-alin-cancha-wrap');
+  const lista  = document.getElementById('modal-alin-lista-wrap');
+  const btnCancha = document.getElementById('alin-btn-cancha');
+  const btnLista  = document.getElementById('alin-btn-lista');
+  if (!cancha || !lista) return;
+  cancha.style.display = modo === 'cancha' ? 'block' : 'none';
+  lista.style.display  = modo === 'lista'  ? 'block' : 'none';
+  btnCancha.classList.toggle('alin-vista-btn-activo', modo === 'cancha');
+  btnLista.classList.toggle('alin-vista-btn-activo', modo === 'lista');
 }
 
 function cerrarModal() {
