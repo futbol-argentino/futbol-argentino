@@ -397,14 +397,14 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 .grid-partidos .gp-dia-header{grid-column:1/-1;padding:6px 12px;background:var(--fondo-3);color:var(--texto-2);font-size:12px;font-weight:600;letter-spacing:0.5px;border-top:1px solid var(--borde);border-bottom:1px solid var(--borde);cursor:default}
 /* IMPORTANTE: todos los partidos de una misma sección (ej. todos los de una "Fecha")
    comparten UN SOLO grid de CSS, uno abajo del otro — no es un grid por partido.
-   Por eso gp-goleadores NO puede tener una columna fija (ej. grid-column:2): eso
-   rompe el acomodo automático ("auto-flow") de los partidos siguientes y desordena
-   todo (visto en un caso real: equipos y resultados quedaban descolocados).
-   La solución es "subgrid": el desplegable ocupa la fila completa (1/-1, no molesta
-   el auto-flow) pero por dentro hereda las columnas exactas del grid padre, así su
-   contenido se puede ubicar en la columna 2 (la de resultado) con precisión real. */
-.grid-partidos .gp-goleadores{grid-column:1/-1;display:grid;grid-template-columns:subgrid;cursor:default}
-.grid-partidos .gp-gol-celda{grid-column:2;overflow:visible;display:flex;justify-content:center}
+   Por eso gp-goleadores ocupa la fila completa (1/-1): así nunca "roba" una
+   columna de la fila siguiente ni rompe el acomodo automático de los partidos
+   que vienen después (eso pasaba cuando probamos con grid-column:2 fijo, y
+   también con "subgrid" — por las dudas de compatibilidad de navegador, la
+   alineación exacta bajo "Resultado" ahora se calcula en JS, ver
+   construirGolDataGrid, en vez de depender de una función CSS moderna). */
+.grid-partidos .gp-goleadores{grid-column:1/-1;cursor:default}
+.grid-partidos .gp-goleadores>div{display:inline-grid}
 /* En pantallas angostas, el grid simétrico no se achica más allá de un ancho
    mínimo: si no entran los nombres completos, se puede deslizar horizontalmente
    en vez de recortarlos con puntos suspensivos. El contenedor que lo envuelve
@@ -2915,8 +2915,12 @@ function construirGolData(p, local, visita, celdasAntes, celdasDespues) {
   const raw = p.Goleadores || '';
   if (!raw || raw.trim() === '' || raw.toLowerCase() === 'ninguno') return null;
   const partes = raw.split('/');
-  const escL = ESCUDOS[local] ? `<img src="${ESCUDOS[local]}" style="width:18px;height:18px;object-fit:contain;display:block;" onerror="this.style.display='none'">` : '';
-  const escV = ESCUDOS[visita] ? `<img src="${ESCUDOS[visita]}" style="width:18px;height:18px;object-fit:contain;display:block;" onerror="this.style.display='none'">` : '';
+  // Ojo: NO usar loading="lazy" acá — estas imágenes viven dentro de un contenedor
+  // "display:none" hasta que se despliega el desplegable, y el lazy-loading nativo
+  // del navegador puede no disparar nunca la carga de una imagen que nunca tuvo
+  // tamaño/posición en pantalla, dejándola invisible para siempre.
+  const escL = ESCUDOS[local] ? `<img src="${ESCUDOS[local]}" style="width:18px;height:18px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">` : '';
+  const escV = ESCUDOS[visita] ? `<img src="${ESCUDOS[visita]}" style="width:18px;height:18px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">` : '';
   function parseGoles(raw, esc) {
     return (raw||'').split('-').map(e=>e.trim()).filter(e=>e&&e.toLowerCase()!=='ninguno'&&e.length>1).map(entrada => {
       const minMatch = entrada.match(/(\d+)\s*(?:\+\s*\d+)?\s*[''`´'′]/);
@@ -8486,8 +8490,10 @@ function construirGolDataGrid(p, local, visita) {
   const raw = p.Goleadores || '';
   if (!raw || raw.trim() === '' || raw.toLowerCase() === 'ninguno') return null;
   const partes = raw.split('/');
-  const escL = ESCUDOS[local] ? `<img src="${ESCUDOS[local]}" style="width:16px;height:16px;object-fit:contain;display:block;" onerror="this.style.display='none'">` : '';
-  const escV = ESCUDOS[visita] ? `<img src="${ESCUDOS[visita]}" style="width:16px;height:16px;object-fit:contain;display:block;" onerror="this.style.display='none'">` : '';
+  // Ojo: NO usar loading="lazy" acá — mismo motivo que en la versión tabla (ver
+  // construirGolData): estas imágenes arrancan dentro de un contenedor oculto.
+  const escL = ESCUDOS[local] ? `<img src="${ESCUDOS[local]}" style="width:16px;height:16px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">` : '';
+  const escV = ESCUDOS[visita] ? `<img src="${ESCUDOS[visita]}" style="width:16px;height:16px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">` : '';
   function parseGoles(raw, esc) {
     return (raw||'').split('-').map(e=>e.trim()).filter(e=>e&&e.toLowerCase()!=='ninguno'&&e.length>1).map(entrada => {
       const minMatch = entrada.match(/(\d+)\s*(?:\+\s*\d+)?\s*[''`´'′]/);
@@ -8506,13 +8512,18 @@ function construirGolDataGrid(p, local, visita) {
   if (!todos.length) return null;
   const uid = 'golg_' + p.ID_Partido + '_' + (_golUidSeq++);
   const wrapId = 'golwrap_' + uid;
-  const arrow = `<span class="gol-arrow-toggle" onclick="event.stopPropagation();var c=document.getElementById('${uid}');var wrap=document.getElementById('${wrapId}');var a=document.getElementById('arr_${uid}');var open=c.style.display==='inline-grid';c.style.display=open?'none':'inline-grid';wrap.style.padding=open?'0':'8px 4px 12px';wrap.style.borderBottom=open?'none':'1px solid var(--borde)';a.style.transform=open?'rotate(0deg)':'rotate(180deg)';"
+  const resId = 'golres_' + uid;
+  // Al abrir, además de mostrar la fila, medimos en JS la posición real de la celda
+  // "Resultado" de ESTE partido (resId) y corremos el contenido con margin-left para
+  // que quede centrado exactamente ahí. Evitamos a propósito soluciones CSS más
+  // "modernas" (grid-column fijo, subgrid) porque romper el auto-flow del grid
+  // compartido desordenaba los partidos siguientes, y por compatibilidad de
+  // navegador preferimos este cálculo simple en JS antes que depender de subgrid.
+  const arrow = `<span class="gol-arrow-toggle" onclick="event.stopPropagation();var wrap=document.getElementById('${wrapId}');var c=document.getElementById('${uid}');var a=document.getElementById('arr_${uid}');var open=wrap.style.display==='block';if(open){wrap.style.display='none';wrap.style.borderBottom='none';wrap.style.padding='0';a.style.transform='rotate(0deg)';}else{wrap.style.display='block';wrap.style.borderBottom='1px solid var(--borde)';wrap.style.padding='8px 4px 12px';c.style.marginLeft='0px';var res=document.getElementById('${resId}');if(res){var rr=res.getBoundingClientRect();var wr=wrap.getBoundingClientRect();var target=rr.left-wr.left+rr.width/2;c.style.marginLeft=Math.max(0,target-c.offsetWidth/2)+'px';}a.style.transform='rotate(180deg)';}"
     style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:1px solid var(--borde);border-radius:6px;cursor:pointer;flex-shrink:0;transition:border-color 0.15s;"
     onmouseover="this.style.borderColor='var(--celeste)'" onmouseout="this.style.borderColor='var(--borde)'"><span id="arr_${uid}" style="font-size:12px;color:var(--texto-2);transition:transform 0.2s;display:inline-block;line-height:1;">▼</span></span>`;
-  // display:none -> inline-grid (4 columnas), dentro de gp-gol-celda que subgrid
-  // ubica exactamente en la columna de "Resultado" sin afectar a los demás partidos.
-  const drop = `<div id="${wrapId}" class="gp-goleadores" style="padding:0;border-bottom:none;"><div class="gp-gol-celda"><div id="${uid}" style="display:none;grid-template-columns:auto auto auto auto;column-gap:8px;row-gap:6px;align-items:center;">${todos.map(g=>g.html).join('')}</div></div></div>`;
-  return { arrow, drop };
+  const drop = `<div id="${wrapId}" class="gp-goleadores" style="display:none;padding:0;border-bottom:none;"><div id="${uid}" style="display:inline-grid;grid-template-columns:auto auto auto auto;column-gap:8px;row-gap:6px;align-items:center;">${todos.map(g=>g.html).join('')}</div></div>`;
+  return { arrow, drop, resId };
 }
 
 // Fila de partido armada con CSS Grid: local | resultado | visitante | flecha.
@@ -8539,7 +8550,7 @@ function filaPartidoGrid(p) {
   const click = p.ID_Partido != null ? ` onclick="verPartido(${p.ID_Partido})"` : '';
   return `
     <div class="gp-celda gp-local"${click}><span>${local}</span>${escL}</div>
-    <div class="gp-celda gp-resultado"${click}><span class="${rc}">${resultadoTxt}</span></div>
+    <div class="gp-celda gp-resultado"${golData ? ` id="${golData.resId}"` : ''}${click}><span class="${rc}">${resultadoTxt}</span></div>
     <div class="gp-celda gp-visita"${click}>${escV}<span>${visita}</span></div>
     <div class="gp-celda gp-arrow">${golData ? golData.arrow : ''}</div>
     ${golData ? golData.drop : ''}`;
