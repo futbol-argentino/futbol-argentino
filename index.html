@@ -2909,25 +2909,30 @@ function construirGolData(p, local, visita, celdasAntes, celdasDespues) {
   const raw = p.Goleadores || '';
   if (!raw || raw.trim() === '' || raw.toLowerCase() === 'ninguno') return null;
   const partes = raw.split('/');
-  const escL = ESCUDOS[local] ? `<img src="${ESCUDOS[local]}" style="width:16px;height:16px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">` : '';
-  const escV = ESCUDOS[visita] ? `<img src="${ESCUDOS[visita]}" style="width:16px;height:16px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">` : '';
+  const escL = ESCUDOS[local] ? `<img src="${ESCUDOS[local]}" style="width:18px;height:18px;object-fit:contain;display:block;" onerror="this.style.display='none'">` : '';
+  const escV = ESCUDOS[visita] ? `<img src="${ESCUDOS[visita]}" style="width:18px;height:18px;object-fit:contain;display:block;" onerror="this.style.display='none'">` : '';
   function parseGoles(raw, esc) {
     return (raw||'').split('-').map(e=>e.trim()).filter(e=>e&&e.toLowerCase()!=='ninguno'&&e.length>1).map(entrada => {
       const minMatch = entrada.match(/(\d+)\s*(?:\+\s*\d+)?\s*[''`´'′]/);
       const minuto = minMatch ? parseInt(minMatch[1]) : 999;
       const nombre = limpiarNombre(entrada);
       let badge = '';
-      if (/\(P\)/i.test(entrada)) badge = `<span style="background:var(--amarillo);color:#000;font-size:10px;font-weight:700;padding:1px 4px;border-radius:3px;margin-left:3px;">P</span>`;
-      if (/\(EC\)/i.test(entrada)) badge = `<span style="background:var(--rojo);color:#fff;font-size:10px;font-weight:700;padding:1px 4px;border-radius:3px;margin-left:3px;">EC</span>`;
-      const minTxt = minMatch ? `<span style="color:var(--texto-3);font-size:11px;min-width:30px;text-align:right;">${minMatch[0]}</span>` : '';
-      return { minuto, html: `<div style="display:flex;align-items:center;justify-content:center;gap:6px;padding:3px 0;">${minTxt}${esc}<span style="color:var(--texto-2);font-size:13px;">${nombre}</span>${badge}</div>` };
+      if (/\(P\)/i.test(entrada)) badge = `<span style="background:var(--amarillo);color:#000;font-size:11px;font-weight:700;padding:1px 5px;border-radius:3px;">P</span>`;
+      if (/\(EC\)/i.test(entrada)) badge = `<span style="background:var(--rojo);color:#fff;font-size:11px;font-weight:700;padding:1px 5px;border-radius:3px;">EC</span>`;
+      // Cada gol genera 4 "celdas" (minuto | escudo | nombre | tarjeta) que se insertan
+      // directamente en un grid de 4 columnas (ver contenedor más abajo). Al ser columnas
+      // de grid, el ancho de cada una se ajusta al contenido más ancho de esa columna en
+      // particular, así el minuto queda siempre alineado a la derecha (sin importar si
+      // tiene 1 o 2 dígitos) y el escudo + nombre arrancan siempre en la misma línea
+      // vertical entre goles, en vez de moverse según el ancho de cada fila.
+      return { minuto, html: `<span style="color:var(--texto-3);font-size:12px;text-align:right;white-space:nowrap;">${minMatch ? minMatch[0] : ''}</span><span style="display:flex;align-items:center;">${esc}</span><span style="color:var(--texto-2);font-size:14px;text-align:left;white-space:nowrap;">${nombre}</span><span style="display:flex;align-items:center;">${badge}</span>` };
     });
   }
   const todos = [...parseGoles(partes[0], escL), ...parseGoles(partes[1], escV)].sort((a,b)=>a.minuto-b.minuto);
   if (!todos.length) return null;
   const uid = 'gol_' + p.ID_Partido + '_' + (_golUidSeq++);
   const tdId = 'goltd_' + uid;
-  const arrow = `<span class="gol-arrow-toggle" onclick="event.stopPropagation();var c=document.getElementById('${uid}');var td=document.getElementById('${tdId}');var a=document.getElementById('arr_${uid}');var open=c.style.display==='flex';c.style.display=open?'none':'flex';td.style.padding=open?'0':'6px 6px 10px';td.style.borderBottom=open?'none':'1px solid var(--borde)';a.style.transform=open?'rotate(0deg)':'rotate(180deg)';"
+  const arrow = `<span class="gol-arrow-toggle" onclick="event.stopPropagation();var c=document.getElementById('${uid}');var td=document.getElementById('${tdId}');var a=document.getElementById('arr_${uid}');var open=c.style.display==='inline-grid';c.style.display=open?'none':'inline-grid';td.style.padding=open?'0':'8px 6px 12px';td.style.borderBottom=open?'none':'1px solid var(--borde)';a.style.transform=open?'rotate(0deg)':'rotate(180deg)';"
     style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:1px solid var(--borde);border-radius:6px;cursor:pointer;margin-left:5px;flex-shrink:0;transition:border-color 0.15s;vertical-align:middle;"
     onmouseover="this.style.borderColor='var(--celeste)'" onmouseout="this.style.borderColor='var(--borde)'"><span id="arr_${uid}" style="font-size:12px;color:var(--texto-2);transition:transform 0.2s;display:inline-block;line-height:1;">▼</span></span>`;
   // La celda con los goleadores se ubica en la MISMA posición de columna que la celda
@@ -2935,7 +2940,7 @@ function construirGolData(p, local, visita, celdasAntes, celdasDespues) {
   // la clase td-resultado para que el navegador la trate como parte de esa misma columna
   // y quede perfectamente centrada debajo del marcador, en vez de centrada en toda la fila.
   const celdaVacia = '<td style="padding:0;border-bottom:none;"></td>';
-  const drop = `<tr class="fila-gol-preview">${celdaVacia.repeat(celdasAntes)}<td id="${tdId}" class="td-resultado" style="padding:0;border-bottom:none;white-space:normal;letter-spacing:normal;font-weight:400;vertical-align:top;overflow:visible;"><div id="${uid}" style="display:none;flex-direction:column;align-items:center;">${todos.map(g=>g.html).join('')}</div></td>${celdaVacia.repeat(celdasDespues)}</tr>`;
+  const drop = `<tr class="fila-gol-preview">${celdaVacia.repeat(celdasAntes)}<td id="${tdId}" class="td-resultado" style="padding:0;border-bottom:none;white-space:normal;letter-spacing:normal;font-weight:400;vertical-align:top;overflow:visible;"><div id="${uid}" style="display:none;grid-template-columns:auto auto auto auto;column-gap:9px;row-gap:7px;align-items:center;">${todos.map(g=>g.html).join('')}</div></td>${celdaVacia.repeat(celdasDespues)}</tr>`;
   return { arrow, drop };
 }
 
@@ -8475,30 +8480,31 @@ function construirGolDataGrid(p, local, visita) {
   const raw = p.Goleadores || '';
   if (!raw || raw.trim() === '' || raw.toLowerCase() === 'ninguno') return null;
   const partes = raw.split('/');
-  const escL = ESCUDOS[local] ? `<img src="${ESCUDOS[local]}" style="width:14px;height:14px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">` : '';
-  const escV = ESCUDOS[visita] ? `<img src="${ESCUDOS[visita]}" style="width:14px;height:14px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">` : '';
+  const escL = ESCUDOS[local] ? `<img src="${ESCUDOS[local]}" style="width:16px;height:16px;object-fit:contain;display:block;" onerror="this.style.display='none'">` : '';
+  const escV = ESCUDOS[visita] ? `<img src="${ESCUDOS[visita]}" style="width:16px;height:16px;object-fit:contain;display:block;" onerror="this.style.display='none'">` : '';
   function parseGoles(raw, esc) {
     return (raw||'').split('-').map(e=>e.trim()).filter(e=>e&&e.toLowerCase()!=='ninguno'&&e.length>1).map(entrada => {
       const minMatch = entrada.match(/(\d+)\s*(?:\+\s*\d+)?\s*[''`´'′]/);
       const minuto = minMatch ? parseInt(minMatch[1]) : 999;
       const nombre = limpiarNombre(entrada);
       let badge = '';
-      if (/\(P\)/i.test(entrada)) badge = `<span style="background:var(--amarillo);color:#000;font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;margin-left:3px;">P</span>`;
-      if (/\(EC\)/i.test(entrada)) badge = `<span style="background:var(--rojo);color:#fff;font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;margin-left:3px;">EC</span>`;
-      const minTxt = minMatch ? `<span style="color:var(--texto-3);font-size:10px;min-width:28px;">${minMatch[0]}</span>` : '';
-      return { minuto, html: `<div style="display:flex;align-items:center;gap:5px;padding:2px 0;">${esc}${minTxt}<span style="color:var(--texto-2);font-size:12px;">${nombre}</span>${badge}</div>` };
+      if (/\(P\)/i.test(entrada)) badge = `<span style="background:var(--amarillo);color:#000;font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;">P</span>`;
+      if (/\(EC\)/i.test(entrada)) badge = `<span style="background:var(--rojo);color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;">EC</span>`;
+      // Igual que en la versión tabla: 4 "celdas" de grid (minuto | escudo | nombre | tarjeta)
+      // para que todas las filas queden alineadas en columnas, sin importar el largo del
+      // minuto o del nombre.
+      return { minuto, html: `<span style="color:var(--texto-3);font-size:11px;text-align:right;white-space:nowrap;">${minMatch ? minMatch[0] : ''}</span><span style="display:flex;align-items:center;">${esc}</span><span style="color:var(--texto-2);font-size:13px;text-align:left;white-space:nowrap;">${nombre}</span><span style="display:flex;align-items:center;">${badge}</span>` };
     });
   }
   const todos = [...parseGoles(partes[0], escL), ...parseGoles(partes[1], escV)].sort((a,b)=>a.minuto-b.minuto);
   if (!todos.length) return null;
   const uid = 'golg_' + p.ID_Partido + '_' + (_golUidSeq++);
   const wrapId = 'golwrap_' + uid;
-  const arrow = `<span class="gol-arrow-toggle" onclick="event.stopPropagation();var c=document.getElementById('${uid}');var wrap=document.getElementById('${wrapId}');var a=document.getElementById('arr_${uid}');var open=c.style.display==='flex';c.style.display=open?'none':'flex';wrap.style.padding=open?'0':'6px 4px 10px';wrap.style.borderBottom=open?'none':'1px solid var(--borde)';a.style.transform=open?'rotate(0deg)':'rotate(180deg)';"
+  const arrow = `<span class="gol-arrow-toggle" onclick="event.stopPropagation();var c=document.getElementById('${uid}');var wrap=document.getElementById('${wrapId}');var a=document.getElementById('arr_${uid}');var open=c.style.display==='inline-grid';c.style.display=open?'none':'inline-grid';wrap.style.padding=open?'0':'8px 4px 12px';wrap.style.borderBottom=open?'none':'1px solid var(--borde)';a.style.transform=open?'rotate(0deg)':'rotate(180deg)';"
     style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:1px solid var(--borde);border-radius:6px;cursor:pointer;flex-shrink:0;transition:border-color 0.15s;"
     onmouseover="this.style.borderColor='var(--celeste)'" onmouseout="this.style.borderColor='var(--borde)'"><span id="arr_${uid}" style="font-size:12px;color:var(--texto-2);transition:transform 0.2s;display:inline-block;line-height:1;">▼</span></span>`;
-  // display:none -> flex (columna, centrado) igual que en la versión tabla, para que
-  // cada goleador quede centrado exactamente debajo del marcador (columna gp-resultado).
-  const drop = `<div id="${wrapId}" class="gp-goleadores" style="padding:0;border-bottom:none;"><div id="${uid}" style="display:none;flex-direction:column;align-items:center;">${todos.map(g=>g.html).join('')}</div></div>`;
+  // display:none -> inline-grid (4 columnas), centrado en la columna gp-resultado.
+  const drop = `<div id="${wrapId}" class="gp-goleadores" style="padding:0;border-bottom:none;text-align:center;"><div id="${uid}" style="display:none;grid-template-columns:auto auto auto auto;column-gap:8px;row-gap:6px;align-items:center;">${todos.map(g=>g.html).join('')}</div></div>`;
   return { arrow, drop };
 }
 
