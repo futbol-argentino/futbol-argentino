@@ -954,7 +954,7 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 .pos-descenso-prom { background:rgba(190,18,60,0.12)!important; box-shadow:inset 3px 0 0 #BE123C!important; }
 .pos-descalif   { background:rgba(120,40,60,0.12)!important;  box-shadow:inset 3px 0 0 #7B2D3E!important; }
 .pos-num { font-weight:700; width:32px; text-align:center; }
-.pos-legend { display:flex; flex-wrap:wrap; gap:10px; padding:12px 16px; border-top:1px solid var(--borde); }
+.pos-legend { display:flex; flex-direction:column; gap:6px; padding:12px 16px; border-top:1px solid var(--borde); }
 .pos-legend-item { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--texto-2); }
 .pos-legend-dot { width:10px; height:10px; border-radius:2px; flex-shrink:0; }
 
@@ -6062,19 +6062,28 @@ function renderTablasPosiciones(idTemporada) {
   const grupos = {};
   filas.forEach(r => { const g = r.Grupo || 'General'; if (!grupos[g]) grupos[g] = []; grupos[g].push(r); });
 
-  const clasifUsados = new Set();
-  filas.forEach(r => {
-    parsearClasifCodes(r.Equipo).codigos.forEach(c => { if (CLASIFICACION_CONFIG[c]) clasifUsados.add(c); });
-  });
-
-  const legendaHTML = clasifUsados.size > 0
-    ? `<div class="pos-legend">${[...clasifUsados].map(c => {
-        const cfg = CLASIFICACION_CONFIG[c];
-        return `<div class="pos-legend-item"><div class="pos-legend-dot" style="background:${cfg.color};"></div><span>${cfg.label}</span></div>`;
-      }).join('')}</div>` : '';
+  // Construye la leyenda de un conjunto de filas puntual (una zona/grupo), no de
+  // todo el torneo — así cada tabla solo muestra las aclaraciones de los códigos
+  // que realmente usan SUS equipos, en vez de repetir la lista completa del torneo
+  // (ej. si solo la Zona A tiene descensos, la Zona B no debería mostrar esa
+  // aclaración). El orden de la leyenda sigue PRIORIDAD_CLASIF para que quede
+  // siempre en el mismo orden entre tablas.
+  function legendaDe(rows) {
+    const usados = new Set();
+    rows.forEach(r => {
+      parsearClasifCodes(r.Equipo).codigos.forEach(c => { if (CLASIFICACION_CONFIG[c]) usados.add(c); });
+    });
+    if (usados.size === 0) return '';
+    const ordenados = [...usados].sort((a,b) => PRIORIDAD_CLASIF.indexOf(a)-PRIORIDAD_CLASIF.indexOf(b));
+    return `<div class="pos-legend">${ordenados.map(c => {
+      const cfg = CLASIFICACION_CONFIG[c];
+      return `<div class="pos-legend-item"><div class="pos-legend-dot" style="background:${cfg.color};"></div><span>${cfg.label}</span></div>`;
+    }).join('')}</div>`;
+  }
 
   const tablasHTML = Object.entries(grupos).map(([grupo, rows]) => {
     const sorted = rows.sort((a,b) => parseInt(a.Pos||99) - parseInt(b.Pos||99));
+    const legendaHTML = legendaDe(rows);
     const filasHTML = sorted.map(r => {
       const nombreRaw = r.Equipo || '';
       const { nombre, codigos } = parsearClasifCodes(nombreRaw);
@@ -6155,15 +6164,20 @@ function renderTablaPromedios(idTemporada) {
   const grupos = {};
   filas.forEach(r => { const g = r.Grupo || 'General'; if (!grupos[g]) grupos[g] = []; grupos[g].push(r); });
 
-  const clasifUsados = new Set();
-  filas.forEach(r => {
-    parsearClasifCodes(r.Equipo).codigos.forEach(c => { if (CLASIFICACION_CONFIG[c]) clasifUsados.add(c); });
-  });
-  const legendaHTML = clasifUsados.size > 0
-    ? `<div class="pos-legend">${[...clasifUsados].map(c => {
-        const cfg = CLASIFICACION_CONFIG[c];
-        return `<div class="pos-legend-item"><div class="pos-legend-dot" style="background:${cfg.color};"></div><span>${cfg.label}</span></div>`;
-      }).join('')}</div>` : '';
+  // Misma lógica de leyenda "por tabla" que en renderTablasPosiciones (ver ahí
+  // el comentario completo): cada zona/grupo muestra solo sus propias aclaraciones.
+  function legendaDe(rows) {
+    const usados = new Set();
+    rows.forEach(r => {
+      parsearClasifCodes(r.Equipo).codigos.forEach(c => { if (CLASIFICACION_CONFIG[c]) usados.add(c); });
+    });
+    if (usados.size === 0) return '';
+    const ordenados = [...usados].sort((a,b) => PRIORIDAD_CLASIF.indexOf(a)-PRIORIDAD_CLASIF.indexOf(b));
+    return `<div class="pos-legend">${ordenados.map(c => {
+      const cfg = CLASIFICACION_CONFIG[c];
+      return `<div class="pos-legend-item"><div class="pos-legend-dot" style="background:${cfg.color};"></div><span>${cfg.label}</span></div>`;
+    }).join('')}</div>`;
+  }
 
   // Celda de un año puntual: "-" si vino vacía (el equipo no jugó esa temporada,
   // ej. recién ascendido), y el número tal cual si vino cargada (incluso si es 0).
@@ -6171,6 +6185,7 @@ function renderTablaPromedios(idTemporada) {
 
   const tablasHTML = Object.entries(grupos).map(([grupo, rows]) => {
     const sorted = rows.sort((a,b) => parseInt(a.Pos||99) - parseInt(b.Pos||99));
+    const legendaHTML = legendaDe(rows);
     const filasHTML = sorted.map(r => {
       const nombreRaw = r.Equipo || '';
       const { nombre, codigos } = parsearClasifCodes(nombreRaw);
