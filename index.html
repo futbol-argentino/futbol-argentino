@@ -1842,12 +1842,11 @@ select option{background:#080F20;color:#F0F6FF}
             <input type="hidden" id="jugador-buscar-equipo" value="">
             <div id="jugador-equipo-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:9999;background:var(--fondo-2);border:1px solid var(--borde-activo);border-radius:10px;max-height:220px;overflow-y:auto;box-shadow:var(--sombra-card);margin-top:3px;"></div>
           </div>
-          <div class="filtro-grupo" style="flex:0;white-space:nowrap;">
-            <label class="filtro-label" style="opacity:0;">-</label>
-            <div style="display:flex;gap:4px;background:var(--fondo-3);border:1px solid var(--borde);border-radius:9px;padding:4px;">
-              <button id="jugador-modo-lista" onclick="setModoJugadores('lista')" style="font-family:var(--fuente-cuerpo);font-size:12px;font-weight:500;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;background:var(--azul);color:white;transition:var(--trans);">☰ Lista</button>
-              <button id="jugador-modo-album" onclick="setModoJugadores('album')" style="font-family:var(--fuente-cuerpo);font-size:12px;font-weight:500;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;background:transparent;color:var(--texto-2);transition:var(--trans);">⊞ Álbum</button>
-            </div>
+          <div class="filtro-grupo" style="flex:0;min-width:130px;">
+            <label class="filtro-label">Año</label>
+            <select id="jugador-anio-select" class="filtro-select" onchange="buscarJugador()" disabled>
+              <option value="">Elegí equipo</option>
+            </select>
           </div>
         </div>
       </div>
@@ -7033,6 +7032,7 @@ function equipoMasRecienteDeJugador(data) {
 function buscarJugador() {
   const q = (document.getElementById('jugador-buscar-input')?.value || '').toLowerCase().trim();
   const eqFiltro = document.getElementById('jugador-buscar-equipo')?.value || '';
+  const anioFiltro = document.getElementById('jugador-anio-select')?.value || '';
   const container = document.getElementById('jugador-resultados');
 
   if (!q && !eqFiltro) {
@@ -7044,6 +7044,12 @@ function buscarJugador() {
   const resultados = Object.entries(todos).filter(([clave, data]) => {
     if (q && !normalizarNombre(data.nombre).includes(normalizarNombre(q))) return false;
     if (eqFiltro && !Object.keys(data.equipos).includes(eqFiltro)) return false;
+    // Filtro por año: solo tiene sentido junto con un equipo elegido (jugó al
+    // menos un partido con ESE equipo en ESE año puntual).
+    if (eqFiltro && anioFiltro) {
+      const r = data.equipos[eqFiltro];
+      if (!r || !r.anios.has(parseInt(anioFiltro))) return false;
+    }
     return true;
   }).sort(([,a],[,b]) => a.nombre.localeCompare(b.nombre));
 
@@ -7061,59 +7067,55 @@ function buscarJugador() {
     return;
   }
 
-  if (modoJugadores === 'album') {
-    // ÁLBUM: grilla de fotos
-    container.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:16px;">` +
-      resultados.slice(0,120).map(([clave, data]) => {
-        const nombre = data.nombre;
-        const bandera = data.nac ? getBandera(data.nac) : '';
-        // Get years for filtered equipo or all
-        const aniosSet = eqFiltro && data.equipos[eqFiltro]
-          ? data.equipos[eqFiltro].anios
-          : Object.values(data.equipos).reduce((s,r) => { r.anios.forEach(a=>s.add(a)); return s; }, new Set());
-        const aniosStr = formatearAnios(aniosSet);
-        const equipoNombre = eqFiltro ? (equipos[eqFiltro]||'') : (equipos[equipoMasRecienteDeJugador(data)]||'');
-        return `<div class="album-card" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}','${(data.nac||'').replace(/'/g,"\\'")}')">
-          ${fotoJugadorImg(nombre, equipoNombre, data.nac, 'width:100%;aspect-ratio:1/1;object-fit:cover;object-position:top;display:block;background:var(--fondo-3);', '')}
-          <div class="album-avatar" style="display:none;">👤</div>
-          <div class="album-card-info">
-            <div class="album-card-nombre"><span style="display:inline-flex;">${bandera}</span> ${nombre}</div>
-            <div class="album-card-anios">${aniosStr}</div>
-          </div>
-        </div>`;
-      }).join('') + '</div>' +
-      (resultados.length > 120 ? `<div style="text-align:center;padding:16px;color:var(--texto-3);font-size:13px;">Mostrando 120 de ${resultados.length}. Refiná la búsqueda.</div>` : '');
-  } else {
-    // LISTA: tarjetas con estadísticas (rediseño)
-    container.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;">` +
-      resultados.slice(0,60).map(([clave, data]) => {
-        const nombre = data.nombre;
-        const bandera = data.nac ? getBandera(data.nac) : '';
-        const totGoles = Object.values(data.equipos).reduce((s,r)=>s+r.goles,0);
-        const totAmon  = Object.values(data.equipos).reduce((s,r)=>s+r.amonestados,0);
-        const totExp   = Object.values(data.equipos).reduce((s,r)=>s+r.expulsados,0);
-        const equiposChips = Object.keys(data.equipos).map(id => {
-          const anios = formatearAnios(data.equipos[id].anios);
-          const nombreEq = equipos[id]||id;
-          const esc = ESCUDOS[nombreEq] ? `<img src="${ESCUDOS[nombreEq]}" onerror="this.style.display='none'">` : '';
-          return `<span class="pers-equipo-chip">${esc}${nombreEq} <span class="anios">(${anios})</span></span>`;
-        }).join('');
-        const equipoNombreFoto = eqFiltro ? (equipos[eqFiltro]||'') : (equipos[equipoMasRecienteDeJugador(data)]||'');
-        return `<div class="pers-card" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}','${(data.nac||'').replace(/'/g,"\\'")}')">
-          <div class="pers-card-top">
-            ${fotoJugadorImg(nombre, equipoNombreFoto, data.nac, 'width:60px;height:60px;border-radius:12px;object-fit:cover;object-position:top;background:var(--fondo-3);flex-shrink:0;border:1px solid var(--borde);', 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><rect width=%2260%22 height=%2260%22 fill=%22%230D1628%22 rx=%2212%22/><text x=%2230%22 y=%2238%22 font-size=%2226%22 text-anchor=%22middle%22>👤</text></svg>')}
-            <div class="pers-card-nombre"><span style="display:inline-flex;">${bandera}</span>${nombre}</div>
-          </div>
-          <div class="pers-card-stats">
-            <div class="pers-mini-stat"><span class="num" style="color:var(--celeste);">${totGoles}</span><span class="label">⚽ Goles</span></div>
-            <div class="pers-mini-stat"><span class="num" style="color:var(--amarillo);">${totAmon}</span><span class="label">🟨 Amon.</span></div>
-            <div class="pers-mini-stat"><span class="num" style="color:var(--rojo);">${totExp}</span><span class="label">🟥 Exp.</span></div>
-          </div>
-          <div class="pers-card-equipos">${equiposChips}</div>
-        </div>`;
-      }).join('') + '</div>' +
-      (resultados.length > 60 ? `<div style="text-align:center;padding:16px;color:var(--texto-3);font-size:13px;">Mostrando 60 de ${resultados.length}. Refiná la búsqueda.</div>` : '');
+  // Vista única (álbum): grilla de fotos con nombre, bandera y años. Se sacó la
+  // vista "Lista" anterior (tarjetas grandes con stats) a pedido — esta es ahora
+  // la única forma de ver los resultados.
+  container.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:16px;">` +
+    resultados.slice(0,120).map(([clave, data]) => {
+      const nombre = data.nombre;
+      const bandera = data.nac ? getBandera(data.nac) : '';
+      // Años del jugador en ESE equipo si hay equipo filtrado, o de toda su carrera si no.
+      const aniosSet = eqFiltro && data.equipos[eqFiltro]
+        ? data.equipos[eqFiltro].anios
+        : Object.values(data.equipos).reduce((s,r) => { r.anios.forEach(a=>s.add(a)); return s; }, new Set());
+      const aniosStr = formatearAnios(aniosSet);
+      const equipoNombre = eqFiltro ? (equipos[eqFiltro]||'') : (equipos[equipoMasRecienteDeJugador(data)]||'');
+      return `<div class="album-card" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}','${(data.nac||'').replace(/'/g,"\\'")}')">
+        ${fotoJugadorImg(nombre, equipoNombre, data.nac, 'width:100%;aspect-ratio:1/1;object-fit:cover;object-position:top;display:block;background:var(--fondo-3);', '')}
+        <div class="album-avatar" style="display:none;">👤</div>
+        <div class="album-card-info">
+          <div class="album-card-nombre"><span style="display:inline-flex;">${bandera}</span> ${nombre}</div>
+          <div class="album-card-anios">${aniosStr}</div>
+        </div>
+      </div>`;
+    }).join('') + '</div>' +
+    (resultados.length > 120 ? `<div style="text-align:center;padding:16px;color:var(--texto-3);font-size:13px;">Mostrando 120 de ${resultados.length}. Refiná la búsqueda.</div>` : '');
+}
+
+// Popula (o resetea) el select de años de la sección Jugadores según el equipo
+// elegido: junta los años en que CUALQUIER jugador tuvo al menos un partido con
+// ese equipo (unión de data.equipos[eqFiltro].anios de todos los jugadores),
+// para ofrecer solo años que realmente tienen datos cargados.
+function actualizarAniosDropdownJugador() {
+  const sel = document.getElementById('jugador-anio-select');
+  if (!sel) return;
+  const eqFiltro = document.getElementById('jugador-buscar-equipo')?.value || '';
+  if (!eqFiltro) {
+    sel.innerHTML = '<option value="">Elegí equipo</option>';
+    sel.disabled = true;
+    sel.value = '';
+    return;
   }
+  const todos = recopilarJugadores();
+  const anios = new Set();
+  Object.values(todos).forEach(data => {
+    const r = data.equipos[eqFiltro];
+    if (r) r.anios.forEach(a => anios.add(a));
+  });
+  const aniosOrdenados = [...anios].sort((a,b) => b-a);
+  sel.disabled = false;
+  sel.innerHTML = '<option value="">Todos los años</option>' + aniosOrdenados.map(a => `<option value="${a}">${a}</option>`).join('');
+  sel.value = '';
 }
 
 // ── INICIALIZACIÓN JUGADORES ──
@@ -7158,7 +7160,7 @@ function filtrarEquipoDropdown(contexto) {
   // Si borraron el texto, limpiar el filtro
   if (!q) {
     document.getElementById(hidId).value = '';
-    if (contexto === 'jugador') buscarJugador();
+    if (contexto === 'jugador') { actualizarAniosDropdownJugador(); buscarJugador(); }
     else if (contexto === 'dt') buscarDT();
     else if (contexto === 'arbitro') buscarArbitro();
     else if (contexto === 'match1' || contexto === 'match2') filtrar();
@@ -7195,7 +7197,7 @@ function seleccionarEquipoDropdown(contexto, id, nombre) {
   document.getElementById(inputId).value = nombre;
   document.getElementById(hidId).value = id;
   document.getElementById(dropId).style.display = 'none';
-  if (contexto === 'jugador') buscarJugador();
+  if (contexto === 'jugador') { actualizarAniosDropdownJugador(); buscarJugador(); }
   else if (contexto === 'dt') buscarDT();
   else if (contexto === 'arbitro') buscarArbitro();
   else if (contexto === 'match1' || contexto === 'match2') filtrar();
@@ -7778,16 +7780,6 @@ function cerrarFichaArbitro() {
   document.getElementById('modal-arbitro').classList.remove('visible');
 }
 
-// ── MODO JUGADORES (lista / álbum) ──
-let modoJugadores = 'lista';
-function setModoJugadores(modo) {
-  modoJugadores = modo;
-  document.getElementById('jugador-modo-lista').style.background = modo==='lista' ? 'var(--azul)' : 'transparent';
-  document.getElementById('jugador-modo-lista').style.color = modo==='lista' ? 'white' : 'var(--texto-2)';
-  document.getElementById('jugador-modo-album').style.background = modo==='album' ? 'var(--azul)' : 'transparent';
-  document.getElementById('jugador-modo-album').style.color = modo==='album' ? 'white' : 'var(--texto-2)';
-  buscarJugador();
-}
 
 let vistaEquiposModo = 'divisiones';
 
