@@ -2058,6 +2058,23 @@ select option{background:#080F20;color:#F0F6FF}
           </div>
         </div>
 
+        <div class="tabla-wrapper" id="estadio-equipos-ganados-wrap" style="display:none;">
+          <div class="tabla-header">
+            <div class="tabla-titulo">🛡️🏆 Equipos que más partidos ganaron en este estadio</div>
+            <div class="tabla-count" id="estadio-equipos-ganados-count"></div>
+          </div>
+          <div class="tabla-scroll scroll-forzado">
+            <table style="width:100%;border-collapse:collapse;min-width:280px;">
+              <thead><tr>
+                <th style="width:40px;">#</th>
+                <th>Equipo</th>
+                <th style="text-align:center;width:80px;">PG</th>
+              </tr></thead>
+              <tbody id="estadio-equipos-ganados-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
         <div class="tabla-wrapper" id="estadio-equipos-goles-wrap" style="display:none;">
           <div class="tabla-header">
             <div class="tabla-titulo">🛡️⚽ Equipos que más goles hicieron en este estadio</div>
@@ -8560,6 +8577,22 @@ function partidosJugadosPorEquipoEnPartidos(listaPartidos) {
   return Object.entries(conteo).sort((a, b) => b[1] - a[1]);
 }
 
+// Cuenta partidos GANADOS por equipo (en tiempo reglamentario, igual criterio que
+// el resto del sitio para W/D/L — no cuenta penales de desempate como "victoria").
+function partidosGanadosPorEquipoEnPartidos(listaPartidos) {
+  const conteo = {};
+  listaPartidos.forEach(p => {
+    if (!esPartidoJugado(p)) return;
+    const l = p.Local_ID, v = p.Visitante_ID;
+    if (!l || !v) return;
+    const gl = parseInt(p.Goles_Local), gv = parseInt(p.Goles_Visitante);
+    if (isNaN(gl) || isNaN(gv) || gl === gv) return;
+    const ganador = gl > gv ? l : v;
+    conteo[ganador] = (conteo[ganador] || 0) + 1;
+  });
+  return Object.entries(conteo).sort((a, b) => b[1] - a[1]);
+}
+
 function filtrarPartidosEstadio() {
   const eq1 = document.getElementById('estadio1-buscar-equipo').value;
   const eq2 = document.getElementById('estadio2-buscar-equipo').value;
@@ -8727,11 +8760,12 @@ function filaRankingEstadioEquipoPJ(i, id, pj, cambio) {
 // pero usando solo los partidos con ID hasta ID_PARTIDO_CORTE_STATS (el "antes" automático).
 function posicionesAntesEstadio(partidosJugados) {
   const antes = partidosJugados.filter(p => Number(p.ID_Partido) <= ID_PARTIDO_CORTE_STATS);
-  const pos = { pj: {}, goleadores: {}, equiposPJ: {}, equiposGoles: {} };
+  const pos = { pj: {}, goleadores: {}, equiposPJ: {}, equiposGoles: {}, equiposGanados: {} };
   partidosJugadosPorJugadorEnPartidos(antes).forEach(([nombre], idx) => { pos.pj[nombre] = idx + 1; });
   golesPorJugadorEnPartidos(antes).forEach(([nombre], idx) => { pos.goleadores[nombre] = idx + 1; });
   partidosJugadosPorEquipoEnPartidos(antes).forEach(([id], idx) => { pos.equiposPJ[id] = idx + 1; });
   golesPorEquipoEnPartidos(antes).forEach(([id], idx) => { pos.equiposGoles[id] = idx + 1; });
+  partidosGanadosPorEquipoEnPartidos(antes).forEach(([id], idx) => { pos.equiposGanados[id] = idx + 1; });
   return pos;
 }
 
@@ -8819,6 +8853,17 @@ function renderHistorialEstadio(e) {
     document.getElementById('estadio-equipos-goles-tbody').innerHTML = equiposGoles.map(([id, v], i) => filaRankingEstadioEquipo(i, id, v.goles, v.pj, calcularCambio(posAntesEstadio.equiposGoles[id], i+1))).join('');
   } else {
     eqGolWrap.style.display = 'none';
+  }
+
+  // Equipos que más partidos ganaron en este estadio
+  const equiposGanados = partidosGanadosPorEquipoEnPartidos(partidosJugados).slice(0, 15);
+  const eqGanWrap = document.getElementById('estadio-equipos-ganados-wrap');
+  if (equiposGanados.length) {
+    eqGanWrap.style.display = 'block';
+    document.getElementById('estadio-equipos-ganados-count').textContent = equiposGanados.length + (equiposGanados.length === 1 ? ' equipo' : ' equipos');
+    document.getElementById('estadio-equipos-ganados-tbody').innerHTML = equiposGanados.map(([id, pg], i) => filaRankingEstadioEquipoPJ(i, id, pg, calcularCambio(posAntesEstadio.equiposGanados[id], i+1))).join('');
+  } else {
+    eqGanWrap.style.display = 'none';
   }
 }
 
