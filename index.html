@@ -9803,7 +9803,7 @@ function renderH2H(eq1, eq2, contenedorId) {
     const golData = construirGolData(p, local, visita, 2, 2);
     return `<tr onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
       <td class="td-fecha">${fecha}</td>
-      <td><div class="td-equipo">${escudoImg(local,18)}<span>${local}</span></div></td>
+      <td><div class="td-equipo" style="justify-content:flex-end;text-align:right;"><span>${local}</span>${escudoImg(local,18)}</div></td>
       <td class="td-resultado"><span class="${rc}">${p.Goles_Local} - ${p.Goles_Visitante}</span>${extra ? `<div style="font-size:10px;color:var(--celeste);font-weight:700;margin-top:2px;">${extra}</div>` : ''}</td>
       <td><div class="td-equipo">${escudoImg(visita,18)}<span>${visita}</span></div></td>
       <td><div style="display:flex;align-items:center;"><span class="badge-torneo" style="font-size:10px;">${temporadas[p.ID_Temporada]||p.Fase||''}</span>${golData ? golData.arrow : ''}</div></td>
