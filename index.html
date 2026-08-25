@@ -7596,21 +7596,9 @@ function verFichaDT(nombre) {
     const fb = normalizarFechaISO(b.Fecha) || '0';
     return fb.localeCompare(fa);
   });
-  document.getElementById('dt-tabla-partidos').innerHTML = todosPartidos.slice(0,10).map(p => {
-    const local  = equipos[p.Local_ID]||p.Local_ID;
-    const visita = equipos[p.Visitante_ID]||p.Visitante_ID;
-    const rc = resClase(p.Goles_Local, p.Goles_Visitante);
-    const torneo = temporadas[p.ID_Temporada]||'';
-    const fecha = p.Fecha ? p.Fecha.split('T')[0] : '';
-    const golData = construirGolData(p, local, visita, 2, 2);
-    return `<tr onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
-      <td class="td-fecha">${fecha}</td>
-      <td><div class="td-equipo">${escudoImg(local,18)}<span>${local}</span></div></td>
-      <td class="td-resultado"><span class="${rc}">${p.Goles_Local} - ${p.Goles_Visitante}</span></td>
-      <td><div class="td-equipo">${escudoImg(visita,18)}<span>${visita}</span></div></td>
-      <td style="font-size:12px;color:var(--texto-3);"><div style="display:flex;align-items:center;">${torneo}${golData ? golData.arrow : ''}</div></td>
-    </tr>${golData ? golData.drop : ''}`;
-  }).join('');
+  document.getElementById('dt-tabla-partidos').innerHTML = todosPartidos.slice(0,10)
+    .map(p => filaPartido(p, null, { escudoLocalDerecha: true }))
+    .join('');
 
   traerModalAlFrente('modal-dt');
   document.getElementById('modal-dt').classList.add('visible');
