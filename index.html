@@ -3168,8 +3168,8 @@ function actualizarVistaHoyFecha() {
 
   const filtrados = [...historicos, ...fixtures]
     .sort((a, b) => {
-      const fa = a.Fecha ? a.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$2-$1') : '0';
-      const fb = b.Fecha ? b.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$2-$1') : '0';
+      const fa = normalizarFechaISO(a.Fecha) || '0';
+      const fb = normalizarFechaISO(b.Fecha) || '0';
       if (fa !== fb) return fa.localeCompare(fb);
       return (a.Hora || '').localeCompare(b.Hora || '');
     });
@@ -3898,8 +3898,8 @@ function filtrarDetalle() {
   document.getElementById('detalle-count').textContent = lista.length + ' partidos';
 
   lista.sort((a, b) => {
-    const fa = a.Fecha ? a.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$2-$1') : '0';
-    const fb = b.Fecha ? b.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$2-$1') : '0';
+    const fa = normalizarFechaISO(a.Fecha) || '0';
+    const fb = normalizarFechaISO(b.Fecha) || '0';
     return ordenDetalleDesc ? fb.localeCompare(fa) : fa.localeCompare(fb);
   });
 
@@ -4068,12 +4068,13 @@ function renderLista(items) {
   return items.map(item => {
     const nombreLimpio = limpiarNombre(item);
     const nacItem = extraerNacionalidad(item);
+    const desambItem = extraerDesambiguador(item);
     let texto = item
       .replace(/\(P\)/gi, '<span style="background:var(--amarillo);color:#000;font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px;">P</span>')
       .replace(/\(EC\)/gi, '<span style="background:var(--rojo);color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px;">EC</span>');
     texto = texto.replace(/\([A-Z]{3}\)/g, '').replace(/\[[^\]]*\]/g, '');
     return `<div style="font-size:13px;color:var(--texto-1);padding:5px 0;border-bottom:1px solid var(--borde);display:flex;align-items:center;gap:4px;">
-      <span onclick="event.stopPropagation();verFichaJugador('${nombreLimpio.replace(/'/g,"\\'")}','${(nacItem||'').replace(/'/g,"\\'")}')" style="cursor:pointer;color:var(--celeste-claro);font-weight:500;text-decoration:underline dotted;">${texto}</span>
+      <span onclick="event.stopPropagation();verFichaJugador('${nombreLimpio.replace(/'/g,"\\'")}','${(nacItem||'').replace(/'/g,"\\'")}','${(desambItem||'').replace(/'/g,"\\'")}')" style="cursor:pointer;color:var(--celeste-claro);font-weight:500;text-decoration:underline dotted;">${texto}</span>
     </div>`;
   }).join('');
 }
@@ -4268,9 +4269,10 @@ function parsearJugadorAlin(entrada) {
     if (posCandidatos.length) pos = posCandidatos[0].replace(/[()]/g,'');
   }
   const nac    = nacMatch ? nacMatch[1] : null;
+  const desamb = extraerDesambiguador(entrada);
   const nombre = limpiarNombre(entrada);
   if (!nombre || nombre.length < 2) return null;
-  return { num, pos, nac, nombre, suplente: esSuplente };
+  return { num, pos, nac, desamb, nombre, suplente: esSuplente };
 }
 
 const POS_ORDER = { ARQ:0, DEF:1, MED:2, DEL:3 };
@@ -4288,7 +4290,7 @@ function renderAlineacion(raw, dtRaw) {
   const renderJ = (j, esSup) => {
     const nac   = j.nac ? `<span style="display:inline-flex;margin-right:3px;">${getBandera(j.nac)}</span>` : '';
     const arrow = esSup ? '<span class="alin-suplente-arrow">↗</span> ' : '';
-    return `<div class="alin-jugador" onclick="verFichaJugador('${j.nombre.replace(/'/g,"\\'")}','${(j.nac||'').replace(/'/g,"\\'")}')">
+    return `<div class="alin-jugador" onclick="verFichaJugador('${j.nombre.replace(/'/g,"\\'")}','${(j.nac||'').replace(/'/g,"\\'")}','${(j.desamb||'').replace(/'/g,"\\'")}')">
       <span class="alin-num">${j.num < 99 ? j.num : ''}</span>
       <span class="alin-nombre">${arrow}${nac}${j.nombre}</span>
     </div>`;
@@ -4369,7 +4371,7 @@ function renderCanchaFormacion(rawLocal, rawVisita, incLocal, incVisita, dtLocal
           if (inc.rojas > 0) badges += `<span class="cancha-badge cancha-badge-ro">🟥</span>`;
         }
         const nombreCorto = j.nombre.split(' ').pop();
-        return `<div class="cancha-jugador" onclick="verFichaJugador('${j.nombre.replace(/'/g,"\\'")}','${(j.nac||'').replace(/'/g,"\\'")}')">
+        return `<div class="cancha-jugador" onclick="verFichaJugador('${j.nombre.replace(/'/g,"\\'")}','${(j.nac||'').replace(/'/g,"\\'")}','${(j.desamb||'').replace(/'/g,"\\'")}')">
           <div class="cancha-camiseta">
             ${svgCamiseta(colores.camiseta, colores.numero, j.num < 99 ? j.num : '')}
             ${badges ? `<div class="cancha-badges">${badges}</div>` : ''}
@@ -4397,7 +4399,7 @@ function renderCanchaFormacion(rawLocal, rawVisita, incLocal, incVisita, dtLocal
         if (inc.amarillas > 0) badges += `<span class="cancha-badge cancha-badge-am">🟨</span>`;
         if (inc.rojas > 0) badges += `<span class="cancha-badge cancha-badge-ro">🟥</span>`;
       }
-      return `<div class="cancha-suplente" onclick="verFichaJugador('${j.nombre.replace(/'/g,"\\'")}','${(j.nac||'').replace(/'/g,"\\'")}')">
+      return `<div class="cancha-suplente" onclick="verFichaJugador('${j.nombre.replace(/'/g,"\\'")}','${(j.nac||'').replace(/'/g,"\\'")}','${(j.desamb||'').replace(/'/g,"\\'")}')">
         <div class="cancha-camiseta cancha-camiseta-mini">
           ${svgCamiseta(colores.camiseta, colores.numero, j.num < 99 ? j.num : '')}
           ${badges ? `<div class="cancha-badges">${badges}</div>` : ''}
@@ -4612,17 +4614,20 @@ function fjOnError(img) {
 // uno tenga su propio archivo de foto y no se pisen entre sí.
 // Ej: "Vicente Poggi" (URU) -> jugadores/vicente_poggi_uru_godoy_cruz.jpg
 //     "Vicente Poggi" (ARG) -> jugadores/vicente_poggi_arg_godoy_cruz.jpg
-function claveFotoJugador(nombre, nacionalidad) {
-  const base = toFotoKey(nombre);
+// Si además viene un desambiguador manual (#2, para homónimos de mismo nombre Y misma
+// nacionalidad), se agrega al final de la clave para separar también sus fotos.
+function claveFotoJugador(nombre, nacionalidad, desambiguador) {
+  let base = toFotoKey(nombre);
   if (NOMBRES_AMBIGUOS.has(normalizarNombre(nombre)) && nacionalidad) {
-    return base + '_' + toFotoKey(nacionalidad);
+    base += '_' + toFotoKey(nacionalidad);
   }
+  if (desambiguador) base += '_' + desambiguador;
   return base;
 }
 
 // Returns img HTML that tries team-specific photo first, falls back to default
-function fotoJugadorImg(nombre, equipoNombre, nacionalidad, style, placeholder) {
-  const jugKey = claveFotoJugador(nombre, nacionalidad);
+function fotoJugadorImg(nombre, equipoNombre, nacionalidad, style, placeholder, desambiguador) {
+  const jugKey = claveFotoJugador(nombre, nacionalidad, desambiguador);
   const eqKey  = equipoNombre ? toFotoKey(equipoNombre) : '';
   const srcs = fotoJugadorSrcs(jugKey, eqKey);
   const ph = placeholder || 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2256%22 height=%2256%22><rect width=%2256%22 height=%2256%22 fill=%22%230D1628%22 rx=%2210%22/><text x=%2228%22 y=%2234%22 font-size=%2224%22 text-anchor=%22middle%22>👤</text></svg>';
@@ -4675,8 +4680,19 @@ function extraerNacionalidad(texto) {
   return m ? m[1] : null;
 }
 
+// Tag manual de desambiguación para homónimos exactos (mismo nombre Y misma nacionalidad).
+// Se anota a mano en el CSV como "#2" en cualquier parte del nombre, ej: "Juan Pérez [ARG]#2".
+// A diferencia de la nacionalidad (que separa automáticamente cuando el propio dato ya trae
+// nacionalidades distintas para el mismo nombre), este tag es 100% manual: Nicolás lo agrega
+// solo en los casos puntuales donde detecta que dos jugadores distintos comparten nombre Y país.
+function extraerDesambiguador(texto) {
+  const m = texto.match(/#(\d+)/);
+  return m ? m[1] : null;
+}
+
 function limpiarNombre(texto) {
   let n = texto
+    .replace(/#\d+/g, '')                          // tag de desambiguación manual "#2" (sacar ANTES de que la regla de minutos de abajo se coma el número)
     .replace(/\d+\s*\+\s*\d+\s*[''`´'′]?/g, '') // "45+6'"
     .replace(/\d+\s*[''`´'′]?/g, '')              // "90'"
     .replace(/\s*\+\s*/g, ' ')                     // "+" sobrante
@@ -4793,6 +4809,7 @@ function construirIndiceNacionalidades() {
           const entrada = entradaRaw.trim();
           if (!entrada || entrada.toLowerCase() === 'ninguno') return;
           const nac = extraerNacionalidad(entrada);
+          const desamb = extraerDesambiguador(entrada);
           if (!nac) return;
           const norm = normalizarNombre(limpiarNombre(entrada));
           if (!norm || norm.length < 2) return;
@@ -4825,8 +4842,15 @@ function construirIndiceNacionalidades() {
 // la nacionalidad pasa a formar parte de la clave para no mezclar a los dos jugadores.
 // Las entradas ambiguas SIN nacionalidad quedan en un tercer balde propio (no se asignan a
 // ninguna de las dos, para no atribuirle mal las estadísticas a un jugador equivocado).
-function claveJugador(nombreLimpio, nacionalidad) {
+//
+// Caso homónimo exacto (mismo nombre Y misma nacionalidad, ej. dos "Juan Pérez" argentinos):
+// ahí la nacionalidad no sirve como diferenciador porque es igual para los dos. Para esos
+// casos existe el tag manual "#N" (extraerDesambiguador). Si viene, tiene prioridad total
+// sobre cualquier lógica automática: separa la clave sin importar si el nombre está en
+// NOMBRES_AMBIGUOS o no.
+function claveJugador(nombreLimpio, nacionalidad, desambiguador) {
   const norm = normalizarNombre(nombreLimpio);
+  if (desambiguador) return norm + '‡' + (nacionalidad || '?') + '‡' + desambiguador;
   if (NOMBRES_AMBIGUOS.has(norm)) return norm + '‡' + (nacionalidad || '?');
   return norm;
 }
@@ -4835,6 +4859,7 @@ function parsearGoleadores(equipoId, torneoId, listaPartidos) {
   const goles = {};
   const ec = {};
   const nacionalidades = {};
+  const desambiguadores = {};
   const equiposGoles = {};
   const equiposEC = {};
   const nombresDisplay = {};
@@ -4854,13 +4879,15 @@ function parsearGoleadores(equipoId, torneoId, listaPartidos) {
         if (!entrada || entrada.toLowerCase() === 'ninguno') return;
         const esEC = /\(EC\)/i.test(entrada);
         const esP  = /\(P\)/i.test(entrada);
-        const nac  = extraerNacionalidad(entrada);
+        const nac = extraerNacionalidad(entrada);
+        const desamb = extraerDesambiguador(entrada);
         const nombreLimpio = limpiarNombre(entrada);
         const nombre = nombreCanonico(nombreLimpio);
         if (!nombre || nombre.length < 2) return;
-        const clave = claveJugador(nombreLimpio, nac);
+        const clave = claveJugador(nombreLimpio, nac, desamb);
         nombresDisplay[clave] = nombre;
         if (nac) nacionalidades[clave] = nac;
+        if (desamb) desambiguadores[clave] = desamb;
         if (esEC) {
           // EC convention: listed under beneficiary team (idEquipo),
           // but player belongs to rival (idRival).
@@ -4880,7 +4907,7 @@ function parsearGoleadores(equipoId, torneoId, listaPartidos) {
       });
     });
   });
-  return { goles, ec, nacionalidades, equiposGoles, equiposEC, nombresDisplay };
+  return { goles, ec, nacionalidades, desambiguadores, equiposGoles, equiposEC, nombresDisplay };
 }
 
 // Cuenta, por jugador, en cuántos partidos distintos convirtió exactamente 2 (doblete),
@@ -4903,10 +4930,11 @@ function parsearGoleadasMultiples(equipoId, torneoId, listaPartidos) {
         if (!entrada || entrada.toLowerCase() === 'ninguno') return;
         if (/\(EC\)/i.test(entrada)) return; // autogol: no es un gol propio del jugador
         const nac = extraerNacionalidad(entrada);
+        const desamb = extraerDesambiguador(entrada);
         const nombreLimpio = limpiarNombre(entrada);
         const nombre = nombreCanonico(nombreLimpio);
         if (!nombre || nombre.length < 2) return;
-        const clave = claveJugador(nombreLimpio, nac);
+        const clave = claveJugador(nombreLimpio, nac, desamb);
         golesPartido[clave] = (golesPartido[clave] || 0) + 1;
       });
       Object.entries(golesPartido).forEach(([clave, cant]) => {
@@ -4920,6 +4948,7 @@ function parsearGoleadasMultiples(equipoId, torneoId, listaPartidos) {
 function parsearTarjetas(campo, equipoId, torneoId, listaPartidos) {
   const conteo = {};
   const nacionalidades = {};
+  const desambiguadores = {};
   const equiposPorJugador = {};
   const nombresDisplay = {};
   (listaPartidos || partidos).forEach(p => {
@@ -4934,19 +4963,21 @@ function parsearTarjetas(campo, equipoId, torneoId, listaPartidos) {
       if (equipoId && idEquipo !== equipoId) return;
       parte.split('-').forEach(entrada => {
         const nac = extraerNacionalidad(entrada);
+        const desamb = extraerDesambiguador(entrada);
         const nombreLimpio = limpiarNombre(entrada);
         const nombre = nombreCanonico(nombreLimpio);
         if (!nombre || nombre.toLowerCase() === 'ninguno' || nombre.length < 2) return;
-        const clave = claveJugador(nombreLimpio, nac);
+        const clave = claveJugador(nombreLimpio, nac, desamb);
         nombresDisplay[clave] = nombre;
         if (nac) nacionalidades[clave] = nac;
+        if (desamb) desambiguadores[clave] = desamb;
         conteo[clave] = (conteo[clave] || 0) + 1;
         if (!equiposPorJugador[clave]) equiposPorJugador[clave] = new Set();
         equiposPorJugador[clave].add(idEquipo);
       });
     });
   });
-  return { datos: Object.entries(conteo).sort((a, b) => b[1] - a[1]), nacionalidades, equiposPorJugador, nombresDisplay };
+  return { datos: Object.entries(conteo).sort((a, b) => b[1] - a[1]), nacionalidades, desambiguadores, equiposPorJugador, nombresDisplay };
 }
 
 // Estado de paginación
@@ -4973,11 +5004,11 @@ function renderEscudosJugador(equiposIds) {
   return `<span style="display:inline-flex;align-items:center;gap:3px;flex-shrink:0;">${imgs}${extraHtml}</span>`;
 }
 
-function filaJugador(i, nombre, nac, cols, equiposIds, resaltado, cambioPosicion) {
+function filaJugador(i, nombre, nac, cols, equiposIds, resaltado, cambioPosicion, desamb) {
   const movimiento = renderCambioPosicion(cambioPosicion);
   const bandera = nac ? `<span style="display:inline-flex;align-items:center;flex-shrink:0;">${getBandera(nac)}</span>` : '';
   const escudos = renderEscudosJugador(equiposIds);
-  const nameCell = `<td style="font-size:14px;font-weight:500;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}','${(nac||'').replace(/'/g,"\\'")}')">
+  const nameCell = `<td style="font-size:14px;font-weight:500;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}','${(nac||'').replace(/'/g,"\\'")}','${(desamb||'').replace(/'/g,"\\'")}')">
     <div style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap;min-width:0;">${movimiento}${bandera}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${nombre}</span>${escudos}</div>
   </td>`;
   const trAttrs = resaltado
@@ -5050,7 +5081,7 @@ function renderTablaStat(tipo) {
             `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--celeste);">${total}</td>
              <td style="text-align:center;font-size:13px;color:var(--amarillo);">${d.penales > 0 ? d.penales : '—'}</td>
              <td style="text-align:center;font-size:13px;color:var(--texto-2);">${datosStats.pjConteo[clave] || '—'}</td>`,
-            datosStats.eqGoleadores[clave], infoResaltadoStats('goleadores', inicio+i), cambioPosicionStats('goleadores', clave, inicio+i+1));
+            datosStats.eqGoleadores[clave], infoResaltadoStats('goleadores', inicio+i), cambioPosicionStats('goleadores', clave, inicio+i+1), datosStats.desambGoleadores[clave]);
         }).join('');
     document.getElementById('count-goleadores').textContent = datosStats.goleadores.length + ' jugadores';
     renderPaginacion('goleadores', datosStats.goleadores.length, paginas.goleadores, 'cambiarPaginaStats');
@@ -5065,7 +5096,7 @@ function renderTablaStat(tipo) {
           filaJugador(inicio+i, datosStats.nombresDisplay[clave] || clave, datosStats.nacGC[clave],
             `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--rojo);">${cant}</td>
              <td style="text-align:center;font-size:13px;color:var(--texto-2);">${datosStats.pjConteo[clave] || '—'}</td>`,
-            datosStats.eqGC[clave], infoResaltadoStats('gc', inicio+i), cambioPosicionStats('gc', clave, inicio+i+1))
+            datosStats.eqGC[clave], infoResaltadoStats('gc', inicio+i), cambioPosicionStats('gc', clave, inicio+i+1), datosStats.desambGC[clave])
         ).join('');
     document.getElementById('count-gc').textContent = datosStats.gc.length + ' jugadores';
     renderPaginacion('gc', datosStats.gc.length, paginas.gc, 'cambiarPaginaStats');
@@ -5080,7 +5111,7 @@ function renderTablaStat(tipo) {
           filaJugador(inicio+i, datosStats.nombresDisplay[clave] || clave, datosStats.nacAmon[clave],
             `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--amarillo);">${cant}</td>
              <td style="text-align:center;font-size:13px;color:var(--texto-2);">${datosStats.pjConteo[clave] || '—'}</td>`,
-            datosStats.eqAmon[clave], infoResaltadoStats('amonestados', inicio+i), cambioPosicionStats('amonestados', clave, inicio+i+1))
+            datosStats.eqAmon[clave], infoResaltadoStats('amonestados', inicio+i), cambioPosicionStats('amonestados', clave, inicio+i+1), datosStats.desambAmon[clave])
         ).join('');
     document.getElementById('count-amonestados').textContent = datosStats.amonestados.length + ' jugadores';
     renderPaginacion('amonestados', datosStats.amonestados.length, paginas.amonestados, 'cambiarPaginaStats');
@@ -5095,7 +5126,7 @@ function renderTablaStat(tipo) {
           filaJugador(inicio+i, datosStats.nombresDisplay[clave] || clave, datosStats.nacExpu[clave],
             `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--rojo);">${cant}</td>
              <td style="text-align:center;font-size:13px;color:var(--texto-2);">${datosStats.pjConteo[clave] || '—'}</td>`,
-            datosStats.eqExpu[clave], infoResaltadoStats('expulsados', inicio+i), cambioPosicionStats('expulsados', clave, inicio+i+1))
+            datosStats.eqExpu[clave], infoResaltadoStats('expulsados', inicio+i), cambioPosicionStats('expulsados', clave, inicio+i+1), datosStats.desambExpu[clave])
         ).join('');
     document.getElementById('count-expulsados').textContent = datosStats.expulsados.length + ' jugadores';
     renderPaginacion('expulsados', datosStats.expulsados.length, paginas.expulsados, 'cambiarPaginaStats');
@@ -5110,7 +5141,7 @@ function renderTablaStat(tipo) {
       : slice.map(([clave, cant], i) => {
           return filaJugador(inicio+i, datosStats.nombresDisplay[clave] || clave, datosStats.nacPJ[clave],
             `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:var(--texto-1);">${cant}</td>`,
-            datosStats.eqPJ[clave], infoResaltadoStats('pj', inicio+i), cambioPosicionStats('pj', clave, inicio+i+1));
+            datosStats.eqPJ[clave], infoResaltadoStats('pj', inicio+i), cambioPosicionStats('pj', clave, inicio+i+1), datosStats.desambPJ[clave]);
         }).join('');
     document.getElementById('count-pj').textContent = datosStats.pj.length + ' jugadores';
     renderPaginacion('pj', datosStats.pj.length, paginas.pj, 'cambiarPaginaStats');
@@ -5127,7 +5158,7 @@ function renderTablaStat(tipo) {
           filaJugador(inicio+i, datosStats.nombresDisplay[clave] || clave, datosStats.nacGoleadores[clave],
             `<td style="text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:700;color:${COLOR[tipo]};">${cant}</td>
              <td style="text-align:center;font-size:13px;color:var(--texto-2);">${datosStats.pjConteo[clave] || '—'}</td>`,
-            datosStats.eqGoleadores[clave], infoResaltadoStats(tipo, inicio+i), cambioPosicionStats(tipo, clave, inicio+i+1))
+            datosStats.eqGoleadores[clave], infoResaltadoStats(tipo, inicio+i), cambioPosicionStats(tipo, clave, inicio+i+1), datosStats.desambGoleadores[clave])
         ).join('');
     document.getElementById('count-'+tipo).textContent = datosStats[tipo].length + ' jugadores';
     renderPaginacion(tipo, datosStats[tipo].length, paginas[tipo], 'cambiarPaginaStats');
@@ -5155,10 +5186,11 @@ function calcularPosicionesAntes(equipoId, filtroNac) {
       if (equipoId && eqId !== equipoId) return;
       parte.split('-').forEach(entrada => {
         const nac = extraerNacionalidad(entrada);
+        const desamb = extraerDesambiguador(entrada);
         const nombreLimpio = limpiarNombre(entrada);
         const nombre = nombreCanonico(nombreLimpio);
         if (!nombre || nombre.length < 2 || nombre.toLowerCase() === 'ninguno') return;
-        const clave = claveJugador(nombreLimpio, nac);
+        const clave = claveJugador(nombreLimpio, nac, desamb);
         if (nac) todosNacPJ[clave] = nac;
         pjConteo[clave] = (pjConteo[clave]||0) + 1;
       });
@@ -5210,6 +5242,7 @@ function renderEstadisticas() {
   // como columna en cada una de ellas (menos en la propia tabla de "Más Partidos Jugados").
   const pjConteo = {};
   const todosNacPJ = {};
+  const todosDesambPJ = {};
   const eqPorJugadorPJ = {};
   const ndPJ = {};
   partidos.forEach(p => {
@@ -5221,12 +5254,14 @@ function renderEstadisticas() {
       if (equipoId && eqId !== equipoId) return;
       parte.split('-').forEach(entrada => {
         const nac = extraerNacionalidad(entrada);
+        const desamb = extraerDesambiguador(entrada);
         const nombreLimpio = limpiarNombre(entrada);
         const nombre = nombreCanonico(nombreLimpio);
         if (!nombre || nombre.length < 2 || nombre.toLowerCase() === 'ninguno') return;
-        const clave = claveJugador(nombreLimpio, nac);
+        const clave = claveJugador(nombreLimpio, nac, desamb);
         ndPJ[clave] = nombre;
         if (nac) todosNacPJ[clave] = nac;
+        if (desamb) todosDesambPJ[clave] = desamb;
         pjConteo[clave] = (pjConteo[clave]||0) + 1;
         if (!eqPorJugadorPJ[clave]) eqPorJugadorPJ[clave] = new Set();
         eqPorJugadorPJ[clave].add(eqId);
@@ -5238,9 +5273,9 @@ function renderEstadisticas() {
   // Ordena por cantidad y, a igualdad, por PJ (más partidos jugados queda arriba)
   const conPJ = (arr) => arr.slice().sort((a,b) => b[1]-a[1] || (pjConteo[b[0]]||0)-(pjConteo[a[0]]||0));
 
-  const { goles, ec, nacionalidades, equiposGoles, equiposEC, nombresDisplay: ndGol } = parsearGoleadores(equipoId);
-  const { datos: amon, nacionalidades: nacAmon, equiposPorJugador: eqAmon, nombresDisplay: ndAmon } = parsearTarjetas('Amonestados', equipoId);
-  const { datos: expu, nacionalidades: nacExpu, equiposPorJugador: eqExpu, nombresDisplay: ndExpu } = parsearTarjetas('Expulsados', equipoId);
+  const { goles, ec, nacionalidades, desambiguadores, equiposGoles, equiposEC, nombresDisplay: ndGol } = parsearGoleadores(equipoId);
+  const { datos: amon, nacionalidades: nacAmon, desambiguadores: desambAmon, equiposPorJugador: eqAmon, nombresDisplay: ndAmon } = parsearTarjetas('Amonestados', equipoId);
+  const { datos: expu, nacionalidades: nacExpu, desambiguadores: desambExpu, equiposPorJugador: eqExpu, nombresDisplay: ndExpu } = parsearTarjetas('Expulsados', equipoId);
 
   // Combinar todos los diccionarios de nac y de nombre-para-mostrar (claveInterna -> texto visible)
   const todosNac = { ...nacionalidades, ...nacAmon, ...nacExpu, ...todosNacPJ };
@@ -5259,6 +5294,8 @@ function renderEstadisticas() {
   datosStats.gc = aplicarFiltros(conPJ(Object.entries(ec)));
   datosStats.nacGoleadores = nacionalidades;
   datosStats.nacGC = nacionalidades;
+  datosStats.desambGoleadores = desambiguadores;
+  datosStats.desambGC = desambiguadores;
   datosStats.eqGoleadores = equiposGoles;
   datosStats.eqGC = equiposEC;
 
@@ -5266,6 +5303,8 @@ function renderEstadisticas() {
   datosStats.expulsados  = aplicarFiltros(conPJ(expu));
   datosStats.nacAmon = nacAmon;
   datosStats.nacExpu = nacExpu;
+  datosStats.desambAmon = desambAmon;
+  datosStats.desambExpu = desambExpu;
   datosStats.eqAmon = eqAmon;
   datosStats.eqExpu = eqExpu;
 
@@ -5280,6 +5319,7 @@ function renderEstadisticas() {
 
   // La propia tabla de PJ no cambia: se ordena solo por PJ, sin desempate
   datosStats.nacPJ = todosNac;
+  datosStats.desambPJ = todosDesambPJ;
   datosStats.pj = Object.entries(pjConteo)
     .sort((a,b) => b[1]-a[1])
     .filter(([clave]) => {
@@ -5562,7 +5602,7 @@ function formatearAnios(aniosSet) {
   return grupos.join(', ');
 }
 
-function verFichaJugador(nombre, nacionalidadBuscada) {
+function verFichaJugador(nombre, nacionalidadBuscada, desambiguadorBuscado) {
   // Use normalized name to merge duplicates
   const nombreNorm = normalizarNombre(nombre);
   // Si el nombre es ambiguo (existe con más de una nacionalidad en la base), sólo se toman
@@ -5575,8 +5615,16 @@ function verFichaJugador(nombre, nacionalidadBuscada) {
     nacionalidadBuscada = NACIONALIDAD_PRIMARIA[nombreNorm] || undefined;
   }
   const coincideIdentidad = (entrada) => {
-    if (!esAmbiguo) return true;
     const nac = extraerNacionalidad(entrada);
+    const desamb = extraerDesambiguador(entrada);
+    // El tag manual "#N" (homónimo exacto, mismo nombre Y misma nacionalidad) tiene prioridad
+    // total: si esta entrada trae tag o se está buscando un jugador con tag, sólo coinciden
+    // si el tag es exactamente el mismo. Así no se mezclan dos jugadores distintos aunque
+    // además compartan nacionalidad.
+    if (desamb || desambiguadorBuscado) {
+      return (desamb || null) === (desambiguadorBuscado || null);
+    }
+    if (!esAmbiguo) return true;
     return (nac || '?') === (nacionalidadBuscada || '?');
   };
   const porEquipo = {};
@@ -5602,6 +5650,7 @@ function verFichaJugador(nombre, nacionalidadBuscada) {
         const equipoRival= idx === 0 ? p.Visitante_ID: p.Local_ID;
         parte.split('-').forEach(entrada => {
           const nac = extraerNacionalidad(entrada);
+          const desamb = extraerDesambiguador(entrada);
           const n   = limpiarNombre(entrada);
           if (normalizarNombre(n) !== nombreNorm) return;
           if (!coincideIdentidad(entrada)) return;
@@ -5645,6 +5694,7 @@ function verFichaJugador(nombre, nacionalidadBuscada) {
           if (!coincideIdentidad(entrada)) return;
           // Extraer nacionalidad si aún no la tenemos
           const nac = extraerNacionalidad(entrada);
+          const desamb = extraerDesambiguador(entrada);
           if (nac && !nacionalidad) nacionalidad = nac;
           // Extraer posición: solo titulares (ARQ/DEF/MED/DEL), nunca SUP
           const posMatches = [...entrada.matchAll(/\(([A-Z]{2,4})\)/g)].map(m=>m[1]);
@@ -5746,7 +5796,7 @@ function verFichaJugador(nombre, nacionalidadBuscada) {
   const POSICIONES_LABEL = { ARQ:'Arquero', DEF:'Defensor', MED:'Mediocampista', DEL:'Delantero' };
 
   // Foto principal: intenta foto del equipo principal, si no default
-  const jugKey = claveFotoJugador(nombre, nacionalidad);
+  const jugKey = claveFotoJugador(nombre, nacionalidad, desambiguadorBuscado);
   const eqKey  = toFotoKey(equipoPrincipalNombre);
   const fichaFoto = document.getElementById('ficha-foto');
   const fichaFotoSrcs = fotoJugadorSrcs(jugKey, eqKey);
@@ -5762,17 +5812,22 @@ function verFichaJugador(nombre, nacionalidadBuscada) {
   document.getElementById('ficha-bandera').innerHTML = nacionalidad ? getBandera(nacionalidad) : '';
   document.getElementById('ficha-nacionalidad').textContent = nacionalidad ? getNombrePais(nacionalidad) : 'Nacionalidad no registrada';
   document.getElementById('ficha-posicion').textContent = (posicion && posicion !== 'SUP') ? (POSICIONES_LABEL[posicion] || posicion) : '';
+  const fichaEquiposListaEl = document.getElementById('ficha-equipos-lista');
+  if (fichaEquiposListaEl) fichaEquiposListaEl.style.display = 'none';
 
   // Equipo lista + miniaturas de fotos por equipo (si tiene más de uno)
-  const equiposOrdenados = Object.entries(porEquipo).sort((a,b)=>(b[1].pj||0)-(a[1].pj||0));
-  const todosEquiposNombres = equiposOrdenados.map(([id])=>equipos[id]||id);
-  document.getElementById('ficha-equipos-lista').textContent = todosEquiposNombres.join(' · ');
+  // Miniaturas: de más viejo a más nuevo, de izquierda a derecha (según el primer año jugado ahí).
+  const equiposPorAntiguedad = Object.entries(porEquipo).sort((a,b) => {
+    const minA = a[1].anios.size ? Math.min(...a[1].anios) : Infinity;
+    const minB = b[1].anios.size ? Math.min(...b[1].anios) : Infinity;
+    return minA - minB;
+  });
 
   // Miniaturas por equipo (solo si hay más de 1 y la foto es diferente)
   const fichaFotos = document.getElementById('ficha-fotos-equipos');
   if (fichaFotos) {
-    if (equiposOrdenados.length > 1) {
-      fichaFotos.innerHTML = equiposOrdenados.map(([eid]) => {
+    if (equiposPorAntiguedad.length > 1) {
+      fichaFotos.innerHTML = equiposPorAntiguedad.map(([eid]) => {
         const nm = equipos[eid]||eid;
         const ek = toFotoKey(nm);
         const esc = ESCUDOS[nm] ? `<img src="${ESCUDOS[nm]}" style="width:14px;height:14px;object-fit:contain;">` : '';
@@ -5831,7 +5886,11 @@ function verFichaJugador(nombre, nacionalidadBuscada) {
   });
 
   document.getElementById('ficha-tabla-equipos').innerHTML = Object.entries(porEquipo)
-    .sort((a,b) => (b[1].pj||0) - (a[1].pj||0))
+    .sort((a,b) => {
+      const maxA = a[1].anios.size ? Math.max(...a[1].anios) : -Infinity;
+      const maxB = b[1].anios.size ? Math.max(...b[1].anios) : -Infinity;
+      return maxB - maxA;
+    })
     .map(([eid, r]) => {
       const nm = equipos[eid]||eid;
       const esc = ESCUDOS[nm] ? `<img src="${ESCUDOS[nm]}" style="width:18px;height:18px;object-fit:contain;margin-right:6px;" onerror="this.style.display='none'">` : '';
@@ -6654,19 +6713,24 @@ function renderTablaTorneo(tipo) {
   const nacA = datosStatsTorneo.nacAmon || {};
   const nacE = datosStatsTorneo.nacExpu || {};
   const nac = { ...nacG, ...nacA, ...nacE };
+  const desambG = datosStatsTorneo.desambGoleadores || {};
+  const desambA = datosStatsTorneo.desambAmon || {};
+  const desambE = datosStatsTorneo.desambExpu || {};
+  const desambMap = { ...desambG, ...desambA, ...desambE };
   const nombresDisplay = datosStatsTorneo.nombresDisplay || {};
   const eqPorJugador = datosStatsTorneo.eqPorJugador || {};
 
   const filas = slice.map(([clave, val], i) => {
     const nombre = nombresDisplay[clave] || clave;
     const nacCode = nac[clave];
+    const desambCode = desambMap[clave];
     const bandera = nacCode ? `<span style="display:inline-flex;align-items:center;flex-shrink:0;">${getBandera(nacCode)}</span>` : '';
     const escudos = renderEscudosJugador(eqPorJugador[clave]);
     if (tipo === 'goleadores') {
       const total2 = val.normales + val.penales;
       return `<tr>
         <td style="color:var(--texto-2);font-size:13px;width:36px;padding:8px 12px;">${inicio+i+1}</td>
-        <td style="padding:8px 12px;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}','${(nacCode||'').replace(/'/g,"\\'")}')"><div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;min-width:0;">${bandera}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${nombre}</span>${escudos}</div></td>
+        <td style="padding:8px 12px;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}','${(nacCode||'').replace(/'/g,"\\'")}','${(desambCode||'').replace(/'/g,"\\'")}')"><div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;min-width:0;">${bandera}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${nombre}</span>${escudos}</div></td>
         <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;color:var(--celeste);">${total2}</td>
         <td style="text-align:center;font-size:13px;color:var(--texto-2);">${val.normales||'—'}</td>
         <td style="text-align:center;font-size:13px;color:var(--amarillo);">${val.penales||'—'}</td>
@@ -6674,7 +6738,7 @@ function renderTablaTorneo(tipo) {
     } else {
       return `<tr>
         <td style="color:var(--texto-2);font-size:13px;width:36px;padding:8px 12px;">${inicio+i+1}</td>
-        <td style="padding:8px 12px;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}','${(nacCode||'').replace(/'/g,"\\'")}')"><div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;min-width:0;">${bandera}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${nombre}</span>${escudos}</div></td>
+        <td style="padding:8px 12px;cursor:pointer;" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}','${(nacCode||'').replace(/'/g,"\\'")}','${(desambCode||'').replace(/'/g,"\\'")}')"><div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;min-width:0;">${bandera}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${nombre}</span>${escudos}</div></td>
         <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;color:${color};">${val}</td>
       </tr>`;
     }
@@ -6900,9 +6964,9 @@ function renderStatsTorneo(idTemporada) {
   paginasTorneo.goleadores = 1; paginasTorneo.ec = 1;
   paginasTorneo.amonestados = 1; paginasTorneo.expulsados = 1;
 
-  const { goles, ec, nacionalidades, equiposGoles, equiposEC, nombresDisplay: ndGol } = parsearGoleadores(null, idTemporada);
-  const { datos: amon, nacionalidades: nacAmon, equiposPorJugador: eqAmon, nombresDisplay: ndAmon } = parsearTarjetas('Amonestados', null, idTemporada);
-  const { datos: expu, nacionalidades: nacExpu, equiposPorJugador: eqExpu, nombresDisplay: ndExpu } = parsearTarjetas('Expulsados', null, idTemporada);
+  const { goles, ec, nacionalidades, desambiguadores, equiposGoles, equiposEC, nombresDisplay: ndGol } = parsearGoleadores(null, idTemporada);
+  const { datos: amon, nacionalidades: nacAmon, desambiguadores: desambAmon, equiposPorJugador: eqAmon, nombresDisplay: ndAmon } = parsearTarjetas('Amonestados', null, idTemporada);
+  const { datos: expu, nacionalidades: nacExpu, desambiguadores: desambExpu, equiposPorJugador: eqExpu, nombresDisplay: ndExpu } = parsearTarjetas('Expulsados', null, idTemporada);
   const ecDatos = Object.entries(ec).sort((a,b)=>b[1]-a[1]);
   const golesDatos = Object.entries(goles).sort((a,b)=>(b[1].normales+b[1].penales)-(a[1].normales+a[1].penales));
 
@@ -6912,6 +6976,7 @@ function renderStatsTorneo(idTemporada) {
     amonestados: { datos: amon,      headers: ['#','Jugador','Amarillas'],           color:'var(--amarillo)',colSpan:3 },
     expulsados:  { datos: expu,      headers: ['#','Jugador','Rojas'],               color:'var(--rojo)',   colSpan:3 },
     nacGoleadores: nacionalidades, nacAmon, nacExpu,
+    desambGoleadores: desambiguadores, desambAmon, desambExpu,
     nombresDisplay: { ...ndGol, ...ndAmon, ...ndExpu },
     eqPorJugador: { ...equiposGoles, ...equiposEC, ...eqAmon, ...eqExpu },
   };
@@ -6980,11 +7045,12 @@ function volverCampeones() {
 // ── BUSCADOR DE JUGADORES ──
 function recopilarJugadores() {
   const jugadoresMap = {};
-  const addJugador = (nombre, equipoId, nac, anio) => {
-    const clave = claveJugador(nombre, nac);
+  const addJugador = (nombre, equipoId, nac, anio, desamb) => {
+    const clave = claveJugador(nombre, nac, desamb);
     if (!clave || clave.length < 2 || clave.toLowerCase() === 'ninguno') return;
-    if (!jugadoresMap[clave]) jugadoresMap[clave] = { equipos:{}, nac:null, nombre: nombreCanonico(nombre) };
+    if (!jugadoresMap[clave]) jugadoresMap[clave] = { equipos:{}, nac:null, desamb:null, nombre: nombreCanonico(nombre) };
     if (nac) jugadoresMap[clave].nac = nac;
+    if (desamb) jugadoresMap[clave].desamb = desamb;
     if (!jugadoresMap[clave].equipos[equipoId]) jugadoresMap[clave].equipos[equipoId] = { anios:new Set(), goles:0, penales:0, ec:0, amonestados:0, expulsados:0 };
     if (anio) jugadoresMap[clave].equipos[equipoId].anios.add(anio);
   };
@@ -7000,12 +7066,14 @@ function recopilarJugadores() {
         const equipoId  = idx === 0 ? p.Local_ID : p.Visitante_ID;
         const equipoRiv = idx === 0 ? p.Visitante_ID : p.Local_ID;
         parte.split('-').forEach(entrada => {
-          const nac    = extraerNacionalidad(entrada);
+          const nac = extraerNacionalidad(entrada);
+          const desamb = extraerDesambiguador(entrada);
           const nombre = limpiarNombre(entrada);
           if (!nombre || nombre.length < 2 || nombre.toLowerCase() === 'ninguno') return;
-          const clave = claveJugador(nombre, nac);
-          if (!jugadoresMap[clave]) jugadoresMap[clave] = { equipos:{}, nac:null, nombre: nombreCanonico(nombre) };
+          const clave = claveJugador(nombre, nac, desamb);
+          if (!jugadoresMap[clave]) jugadoresMap[clave] = { equipos:{}, nac:null, desamb:null, nombre: nombreCanonico(nombre) };
           if (nac) jugadoresMap[clave].nac = nac;
+          if (desamb) jugadoresMap[clave].desamb = desamb;
           const esEC  = /\(EC\)/i.test(entrada);
           const teamId = (campo === 'Goleadores' && esEC) ? equipoRiv : equipoId;
           if (!jugadoresMap[clave].equipos[teamId]) jugadoresMap[clave].equipos[teamId] = { anios:new Set(), goles:0, penales:0, ec:0, amonestados:0, expulsados:0 };
@@ -7024,10 +7092,11 @@ function recopilarJugadores() {
       rawJ.split('/').forEach((parte, idx) => {
         const equipoId = idx === 0 ? p.Local_ID : p.Visitante_ID;
         parte.split('-').forEach(entrada => {
-          const nac    = extraerNacionalidad(entrada);
+          const nac = extraerNacionalidad(entrada);
+          const desamb = extraerDesambiguador(entrada);
           const nombre = limpiarNombre(entrada);
           if (!nombre || nombre.length < 2 || nombre.toLowerCase() === 'ninguno') return;
-          addJugador(nombre, equipoId, nac, anio);
+          addJugador(nombre, equipoId, nac, anio, desamb);
         });
       });
     }
@@ -7097,8 +7166,8 @@ function buscarJugador() {
         : Object.values(data.equipos).reduce((s,r) => { r.anios.forEach(a=>s.add(a)); return s; }, new Set());
       const aniosStr = formatearAnios(aniosSet);
       const equipoNombre = eqFiltro ? (equipos[eqFiltro]||'') : (equipos[equipoMasRecienteDeJugador(data)]||'');
-      return `<div class="album-card" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}','${(data.nac||'').replace(/'/g,"\\'")}')">
-        ${fotoJugadorImg(nombre, equipoNombre, data.nac, 'width:100%;aspect-ratio:1/1;object-fit:cover;object-position:top;display:block;background:var(--fondo-3);', '')}
+      return `<div class="album-card" onclick="verFichaJugador('${nombre.replace(/'/g,"\\'")}','${(data.nac||'').replace(/'/g,"\\'")}','${(data.desamb||'').replace(/'/g,"\\'")}')">
+        ${fotoJugadorImg(nombre, equipoNombre, data.nac, 'width:100%;aspect-ratio:1/1;object-fit:cover;object-position:top;display:block;background:var(--fondo-3);', '', data.desamb)}
         <div class="album-avatar" style="display:none;">👤</div>
         <div class="album-card-info">
           <div class="album-card-nombre"><span style="display:inline-flex;">${bandera}</span> ${nombre}</div>
@@ -7246,7 +7315,8 @@ function renderStatsEquipoInline(equipoId) {
         const n = nombreCanonico(nombreLimpio);
         if (!n || n.length < 2 || n.toLowerCase() === 'ninguno') return;
         const nac = extraerNacionalidad(entrada);
-        const clave = claveJugador(nombreLimpio, nac);
+        const desamb = extraerDesambiguador(entrada);
+        const clave = claveJugador(nombreLimpio, nac, desamb);
         ndPJ[clave] = n;
         if (nac) nacPJ[clave] = nac;
         pjConteo[clave] = (pjConteo[clave]||0) + 1;
@@ -7356,6 +7426,7 @@ function recopilarDTs() {
       const nombreRaw = dtNombre.trim();
       if (!nombreRaw || nombreRaw.length < 2) return;
       const nac = extraerNacionalidad(nombreRaw);
+      const desamb = extraerDesambiguador(nombreRaw);
       const nombre = limpiarNombre(nombreRaw) || nombreRaw;
       const clave = nombreCanonico(nombre);
       const equipoId = idx === 0 ? p.Local_ID : p.Visitante_ID;
@@ -7450,7 +7521,7 @@ function verFichaDT(nombre) {
   // ambiguo), no el nombre "lindo" — buscamos cualquier clave que corresponda a este nombre.
   const claveJug = Object.keys(datosJug).find(k => k === nombreNorm || k.startsWith(nombreNorm + '‡'));
   if (claveJug && Object.keys(datosJug[claveJug].equipos).length > 0) {
-    verFichaJugador(nombre, datosJug[claveJug].nac || undefined);
+    verFichaJugador(nombre, datosJug[claveJug].nac || undefined, datosJug[claveJug].desamb || undefined);
     return;
   }
 
@@ -7521,8 +7592,8 @@ function verFichaDT(nombre) {
   // Últimos 10 partidos
   const todosPartidos = Object.values(data.equipos).flatMap(r => r.partidos.map(p => ({...p, _equipoId: Object.keys(data.equipos).find(id => data.equipos[id].partidos.includes(p))})));
   todosPartidos.sort((a,b) => {
-    const fa = a.Fecha ? a.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/,'$3-$2-$1') : '0';
-    const fb = b.Fecha ? b.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/,'$3-$2-$1') : '0';
+    const fa = normalizarFechaISO(a.Fecha) || '0';
+    const fb = normalizarFechaISO(b.Fecha) || '0';
     return fb.localeCompare(fa);
   });
   document.getElementById('dt-tabla-partidos').innerHTML = todosPartidos.slice(0,10).map(p => {
@@ -7569,6 +7640,7 @@ function recopilarArbitros() {
     const raw = (p.ARBITRO || '').trim();
     if (!raw || raw.length < 2) return;
     const nac = extraerNacionalidad(raw);
+    const desamb = extraerDesambiguador(raw);
     const nombre = limpiarNombre(raw) || raw;
     const clave = nombreCanonico(nombre);
     const anio = p.Fecha ? parseInt(p.Fecha.split('/')[2] || p.Fecha.split('-')[0]) : null;
@@ -7767,8 +7839,8 @@ function verFichaArbitro(nombre) {
 
 function ordenarPartidosPorFecha(lista) {
   return lista.slice().sort((a,b) => {
-    const fa = a.Fecha ? a.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/,'$3-$2-$1') : '0';
-    const fb = b.Fecha ? b.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/,'$3-$2-$1') : '0';
+    const fa = normalizarFechaISO(a.Fecha) || '0';
+    const fb = normalizarFechaISO(b.Fecha) || '0';
     return fb.localeCompare(fa);
   });
 }
@@ -8966,8 +9038,8 @@ function renderHoyHistorial(idL, idV, nombreL, nombreV) {
     ((p.Local_ID === idL && p.Visitante_ID === idV) ||
      (p.Local_ID === idV && p.Visitante_ID === idL))
   ).sort((a,b) => {
-    const fa = a.Fecha ? a.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/,'$3-$2-$1') : '0';
-    const fb = b.Fecha ? b.Fecha.replace(/(\d+)\/(\d+)\/(\d+)/,'$3-$2-$1') : '0';
+    const fa = normalizarFechaISO(a.Fecha) || '0';
+    const fb = normalizarFechaISO(b.Fecha) || '0';
     return fb.localeCompare(fa);
   });
 
@@ -9579,7 +9651,7 @@ function renderH2H(eq1, eq2, contenedorId) {
   const jugados = todos.filter(p => esPartidoJugado(p));
   if (!jugados.length) { el.style.display='none'; return; }
 
-  const normFecha = f => (f||'').split('T')[0].replace(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/,'$3-$2-$1');
+  const normFecha = f => normalizarFechaISO(f) || '';
   jugados.sort((a,b) => normFecha(a.Fecha).localeCompare(normFecha(b.Fecha)));
 
   // ── Stats generales ──
@@ -9627,6 +9699,7 @@ function renderH2H(eq1, eq2, contenedorId) {
       (p[campo]||'').split('/').forEach(parte =>
         parte.split('-').forEach(entrada => {
           const nac = extraerNacionalidad(entrada);
+          const desamb = extraerDesambiguador(entrada);
           const nombre = limpiarNombre(entrada);
           if (!nombre||nombre.length<2||nombre.toLowerCase()==='ninguno') return;
           const c = nombreCanonico(nombre);
@@ -9946,9 +10019,9 @@ verTorneo = function(id) {
   _pushAtras(() => _orig_volverCampeones());
   _orig_verTorneo(id);
 };
-verFichaJugador = function(nombre, nacionalidadBuscada) {
+verFichaJugador = function(nombre, nacionalidadBuscada, desambiguadorBuscado) {
   _pushAtras(() => _orig_cerrarFichaJug());
-  _orig_verFichaJugador(nombre, nacionalidadBuscada);
+  _orig_verFichaJugador(nombre, nacionalidadBuscada, desambiguadorBuscado);
 };
 verFichaDT = function(nombre) {
   _pushAtras(() => _orig_cerrarFichaDT());
