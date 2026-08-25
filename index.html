@@ -785,6 +785,9 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
   max-width:760px !important;
   padding:32px !important;
 }
+#modal-dt table.tabla-partidos .td-equipo { min-width:0; }
+#modal-dt table.tabla-partidos .td-equipo span { overflow:hidden; text-overflow:ellipsis; min-width:0; }
+#modal-dt table.tabla-partidos td { overflow:hidden; }
 .ficha-header {
   display:flex; gap:24px; align-items:flex-start; margin-bottom:28px;
 }
@@ -2305,11 +2308,14 @@ select option{background:#080F20;color:#F0F6FF}
     <!-- Últimos partidos -->
     <div class="ficha-seccion-titulo" style="margin-top:20px;">Últimos partidos dirigidos</div>
     <div class="tabla-scroll">
-      <table class="tabla-partidos" style="width:100%;border-collapse:collapse;">
+      <table class="tabla-partidos" style="width:100%;border-collapse:collapse;table-layout:fixed;">
+        <colgroup>
+          <col style="width:70px;"><col><col style="width:60px;"><col><col style="width:34px;">
+        </colgroup>
         <thead><tr>
           <th>Fecha</th><th>Local</th>
           <th style="text-align:center;">Res.</th>
-          <th>Visitante</th><th>Torneo</th>
+          <th>Visitante</th><th></th>
         </tr></thead>
         <tbody id="dt-tabla-partidos"></tbody>
       </table>
@@ -7604,7 +7610,7 @@ function verFichaDT(nombre) {
     return fb.localeCompare(fa);
   });
   document.getElementById('dt-tabla-partidos').innerHTML = todosPartidos.slice(0,10)
-    .map(p => filaPartido(p, null, { escudoLocalDerecha: true }))
+    .map(p => filaPartido(p, null, { escudoLocalDerecha: true, ocultarTorneo: true }))
     .join('');
 
   traerModalAlFrente('modal-dt');
