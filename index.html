@@ -6334,6 +6334,20 @@ function renderTablaPromedios(idTemporada) {
 // ── CAMPEONES ──
 // Año de una temporada: primero el campo Año de la hoja; si no está cargado,
 // se estima con la fecha máxima entre los partidos de ese torneo.
+// Torneos AAF 1931-1934: quedan fuera del corte de 1930 pero siguen considerándose
+// amateurismo (el profesionalismo arranca en 1931 salvo estos 4 casos puntuales).
+const TORNEOS_AMATEUR_EXCEPCION = new Set([
+  'Campeonato de Primera Division AAF 1931',
+  'Campeonato de Primera Division AAF 1932',
+  'Campeonato de Primera Division AAF 1933',
+  'Campeonato de Primera Division AAF 1934',
+]);
+function esTorneoAmateur(t) {
+  if (TORNEOS_AMATEUR_EXCEPCION.has((t.Competencia||'').trim())) return true;
+  const anio = anioTemporada(t);
+  return !!(anio && anio <= 1930);
+}
+
 function anioTemporada(t) {
   if (t.Año && parseInt(t.Año) > 0) return parseInt(t.Año);
   const ps = partidos.filter(p => p.ID_Temporada == t.ID_Temporada && p.Fecha);
@@ -6468,10 +6482,13 @@ function filtrarCampeones() {
     const imgTrofeo = foto
       ? `<img src="${foto}" class="camp-foto" loading="lazy" decoding="async" alt="${t.Competencia}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{innerHTML:'🏆',style:'font-size:72px'}))">`
       : fallbackSinFoto;
+    const badgeAmateur = esTorneoAmateur(t)
+      ? `<span style="display:inline-block;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--texto-3);background:var(--fondo-3);border:1px solid var(--borde);border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:middle;">Amateur</span>`
+      : '';
     return `<div class="camp-card" onclick="verTorneo('${t.ID_Temporada}')">
       <div class="camp-foto-wrap">${imgTrofeo}</div>
       <div class="camp-info">
-        <div class="camp-año">${t.Division || t.Año || ''}</div>
+        <div class="camp-año">${t.Division || t.Año || ''}${badgeAmateur}</div>
         <div class="camp-nombre">${t.Competencia}</div>
         <div class="camp-campeon">${escCampeon}${t.Campeon}</div>
       </div>
@@ -6494,7 +6511,16 @@ function filtrarCampeones() {
       }
       grupoActual.items.push(x.t);
     });
-    grid.innerHTML = grupos.map(g => `
+    const primerGrupoAmateurIdx = grupos.findIndex(g => g.items.some(t => esTorneoAmateur(t)));
+    grid.innerHTML = grupos.map(g => {
+      const esInicioAmateur = grupos.indexOf(g) === primerGrupoAmateurIdx;
+      const separadorAmateur = esInicioAmateur ? `
+      <div style="display:flex;align-items:center;gap:10px;margin:28px 0 18px;">
+        <div style="flex:1;height:2px;background:linear-gradient(90deg,transparent,var(--oro) 20%,var(--oro) 80%,transparent);"></div>
+        <div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--oro);white-space:nowrap;">🏅 Comienza el Amateurismo</div>
+        <div style="flex:1;height:2px;background:linear-gradient(90deg,var(--oro) 20%,var(--oro) 80%,transparent);"></div>
+      </div>` : '';
+      return `${separadorAmateur}
       <div style="display:flex;align-items:center;gap:10px;margin:${grupos.indexOf(g)===0?'0':'28px'} 0 14px;">
         <div style="font-family:var(--fuente-titulo);font-size:22px;letter-spacing:1px;color:var(--celeste);">${g.anio ?? 'Sin año'}</div>
         <div style="flex:1;height:1px;background:var(--borde);"></div>
@@ -6502,7 +6528,8 @@ function filtrarCampeones() {
       </div>
       <div class="campeones-year-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:18px;">
         ${g.items.map(cardHTML).join('')}
-      </div>`).join('');
+      </div>`;
+    }).join('');
   }
 }
 
@@ -9519,6 +9546,9 @@ function renderPalmares(equipoId) {
       const foto = t.Foto_Trofeo
         ? `<img src="trofeos/${t.Foto_Trofeo}" style="width:52px;height:52px;object-fit:contain;" loading="lazy" decoding="async" alt="${t.Competencia}" onerror="this.parentElement.innerHTML='<span style=font-size:38px>🏆</span>'">`
         : `<span style="font-size:38px;">🏆</span>`;
+      const badgeAmateur = esTorneoAmateur(t)
+        ? `<span style="display:inline-block;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--texto-3);background:var(--fondo-3);border:1px solid var(--borde);border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:middle;">Amateur</span>`
+        : '';
       return `
         <div onclick="verTorneoEquipo('${t.ID_Temporada}','${equipoId}')"
           style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:12px;padding:14px 16px;
@@ -9527,7 +9557,7 @@ function renderPalmares(equipoId) {
           onmouseleave="this.style.borderColor='var(--borde)'">
           <div style="flex-shrink:0;width:60px;height:60px;display:flex;align-items:center;justify-content:center;">${foto}</div>
           <div style="flex:1;min-width:0;">
-            <div style="font-family:var(--fuente-titulo);font-size:18px;color:var(--oro);margin-bottom:3px;">${anio}</div>
+            <div style="font-family:var(--fuente-titulo);font-size:18px;color:var(--oro);margin-bottom:3px;">${anio}${badgeAmateur}</div>
             <div style="font-size:15px;font-weight:600;margin-bottom:3px;">${t.Competencia||''}</div>
             <div style="font-size:12px;color:var(--texto-3);">${t.Division||''}</div>
           </div>
