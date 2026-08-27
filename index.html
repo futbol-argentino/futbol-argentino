@@ -6521,7 +6521,7 @@ function filtrarCampeones() {
       const separadorAmateur = esInicioAmateur ? `
       <div style="display:flex;align-items:center;gap:10px;margin:28px 0 18px;">
         <div style="flex:1;height:2px;background:linear-gradient(90deg,transparent,var(--oro) 20%,var(--oro) 80%,transparent);"></div>
-        <div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--oro);white-space:nowrap;">🏅 Comienza el Amateurismo</div>
+        <div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--oro);white-space:nowrap;">🏅 Termina el Amateurismo</div>
         <div style="flex:1;height:2px;background:linear-gradient(90deg,var(--oro) 20%,var(--oro) 80%,transparent);"></div>
       </div>` : '';
       return `${separadorAmateur}
@@ -7267,7 +7267,7 @@ function inicializarBuscadorJugadores() {
   }
 
   document.getElementById('jugador-resultados').innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">Escribí un nombre o elegí un equipo para buscar jugadores.</div>';
-  document.getElementById('dt-resultados').innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">Escribí un nombre o elegí un equipo para buscar directores técnicos.</div>';
+  renderDTsActuales();
   const arbRes = document.getElementById('arbitro-resultados');
   if (arbRes) arbRes.innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">Escribí un nombre o elegí un equipo para buscar árbitros.</div>';
 }
@@ -7493,13 +7493,59 @@ function recopilarDTs() {
   return dtsMap;
 }
 
+// DT actual de cada equipo: el que dirigió el último partido jugado por ese equipo hasta la fecha.
+function renderDTsActuales() {
+  const container = document.getElementById('dt-resultados');
+  if (!container) return;
+  const porEquipo = {};
+  partidos.forEach(p => {
+    if (!esPartidoJugado(p)) return;
+    const dtRaw = p.DT || '';
+    if (!dtRaw.trim()) return;
+    const partes = dtRaw.split('/');
+    const fechaISO = normalizarFechaISO(p.Fecha);
+    if (!fechaISO) return;
+    [p.Local_ID, p.Visitante_ID].forEach((eqId, idx) => {
+      const nombreRaw = (partes[idx] || '').trim();
+      if (!nombreRaw || nombreRaw.length < 2) return;
+      if (!porEquipo[eqId] || fechaISO > porEquipo[eqId].fecha) {
+        const nac = extraerNacionalidad(nombreRaw);
+        const nombre = limpiarNombre(nombreRaw) || nombreRaw;
+        porEquipo[eqId] = { nombre, nac, fecha: fechaISO };
+      }
+    });
+  });
+
+  const equiposConDT = Object.entries(porEquipo).sort((a, b) => (equipos[a[0]] || '').localeCompare(equipos[b[0]] || ''));
+  if (!equiposConDT.length) {
+    container.innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">Escribí un nombre o elegí un equipo para buscar directores técnicos.</div>';
+    return;
+  }
+
+  container.innerHTML = `
+    <div style="margin-bottom:14px;color:var(--texto-3);font-size:13px;text-align:center;">⚡ DT actual de cada equipo, según su último partido disputado</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;">` +
+    equiposConDT.map(([eqId, d]) => {
+      const nombreEq = equipos[eqId] || eqId;
+      const escEq = ESCUDOS[nombreEq] ? `<img src="${ESCUDOS[nombreEq]}" style="width:16px;height:16px;object-fit:contain;" onerror="this.style.display='none'">` : '';
+      const bandera = d.nac ? `<span style="display:inline-flex;">${getBandera(d.nac)}</span>` : '';
+      return `<div class="pers-card" onclick="verFichaDT('${d.nombre.replace(/'/g, "\\'")}')">
+        <div class="pers-card-top">
+          ${fotoDTImg(d.nombre, nombreEq, 'width:60px;height:60px;border-radius:12px;object-fit:cover;object-position:top;background:var(--fondo-3);flex-shrink:0;border:1px solid var(--borde);', 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><rect width=%2260%22 height=%2260%22 fill=%22%230D1628%22 rx=%2212%22/><text x=%2230%22 y=%2238%22 font-size=%2226%22 text-anchor=%22middle%22>🧑‍💼</text></svg>')}
+          <div class="pers-card-nombre">${bandera}${d.nombre}</div>
+        </div>
+        <div class="pers-card-equipos"><span class="pers-equipo-chip">${escEq}${nombreEq}</span></div>
+      </div>`;
+    }).join('') + '</div>';
+}
+
 function buscarDT() {
   const q = (document.getElementById('dt-buscar-input')?.value || '').toLowerCase().trim();
   const eqFiltro = document.getElementById('dt-buscar-equipo')?.value || '';
   const container = document.getElementById('dt-resultados');
 
   if (!q && !eqFiltro) {
-    container.innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">Escribí un nombre o elegí un equipo para buscar directores técnicos.</div>';
+    renderDTsActuales();
     return;
   }
 
@@ -10139,5 +10185,3 @@ _bdfaEtiquetarTablas(document);
 </script>
 </body>
 </html>
-
-  
