@@ -2339,6 +2339,7 @@ select option{background:#080F20;color:#F0F6FF}
         <div id="dt-fotos-equipos" style="display:none;flex-wrap:wrap;gap:6px;margin-top:10px;"></div>
       </div>
     </div>
+    <div id="dt-primer-ultimo" style="display:flex;gap:20px;flex-wrap:wrap;margin:14px 0 4px;font-size:12px;color:var(--texto-3);"></div>
     <div class="ficha-seccion-titulo">Partidos dirigidos</div>
     <div class="tabla-scroll scroll-forzado">
       <table style="width:100%;border-collapse:collapse;min-width:340px;">
@@ -2368,6 +2369,16 @@ select option{background:#080F20;color:#F0F6FF}
         <tbody id="dt-tabla-partidos"></tbody>
       </table>
     </div>
+    <!-- Jugadores que más dirigió -->
+    <div class="ficha-seccion-titulo" style="margin-top:20px;cursor:pointer;user-select:none;" onclick="toggleDTJugadoresSeccion('pj')">
+      <span id="dt-jug-pj-arrow" style="display:inline-block;transition:transform 0.15s;">▸</span> Jugadores que más dirigió
+    </div>
+    <div id="dt-jugadores-pj" style="display:none;margin-top:8px;"></div>
+    <!-- Jugadores con más goles bajo su mando -->
+    <div class="ficha-seccion-titulo" style="margin-top:20px;cursor:pointer;user-select:none;" onclick="toggleDTJugadoresSeccion('goles')">
+      <span id="dt-jug-goles-arrow" style="display:inline-block;transition:transform 0.15s;">▸</span> Jugadores con más goles bajo su mando
+    </div>
+    <div id="dt-jugadores-goles" style="display:none;margin-top:8px;"></div>
   </div>
 </div>
 
@@ -4628,7 +4639,7 @@ function getBandera(codigo) {
   if (!codigo) return '';
   const p = PAISES[codigo.toUpperCase()];
   if (!p) return `<span style="font-size:11px;color:var(--texto-3);vertical-align:middle;">${codigo}</span>`;
-  return `<img src="https://flagcdn.com/16x12/${p.codigo}.png" alt="${p.nombre}" style="width:16px;height:12px;border-radius:2px;vertical-align:middle;display:inline-block;flex-shrink:0;" title="${p.nombre}">`;
+  return `<img src="https://flagcdn.com/16x12/${p.codigo}.png" alt="${p.nombre}" style="width:16px;height:12px;border-radius:2px;vertical-align:middle;display:inline-block;flex-shrink:0;" title="${p.nombre}" onerror="this.style.display='none'">`;
 }
 
 function getNombrePais(codigo) {
@@ -7339,6 +7350,7 @@ function filtrarEquipoDropdown(contexto) {
     else if (contexto === 'arbitro') buscarArbitro();
     else if (contexto === 'match1' || contexto === 'match2') filtrar();
     else if (contexto === 'estadio1' || contexto === 'estadio2') filtrarPartidosEstadio();
+    else if (contexto === 'dtcomp2eq') compararDT();
     else renderEstadisticas();
   }
 
@@ -7376,6 +7388,7 @@ function seleccionarEquipoDropdown(contexto, id, nombre) {
   else if (contexto === 'arbitro') buscarArbitro();
   else if (contexto === 'match1' || contexto === 'match2') filtrar();
   else if (contexto === 'estadio1' || contexto === 'estadio2') filtrarPartidosEstadio();
+  else if (contexto === 'dtcomp2eq') compararDT();
   else renderEstadisticas();
 }
 
@@ -7710,21 +7723,32 @@ function compararDT() {
   }).length;
   const pe = pj - pg1 - pgB;
 
+  const primerP = encontrados[encontrados.length - 1];
+  const ultimoP = encontrados[0];
+  const fmtEnc = (p) => {
+    const fecha = p.Fecha ? p.Fecha.split('T')[0] : '';
+    return `${fecha} · ${equipos[p.Local_ID]||''} ${p.Goles_Local}-${p.Goles_Visitante} ${equipos[p.Visitante_ID]||''}`;
+  };
+
   container.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:center;gap:20px;background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;padding:20px;margin-bottom:18px;flex-wrap:wrap;">
-      <div style="text-align:center;">
-        <div style="font-size:15px;font-weight:700;">${bandera1}${titulo1}</div>
-        <div style="font-family:var(--fuente-titulo);font-size:28px;color:var(--verde);">${pg1}</div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:36px;background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;padding:24px 20px;margin-bottom:10px;flex-wrap:wrap;">
+      <div style="text-align:center;min-width:130px;">
+        <div style="display:flex;align-items:center;justify-content:center;gap:7px;font-size:15px;font-weight:700;margin-bottom:8px;">${bandera1}<span>${titulo1}</span></div>
+        <div style="font-family:var(--fuente-titulo);font-size:34px;color:var(--verde);line-height:1;">${pg1}</div>
       </div>
-      <div style="text-align:center;color:var(--texto-3);">
-        <div style="font-size:12px;">PJ ${pj}</div>
-        <div style="font-family:var(--fuente-titulo);font-size:22px;">${pe}</div>
-        <div style="font-size:11px;">EMPATES</div>
+      <div style="text-align:center;min-width:70px;">
+        <div style="font-size:11px;color:var(--texto-3);letter-spacing:0.5px;font-weight:600;margin-bottom:8px;">PJ ${pj}</div>
+        <div style="font-family:var(--fuente-titulo);font-size:26px;color:var(--texto-2);line-height:1;margin-bottom:6px;">${pe}</div>
+        <div style="font-size:10px;color:var(--texto-3);letter-spacing:0.5px;">EMPATES</div>
       </div>
-      <div style="text-align:center;">
-        <div style="font-size:15px;font-weight:700;">${escudoB}${banderaB}${tituloB}</div>
-        <div style="font-family:var(--fuente-titulo);font-size:28px;color:var(--verde);">${pgB}</div>
+      <div style="text-align:center;min-width:130px;">
+        <div style="display:flex;align-items:center;justify-content:center;gap:7px;font-size:15px;font-weight:700;margin-bottom:8px;">${escudoB}${banderaB}<span>${tituloB}</span></div>
+        <div style="font-family:var(--fuente-titulo);font-size:34px;color:var(--verde);line-height:1;">${pgB}</div>
       </div>
+    </div>
+    <div style="display:flex;gap:20px;flex-wrap:wrap;margin:0 0 18px;font-size:12px;color:var(--texto-3);">
+      <span onclick="verPartido(${primerP.ID_Partido})" style="cursor:pointer;">🟢 Primer partido: <strong style="color:var(--texto-1);">${fmtEnc(primerP)}</strong></span>
+      <span onclick="verPartido(${ultimoP.ID_Partido})" style="cursor:pointer;">🔴 Último partido: <strong style="color:var(--texto-1);">${fmtEnc(ultimoP)}</strong></span>
     </div>
     <div class="tabla-scroll">
       <table class="tabla-partidos" style="width:100%;border-collapse:collapse;">
@@ -7885,8 +7909,109 @@ function verFichaDT(nombre) {
     .map(p => filaPartido(p, null, { escudoLocalDerecha: true, ocultarTorneo: true }))
     .join('');
 
+  // Primer y último partido dirigido
+  const primerUltimoEl = document.getElementById('dt-primer-ultimo');
+  if (primerUltimoEl) {
+    if (todosPartidos.length) {
+      const ultimo = todosPartidos[0];       // ordenado desc
+      const primero = todosPartidos[todosPartidos.length - 1];
+      const fmt = (p) => {
+        const rival = p.Local_ID === p._equipoId ? (equipos[p.Visitante_ID]||'') : (equipos[p.Local_ID]||'');
+        const fecha = p.Fecha ? p.Fecha.split('T')[0] : '';
+        return `${fecha} vs ${rival} (${p.Goles_Local}-${p.Goles_Visitante})`;
+      };
+      primerUltimoEl.innerHTML = `
+        <span onclick="verPartido(${primero.ID_Partido})" style="cursor:pointer;">🟢 Primer partido: <strong style="color:var(--texto-1);">${fmt(primero)}</strong></span>
+        <span onclick="verPartido(${ultimo.ID_Partido})" style="cursor:pointer;">🔴 Último partido: <strong style="color:var(--texto-1);">${fmt(ultimo)}</strong></span>`;
+    } else {
+      primerUltimoEl.innerHTML = '';
+    }
+  }
+
+  // Jugadores que más dirigió / que más goles hicieron bajo su mando
+  const statsJugadores = _statsJugadoresDT(todosPartidos);
+  const topPJ = Object.values(statsJugadores).filter(j => j.pj > 0).sort((a,b) => b.pj - a.pj).slice(0, 10);
+  const topGoles = Object.values(statsJugadores).filter(j => j.goles > 0).sort((a,b) => b.goles - a.goles).slice(0, 10);
+  document.getElementById('dt-jugadores-pj').innerHTML = _renderListaJugadoresDT(topPJ, 'pj');
+  document.getElementById('dt-jugadores-goles').innerHTML = _renderListaJugadoresDT(topGoles, 'goles');
+  ['pj','goles'].forEach(t => {
+    document.getElementById(`dt-jugadores-${t}`).style.display = 'none';
+    document.getElementById(`dt-jug-${t}-arrow`).style.transform = 'rotate(0deg)';
+  });
+
   traerModalAlFrente('modal-dt');
   document.getElementById('modal-dt').classList.add('visible');
+}
+
+function toggleDTJugadoresSeccion(tipo) {
+  const el = document.getElementById(`dt-jugadores-${tipo}`);
+  const arrow = document.getElementById(`dt-jug-${tipo}-arrow`);
+  const abierto = el.style.display !== 'none';
+  el.style.display = abierto ? 'none' : 'block';
+  arrow.style.transform = abierto ? 'rotate(0deg)' : 'rotate(90deg)';
+}
+
+// Recorre los partidos dirigidos por un DT y arma, por jugador, cuántos partidos jugó
+// y cuántos goles hizo mientras estuvo bajo su mando (solo contando al equipo que dirigía
+// en cada partido, nunca al rival).
+function _statsJugadoresDT(todosPartidos) {
+  const stats = {};
+  const addPJ = (parte) => {
+    (parte||'').split('-').forEach(entrada => {
+      entrada = entrada.trim();
+      if (!entrada || entrada.toLowerCase() === 'ninguno') return;
+      const nac = extraerNacionalidad(entrada);
+      const desamb = extraerDesambiguador(entrada);
+      const nombreLimpio = limpiarNombre(entrada);
+      const nombre = nombreCanonico(nombreLimpio);
+      if (!nombre || nombre.length < 2) return;
+      const clave = claveJugador(nombreLimpio, nac, desamb);
+      if (!stats[clave]) stats[clave] = { nombre, nac, desamb, pj: 0, goles: 0 };
+      stats[clave].pj++;
+    });
+  };
+  const addGoles = (parte) => {
+    (parte||'').split('-').forEach(entrada => {
+      entrada = entrada.trim();
+      if (!entrada || entrada.toLowerCase() === 'ninguno') return;
+      const nac = extraerNacionalidad(entrada);
+      const desamb = extraerDesambiguador(entrada);
+      const nombreLimpio = limpiarNombre(entrada);
+      const nombre = nombreCanonico(nombreLimpio);
+      if (!nombre || nombre.length < 2) return;
+      const clave = claveJugador(nombreLimpio, nac, desamb);
+      if (!stats[clave]) stats[clave] = { nombre, nac, desamb, pj: 0, goles: 0 };
+      stats[clave].goles++;
+    });
+  };
+  todosPartidos.forEach(p => {
+    if (!esPartidoJugado(p)) return;
+    const idx = p.Local_ID === p._equipoId ? 0 : 1;
+    const rawJ = p.Jugadores || '';
+    if (rawJ) addPJ(rawJ.split('/')[idx]);
+    const rawG = p['Goleadores'] || '';
+    if (rawG) addGoles(rawG.split('/')[idx]);
+  });
+  return stats;
+}
+
+function _renderListaJugadoresDT(lista, tipo) {
+  if (!lista.length) {
+    return '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:12px;text-align:center;padding:24px;color:var(--texto-3);font-size:13px;">Sin datos suficientes.</div>';
+  }
+  return `<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:12px;overflow:hidden;">` +
+    lista.map((j, i) => {
+      const bandera = j.nac ? getBandera(j.nac) : '';
+      const valor = tipo === 'pj' ? j.pj : j.goles;
+      const label = tipo === 'pj' ? 'PJ' : '⚽';
+      return `<div onclick="verFichaJugador('${j.nombre.replace(/'/g,"\\'")}','${(j.nac||'').replace(/'/g,"\\'")}','${(j.desamb||'').replace(/'/g,"\\'")}')"
+        style="display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--borde);transition:background 0.1s;"
+        onmouseenter="this.style.background='var(--fondo-3)'" onmouseleave="this.style.background=''">
+        <span style="width:18px;color:var(--texto-3);font-size:12px;flex-shrink:0;">${i+1}</span>
+        <span style="flex:1;min-width:0;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;">${bandera}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${j.nombre}</span></span>
+        <span style="font-family:var(--fuente-titulo);font-size:15px;color:${tipo==='goles'?'var(--celeste)':'var(--texto-1)'};flex-shrink:0;">${valor} <span style="font-size:10px;color:var(--texto-3);font-family:var(--fuente-cuerpo);">${label}</span></span>
+      </div>`;
+    }).join('') + '</div>';
 }
 
 function cerrarFichaDT() {
