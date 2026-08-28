@@ -1871,6 +1871,12 @@ select option{background:#080F20;color:#F0F6FF}
 
   <!-- ══ TAB DIRECTORES TÉCNICOS ══ -->
   <div class="tab-panel" id="panel-dts">
+    <div style="display:flex;gap:8px;margin-bottom:18px;">
+      <button class="torneo-tab-btn activo" id="dt-modo-buscar-btn" onclick="cambiarModoDT('buscar')">🔍 Buscar</button>
+      <button class="torneo-tab-btn" id="dt-modo-comparar-btn" onclick="cambiarModoDT('comparar')">⚔️ Comparar</button>
+    </div>
+
+    <div id="dt-modo-buscar-panel">
     <div id="seccion-dts">
       <div class="filtros-panel" style="margin-bottom:20px;">
         <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
@@ -1890,6 +1896,44 @@ select option{background:#080F20;color:#F0F6FF}
       <div id="dt-resultados"></div>
       <div id="dt-stats-equipo" style="display:none;margin-top:24px;"></div>
     </div>
+    </div><!-- fin dt-modo-buscar-panel -->
+
+    <div id="dt-modo-comparar-panel" style="display:none;">
+      <div class="filtros-panel" style="margin-bottom:20px;">
+        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+          <div class="filtro-grupo" style="flex:1;min-width:200px;position:relative;">
+            <label class="filtro-label">Director Técnico</label>
+            <input type="text" id="dtcomp1-input" class="filtro-input" placeholder="Ej: Bianchi..." autocomplete="off"
+              oninput="filtrarDTDropdown('dtcomp1')" onfocus="mostrarDTDropdown('dtcomp1')" onblur="setTimeout(()=>ocultarDTDropdown('dtcomp1'),200)">
+            <input type="hidden" id="dtcomp1-nombre" value="">
+            <div id="dtcomp1-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:9999;background:var(--fondo-2);border:1px solid var(--borde-activo);border-radius:10px;max-height:220px;overflow-y:auto;box-shadow:var(--sombra-card);margin-top:3px;"></div>
+          </div>
+          <div class="filtro-grupo" style="flex-shrink:0;">
+            <label class="filtro-label">Contra</label>
+            <div style="display:flex;gap:6px;">
+              <button class="torneo-tab-btn activo" id="dtcomp-tipo-dt-btn" onclick="cambiarTipoComparacionDT('dt')">🧑‍💼 DT</button>
+              <button class="torneo-tab-btn" id="dtcomp-tipo-equipo-btn" onclick="cambiarTipoComparacionDT('equipo')">🛡️ Equipo</button>
+            </div>
+          </div>
+          <div class="filtro-grupo" style="flex:1;min-width:200px;">
+            <label class="filtro-label" id="dtcomp2-label">Director Técnico rival</label>
+            <div id="dtcomp2-dt-wrap" style="position:relative;">
+              <input type="text" id="dtcomp2dt-input" class="filtro-input" placeholder="Ej: Menotti..." autocomplete="off"
+                oninput="filtrarDTDropdown('dtcomp2dt')" onfocus="mostrarDTDropdown('dtcomp2dt')" onblur="setTimeout(()=>ocultarDTDropdown('dtcomp2dt'),200)">
+              <input type="hidden" id="dtcomp2dt-nombre" value="">
+              <div id="dtcomp2dt-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:9999;background:var(--fondo-2);border:1px solid var(--borde-activo);border-radius:10px;max-height:220px;overflow-y:auto;box-shadow:var(--sombra-card);margin-top:3px;"></div>
+            </div>
+            <div id="dtcomp2-eq-wrap" style="position:relative;display:none;">
+              <input type="text" id="dtcomp2eq-equipo-input" class="filtro-input" placeholder="Escribí el equipo..." autocomplete="off"
+                oninput="filtrarEquipoDropdown('dtcomp2eq')" onfocus="mostrarDropdown('dtcomp2eq')" onblur="setTimeout(()=>ocultarDropdown('dtcomp2eq'),200)">
+              <input type="hidden" id="dtcomp2eq-buscar-equipo" value="">
+              <div id="dtcomp2eq-equipo-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:9999;background:var(--fondo-2);border:1px solid var(--borde-activo);border-radius:10px;max-height:220px;overflow-y:auto;box-shadow:var(--sombra-card);margin-top:3px;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="dtcomp-resultados"></div>
+    </div><!-- fin dt-modo-comparar-panel -->
   </div><!-- fin panel-dts -->
 
   <!-- ══ TAB ÁRBITROS ══ -->
@@ -7474,7 +7518,7 @@ function recopilarDTs() {
       const nombre = limpiarNombre(nombreRaw) || nombreRaw;
       const clave = nombreCanonico(nombre);
       const equipoId = idx === 0 ? p.Local_ID : p.Visitante_ID;
-      if (!dtsMap[clave]) dtsMap[clave] = { equipos:{}, nac: null };
+      if (!dtsMap[clave]) dtsMap[clave] = { equipos:{}, nac: null, nombre: nombre };
       if (nac && !dtsMap[clave].nac) dtsMap[clave].nac = nac;
       if (!dtsMap[clave].equipos[equipoId]) dtsMap[clave].equipos[equipoId] = { pd:0, pg:0, pe:0, pp:0, anios:new Set(), partidos:[] };
       const r = dtsMap[clave].equipos[equipoId];
@@ -7537,6 +7581,157 @@ function renderDTsActuales() {
         <div class="pers-card-equipos"><span class="pers-equipo-chip">${escEq}${nombreEq}</span></div>
       </div>`;
     }).join('') + '</div>';
+}
+
+// ── MODO BUSCAR / COMPARAR (sección DTs) ──
+function cambiarModoDT(modo) {
+  document.getElementById('dt-modo-buscar-btn').classList.toggle('activo', modo === 'buscar');
+  document.getElementById('dt-modo-comparar-btn').classList.toggle('activo', modo === 'comparar');
+  document.getElementById('dt-modo-buscar-panel').style.display = modo === 'buscar' ? 'block' : 'none';
+  document.getElementById('dt-modo-comparar-panel').style.display = modo === 'comparar' ? 'block' : 'none';
+  if (modo === 'comparar') compararDT();
+}
+
+// ── Autocompletado de nombres de DT (genérico por contexto) ──
+function _dtsOrdenados() {
+  return Object.entries(recopilarDTs())
+    .map(([clave, d]) => ({ clave, nombre: d.nombre || clave }))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre));
+}
+
+function filtrarDTDropdown(contexto) {
+  const inputId = `${contexto}-input`;
+  const hidId = `${contexto}-nombre`;
+  const dropId = `${contexto}-dropdown`;
+  const q = document.getElementById(inputId)?.value.toLowerCase().trim() || '';
+
+  if (!q) {
+    document.getElementById(hidId).value = '';
+    compararDT();
+  }
+
+  const filtrados = _dtsOrdenados().filter(d => normalizarNombre(d.nombre).includes(normalizarNombre(q)));
+  const drop = document.getElementById(dropId);
+  if (!drop) return;
+  if (!filtrados.length) { drop.style.display = 'none'; return; }
+
+  drop.innerHTML = filtrados.slice(0, 20).map(d => `
+    <div style="padding:9px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--borde);transition:background 0.1s;"
+      onmouseenter="this.style.background='var(--fondo-3)'" onmouseleave="this.style.background=''"
+      onclick="seleccionarDTDropdown('${contexto}','${d.clave.replace(/'/g,"\\'")}','${d.nombre.replace(/'/g,"\\'")}')">
+      ${d.nombre}
+    </div>`).join('');
+  drop.style.display = 'block';
+}
+
+function mostrarDTDropdown(contexto) { filtrarDTDropdown(contexto); }
+
+function ocultarDTDropdown(contexto) {
+  const drop = document.getElementById(`${contexto}-dropdown`);
+  if (drop) drop.style.display = 'none';
+}
+
+function seleccionarDTDropdown(contexto, clave, nombre) {
+  document.getElementById(`${contexto}-input`).value = nombre;
+  document.getElementById(`${contexto}-nombre`).value = clave;
+  document.getElementById(`${contexto}-dropdown`).style.display = 'none';
+  compararDT();
+}
+
+// ── Comparar DT vs DT, o DT vs Equipo ──
+let _dtCompTipo = 'dt';
+function cambiarTipoComparacionDT(tipo) {
+  _dtCompTipo = tipo;
+  document.getElementById('dtcomp-tipo-dt-btn').classList.toggle('activo', tipo === 'dt');
+  document.getElementById('dtcomp-tipo-equipo-btn').classList.toggle('activo', tipo === 'equipo');
+  document.getElementById('dtcomp2-dt-wrap').style.display = tipo === 'dt' ? 'block' : 'none';
+  document.getElementById('dtcomp2-eq-wrap').style.display = tipo === 'equipo' ? 'block' : 'none';
+  document.getElementById('dtcomp2-label').textContent = tipo === 'dt' ? 'Director Técnico rival' : 'Equipo rival';
+  compararDT();
+}
+
+function _mensajeVacioComparacionDT() {
+  return '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">' +
+    'Elegí un director técnico y ' + (_dtCompTipo === 'dt' ? 'otro director técnico rival' : 'un equipo rival') + ' para comparar.</div>';
+}
+
+function compararDT() {
+  const container = document.getElementById('dtcomp-resultados');
+  if (!container) return;
+  const dt1 = document.getElementById('dtcomp1-nombre')?.value || '';
+
+  let coincide, tituloB, escudoB = '', banderaB = '';
+  if (_dtCompTipo === 'dt') {
+    const dt2 = document.getElementById('dtcomp2dt-nombre')?.value || '';
+    if (!dt1 || !dt2) { container.innerHTML = _mensajeVacioComparacionDT(); return; }
+    coincide = (partesClave) => (partesClave[0] === dt1 && partesClave[1] === dt2) || (partesClave[0] === dt2 && partesClave[1] === dt1);
+    const dts = recopilarDTs();
+    tituloB = dts[dt2]?.nombre || document.getElementById('dtcomp2dt-input').value;
+    banderaB = dts[dt2]?.nac ? getBandera(dts[dt2].nac) : '';
+  } else {
+    const eq2 = document.getElementById('dtcomp2eq-buscar-equipo')?.value || '';
+    if (!dt1 || !eq2) { container.innerHTML = _mensajeVacioComparacionDT(); return; }
+    coincide = (partesClave, p) => (partesClave[0] === dt1 && p.Visitante_ID === eq2) || (partesClave[1] === dt1 && p.Local_ID === eq2);
+    tituloB = equipos[eq2] || eq2;
+    escudoB = escudoImg(tituloB, 22);
+  }
+
+  const dts = recopilarDTs();
+  const dt1Data = dts[dt1];
+  const titulo1 = dt1Data?.nombre || document.getElementById('dtcomp1-input').value;
+  const bandera1 = dt1Data?.nac ? getBandera(dt1Data.nac) : '';
+
+  const encontrados = partidos.filter(p => {
+    if (!esPartidoJugado(p)) return false;
+    const dtRaw = p.DT || '';
+    if (!dtRaw.trim()) return false;
+    const partesClave = dtRaw.split('/').map(s => nombreCanonico(limpiarNombre(s.trim()) || s.trim()));
+    return coincide(partesClave, p);
+  }).sort((a, b) => (normalizarFechaISO(b.Fecha) || '0').localeCompare(normalizarFechaISO(a.Fecha) || '0'));
+
+  if (!encontrados.length) {
+    container.innerHTML = `<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">
+      No se encontraron enfrentamientos entre <strong>${titulo1}</strong> y <strong>${tituloB}</strong>.</div>`;
+    return;
+  }
+
+  const pj = encontrados.length;
+  const pg1 = encontrados.filter(p => {
+    const partesClave = (p.DT||'').split('/').map(s => nombreCanonico(limpiarNombre(s.trim()) || s.trim()));
+    const idxDT1 = partesClave[0] === dt1 ? 0 : 1;
+    const equipoDT1 = idxDT1 === 0 ? p.Local_ID : p.Visitante_ID;
+    return esDefinicionDecisiva(p.Tipo_Definicion) && p.ID_Ganador === equipoDT1;
+  }).length;
+  const pgB = encontrados.filter(p => {
+    const partesClave = (p.DT||'').split('/').map(s => nombreCanonico(limpiarNombre(s.trim()) || s.trim()));
+    const idxDT1 = partesClave[0] === dt1 ? 0 : 1;
+    const equipoRival = idxDT1 === 0 ? p.Visitante_ID : p.Local_ID;
+    return esDefinicionDecisiva(p.Tipo_Definicion) && p.ID_Ganador === equipoRival;
+  }).length;
+  const pe = pj - pg1 - pgB;
+
+  container.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;gap:20px;background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;padding:20px;margin-bottom:18px;flex-wrap:wrap;">
+      <div style="text-align:center;">
+        <div style="font-size:15px;font-weight:700;">${bandera1}${titulo1}</div>
+        <div style="font-family:var(--fuente-titulo);font-size:28px;color:var(--verde);">${pg1}</div>
+      </div>
+      <div style="text-align:center;color:var(--texto-3);">
+        <div style="font-size:12px;">PJ ${pj}</div>
+        <div style="font-family:var(--fuente-titulo);font-size:22px;">${pe}</div>
+        <div style="font-size:11px;">EMPATES</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:15px;font-weight:700;">${escudoB}${banderaB}${tituloB}</div>
+        <div style="font-family:var(--fuente-titulo);font-size:28px;color:var(--verde);">${pgB}</div>
+      </div>
+    </div>
+    <div class="tabla-scroll">
+      <table class="tabla-partidos" style="width:100%;border-collapse:collapse;">
+        <thead><tr><th>Fecha</th><th>Local</th><th style="text-align:center;">Res.</th><th>Visitante</th><th>Torneo</th></tr></thead>
+        <tbody>${encontrados.slice(0,100).map(p => filaPartido(p, null, { escudoLocalDerecha: true })).join('')}</tbody>
+      </table>
+    </div>`;
 }
 
 function buscarDT() {
