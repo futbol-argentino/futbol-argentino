@@ -89,3 +89,31 @@ ID_Temporada,Grupo,Pos,Equipo,PJ,PG,PE,PP,GF,GC,DG,Pts
 2,Tabla Anual,28,Aldosivi,32,9,6,17,31,46,-15,33
 2,Tabla Anual,29,Godoy Cruz (R),32,4,17,11,19,37,-18,29
 2,Tabla Anual,30,San Martin SJ (DTP),32,6,10,16,18,34,-16,28
+3,Zona A,1,River Plate (V),14,7,6,1,26,10,16,27
+3,Zona A,2,Argentinos Juniors (V),14,7,5,2,25,14,11,26
+3,Zona A,3,Barracas Central (V),14,7,5,2,20,15,5,26
+3,Zona A,4,Velez Sarsfield (V),14,7,4,3,14,13,1,25
+3,Zona A,5,Talleres,14,6,6,2,24,16,8,24
+3,Zona A,6,Independiente,14,6,5,3,14,10,4,23
+3,Zona A,7,Instituto,14,5,2,7,18,17,1,17
+3,Zona A,8,Banfield,14,4,5,5,14,15,-1,17
+3,Zona A,9,Huracan,14,4,4,6,12,12,0,16
+3,Zona A,10,Gimnasia LP,14,5,1,8,18,23,-5,16
+3,Zona A,11,Rosario Central,14,4,3,7,10,18,-8,15
+3,Zona A,12,Deportivo Riestra,14,3,4,7,8,16,-8,13
+3,Zona A,13,Atletico Tucuman,14,1,7,6,8,23,-15,10
+3,Zona A,14,Independiente Rivadavia,14,2,2,10,13,25,-12,8
+3,Zona B,1,Godoy Cruz (V),14,9,2,3,16,6,10,29
+3,Zona B,2,Estudiantes LP (V),14,8,3,3,19,9,10,27
+3,Zona B,3,Defensa y Justicia (V),14,7,5,2,17,13,4,26
+3,Zona B,4,Boca Juniors (V),14,7,4,3,20,12,8,25
+3,Zona B,5,Racing Club,14,7,3,4,24,11,13,24
+3,Zona B,6,Lanus,14,7,2,5,20,14,6,23
+3,Zona B,7,Newells,14,6,3,5,13,15,-2,21
+3,Zona B,8,Union,14,5,5,4,16,14,2,20
+3,Zona B,9,Platense,14,4,6,4,10,14,-4,18
+3,Zona B,10,San Lorenzo,14,3,7,4,10,14,-4,16
+3,Zona B,11,Belgrano,14,3,5,6,19,21,-2,14
+3,Zona B,12,Central Cordba SdE,14,2,5,7,10,20,-10,11
+3,Zona B,13,Sarmiento,14,2,3,9,9,19,-10,9
+3,Zona B,14,Tigre,14,1,2,11,7,25,-18,5
