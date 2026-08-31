@@ -2218,7 +2218,7 @@ select option{background:#080F20;color:#F0F6FF}
           <thead><tr>
             <th>Equipo</th>
             <th style="text-align:center;width:55px;">PJ</th>
-            <th style="text-align:center;width:55px;">⚽</th>
+            <th style="text-align:center;width:55px;" id="fte-th-goles-eq">⚽</th>
             <th style="text-align:center;width:55px;">🅿️</th>
             <th style="text-align:center;width:55px;">🟨</th>
             <th style="text-align:center;width:55px;">🟥</th>
@@ -2307,7 +2307,7 @@ select option{background:#080F20;color:#F0F6FF}
           <thead><tr>
             <th>Año</th>
             <th style="text-align:center;width:55px;">PJ</th>
-            <th style="text-align:center;width:55px;">⚽</th>
+            <th style="text-align:center;width:55px;" id="fte-th-goles-temp">⚽</th>
             <th style="text-align:center;width:55px;">🟨</th>
             <th style="text-align:center;width:55px;">🟥</th>
           </tr></thead>
@@ -5795,6 +5795,8 @@ function verFichaJugador(nombre, nacionalidadBuscada, desambiguadorBuscado) {
             const golesRival = parseInt(idx === 0 ? p.Goles_Visitante : p.Goles_Local);
             if (!isNaN(golesRival)) {
               concedidosTotal += golesRival;
+              porEquipo[equipoId].concedidos = (porEquipo[equipoId].concedidos || 0) + golesRival;
+              if (anio) porAnio[anio].concedidos = (porAnio[anio].concedidos || 0) + golesRival;
               if (!concedidosPorRival[rivalIdPJ]) concedidosPorRival[rivalIdPJ] = { goles:0, pj:0, anios:new Set() };
               concedidosPorRival[rivalIdPJ].goles += golesRival;
               concedidosPorRival[rivalIdPJ].pj++;
@@ -5961,6 +5963,11 @@ function verFichaJugador(nombre, nacionalidadBuscada, desambiguadorBuscado) {
     });
   });
 
+  const thGolesEq = document.getElementById('fte-th-goles-eq');
+  if (thGolesEq) { thGolesEq.textContent = esArquero ? '🥅' : '⚽'; thGolesEq.title = esArquero ? 'Goles recibidos' : 'Goles convertidos'; }
+  const thGolesTemp = document.getElementById('fte-th-goles-temp');
+  if (thGolesTemp) { thGolesTemp.textContent = esArquero ? '🥅' : '⚽'; thGolesTemp.title = esArquero ? 'Goles recibidos' : 'Goles convertidos'; }
+
   document.getElementById('ficha-tabla-equipos').innerHTML = Object.entries(porEquipo)
     .sort((a,b) => {
       const maxA = a[1].anios.size ? Math.max(...a[1].anios) : -Infinity;
@@ -6013,7 +6020,7 @@ function verFichaJugador(nombre, nacionalidadBuscada, desambiguadorBuscado) {
           <div style="font-size:11px;color:var(--texto-3);margin-top:2px;margin-left:16px;">${aniosStr}</div>
         </td>
         <td style="text-align:center;font-weight:700;font-size:15px;color:var(--texto-1);">${r.pj||'—'}</td>
-        <td style="text-align:center;font-weight:600;color:var(--celeste);">${r.goles||'—'}</td>
+        <td style="text-align:center;font-weight:600;color:var(--celeste);">${esArquero ? (r.concedidos||'—') : (r.goles||'—')}</td>
         <td style="text-align:center;color:var(--amarillo);">${r.penales||'—'}</td>
         <td style="text-align:center;color:var(--amarillo);">${r.amonestados||'—'}</td>
         <td style="text-align:center;color:var(--rojo);">${r.expulsados||'—'}</td>
@@ -6107,7 +6114,7 @@ function verFichaJugador(nombre, nacionalidadBuscada, desambiguadorBuscado) {
         return `<tr>
           <td style="padding:10px 12px;font-weight:700;color:var(--texto-1);">${anio}</td>
           <td style="text-align:center;color:var(--texto-1);">${r.pj||'—'}</td>
-          <td style="text-align:center;font-weight:600;color:var(--celeste);">${r.goles||'—'}</td>
+          <td style="text-align:center;font-weight:600;color:var(--celeste);">${esArquero ? (r.concedidos||'—') : (r.goles||'—')}</td>
           <td style="text-align:center;color:var(--amarillo);">${r.amonestados||'—'}</td>
           <td style="text-align:center;color:var(--rojo);">${r.expulsados||'—'}</td>
         </tr>`;
