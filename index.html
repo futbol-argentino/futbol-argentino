@@ -3981,7 +3981,7 @@ function filtrarDetalle() {
 
   document.getElementById('tabla-detalle').innerHTML = lista.length === 0
     ? '<tr class="loading-row"><td colspan="5">No se encontraron partidos.</td></tr>'
-    : lista.slice(0, 200).map(p => filaPartido(p, id)).join('');
+    : lista.slice(0, 200).map(p => filaPartido(p, id, { escudoLocalDerecha: true })).join('');
 }
 
 function toggleRivales() {
@@ -9106,7 +9106,7 @@ function filtrarPartidosEstadio() {
 
   document.getElementById('estadio-partidos-count').textContent = total + (total === 1 ? ' partido' : ' partidos');
   document.getElementById('estadio-partidos-tbody').innerHTML = slice.length
-    ? slice.map(p => filaPartido(p)).join('')
+    ? slice.map(p => filaPartido(p, null, { escudoLocalDerecha: true })).join('')
     : `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--texto-3);">No se encontraron partidos con ese filtro.</td></tr>`;
 
   const pagEl = document.getElementById('estadio-partidos-pag');
