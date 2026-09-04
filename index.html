@@ -26,6 +26,8 @@
   --amarillo:      #F59E0B;
   --oro:           #FBBF24;
   --oro-glow:      rgba(251,191,36,0.2);
+  --hito:          #A78BFA;
+  --hito-glow:     rgba(167,139,250,0.2);
   --borde:         rgba(34,197,94,0.1);
   --borde-hover:   rgba(34,197,94,0.28);
   --borde-activo:  rgba(34,197,94,0.55);
@@ -58,6 +60,8 @@
   --amarillo:      #D97706;
   --oro:           #B45309;
   --oro-glow:      rgba(180,83,9,0.15);
+  --hito:          #7C3AED;
+  --hito-glow:     rgba(124,58,237,0.15);
   --borde:         rgba(22,163,74,0.18);
   --borde-hover:   rgba(22,163,74,0.4);
   --borde-activo:  rgba(22,163,74,0.65);
@@ -5954,14 +5958,19 @@ function verFichaJugador(nombre, nacionalidadBuscada, desambiguadorBuscado) {
       <span class="ficha-stat-label">${label}</span>
     </div>`).join('');
 
-  // Debut profesional: el partido más antiguo de TODA la carrera del jugador (cualquier equipo)
-  let debutCarreraPartidoId = null, debutCarreraFecha = null;
+  // Debut profesional (partido más antiguo de TODA la carrera) + numeración cronológica de partidos,
+  // usada para resaltar los hitos de partidos redondos (50, 100, 150... hasta 1000), en carrera y por club
+  const todosPartidosCarrera = [];
   Object.values(fichaPartidosPorEquipo).forEach(lista => {
     lista.forEach(({partido:p}) => {
       const f = normalizarFechaISO(p.Fecha) || '';
-      if (f && (!debutCarreraFecha || f < debutCarreraFecha)) { debutCarreraFecha = f; debutCarreraPartidoId = p.ID_Partido; }
+      if (f) todosPartidosCarrera.push({ id: p.ID_Partido, fecha: f });
     });
   });
+  todosPartidosCarrera.sort((a,b) => a.fecha.localeCompare(b.fecha));
+  const numeroPartidoCarrera = {};
+  todosPartidosCarrera.forEach((x, idx) => { numeroPartidoCarrera[x.id] = idx + 1; });
+  const debutCarreraPartidoId = todosPartidosCarrera.length ? todosPartidosCarrera[0].id : null;
 
   const thGolesEq = document.getElementById('fte-th-goles-eq');
   if (thGolesEq) { thGolesEq.textContent = esArquero ? '🥅' : '⚽'; thGolesEq.title = esArquero ? 'Goles recibidos' : 'Goles convertidos'; }
@@ -5987,6 +5996,9 @@ function verFichaJugador(nombre, nacionalidadBuscada, desambiguadorBuscado) {
       const uid = 'peq_' + eid + '_' + (_golUidSeq++);
       // Debut de equipo: el partido más antiguo registrado con ESTE club puntual
       const debutEquipoPartidoId = partidosEquipo.length ? partidosEquipo[partidosEquipo.length-1].partido.ID_Partido : null;
+      // Numeración cronológica dentro de ESTE club (partidosEquipo está ordenado de más nuevo a más viejo)
+      const numeroPartidoClub = {};
+      for (let i = partidosEquipo.length - 1, n = 1; i >= 0; i--, n++) numeroPartidoClub[partidosEquipo[i].partido.ID_Partido] = n;
       const iconosMap = { gol:'⚽', penal:'🅿️', ec:'🔴', amarilla:'🟨', roja:'🟥' };
       const filasPartidos = partidosEquipo.length ? partidosEquipo.map(({partido:p, incidencias}) => {
         const local = equipos[p.Local_ID]||p.Local_ID;
@@ -5999,11 +6011,19 @@ function verFichaJugador(nombre, nacionalidadBuscada, desambiguadorBuscado) {
           : `<span style="color:var(--texto-3);font-size:11px;">—</span>`;
         const esDebutCarrera = debutCarreraPartidoId != null && p.ID_Partido === debutCarreraPartidoId;
         const esDebutEquipo = !esDebutCarrera && debutEquipoPartidoId != null && p.ID_Partido === debutEquipoPartidoId;
-        const debutColor = esDebutCarrera ? 'var(--oro)' : (esDebutEquipo ? 'var(--celeste)' : null);
-        const debutTitle = esDebutCarrera ? 'Debut profesional' : (esDebutEquipo ? 'Debut en el club' : '');
-        const debutStar = debutColor ? `<span style="color:${debutColor};font-size:9px;margin-left:3px;">⭐</span>` : '';
-        const borderAccent = debutColor ? `border-left:2px solid ${debutColor};` : '';
-        const debutTexto = debutColor ? `<div style="grid-column:1/-1;font-size:10px;color:${debutColor};padding:1px 0 0 2px;">⭐ ${debutTitle}</div>` : '';
+        // Hitos de partidos redondos (50, 100, 150... hasta 1000), en carrera general o en este club puntual
+        const numCarrera = numeroPartidoCarrera[p.ID_Partido];
+        const numClub = numeroPartidoClub[p.ID_Partido];
+        const esHitoCarrera = !esDebutCarrera && !esDebutEquipo && numCarrera > 0 && numCarrera <= 1000 && numCarrera % 50 === 0;
+        const esHitoClub = !esDebutCarrera && !esDebutEquipo && !esHitoCarrera && numClub > 0 && numClub <= 1000 && numClub % 50 === 0;
+        let marcaColor = null, marcaTitle = '', marcaIcono = '⭐';
+        if (esDebutCarrera) { marcaColor = 'var(--oro)'; marcaTitle = 'Debut profesional'; }
+        else if (esDebutEquipo) { marcaColor = 'var(--celeste)'; marcaTitle = 'Debut en el club'; }
+        else if (esHitoCarrera) { marcaColor = 'var(--hito)'; marcaTitle = `Partido n.° ${numCarrera} en la carrera`; marcaIcono = '🏅'; }
+        else if (esHitoClub) { marcaColor = 'var(--hito)'; marcaTitle = `Partido n.° ${numClub} en el club`; marcaIcono = '🏅'; }
+        const debutStar = marcaColor ? `<span style="color:${marcaColor};font-size:9px;margin-left:3px;">${marcaIcono}</span>` : '';
+        const borderAccent = marcaColor ? `border-left:2px solid ${marcaColor};` : '';
+        const debutTexto = marcaColor ? `<div style="grid-column:1/-1;font-size:10px;color:${marcaColor};padding:1px 0 0 2px;">${marcaIcono} ${marcaTitle}</div>` : '';
         return `<div onclick="event.stopPropagation();verPartido(${p.ID_Partido})" style="display:grid;grid-template-columns:52px minmax(0,1fr) 46px minmax(0,1fr) 130px;align-items:center;column-gap:2px;padding:7px 10px;border-bottom:1px solid var(--borde);${borderAccent}cursor:pointer;">
           <span style="font-size:10px;color:var(--texto-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${fecha}${debutStar}</span>
           <span style="display:flex;align-items:center;gap:4px;min-width:0;justify-content:flex-end;font-size:12px;overflow:hidden;"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${local}</span>${escudoImg(local,14)}</span>
