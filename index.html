@@ -1499,6 +1499,21 @@ select option{background:#080F20;color:#F0F6FF}
           <input type="hidden" id="stats-filtro-equipo" value="">
           <div id="stats-equipo-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:9999;background:var(--fondo-2);border:1px solid var(--borde-activo);border-radius:10px;max-height:220px;overflow-y:auto;box-shadow:var(--sombra-card);margin-top:3px;"></div>
         </div>
+        <div class="filtro-grupo" style="flex:1;min-width:180px;position:relative;">
+          <label class="filtro-label">Vs. equipo</label>
+          <input type="text" id="stats-rival-equipo-input" class="filtro-input" placeholder="Rival..." autocomplete="off"
+            oninput="filtrarEquipoDropdown('stats-rival')" onfocus="mostrarDropdown('stats-rival')" onblur="setTimeout(()=>ocultarDropdown('stats-rival'),200)">
+          <input type="hidden" id="stats-rival-buscar-equipo" value="">
+          <div id="stats-rival-equipo-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:9999;background:var(--fondo-2);border:1px solid var(--borde-activo);border-radius:10px;max-height:220px;overflow-y:auto;box-shadow:var(--sombra-card);margin-top:3px;"></div>
+        </div>
+        <div class="filtro-grupo" style="min-width:260px;">
+          <label class="filtro-label">Año</label>
+          <div style="display:flex;gap:6px;">
+            <input type="number" id="stats-filtro-anio-exacto" class="filtro-input" placeholder="Año exacto" style="width:100px;flex:none;" oninput="actualizarModoAnioStats()">
+            <input type="number" id="stats-filtro-anio-desde" class="filtro-input" placeholder="Desde" oninput="actualizarModoAnioStats()">
+            <input type="number" id="stats-filtro-anio-hasta" class="filtro-input" placeholder="Hasta" oninput="actualizarModoAnioStats()">
+          </div>
+        </div>
         <div class="filtro-grupo" style="flex:1;min-width:160px;">
           <label class="filtro-label">Nacionalidad</label>
           <select id="stats-filtro-nac" class="filtro-select" onchange="renderEstadisticas()">
@@ -5375,10 +5390,44 @@ function renderEstadisticasDebounced() {
   renderEstadisticasDebounced._t = setTimeout(renderEstadisticas, 280);
 }
 
+// Año exacto y rango (desde/hasta) son mutuamente excluyentes: usar uno deshabilita el otro
+// para que no queden mezclados sin darse cuenta.
+function actualizarModoAnioStats() {
+  const exacto = document.getElementById('stats-filtro-anio-exacto');
+  const desde  = document.getElementById('stats-filtro-anio-desde');
+  const hasta  = document.getElementById('stats-filtro-anio-hasta');
+  const usaExacto = exacto.value.trim() !== '';
+  const usaRango  = desde.value.trim() !== '' || hasta.value.trim() !== '';
+  desde.disabled  = usaExacto;
+  hasta.disabled  = usaExacto;
+  exacto.disabled = usaRango;
+  renderEstadisticasDebounced();
+}
+
 function renderEstadisticas() {
   const equipoId  = document.getElementById('stats-filtro-equipo')?.value || null;
+  const rivalId   = document.getElementById('stats-rival-buscar-equipo')?.value || null;
+  const anioExacto = parseInt(document.getElementById('stats-filtro-anio-exacto')?.value) || null;
+  let anioDesde = parseInt(document.getElementById('stats-filtro-anio-desde')?.value) || null;
+  let anioHasta = parseInt(document.getElementById('stats-filtro-anio-hasta')?.value) || null;
+  if (anioExacto) { anioDesde = anioExacto; anioHasta = anioExacto; }
   const filtroNom = (document.getElementById('stats-filtro-nombre')?.value || '').toLowerCase().trim();
   const filtroNac = document.getElementById('stats-filtro-nac')?.value || '';
+
+  // Universo de partidos sobre el que se calculan todas las tablas: arranca en todos los partidos
+  // y se va acotando por rival (partidos "vs X equipo") y por año/lapso, antes de aplicar el
+  // filtro de equipo propio (que ya hacían las funciones parsearXxx más abajo).
+  let partidosBase = partidos;
+  if (rivalId) partidosBase = partidosBase.filter(p => p.Local_ID === rivalId || p.Visitante_ID === rivalId);
+  if (anioDesde || anioHasta) {
+    partidosBase = partidosBase.filter(p => {
+      const anio = anioPartido(p);
+      if (anio == null) return false;
+      if (anioDesde && anio < anioDesde) return false;
+      if (anioHasta && anio > anioHasta) return false;
+      return true;
+    });
+  }
 
   // Calcular PJ primero: ahora es el criterio de desempate de TODAS las demás tablas
   // (a igual cantidad, queda arriba quien tiene más partidos jugados) y también se muestra
@@ -5388,7 +5437,7 @@ function renderEstadisticas() {
   const todosDesambPJ = {};
   const eqPorJugadorPJ = {};
   const ndPJ = {};
-  partidos.forEach(p => {
+  partidosBase.forEach(p => {
     if (equipoId && p.Local_ID !== equipoId && p.Visitante_ID !== equipoId) return;
     const rawJ = p.Jugadores || '';
     if (!rawJ) return;
@@ -5416,9 +5465,9 @@ function renderEstadisticas() {
   // Ordena por cantidad y, a igualdad, por PJ (más partidos jugados queda arriba)
   const conPJ = (arr) => arr.slice().sort((a,b) => b[1]-a[1] || (pjConteo[b[0]]||0)-(pjConteo[a[0]]||0));
 
-  const { goles, ec, nacionalidades, desambiguadores, equiposGoles, equiposEC, nombresDisplay: ndGol } = parsearGoleadores(equipoId);
-  const { datos: amon, nacionalidades: nacAmon, desambiguadores: desambAmon, equiposPorJugador: eqAmon, nombresDisplay: ndAmon } = parsearTarjetas('Amonestados', equipoId);
-  const { datos: expu, nacionalidades: nacExpu, desambiguadores: desambExpu, equiposPorJugador: eqExpu, nombresDisplay: ndExpu } = parsearTarjetas('Expulsados', equipoId);
+  const { goles, ec, nacionalidades, desambiguadores, equiposGoles, equiposEC, nombresDisplay: ndGol } = parsearGoleadores(equipoId, null, partidosBase);
+  const { datos: amon, nacionalidades: nacAmon, desambiguadores: desambAmon, equiposPorJugador: eqAmon, nombresDisplay: ndAmon } = parsearTarjetas('Amonestados', equipoId, null, partidosBase);
+  const { datos: expu, nacionalidades: nacExpu, desambiguadores: desambExpu, equiposPorJugador: eqExpu, nombresDisplay: ndExpu } = parsearTarjetas('Expulsados', equipoId, null, partidosBase);
 
   // Combinar todos los diccionarios de nac y de nombre-para-mostrar (claveInterna -> texto visible)
   const todosNac = { ...nacionalidades, ...nacAmon, ...nacExpu, ...todosNacPJ };
@@ -5452,7 +5501,7 @@ function renderEstadisticas() {
   datosStats.eqExpu = eqExpu;
 
   // Dobletes / Hat-Tricks / Pókers / Re-Pókers / Doble Hat-Trick / 7 goles en un partido
-  const multigol = parsearGoleadasMultiples(equipoId);
+  const multigol = parsearGoleadasMultiples(equipoId, null, partidosBase);
   datosStats.doblete      = aplicarFiltros(conPJ(Object.entries(multigol[2])));
   datosStats.hattrick     = aplicarFiltros(conPJ(Object.entries(multigol[3])));
   datosStats.poker        = aplicarFiltros(conPJ(Object.entries(multigol[4])));
