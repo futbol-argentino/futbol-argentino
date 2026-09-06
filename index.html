@@ -825,8 +825,10 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 }
 .ficha-stat-pill {
   background:var(--fondo-3); border:1px solid var(--borde); border-radius:12px;
-  padding:14px 10px; text-align:center;
+  padding:14px 10px; text-align:center; transition:var(--trans);
 }
+.ficha-stat-pill.clickeable { cursor:pointer; }
+.ficha-stat-pill.clickeable:hover { border-color:var(--borde-hover); background:var(--fondo-4); }
 .ficha-stat-num { font-family:var(--fuente-titulo); font-size:32px; display:block; line-height:1; }
 .ficha-stat-label { font-size:9px; color:var(--texto-3); text-transform:uppercase; letter-spacing:1px; margin-top:5px; display:block; }
 .ficha-seccion-titulo {
@@ -2789,6 +2791,7 @@ let estadiosArr = [], estadiosCargados = false, estadiosDivisionActual = null;
 let ordenDesc = true;
 let ordenDetalleDesc = true;
 let fichaPartidosPorEquipo = {}; // equipoId → [{ partido, anio, incidencias }] del jugador actualmente abierto en la ficha
+let fichaEventosJugador = {}; // { goles:[], penales:[], amarillas:[], rojas:[], multigol:{2:[],3:[],4:[],5:[],6:[],7:[]} } — listas de partidos por categoría, para los cuadros clickeables de la ficha
 
 // ── CSV ──
 function csvToArray(csv) {
@@ -3885,6 +3888,66 @@ function abrirModalRacha(tipo) {
 
 function cerrarModalRacha() {
   document.getElementById('modal-racha').classList.remove('visible');
+}
+
+// Abre el listado de partidos detrás de un cuadro clickeable de la ficha de jugador
+// (Goles, Pen., Amarillas, Rojas, Dobletes, Hat-Tricks, etc.). Reutiliza el modal de "racha".
+function abrirListaEventosJugador(cat) {
+  const esMultigol = cat.startsWith('multigol:');
+  const CONF = esMultigol
+    ? {
+        2: ['🎯 Dobletes', fichaEventosJugador.multigol[2]],
+        3: ['🎩 Hat-Tricks', fichaEventosJugador.multigol[3]],
+        4: ['4️⃣ Pókers', fichaEventosJugador.multigol[4]],
+        5: ['5️⃣ Re-Pókers', fichaEventosJugador.multigol[5]],
+        6: ['🔥 Dobles Hat-Trick', fichaEventosJugador.multigol[6]],
+        7: ['🌟 Partidos con 7 goles', fichaEventosJugador.multigol[7]],
+      }[cat.split(':')[1]]
+    : {
+        goles:     ['⚽ Partidos con gol', fichaEventosJugador.goles],
+        penales:   ['🅿️ Partidos con gol de penal', fichaEventosJugador.penales],
+        amarillas: ['🟨 Partidos con amarilla', fichaEventosJugador.amarillas],
+        rojas:     ['🟥 Partidos con roja', fichaEventosJugador.rojas],
+      }[cat];
+  if (!CONF) return;
+  const [titulo, listaRaw] = CONF;
+  if (!listaRaw || !listaRaw.length) return;
+
+  const lista = listaRaw.slice().sort((a,b) => {
+    const fa = normalizarFechaISO(a.partido.Fecha) || '';
+    const fb = normalizarFechaISO(b.partido.Fecha) || '';
+    return fb.localeCompare(fa); // más reciente primero
+  });
+
+  document.getElementById('modal-racha-titulo').textContent = titulo;
+  document.getElementById('modal-racha-subtitulo').textContent = `${lista.length} partido${lista.length>1?'s':''}`;
+
+  document.getElementById('modal-racha-lista').innerHTML = lista.map(({partido:p, equipoId, cantidad}) => {
+    const esLocal = p.Local_ID === equipoId;
+    const rivalId = esLocal ? p.Visitante_ID : p.Local_ID;
+    const rivalNombre = equipos[rivalId] || rivalId;
+    const equipoNombre = equipos[equipoId] || equipoId;
+    const torneo = temporadas[p.ID_Temporada] || p.Fase || '';
+    const esc = ESCUDOS[rivalNombre] ? `<img src="${ESCUDOS[rivalNombre]}" style="width:20px;height:20px;object-fit:contain;" onerror="this.style.display='none'">` : '';
+    const rc = resClase(p.Goles_Local, p.Goles_Visitante, esLocal);
+    const cantidadTxt = cantidad > 1 ? `<span style="font-size:11px;color:var(--texto-3);margin-left:6px;">x${cantidad}</span>` : '';
+    return `
+      <div onclick="verPartido('${p.ID_Partido}')"
+        style="background:var(--fondo-3);border:1px solid var(--borde);border-radius:10px;padding:10px 14px;
+               cursor:pointer;transition:var(--trans);display:flex;align-items:center;gap:12px;margin-bottom:8px;"
+        onmouseenter="this.style.borderColor='var(--borde-hover)'"
+        onmouseleave="this.style.borderColor='var(--borde)'">
+        <div style="flex-shrink:0;width:28px;text-align:center;">${esc}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:500;">${equipoNombre} vs ${rivalNombre}${cantidadTxt}</div>
+          <div style="font-size:11px;color:var(--texto-3);">${fechaCortaGlobal(p.Fecha)}${torneo?' · '+torneo:''}</div>
+        </div>
+        <div class="${rc}" style="font-family:var(--fuente-titulo);font-size:17px;flex-shrink:0;">${p.Goles_Local} - ${p.Goles_Visitante}</div>
+      </div>`;
+  }).join('');
+
+  traerModalAlFrente('modal-racha');
+  document.getElementById('modal-racha').classList.add('visible');
 }
 
 function fechaCortaGlobal(f) {
@@ -5859,7 +5922,25 @@ function verFichaJugador(nombre, nacionalidadBuscada, desambiguadorBuscado) {
     });
 
     if (!fichaPartidosPorEquipo[equipoIdJ]) fichaPartidosPorEquipo[equipoIdJ] = [];
-    fichaPartidosPorEquipo[equipoIdJ].push({ partido: p, anio, incidencias });
+    fichaPartidosPorEquipo[equipoIdJ].push({ partido: p, anio, incidencias, equipoId: equipoIdJ });
+  });
+
+  // ── Listas de partidos por categoría (goles, penales, amarillas, rojas, dobletes/hat-tricks/...) ──
+  // para los cuadros clickeables de la ficha ("Principal"). Se arman a partir de fichaPartidosPorEquipo,
+  // que ya trae las incidencias de este jugador en cada partido que jugó.
+  fichaEventosJugador = { goles:[], penales:[], amarillas:[], rojas:[], multigol:{2:[],3:[],4:[],5:[],6:[],7:[]} };
+  Object.values(fichaPartidosPorEquipo).forEach(lista => {
+    lista.forEach(({ partido:p, incidencias, equipoId }) => {
+      const golesCant     = incidencias.filter(i => i.tipo === 'gol' || i.tipo === 'penal').length;
+      const penalCant     = incidencias.filter(i => i.tipo === 'penal').length;
+      const amarillaCant  = incidencias.filter(i => i.tipo === 'amarilla').length;
+      const rojaCant      = incidencias.filter(i => i.tipo === 'roja').length;
+      if (golesCant    > 0) fichaEventosJugador.goles.push({ partido:p, equipoId, cantidad:golesCant });
+      if (penalCant    > 0) fichaEventosJugador.penales.push({ partido:p, equipoId, cantidad:penalCant });
+      if (amarillaCant > 0) fichaEventosJugador.amarillas.push({ partido:p, equipoId, cantidad:amarillaCant });
+      if (rojaCant     > 0) fichaEventosJugador.rojas.push({ partido:p, equipoId, cantidad:rojaCant });
+      if (golesCant >= 2 && golesCant <= 7) fichaEventosJugador.multigol[golesCant].push({ partido:p, equipoId, cantidad:golesCant });
+    });
   });
 
   const totales = Object.values(porEquipo).reduce((a, r) => ({
@@ -5928,15 +6009,16 @@ function verFichaJugador(nombre, nacionalidadBuscada, desambiguadorBuscado) {
   }
 
   const esArquero = posicion === 'ARQ';
+  // Cuarto valor de cada fila = categoría para el detalle clickeable (null = no clickeable, ej. PJ)
   const stats = [
-    ['PJ', totales.pj, 'var(--texto-1)'],
-    esArquero ? ['🥅 Recibidos', concedidosTotal, 'var(--celeste)'] : ['⚽ Goles', totales.goles, 'var(--celeste)'],
-    ['🅿️ Pen.', totales.penales, 'var(--amarillo)'],
-    ['🟨 Amarillas', totales.amonestados, 'var(--amarillo)'],
-    ['🟥 Rojas', totales.expulsados, 'var(--rojo)'],
+    ['PJ', totales.pj, 'var(--texto-1)', null],
+    esArquero ? ['🥅 Recibidos', concedidosTotal, 'var(--celeste)', null] : ['⚽ Goles', totales.goles, 'var(--celeste)', 'goles'],
+    ['🅿️ Pen.', totales.penales, 'var(--amarillo)', 'penales'],
+    ['🟨 Amarillas', totales.amonestados, 'var(--amarillo)', 'amarillas'],
+    ['🟥 Rojas', totales.expulsados, 'var(--rojo)', 'rojas'],
   ];
   // Si el arquero además convirtió algún gol (muy poco frecuente), lo mostramos aparte para no perder el dato
-  if (esArquero && totales.goles > 0) stats.push(['⚽ Convertidos', totales.goles, 'var(--verde)']);
+  if (esArquero && totales.goles > 0) stats.push(['⚽ Convertidos', totales.goles, 'var(--verde)', 'goles']);
   // Dobletes / Hat-Tricks / Pókers / Re-Pókers / Doble Hat-Trick / 7 goles (solo si tiene al menos uno)
   const MULTIGOL_LABELS = {
     2: ['🎯 Dobletes', 'var(--celeste)'],
@@ -5949,14 +6031,17 @@ function verFichaJugador(nombre, nacionalidadBuscada, desambiguadorBuscado) {
   [2,3,4,5,6,7].forEach(n => {
     if (multigolConteo[n] > 0) {
       const [label, color] = MULTIGOL_LABELS[n];
-      stats.push([label, multigolConteo[n], color]);
+      stats.push([label, multigolConteo[n], color, 'multigol:'+n]);
     }
   });
-  document.getElementById('ficha-stats').innerHTML = stats.map(([label, val, color]) => `
-    <div class="ficha-stat-pill">
+  document.getElementById('ficha-stats').innerHTML = stats.map(([label, val, color, cat]) => {
+    const clickeable = cat && val > 0; // sin partidos que listar, el cuadro no reacciona al click
+    return `
+    <div class="ficha-stat-pill${clickeable ? ' clickeable' : ''}" ${clickeable ? `onclick="abrirListaEventosJugador('${cat}')" title="Ver partidos"` : ''}>
       <span class="ficha-stat-num" style="color:${color};">${val}</span>
       <span class="ficha-stat-label">${label}</span>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   // Debut profesional (partido más antiguo de TODA la carrera) + numeración cronológica de partidos,
   // usada para resaltar los hitos de partidos redondos (50, 100, 150... hasta 1000), en carrera y por club
