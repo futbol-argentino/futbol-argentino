@@ -1509,9 +1509,9 @@ select option{background:#080F20;color:#F0F6FF}
         <div class="filtro-grupo" style="min-width:260px;">
           <label class="filtro-label">Año</label>
           <div style="display:flex;gap:6px;">
-            <input type="number" id="stats-filtro-anio-exacto" class="filtro-input" placeholder="Año exacto" style="width:100px;flex:none;" oninput="actualizarModoAnioStats()">
-            <input type="number" id="stats-filtro-anio-desde" class="filtro-input" placeholder="Desde" oninput="actualizarModoAnioStats()">
-            <input type="number" id="stats-filtro-anio-hasta" class="filtro-input" placeholder="Hasta" oninput="actualizarModoAnioStats()">
+            <input type="number" id="stats-filtro-anio-exacto" class="filtro-input" placeholder="Año exacto" style="width:100px;flex:none;" oninput="renderEstadisticasDebounced()">
+            <input type="number" id="stats-filtro-anio-desde" class="filtro-input" placeholder="Desde" oninput="renderEstadisticasDebounced()">
+            <input type="number" id="stats-filtro-anio-hasta" class="filtro-input" placeholder="Hasta" oninput="renderEstadisticasDebounced()">
           </div>
         </div>
         <div class="filtro-grupo" style="flex:1;min-width:160px;">
@@ -5013,7 +5013,7 @@ function claveJugador(nombreLimpio, nacionalidad, desambiguador) {
   return norm;
 }
 
-function parsearGoleadores(equipoId, torneoId, listaPartidos) {
+function parsearGoleadores(equipoId, torneoId, listaPartidos, excluirEquipoId) {
   const goles = {};
   const ec = {};
   const nacionalidades = {};
@@ -5051,11 +5051,13 @@ function parsearGoleadores(equipoId, torneoId, listaPartidos) {
           // but player belongs to rival (idRival).
           // When filtering by team, only count EC if this team is the RIVAL (player's team).
           if (equipoId && idRival !== equipoId) return;
+          if (excluirEquipoId && idRival === excluirEquipoId) return; // "vs equipo X": excluye a los propios jugadores de X
           ec[clave] = (ec[clave] || 0) + 1;
           if (!equiposEC[clave]) equiposEC[clave] = new Set();
           equiposEC[clave].add(idRival);
         } else {
           if (equipoId && idEquipo !== equipoId) return;
+          if (excluirEquipoId && idEquipo === excluirEquipoId) return; // "vs equipo X": excluye a los propios jugadores de X
           if (!goles[clave]) goles[clave] = { normales: 0, penales: 0 };
           if (esP) goles[clave].penales++;
           else goles[clave].normales++;
@@ -5071,7 +5073,7 @@ function parsearGoleadores(equipoId, torneoId, listaPartidos) {
 // Cuenta, por jugador, en cuántos partidos distintos convirtió exactamente 2 (doblete),
 // 3 (hat-trick), 4 (póker), 5 (repóker), 6 (doble hat-trick) o 7 goles. Los autogoles (EC)
 // no cuentan como gol propio del jugador. Devuelve { 2:{clave:cant}, 3:{...}, ..., 7:{...} }.
-function parsearGoleadasMultiples(equipoId, torneoId, listaPartidos) {
+function parsearGoleadasMultiples(equipoId, torneoId, listaPartidos, excluirEquipoId) {
   const conteo = { 2:{}, 3:{}, 4:{}, 5:{}, 6:{}, 7:{} };
   (listaPartidos || partidos).forEach(p => {
     if (!esPartidoJugado(p)) return;
@@ -5082,6 +5084,7 @@ function parsearGoleadasMultiples(equipoId, torneoId, listaPartidos) {
     raw.split('/').forEach((parte, idx) => {
       const idEquipo = idx === 0 ? p.Local_ID : p.Visitante_ID;
       if (equipoId && idEquipo !== equipoId) return;
+      if (excluirEquipoId && idEquipo === excluirEquipoId) return; // "vs equipo X": excluye a los propios jugadores de X
       const golesPartido = {};
       parte.split('-').forEach(entrada => {
         entrada = entrada.trim();
@@ -5103,7 +5106,7 @@ function parsearGoleadasMultiples(equipoId, torneoId, listaPartidos) {
   return conteo;
 }
 
-function parsearTarjetas(campo, equipoId, torneoId, listaPartidos) {
+function parsearTarjetas(campo, equipoId, torneoId, listaPartidos, excluirEquipoId) {
   const conteo = {};
   const nacionalidades = {};
   const desambiguadores = {};
@@ -5119,6 +5122,7 @@ function parsearTarjetas(campo, equipoId, torneoId, listaPartidos) {
     partes.forEach((parte, idx) => {
       const idEquipo = idx === 0 ? p.Local_ID : p.Visitante_ID;
       if (equipoId && idEquipo !== equipoId) return;
+      if (excluirEquipoId && idEquipo === excluirEquipoId) return; // "vs equipo X": excluye a los propios jugadores de X
       parte.split('-').forEach(entrada => {
         const nac = extraerNacionalidad(entrada);
         const desamb = extraerDesambiguador(entrada);
@@ -5390,20 +5394,8 @@ function renderEstadisticasDebounced() {
   renderEstadisticasDebounced._t = setTimeout(renderEstadisticas, 280);
 }
 
-// Año exacto y rango (desde/hasta) son mutuamente excluyentes: usar uno deshabilita el otro
-// para que no queden mezclados sin darse cuenta.
-function actualizarModoAnioStats() {
-  const exacto = document.getElementById('stats-filtro-anio-exacto');
-  const desde  = document.getElementById('stats-filtro-anio-desde');
-  const hasta  = document.getElementById('stats-filtro-anio-hasta');
-  const usaExacto = exacto.value.trim() !== '';
-  const usaRango  = desde.value.trim() !== '' || hasta.value.trim() !== '';
-  desde.disabled  = usaExacto;
-  hasta.disabled  = usaExacto;
-  exacto.disabled = usaRango;
-  renderEstadisticasDebounced();
-}
-
+// Si hay un año exacto cargado, tiene prioridad sobre el rango (desde/hasta) — sin bloquear
+// ni deshabilitar ningún campo, simplemente se ignora el rango si el exacto está cargado.
 function renderEstadisticas() {
   const equipoId  = document.getElementById('stats-filtro-equipo')?.value || null;
   const rivalId   = document.getElementById('stats-rival-buscar-equipo')?.value || null;
@@ -5444,6 +5436,7 @@ function renderEstadisticas() {
     rawJ.split('/').forEach((parte, idx) => {
       const eqId = idx === 0 ? p.Local_ID : p.Visitante_ID;
       if (equipoId && eqId !== equipoId) return;
+      if (rivalId && eqId === rivalId) return; // "vs equipo X": excluye a los propios jugadores de X
       parte.split('-').forEach(entrada => {
         const nac = extraerNacionalidad(entrada);
         const desamb = extraerDesambiguador(entrada);
@@ -5465,9 +5458,9 @@ function renderEstadisticas() {
   // Ordena por cantidad y, a igualdad, por PJ (más partidos jugados queda arriba)
   const conPJ = (arr) => arr.slice().sort((a,b) => b[1]-a[1] || (pjConteo[b[0]]||0)-(pjConteo[a[0]]||0));
 
-  const { goles, ec, nacionalidades, desambiguadores, equiposGoles, equiposEC, nombresDisplay: ndGol } = parsearGoleadores(equipoId, null, partidosBase);
-  const { datos: amon, nacionalidades: nacAmon, desambiguadores: desambAmon, equiposPorJugador: eqAmon, nombresDisplay: ndAmon } = parsearTarjetas('Amonestados', equipoId, null, partidosBase);
-  const { datos: expu, nacionalidades: nacExpu, desambiguadores: desambExpu, equiposPorJugador: eqExpu, nombresDisplay: ndExpu } = parsearTarjetas('Expulsados', equipoId, null, partidosBase);
+  const { goles, ec, nacionalidades, desambiguadores, equiposGoles, equiposEC, nombresDisplay: ndGol } = parsearGoleadores(equipoId, null, partidosBase, rivalId);
+  const { datos: amon, nacionalidades: nacAmon, desambiguadores: desambAmon, equiposPorJugador: eqAmon, nombresDisplay: ndAmon } = parsearTarjetas('Amonestados', equipoId, null, partidosBase, rivalId);
+  const { datos: expu, nacionalidades: nacExpu, desambiguadores: desambExpu, equiposPorJugador: eqExpu, nombresDisplay: ndExpu } = parsearTarjetas('Expulsados', equipoId, null, partidosBase, rivalId);
 
   // Combinar todos los diccionarios de nac y de nombre-para-mostrar (claveInterna -> texto visible)
   const todosNac = { ...nacionalidades, ...nacAmon, ...nacExpu, ...todosNacPJ };
@@ -5501,7 +5494,7 @@ function renderEstadisticas() {
   datosStats.eqExpu = eqExpu;
 
   // Dobletes / Hat-Tricks / Pókers / Re-Pókers / Doble Hat-Trick / 7 goles en un partido
-  const multigol = parsearGoleadasMultiples(equipoId, null, partidosBase);
+  const multigol = parsearGoleadasMultiples(equipoId, null, partidosBase, rivalId);
   datosStats.doblete      = aplicarFiltros(conPJ(Object.entries(multigol[2])));
   datosStats.hattrick     = aplicarFiltros(conPJ(Object.entries(multigol[3])));
   datosStats.poker        = aplicarFiltros(conPJ(Object.entries(multigol[4])));
