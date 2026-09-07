@@ -1008,7 +1008,7 @@ select option{background:#080F20;color:#F0F6FF}
 .juego-jugador-foto{width:100%;aspect-ratio:3/4;border-radius:12px;overflow:hidden;margin-bottom:10px;background:var(--fondo-3)}
 .juego-jugador-foto img{width:100%;height:100%}
 .juego-jugador-nombre{font-family:var(--fuente-titulo);font-size:19px;font-weight:500;letter-spacing:0.3px;line-height:1.15;margin-bottom:4px}
-.juego-jugador-equipo{font-size:11px;color:var(--texto-2);display:flex;align-items:center;gap:5px;justify-content:center;margin-bottom:14px}
+.juego-jugador-equipo{font-size:11px;color:var(--texto-2);display:flex;align-items:center;gap:5px;justify-content:center;margin-bottom:14px;flex-wrap:wrap;row-gap:4px}
 .juego-jugador-goles{font-family:var(--fuente-titulo);font-size:38px;font-weight:600;color:var(--celeste-claro);line-height:1;min-height:46px;display:flex;align-items:center;justify-content:center}
 .juego-jugador-goles-label{font-size:9px;color:var(--texto-3);text-transform:uppercase;letter-spacing:0.8px;margin-top:6px;font-weight:600}
 .juego-vs-divisor{font-family:var(--fuente-titulo);font-size:20px;color:var(--texto-3);flex-shrink:0;padding-top:70px}
@@ -5194,9 +5194,19 @@ function construirIndiceJuegoGoles() {
     const equipoActualId = equiposArrE[0][0];
     const equipoActualNombre = equipos[equipoActualId] || equipoActualId;
 
+    // Lista de todos los clubes en los que jugó (sin duplicados), del más reciente al más viejo
+    const vistos = new Set();
+    const equiposTodos = [];
+    equiposArrE.forEach(([id]) => {
+      const nombre = equipos[id] || id;
+      if (vistos.has(nombre)) return;
+      vistos.add(nombre);
+      equiposTodos.push(nombre);
+    });
+
     lista.push({
       clave, nombre: e.nombre, nacionalidad: e.nacionalidad, desambiguador: e.desambiguador,
-      posicion, goles: e.goles, equipoActualNombre, equipoActualId
+      posicion, goles: e.goles, equipoActualNombre, equipoActualId, equiposTodos
     });
   });
 
@@ -5224,7 +5234,7 @@ function volverMenuJuegos() {
   document.getElementById('juegos-menu').style.display = 'block';
 }
 
-function elegirAlAzarJuegoGoles() {
+function elegirAlAzarJuegoGoles(evitarGoles) {
   let disponibles = juegoGolesLista.filter(j => !juegoGolesUsados.has(j.clave));
   if (!disponibles.length) {
     // Se acabaron los jugadores sin repetir: reiniciamos la lista de usados
@@ -5233,14 +5243,24 @@ function elegirAlAzarJuegoGoles() {
     juegoGolesUsados = new Set(actual ? [actual] : []);
     disponibles = juegoGolesLista.filter(j => !juegoGolesUsados.has(j.clave));
   }
+
+  // Evitamos, cuando se pueda, que el nuevo jugador tenga la misma cantidad
+  // de goles que aquel con el que se lo va a comparar (si no, salen muchos
+  // empates seguidos y el juego se vuelve poco interesante).
+  let base = disponibles;
+  if (evitarGoles !== undefined && evitarGoles !== null) {
+    const sinEmpate = disponibles.filter(j => j.goles !== evitarGoles);
+    if (sinEmpate.length) base = sinEmpate;
+  }
+
   // Los jugadores con 0 goles están para "confundir", pero no deben ser la mayoría
   // de las apariciones: se sortean aparte y salen solo ocasionalmente.
-  const conGoles = disponibles.filter(j => j.goles > 0);
-  const sinGoles = disponibles.filter(j => j.goles === 0);
+  const conGoles = base.filter(j => j.goles > 0);
+  const sinGoles = base.filter(j => j.goles === 0);
   const PROB_SIN_GOLES = 0.12;
   let pool = conGoles;
   if (sinGoles.length && (Math.random() < PROB_SIN_GOLES || !conGoles.length)) pool = sinGoles;
-  if (!pool.length) pool = disponibles;
+  if (!pool.length) pool = base.length ? base : disponibles;
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
@@ -5258,22 +5278,28 @@ function iniciarJuegoGoles() {
 
   juegoGolesIzq = elegirAlAzarJuegoGoles();
   juegoGolesUsados.add(juegoGolesIzq.clave);
-  juegoGolesDer = elegirAlAzarJuegoGoles();
+  juegoGolesDer = elegirAlAzarJuegoGoles(juegoGolesIzq.goles);
   juegoGolesUsados.add(juegoGolesDer.clave);
 
   renderJuegoGoles();
 }
 
 function _juegoGolesTarjetaHTML(j, oculto) {
-  const escudo = ESCUDOS[j.equipoActualNombre] ? `<img src="${ESCUDOS[j.equipoActualNombre]}" style="width:15px;height:15px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">` : '';
   const foto = fotoJugadorImg(j.nombre, j.equipoActualNombre, j.nacionalidad, 'width:100%;height:100%;object-fit:cover;object-position:top;display:block;', '', j.desambiguador);
   const lado = oculto ? 'der' : 'izq';
   const onclick = oculto ? "elegirJuegoGoles(true)" : "elegirJuegoGoles(false)";
+  const clubes = j.equiposTodos && j.equiposTodos.length ? j.equiposTodos : [j.equipoActualNombre];
+  const MAX_ESCUDOS = 6;
+  const escudosHTML = clubes.slice(0, MAX_ESCUDOS).map(nombre => {
+    const src = ESCUDOS[nombre];
+    return src ? `<img src="${src}" title="${nombre}" style="width:17px;height:17px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">` : '';
+  }).join('');
+  const extra = clubes.length > MAX_ESCUDOS ? `<span style="font-size:9px;color:var(--texto-3);align-self:center;">+${clubes.length - MAX_ESCUDOS}</span>` : '';
   return `
     <div class="juego-jugador-card" id="juego-card-${lado}" onclick="${onclick}">
       <div class="juego-jugador-foto">${foto}</div>
       <div class="juego-jugador-nombre">${j.nombre}</div>
-      <div class="juego-jugador-equipo">${escudo}${j.equipoActualNombre}</div>
+      <div class="juego-jugador-equipo" title="Clubes en los que jugó">${escudosHTML}${extra}</div>
       <div class="juego-jugador-goles" id="juego-goles-${lado}">${oculto ? '❓' : j.goles}</div>
       <div class="juego-jugador-goles-label">⚽ Goles en su carrera</div>
     </div>`;
@@ -5320,7 +5346,7 @@ function elegirJuegoGoles(esDerechaMas) {
       }
       juegoGolesIzq = der;
       juegoGolesUsados.add(juegoGolesIzq.clave);
-      juegoGolesDer = elegirAlAzarJuegoGoles();
+      juegoGolesDer = elegirAlAzarJuegoGoles(juegoGolesIzq.goles);
       juegoGolesUsados.add(juegoGolesDer.clave);
       juegoGolesBloqueado = false;
       renderJuegoGoles();
