@@ -1000,7 +1000,9 @@ select option{background:#080F20;color:#F0F6FF}
 .juego-goles-marcador{display:flex;justify-content:center;gap:26px;margin-bottom:22px;font-family:var(--fuente-cuerpo);font-size:13px;color:var(--texto-2);text-transform:uppercase;letter-spacing:0.5px}
 .juego-goles-marcador b{color:var(--celeste-claro);font-family:var(--fuente-titulo);font-size:22px;font-weight:400;letter-spacing:0.5px;margin-left:6px;text-transform:none}
 .juego-vs-row{display:flex;align-items:flex-start;justify-content:center;gap:18px;max-width:640px;margin:0 auto 26px}
-.juego-jugador-card{background:var(--fondo-2);border:2px solid var(--borde);border-radius:16px;padding:16px;flex:1;max-width:260px;display:flex;flex-direction:column;align-items:center;text-align:center;transition:var(--trans);position:relative;overflow:hidden}
+.juego-jugador-card{background:var(--fondo-2);border:2px solid var(--borde);border-radius:16px;padding:16px;flex:1;max-width:260px;display:flex;flex-direction:column;align-items:center;text-align:center;transition:var(--trans);position:relative;overflow:hidden;cursor:pointer}
+.juego-jugador-card:hover:not(.juego-card-correcta):not(.juego-card-incorrecta){border-color:var(--borde-hover);transform:translateY(-2px);box-shadow:0 10px 26px rgba(0,0,0,0.4)}
+.juego-jugador-card.juego-bloqueada{cursor:default;pointer-events:none}
 .juego-jugador-card.juego-card-correcta{border-color:var(--verde);box-shadow:0 0 0 4px var(--verde-glow)}
 .juego-jugador-card.juego-card-incorrecta{border-color:var(--rojo);box-shadow:0 0 0 4px var(--rojo-glow)}
 .juego-jugador-foto{width:100%;aspect-ratio:3/4;border-radius:12px;overflow:hidden;margin-bottom:10px;background:var(--fondo-3)}
@@ -5231,7 +5233,15 @@ function elegirAlAzarJuegoGoles() {
     juegoGolesUsados = new Set(actual ? [actual] : []);
     disponibles = juegoGolesLista.filter(j => !juegoGolesUsados.has(j.clave));
   }
-  return disponibles[Math.floor(Math.random() * disponibles.length)];
+  // Los jugadores con 0 goles están para "confundir", pero no deben ser la mayoría
+  // de las apariciones: se sortean aparte y salen solo ocasionalmente.
+  const conGoles = disponibles.filter(j => j.goles > 0);
+  const sinGoles = disponibles.filter(j => j.goles === 0);
+  const PROB_SIN_GOLES = 0.12;
+  let pool = conGoles;
+  if (sinGoles.length && (Math.random() < PROB_SIN_GOLES || !conGoles.length)) pool = sinGoles;
+  if (!pool.length) pool = disponibles;
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 function iniciarJuegoGoles() {
@@ -5258,8 +5268,9 @@ function _juegoGolesTarjetaHTML(j, oculto) {
   const escudo = ESCUDOS[j.equipoActualNombre] ? `<img src="${ESCUDOS[j.equipoActualNombre]}" style="width:15px;height:15px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">` : '';
   const foto = fotoJugadorImg(j.nombre, j.equipoActualNombre, j.nacionalidad, 'width:100%;height:100%;object-fit:cover;object-position:top;display:block;', '', j.desambiguador);
   const lado = oculto ? 'der' : 'izq';
+  const onclick = oculto ? "elegirJuegoGoles(true)" : "elegirJuegoGoles(false)";
   return `
-    <div class="juego-jugador-card" id="juego-card-${lado}">
+    <div class="juego-jugador-card" id="juego-card-${lado}" onclick="${onclick}">
       <div class="juego-jugador-foto">${foto}</div>
       <div class="juego-jugador-nombre">${j.nombre}</div>
       <div class="juego-jugador-equipo">${escudo}${j.equipoActualNombre}</div>
@@ -5290,6 +5301,7 @@ function elegirJuegoGoles(esDerechaMas) {
   if (juegoGolesBloqueado) return;
   juegoGolesBloqueado = true;
   document.querySelectorAll('#juego-goles-area .juego-btn-eleccion').forEach(b => b.disabled = true);
+  document.querySelectorAll('#juego-goles-area .juego-jugador-card').forEach(c => c.classList.add('juego-bloqueada'));
 
   const izq = juegoGolesIzq, der = juegoGolesDer;
   const empate = der.goles === izq.goles;
