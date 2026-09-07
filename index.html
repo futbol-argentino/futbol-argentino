@@ -191,6 +191,17 @@
 
   /* Bracket */
   .bracket-ronda { min-width:160px; }
+
+  /* ── JUEGOS: móvil ── */
+  .juego-vs-row { gap:8px; }
+  .juego-jugador-card { padding:10px; max-width:48%; }
+  .juego-jugador-nombre { font-size:14px; }
+  .juego-jugador-goles { font-size:26px; }
+  .juego-jugador-goles-label { font-size:8px; }
+  .juego-vs-divisor { padding-top:38px; font-size:13px; }
+  .juego-goles-botones { flex-direction:column; }
+  .juego-btn-eleccion { min-width:100%; font-size:13px; padding:12px; }
+  .juego-goles-fin-num { font-size:42px; }
   .bracket-partido { margin:4px 6px; }
   .bracket-equipo { padding:6px 8px; font-size:11px; }
   .bracket-gol { font-size:14px; }
@@ -985,6 +996,27 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
 ::-webkit-scrollbar-thumb:hover{background:rgba(56,189,248,0.4)}
 
 select option{background:#080F20;color:#F0F6FF}
+/* ── JUEGOS ── */
+.juego-goles-marcador{display:flex;justify-content:center;gap:26px;margin-bottom:22px;font-family:var(--fuente-cuerpo);font-size:13px;color:var(--texto-2);text-transform:uppercase;letter-spacing:0.5px}
+.juego-goles-marcador b{color:var(--celeste-claro);font-family:var(--fuente-titulo);font-size:22px;font-weight:400;letter-spacing:0.5px;margin-left:6px;text-transform:none}
+.juego-vs-row{display:flex;align-items:flex-start;justify-content:center;gap:18px;max-width:640px;margin:0 auto 26px}
+.juego-jugador-card{background:var(--fondo-2);border:2px solid var(--borde);border-radius:16px;padding:16px;flex:1;max-width:260px;display:flex;flex-direction:column;align-items:center;text-align:center;transition:var(--trans);position:relative;overflow:hidden}
+.juego-jugador-card.juego-card-correcta{border-color:var(--verde);box-shadow:0 0 0 4px var(--verde-glow)}
+.juego-jugador-card.juego-card-incorrecta{border-color:var(--rojo);box-shadow:0 0 0 4px var(--rojo-glow)}
+.juego-jugador-foto{width:100%;aspect-ratio:3/4;border-radius:12px;overflow:hidden;margin-bottom:10px;background:var(--fondo-3)}
+.juego-jugador-foto img{width:100%;height:100%}
+.juego-jugador-nombre{font-family:var(--fuente-titulo);font-size:19px;font-weight:500;letter-spacing:0.3px;line-height:1.15;margin-bottom:4px}
+.juego-jugador-equipo{font-size:11px;color:var(--texto-2);display:flex;align-items:center;gap:5px;justify-content:center;margin-bottom:14px}
+.juego-jugador-goles{font-family:var(--fuente-titulo);font-size:38px;font-weight:600;color:var(--celeste-claro);line-height:1;min-height:46px;display:flex;align-items:center;justify-content:center}
+.juego-jugador-goles-label{font-size:9px;color:var(--texto-3);text-transform:uppercase;letter-spacing:0.8px;margin-top:6px;font-weight:600}
+.juego-vs-divisor{font-family:var(--fuente-titulo);font-size:20px;color:var(--texto-3);flex-shrink:0;padding-top:70px}
+.juego-goles-botones{display:flex;gap:14px;justify-content:center;max-width:640px;margin:0 auto}
+.juego-btn-eleccion{flex:1;background:linear-gradient(135deg,var(--azul-oscuro),var(--azul-deep));border:1px solid rgba(56,189,248,0.3);color:var(--texto-1);font-family:var(--fuente-cuerpo);font-size:14px;font-weight:600;padding:14px 16px;border-radius:12px;cursor:pointer;transition:var(--trans)}
+.juego-btn-eleccion:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.4)}
+.juego-btn-eleccion:disabled{opacity:0.5;cursor:default}
+.juego-goles-fin-num{font-family:var(--fuente-titulo);font-size:56px;font-weight:600;color:var(--celeste-claro);text-align:center;line-height:1}
+.juego-card-juego{background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;padding:22px 16px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;transition:var(--trans);text-align:center}
+.juego-card-juego:hover{border-color:var(--borde-hover);transform:translateY(-3px);box-shadow:0 12px 30px rgba(0,0,0,0.4)}
 </style>
 </head>
 <body>
@@ -1034,6 +1066,10 @@ select option{background:#080F20;color:#F0F6FF}
     <div class="sidebar-nav-item" onclick="cambiarTab('estadios'); cerrarSidebar();" id="menu-estadios">
       <span class="sidebar-nav-icon">🏟️</span>
       <span class="sidebar-nav-texto">Estadios</span>
+    </div>
+    <div class="sidebar-nav-item" onclick="cambiarTab('juegos'); cerrarSidebar();" id="menu-juegos">
+      <span class="sidebar-nav-icon">🎮</span>
+      <span class="sidebar-nav-texto">Juegos</span>
     </div>
   </nav>
   <div class="sidebar-footer">Base de Datos del Fútbol Argentino</div>
@@ -1090,6 +1126,7 @@ select option{background:#080F20;color:#F0F6FF}
     <button class="tab-btn" id="tab-dts" onclick="cambiarTab('dts')">🧑‍💼 Directores Técnicos</button>
     <button class="tab-btn" id="tab-arbitros" onclick="cambiarTab('arbitros')">🧑‍⚖️ Árbitros</button>
     <button class="tab-btn" id="tab-estadios" onclick="cambiarTab('estadios')">🏟️ Estadios</button>
+    <button class="tab-btn" id="tab-juegos" onclick="cambiarTab('juegos')">🎮 Juegos</button>
   </div>
 
   <!-- ══ TAB HOY ══ -->
@@ -2180,6 +2217,47 @@ select option{background:#080F20;color:#F0F6FF}
     </div>
 
   </div><!-- fin panel-estadios -->
+
+  <!-- ══ TAB JUEGOS ══ -->
+  <div class="tab-panel" id="panel-juegos">
+
+    <!-- Menú de juegos -->
+    <div id="juegos-menu">
+      <div class="filtros-panel" style="margin-bottom:20px;">
+        <div class="filtros-titulo">🎮 Juegos</div>
+        <div style="color:var(--texto-2);font-size:13px;margin-top:4px;">Elegí un juego y poné a prueba lo que sabés del fútbol argentino.</div>
+      </div>
+      <div class="equipos-grid">
+        <div class="juego-card-juego" onclick="abrirJuegoGoles()">
+          <div style="font-size:38px;">⚽📈</div>
+          <div class="equipo-card-nombre">Más o Menos</div>
+          <div style="font-size:11px;color:var(--texto-2);">¿Quién hizo más goles en su carrera?</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Juego: Más o Menos (goles en la carrera) -->
+    <div id="juego-goles-pantalla" style="display:none;">
+      <button class="btn-volver" onclick="volverMenuJuegos()" style="margin-bottom:18px;">← Volver a Juegos</button>
+      <div style="text-align:center;font-family:var(--fuente-titulo);font-size:26px;margin-bottom:4px;">⚽📈 Más o Menos</div>
+      <div style="text-align:center;font-size:12px;color:var(--texto-2);margin-bottom:22px;">¿Quién hizo más goles en su carrera?</div>
+      <div id="juego-goles-area"></div>
+    </div>
+
+    <!-- Modal de fin de juego -->
+    <div class="modal-overlay" id="modal-juego-goles-fin" style="display:none;">
+      <div class="modal-box" style="max-width:380px;text-align:center;">
+        <div style="font-size:44px;margin-bottom:6px;">💥</div>
+        <div style="font-family:var(--fuente-titulo);font-size:24px;margin-bottom:14px;">¡Perdiste!</div>
+        <div style="color:var(--texto-2);font-size:12px;text-transform:uppercase;letter-spacing:0.8px;">Acertaste</div>
+        <div class="juego-goles-fin-num" id="juego-goles-fin-score">0</div>
+        <div style="color:var(--texto-3);font-size:12px;margin-top:14px;">Mejor racha: <b id="juego-goles-fin-mejor" style="color:var(--texto-2);">0</b></div>
+        <button class="juego-btn-eleccion" style="margin-top:22px;width:100%;" onclick="reiniciarJuegoGoles()">🔄 Jugar de nuevo</button>
+        <button class="btn-volver" style="margin-top:10px;width:100%;justify-content:center;" onclick="document.getElementById('modal-juego-goles-fin').style.display='none'; volverMenuJuegos();">← Volver a Juegos</button>
+      </div>
+    </div>
+
+  </div><!-- fin panel-juegos -->
 
 </div><!-- fin main -->
 
@@ -5011,6 +5089,244 @@ function claveJugador(nombreLimpio, nacionalidad, desambiguador) {
   if (desambiguador) return norm + '‡' + (nacionalidad || '?') + '‡' + desambiguador;
   if (NOMBRES_AMBIGUOS.has(norm)) return norm + '‡' + (nacionalidad || '?');
   return norm;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// ── JUEGO "MÁS O MENOS" (goles en la carrera) ──
+// Arma un índice único (una sola vez, bajo demanda) con TODOS los jugadores
+// de la base: goles totales en su carrera, posición dominante y el equipo en
+// el que jugó su partido más reciente (para mostrar su foto más actual).
+// Se excluyen los arqueros, salvo que tengan algún gol convertido registrado.
+// ══════════════════════════════════════════════════════════════════════════
+let JUEGO_JUGADORES_INDEX = null;
+
+function construirIndiceJuegoGoles() {
+  if (JUEGO_JUGADORES_INDEX) return JUEGO_JUGADORES_INDEX;
+
+  const POSICIONES_VALIDAS = new Set(['ARQ','DEF','MED','DEL']);
+  const PAISES_CODIGOS = new Set(['ARG','BRA','URU','PAR','BOL','CHI','COL','PER','ECU','VEN','MEX','ESP','POR','ITA','FRA','ALE','ING','HOL','BEL','CRO','SER','USA','COS','CRI','PAN','HON','GUA','NIC','ESL','ARM']);
+
+  const mapa = {}; // clave jugador -> datos acumulados
+  function getEntry(clave, nombreLimpio, nacionalidad, desambiguador) {
+    if (!mapa[clave]) {
+      mapa[clave] = {
+        nombre: nombreCanonico(nombreLimpio),
+        nacionalidad: nacionalidad || null,
+        desambiguador: desambiguador || null,
+        goles: 0,
+        posConteo: {},
+        equipos: {} // equipoId -> { pj, maxAnio }
+      };
+    }
+    const e = mapa[clave];
+    if (!e.nacionalidad && nacionalidad) e.nacionalidad = nacionalidad;
+    return e;
+  }
+
+  partidos.forEach(p => {
+    if (!esPartidoJugado(p)) return; // solo partidos con resultado cargado
+    const anio = anioPartido(p);
+
+    // Goles convertidos (columna Goleadores). Los goles en contra (EC) no cuentan
+    // como gol propio del jugador que aparece marcado.
+    const rawG = p.Goleadores || '';
+    if (rawG && rawG.trim() && rawG.toLowerCase() !== 'ninguno') {
+      rawG.split('/').forEach(parte => {
+        (parte || '').split('-').forEach(entradaRaw => {
+          const entrada = (entradaRaw || '').trim();
+          if (!entrada || entrada.toLowerCase() === 'ninguno') return;
+          if (/\(EC\)/i.test(entrada)) return;
+          const nombreLimpio = limpiarNombre(entrada);
+          if (!nombreLimpio || normalizarNombre(nombreLimpio).length < 2) return;
+          const nac = extraerNacionalidad(entrada);
+          const desamb = extraerDesambiguador(entrada);
+          const clave = claveJugador(nombreLimpio, nac, desamb);
+          getEntry(clave, nombreLimpio, nac, desamb).goles++;
+        });
+      });
+    }
+
+    // Posición dominante + equipo/año más reciente (columna Jugadores)
+    const rawJ = p.Jugadores || '';
+    if (rawJ) {
+      rawJ.split('/').forEach((parte, idx) => {
+        const equipoId = idx === 0 ? p.Local_ID : p.Visitante_ID;
+        (parte || '').split('-').forEach(entradaRaw => {
+          const entrada = (entradaRaw || '').trim();
+          if (!entrada) return;
+          const nombreLimpio = limpiarNombre(entrada);
+          if (!nombreLimpio || normalizarNombre(nombreLimpio).length < 2) return;
+          const nac = extraerNacionalidad(entrada);
+          const desamb = extraerDesambiguador(entrada);
+          const clave = claveJugador(nombreLimpio, nac, desamb);
+          const e = getEntry(clave, nombreLimpio, nac, desamb);
+
+          const posMatches = [...entrada.matchAll(/\(([A-Z]{2,4})\)/g)].map(m => m[1]);
+          const posEncontrada = posMatches.find(pp => POSICIONES_VALIDAS.has(pp) && !PAISES_CODIGOS.has(pp));
+          if (posEncontrada) e.posConteo[posEncontrada] = (e.posConteo[posEncontrada] || 0) + 1;
+
+          if (!e.equipos[equipoId]) e.equipos[equipoId] = { pj: 0, maxAnio: -Infinity };
+          e.equipos[equipoId].pj++;
+          if (anio && anio > e.equipos[equipoId].maxAnio) e.equipos[equipoId].maxAnio = anio;
+        });
+      });
+    }
+  });
+
+  const lista = [];
+  Object.entries(mapa).forEach(([clave, e]) => {
+    const equiposArrE = Object.entries(e.equipos);
+    if (!equiposArrE.length) return; // sin partidos jugados registrados, descartar
+
+    const posOrdenada = Object.entries(e.posConteo).sort((a, b) => b[1] - a[1]);
+    const posicion = posOrdenada.length ? posOrdenada[0][0] : null;
+
+    // Excluir arqueros, salvo que hayan convertido algún gol
+    if (posicion === 'ARQ' && e.goles === 0) return;
+
+    // Equipo más actual: el de su partido más reciente (desempata por más PJ ahí)
+    equiposArrE.sort((a, b) => {
+      if (b[1].maxAnio !== a[1].maxAnio) return b[1].maxAnio - a[1].maxAnio;
+      return b[1].pj - a[1].pj;
+    });
+    const equipoActualId = equiposArrE[0][0];
+    const equipoActualNombre = equipos[equipoActualId] || equipoActualId;
+
+    lista.push({
+      clave, nombre: e.nombre, nacionalidad: e.nacionalidad, desambiguador: e.desambiguador,
+      posicion, goles: e.goles, equipoActualNombre, equipoActualId
+    });
+  });
+
+  JUEGO_JUGADORES_INDEX = lista;
+  return lista;
+}
+
+// ── Estado del juego ──
+let juegoGolesLista = null;
+let juegoGolesUsados = new Set();
+let juegoGolesIzq = null;
+let juegoGolesDer = null;
+let juegoGolesScore = 0;
+let juegoGolesMejor = 0;
+let juegoGolesBloqueado = false;
+try { juegoGolesMejor = parseInt(localStorage.getItem('juegoGoles_mejor')) || 0; } catch(e) {}
+
+function abrirJuegoGoles() {
+  document.getElementById('juegos-menu').style.display = 'none';
+  document.getElementById('juego-goles-pantalla').style.display = 'block';
+  iniciarJuegoGoles();
+}
+function volverMenuJuegos() {
+  document.getElementById('juego-goles-pantalla').style.display = 'none';
+  document.getElementById('juegos-menu').style.display = 'block';
+}
+
+function elegirAlAzarJuegoGoles() {
+  let disponibles = juegoGolesLista.filter(j => !juegoGolesUsados.has(j.clave));
+  if (!disponibles.length) {
+    // Se acabaron los jugadores sin repetir: reiniciamos la lista de usados
+    // (menos el que está actualmente a la izquierda, para no repetirlo de una).
+    const actual = juegoGolesIzq ? juegoGolesIzq.clave : null;
+    juegoGolesUsados = new Set(actual ? [actual] : []);
+    disponibles = juegoGolesLista.filter(j => !juegoGolesUsados.has(j.clave));
+  }
+  return disponibles[Math.floor(Math.random() * disponibles.length)];
+}
+
+function iniciarJuegoGoles() {
+  const lista = construirIndiceJuegoGoles();
+  const area = document.getElementById('juego-goles-area');
+  if (lista.length < 2) {
+    area.innerHTML = '<div class="filtros-panel" style="text-align:center;color:var(--texto-2);">No hay suficientes jugadores con datos cargados para jugar.</div>';
+    return;
+  }
+  juegoGolesLista = lista;
+  juegoGolesUsados = new Set();
+  juegoGolesScore = 0;
+  juegoGolesBloqueado = false;
+
+  juegoGolesIzq = elegirAlAzarJuegoGoles();
+  juegoGolesUsados.add(juegoGolesIzq.clave);
+  juegoGolesDer = elegirAlAzarJuegoGoles();
+  juegoGolesUsados.add(juegoGolesDer.clave);
+
+  renderJuegoGoles();
+}
+
+function _juegoGolesTarjetaHTML(j, oculto) {
+  const escudo = ESCUDOS[j.equipoActualNombre] ? `<img src="${ESCUDOS[j.equipoActualNombre]}" style="width:15px;height:15px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">` : '';
+  const foto = fotoJugadorImg(j.nombre, j.equipoActualNombre, j.nacionalidad, 'width:100%;height:100%;object-fit:cover;object-position:top;display:block;', '', j.desambiguador);
+  const lado = oculto ? 'der' : 'izq';
+  return `
+    <div class="juego-jugador-card" id="juego-card-${lado}">
+      <div class="juego-jugador-foto">${foto}</div>
+      <div class="juego-jugador-nombre">${j.nombre}</div>
+      <div class="juego-jugador-equipo">${escudo}${j.equipoActualNombre}</div>
+      <div class="juego-jugador-goles" id="juego-goles-${lado}">${oculto ? '❓' : j.goles}</div>
+      <div class="juego-jugador-goles-label">⚽ Goles en su carrera</div>
+    </div>`;
+}
+
+function renderJuegoGoles() {
+  const el = document.getElementById('juego-goles-area');
+  el.innerHTML = `
+    <div class="juego-goles-marcador">
+      <div>Racha <b>${juegoGolesScore}</b></div>
+      <div>Mejor <b>${juegoGolesMejor}</b></div>
+    </div>
+    <div class="juego-vs-row">
+      ${_juegoGolesTarjetaHTML(juegoGolesIzq, false)}
+      <div class="juego-vs-divisor">VS</div>
+      ${_juegoGolesTarjetaHTML(juegoGolesDer, true)}
+    </div>
+    <div class="juego-goles-botones">
+      <button class="juego-btn-eleccion" onclick="elegirJuegoGoles(false)">⬅️ Tiene más el de la IZQUIERDA</button>
+      <button class="juego-btn-eleccion" onclick="elegirJuegoGoles(true)">Tiene más el de la DERECHA ➡️</button>
+    </div>`;
+}
+
+function elegirJuegoGoles(esDerechaMas) {
+  if (juegoGolesBloqueado) return;
+  juegoGolesBloqueado = true;
+  document.querySelectorAll('#juego-goles-area .juego-btn-eleccion').forEach(b => b.disabled = true);
+
+  const izq = juegoGolesIzq, der = juegoGolesDer;
+  const empate = der.goles === izq.goles;
+  const correcto = empate || (esDerechaMas ? der.goles > izq.goles : der.goles < izq.goles);
+
+  document.getElementById('juego-goles-der').textContent = der.goles;
+  const cardDer = document.getElementById('juego-card-der');
+  if (cardDer) cardDer.classList.add(correcto ? 'juego-card-correcta' : 'juego-card-incorrecta');
+
+  setTimeout(() => {
+    if (correcto) {
+      juegoGolesScore++;
+      if (juegoGolesScore > juegoGolesMejor) {
+        juegoGolesMejor = juegoGolesScore;
+        try { localStorage.setItem('juegoGoles_mejor', juegoGolesMejor); } catch(e) {}
+      }
+      juegoGolesIzq = der;
+      juegoGolesUsados.add(juegoGolesIzq.clave);
+      juegoGolesDer = elegirAlAzarJuegoGoles();
+      juegoGolesUsados.add(juegoGolesDer.clave);
+      juegoGolesBloqueado = false;
+      renderJuegoGoles();
+    } else {
+      mostrarFinJuegoGoles();
+    }
+  }, 1100);
+}
+
+function mostrarFinJuegoGoles() {
+  document.getElementById('juego-goles-fin-score').textContent = juegoGolesScore;
+  document.getElementById('juego-goles-fin-mejor').textContent = juegoGolesMejor;
+  document.getElementById('modal-juego-goles-fin').style.display = 'flex';
+}
+
+function reiniciarJuegoGoles() {
+  document.getElementById('modal-juego-goles-fin').style.display = 'none';
+  iniciarJuegoGoles();
 }
 
 function parsearGoleadores(equipoId, torneoId, listaPartidos, excluirEquipoId) {
