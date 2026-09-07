@@ -3262,9 +3262,16 @@ function actualizarFechasDisponibles() {
 
   // Generar TODOS los días en el rango, tengan o no partidos cargados,
   // para que al navegar con las flechas se recorra día por día sin saltos.
+  // El límite hacia adelante no depende de si hay fixtures cargados: siempre
+  // se puede seguir avanzando varios años hacia el futuro desde hoy.
   const hoyISO = new Date().toISOString().split('T')[0];
+  const limiteFuturo = new Date();
+  limiteFuturo.setFullYear(limiteFuturo.getFullYear() + 5);
+  const limiteFuturoISO = limiteFuturo.toISOString().split('T')[0];
+
   const inicioISO = conPartidos[0];
-  const finISO = conPartidos[conPartidos.length - 1] > hoyISO ? conPartidos[conPartidos.length - 1] : hoyISO;
+  const ultimoConPartidos = conPartidos[conPartidos.length - 1];
+  const finISO = ultimoConPartidos > limiteFuturoISO ? ultimoConPartidos : limiteFuturoISO;
 
   const dias = [];
   const cursor = new Date(inicioISO + 'T00:00:00');
@@ -3300,8 +3307,14 @@ function navegarFecha(delta) {
   if (!fechasDisponibles.length) return;
 
   if (!fechaNavActiva) {
-    // Si no hay fecha seleccionada, ir a la primera/última según dirección
-    fechaNavActiva = delta > 0 ? fechasDisponibles[0] : fechasDisponibles[fechasDisponibles.length - 1];
+    // Sin fecha activa partimos de "hoy" y nos movemos un día en la dirección elegida
+    // (antes esto saltaba directo a la fecha más antigua/reciente del historial).
+    const hoyISO = new Date().toISOString().split('T')[0];
+    let idxHoy = fechasDisponibles.indexOf(hoyISO);
+    if (idxHoy === -1) idxHoy = delta > 0 ? -1 : fechasDisponibles.length; // fallback de seguridad
+    const nuevoIdx = idxHoy + delta;
+    if (nuevoIdx < 0 || nuevoIdx >= fechasDisponibles.length) return;
+    fechaNavActiva = fechasDisponibles[nuevoIdx];
   } else {
     const idx = fechasDisponibles.indexOf(fechaNavActiva);
     let nuevoIdx;
