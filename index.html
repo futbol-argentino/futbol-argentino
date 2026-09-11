@@ -234,6 +234,11 @@
   .juego-goles-botones { flex-direction:column; }
   .juego-btn-eleccion { min-width:100%; font-size:13px; padding:12px; }
   .juego-goles-fin-num { font-size:42px; }
+  .juego-trayectoria-foto { width:130px; height:130px; }
+  .juego-trayectoria-slot { width:56px; height:56px; }
+  .juego-trayectoria-slot-interrogante { font-size:18px; }
+  .juego-trayectoria-slot-escudo img { width:32px !important; height:32px !important; }
+  .juego-trayectoria-slot-nombre { font-size:8px; max-width:56px; }
   .bracket-partido { margin:4px 6px; }
   .bracket-equipo { padding:6px 8px; font-size:11px; }
   .bracket-gol { font-size:14px; }
@@ -1051,6 +1056,15 @@ select option{background:#080F20;color:#F0F6FF}
 .juego-goles-fin-num{font-family:var(--fuente-titulo);font-size:56px;font-weight:600;color:var(--celeste-claro);text-align:center;line-height:1}
 .juego-card-juego{background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;padding:22px 16px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;transition:var(--trans);text-align:center}
 .juego-card-juego:hover{border-color:var(--borde-hover);transform:translateY(-3px);box-shadow:0 12px 30px rgba(0,0,0,0.4)}
+.juego-trayectoria-foto{width:150px;height:150px;border-radius:50%;overflow:hidden;margin:0 auto 14px;background:var(--fondo-3);border:3px solid var(--borde-activo)}
+.juego-trayectoria-foto img{width:100%;height:100%;object-fit:cover;object-position:top}
+.juego-trayectoria-row{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:center;gap:12px;max-width:680px;margin:20px auto}
+.juego-trayectoria-slot{width:72px;height:72px;border-radius:14px;background:var(--fondo-3);border:2px dashed var(--borde);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:var(--trans);flex-shrink:0}
+.juego-trayectoria-slot.revelado{border-style:solid;border-color:var(--verde);background:var(--fondo-2);box-shadow:0 0 0 3px var(--verde-glow)}
+.juego-trayectoria-slot-interrogante{font-size:22px;color:var(--texto-3)}
+.juego-trayectoria-slot-escudo img{width:38px;height:38px;object-fit:contain}
+.juego-trayectoria-slot-nombre{font-size:9px;color:var(--texto-2);text-align:center;line-height:1.15;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.juego-trayectoria-flecha{color:var(--texto-3);font-size:16px;align-self:center;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -2287,6 +2301,11 @@ select option{background:#080F20;color:#F0F6FF}
           <div class="equipo-card-nombre">Conexión</div>
           <div style="font-size:11px;color:var(--texto-2);">¿Qué jugador jugó en los dos equipos?</div>
         </div>
+        <div class="juego-card-juego" onclick="abrirJuegoTrayectoria()">
+          <div style="font-size:38px;">🧭🗓️</div>
+          <div class="equipo-card-nombre">Trayectoria</div>
+          <div style="font-size:11px;color:var(--texto-2);">¿En qué equipos jugó, del más viejo al más nuevo?</div>
+        </div>
       </div>
     </div>
 
@@ -2330,6 +2349,28 @@ select option{background:#080F20;color:#F0F6FF}
         <div id="juego-conexion-fin-ejemplos" style="margin-top:16px;font-size:12px;color:var(--texto-2);line-height:1.5;"></div>
         <button class="juego-btn-eleccion" style="margin-top:22px;width:100%;" onclick="reiniciarJuegoConexion()">🔄 Jugar de nuevo</button>
         <button class="btn-volver" style="margin-top:10px;width:100%;justify-content:center;" onclick="document.getElementById('modal-juego-conexion-fin').style.display='none'; volverMenuJuegos();">← Volver a Juegos</button>
+      </div>
+    </div>
+
+    <!-- Juego: Trayectoria (equipos en los que jugó, en orden cronológico) -->
+    <div id="juego-trayectoria-pantalla" style="display:none;">
+      <button class="btn-volver" onclick="volverMenuJuegos()" style="margin-bottom:18px;">← Volver a Juegos</button>
+      <div style="text-align:center;font-family:var(--fuente-titulo);font-size:26px;margin-bottom:4px;">🧭🗓️ Trayectoria</div>
+      <div style="text-align:center;font-size:12px;color:var(--texto-2);margin-bottom:22px;">Nombrá todos los equipos en los que jugó, del más viejo al más nuevo</div>
+      <div id="juego-trayectoria-area"></div>
+    </div>
+
+    <!-- Modal de fin de juego: Trayectoria -->
+    <div class="modal-overlay" id="modal-juego-trayectoria-fin" style="display:none;">
+      <div class="modal-box" style="max-width:420px;text-align:center;">
+        <div style="font-size:44px;margin-bottom:6px;">🧭</div>
+        <div style="font-family:var(--fuente-titulo);font-size:24px;margin-bottom:14px;" id="juego-trayectoria-fin-titulo">¡Fallaste!</div>
+        <div style="color:var(--texto-2);font-size:12px;text-transform:uppercase;letter-spacing:0.8px;">Racha final</div>
+        <div class="juego-goles-fin-num" id="juego-trayectoria-fin-score">0</div>
+        <div style="color:var(--texto-3);font-size:12px;margin-top:14px;">Mejor racha: <b id="juego-trayectoria-fin-mejor" style="color:var(--texto-2);">0</b></div>
+        <div id="juego-trayectoria-fin-recorrido" style="margin-top:16px;font-size:12px;color:var(--texto-2);line-height:1.5;"></div>
+        <button class="juego-btn-eleccion" style="margin-top:22px;width:100%;" onclick="reiniciarJuegoTrayectoria()">🔄 Jugar de nuevo</button>
+        <button class="btn-volver" style="margin-top:10px;width:100%;justify-content:center;" onclick="document.getElementById('modal-juego-trayectoria-fin').style.display='none'; volverMenuJuegos();">← Volver a Juegos</button>
       </div>
     </div>
 
@@ -5324,6 +5365,8 @@ function volverMenuJuegos() {
   document.getElementById('juego-goles-pantalla').style.display = 'none';
   const pantallaConexion = document.getElementById('juego-conexion-pantalla');
   if (pantallaConexion) pantallaConexion.style.display = 'none';
+  const pantallaTrayectoria = document.getElementById('juego-trayectoria-pantalla');
+  if (pantallaTrayectoria) pantallaTrayectoria.style.display = 'none';
   document.getElementById('juegos-menu').style.display = 'block';
 }
 
@@ -5702,6 +5745,292 @@ function mostrarFinJuegoConexion() {
 function reiniciarJuegoConexion() {
   document.getElementById('modal-juego-conexion-fin').style.display = 'none';
   iniciarJuegoConexion();
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// ── JUEGO "TRAYECTORIA" (equipos en los que jugó, en orden cronológico) ──
+// Muestra la foto y el nombre de un jugador (con la camiseta del equipo de su
+// partido más reciente) y hay que nombrar TODOS los equipos en los que jugó,
+// que se van revelando en su casillero correspondiente, ordenados del más
+// viejo al más nuevo de izquierda a derecha.
+// ══════════════════════════════════════════════════════════════════════════
+let JUEGO_TRAYECTORIA_INDEX = null;
+
+function construirIndiceJuegoTrayectoria() {
+  if (JUEGO_TRAYECTORIA_INDEX) return JUEGO_TRAYECTORIA_INDEX;
+
+  const mapa = {}; // clave jugador -> datos acumulados
+  function getEntry(clave, nombreLimpio, nacionalidad, desambiguador) {
+    if (!mapa[clave]) {
+      mapa[clave] = {
+        nombre: nombreCanonico(nombreLimpio),
+        nacionalidad: nacionalidad || null,
+        desambiguador: desambiguador || null,
+        equipos: {} // equipoId -> { pj, minAnio, maxAnio }
+      };
+    }
+    const e = mapa[clave];
+    if (!e.nacionalidad && nacionalidad) e.nacionalidad = nacionalidad;
+    return e;
+  }
+
+  partidos.forEach(p => {
+    const anio = anioPartido(p);
+    const rawJ = p.Jugadores || '';
+    if (!rawJ) return;
+    rawJ.split('/').forEach((parte, idx) => {
+      const equipoId = idx === 0 ? p.Local_ID : p.Visitante_ID;
+      if (!equipoId || !equipos[equipoId]) return;
+      (parte || '').split('-').forEach(entradaRaw => {
+        const entrada = (entradaRaw || '').trim();
+        if (!entrada) return;
+        const nombreLimpio = limpiarNombre(entrada);
+        if (!nombreLimpio || normalizarNombre(nombreLimpio).length < 2) return;
+        const nac = extraerNacionalidad(entrada);
+        const desamb = extraerDesambiguador(entrada);
+        const clave = claveJugador(nombreLimpio, nac, desamb);
+        const e = getEntry(clave, nombreLimpio, nac, desamb);
+
+        if (!e.equipos[equipoId]) e.equipos[equipoId] = { pj: 0, minAnio: Infinity, maxAnio: -Infinity };
+        e.equipos[equipoId].pj++;
+        if (anio) {
+          if (anio < e.equipos[equipoId].minAnio) e.equipos[equipoId].minAnio = anio;
+          if (anio > e.equipos[equipoId].maxAnio) e.equipos[equipoId].maxAnio = anio;
+        }
+      });
+    });
+  });
+
+  const lista = [];
+  Object.entries(mapa).forEach(([clave, e]) => {
+    // Solo consideramos clubes con al menos un año identificado (descarta partidos sin fecha válida)
+    const equiposArrE = Object.entries(e.equipos).filter(([, v]) => v.minAnio !== Infinity);
+    if (equiposArrE.length < 2) return; // necesitamos al menos 2 clubes distintos
+
+    // Orden cronológico ascendente: del club con año de debut más viejo al más nuevo
+    const ordenAsc = equiposArrE.slice().sort((a, b) => {
+      if (a[1].minAnio !== b[1].minAnio) return a[1].minAnio - b[1].minAnio;
+      return b[1].pj - a[1].pj;
+    });
+
+    // Club de referencia para la foto: el de su partido más reciente
+    const ordenDesc = equiposArrE.slice().sort((a, b) => {
+      if (b[1].maxAnio !== a[1].maxAnio) return b[1].maxAnio - a[1].maxAnio;
+      return b[1].pj - a[1].pj;
+    });
+    const equipoFotoId = ordenDesc[0][0];
+    const equipoFotoNombre = equipos[equipoFotoId] || equipoFotoId;
+
+    const clubesOrden = ordenAsc.map(([id]) => ({ id, nombre: equipos[id] || id }));
+
+    lista.push({
+      clave, nombre: e.nombre, nacionalidad: e.nacionalidad, desambiguador: e.desambiguador,
+      equipoFotoId, equipoFotoNombre, clubesOrden
+    });
+  });
+
+  JUEGO_TRAYECTORIA_INDEX = lista;
+  return lista;
+}
+
+// ── Estado del juego ──
+let juegoTrayectoriaLista = null;
+let juegoTrayectoriaUsados = new Set();
+let juegoTrayectoriaActual = null; // jugador actual
+let juegoTrayectoriaRevelados = new Set(); // ids de equipo ya revelados en la ronda actual
+let juegoTrayectoriaScore = 0;
+let juegoTrayectoriaMejor = 0;
+let juegoTrayectoriaBloqueado = false;
+try { juegoTrayectoriaMejor = parseInt(localStorage.getItem('juegoTrayectoria_mejor')) || 0; } catch(e) {}
+
+function abrirJuegoTrayectoria() {
+  document.getElementById('juegos-menu').style.display = 'none';
+  document.getElementById('juego-trayectoria-pantalla').style.display = 'block';
+  iniciarJuegoTrayectoria();
+}
+
+function elegirAlAzarJuegoTrayectoria() {
+  let disponibles = juegoTrayectoriaLista.filter(j => !juegoTrayectoriaUsados.has(j.clave));
+  if (!disponibles.length) {
+    juegoTrayectoriaUsados = new Set();
+    disponibles = juegoTrayectoriaLista;
+  }
+  return disponibles[Math.floor(Math.random() * disponibles.length)];
+}
+
+function iniciarJuegoTrayectoria() {
+  const lista = construirIndiceJuegoTrayectoria();
+  const area = document.getElementById('juego-trayectoria-area');
+  if (lista.length < 1) {
+    area.innerHTML = '<div class="filtros-panel" style="text-align:center;color:var(--texto-2);">No hay suficientes jugadores con más de un equipo cargado para jugar.</div>';
+    return;
+  }
+  juegoTrayectoriaLista = lista;
+  juegoTrayectoriaUsados = new Set();
+  juegoTrayectoriaScore = 0;
+  juegoTrayectoriaBloqueado = false;
+  nuevaRondaJuegoTrayectoria();
+}
+
+function nuevaRondaJuegoTrayectoria() {
+  juegoTrayectoriaActual = elegirAlAzarJuegoTrayectoria();
+  juegoTrayectoriaUsados.add(juegoTrayectoriaActual.clave);
+  juegoTrayectoriaRevelados = new Set();
+  juegoTrayectoriaBloqueado = false;
+  renderJuegoTrayectoria();
+}
+
+function _trayectoriaSlotHTML(club, revelado) {
+  if (revelado) {
+    return `<div class="juego-trayectoria-slot revelado" title="${club.nombre}">
+      <div class="juego-trayectoria-slot-escudo">${escudoImg(club.nombre, 38)}</div>
+      <div class="juego-trayectoria-slot-nombre">${club.nombre}</div>
+    </div>`;
+  }
+  return `<div class="juego-trayectoria-slot">
+    <div class="juego-trayectoria-slot-interrogante">❓</div>
+    <div class="juego-trayectoria-slot-nombre">&nbsp;</div>
+  </div>`;
+}
+
+function renderJuegoTrayectoria() {
+  const j = juegoTrayectoriaActual;
+  const foto = fotoJugadorImg(j.nombre, j.equipoFotoNombre, j.nacionalidad, 'width:100%;height:100%;object-fit:cover;object-position:top;display:block;', '', j.desambiguador);
+  const slots = j.clubesOrden.map((c, i) => {
+    const html = _trayectoriaSlotHTML(c, juegoTrayectoriaRevelados.has(c.id));
+    return i === 0 ? html : `<div class="juego-trayectoria-flecha">→</div>${html}`;
+  }).join('');
+  const faltan = j.clubesOrden.length - juegoTrayectoriaRevelados.size;
+
+  const el = document.getElementById('juego-trayectoria-area');
+  el.innerHTML = `
+    <div class="juego-goles-marcador">
+      <div>Racha <b>${juegoTrayectoriaScore}</b></div>
+      <div>Mejor <b>${juegoTrayectoriaMejor}</b></div>
+    </div>
+    <div class="juego-trayectoria-foto">${foto}</div>
+    <div class="juego-jugador-nombre" style="text-align:center;">${j.nombre}</div>
+    <div style="text-align:center;font-size:11px;color:var(--texto-3);margin-top:4px;">Faltan ${faltan} de ${j.clubesOrden.length} equipos</div>
+    <div class="juego-trayectoria-row">${slots}</div>
+    <div style="position:relative;max-width:380px;margin:0 auto;">
+      <input type="text" id="juego-trayectoria-input" class="filtro-input" style="width:100%;box-sizing:border-box;" placeholder="Escribí el nombre de un equipo..." autocomplete="off"
+        oninput="filtrarSugerenciasJuegoTrayectoria()" onfocus="filtrarSugerenciasJuegoTrayectoria()" onblur="setTimeout(ocultarSugerenciasJuegoTrayectoria,200)"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();comprobarJuegoTrayectoria();}">
+      <div id="juego-trayectoria-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:9999;background:var(--fondo-2);border:1px solid var(--borde-activo);border-radius:10px;max-height:200px;overflow-y:auto;box-shadow:var(--sombra-card);margin-top:3px;text-align:left;"></div>
+    </div>
+    <div class="juego-goles-botones" style="max-width:380px;margin:14px auto 0;">
+      <button class="juego-btn-eleccion" id="juego-trayectoria-btn-comprobar" onclick="comprobarJuegoTrayectoria()">✅ Comprobar</button>
+    </div>
+    <div id="juego-trayectoria-feedback" style="min-height:20px;margin-top:14px;font-size:13px;text-align:center;color:var(--texto-2);"></div>
+    <div style="text-align:center;margin-top:6px;">
+      <button class="btn-volver" style="justify-content:center;" onclick="rendirseJuegoTrayectoria()">🏳️ No sé, mostrame la trayectoria</button>
+    </div>`;
+  document.getElementById('juego-trayectoria-input').focus();
+}
+
+function filtrarSugerenciasJuegoTrayectoria() {
+  const input = document.getElementById('juego-trayectoria-input');
+  const drop = document.getElementById('juego-trayectoria-dropdown');
+  if (!input || !drop) return;
+  const q = normalizarNombre(input.value.trim());
+  if (!q || q.length < 1) { drop.style.display = 'none'; return; }
+  const equiposFaltantes = new Set(juegoTrayectoriaActual.clubesOrden.map(c => c.nombre));
+  const nombres = _equiposOrdenados
+    .map(e => e.Nombre_Equipo)
+    .filter(n => normalizarNombre(n).includes(q))
+    .sort((x, y) => {
+      // Priorizar los equipos que todavía faltan adivinar de esta trayectoria
+      const fx = equiposFaltantes.has(x) ? 0 : 1, fy = equiposFaltantes.has(y) ? 0 : 1;
+      if (fx !== fy) return fx - fy;
+      return x.localeCompare(y);
+    })
+    .slice(0, 20);
+  if (!nombres.length) { drop.style.display = 'none'; return; }
+  drop.innerHTML = nombres.map(n => `
+    <div style="padding:9px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--borde);transition:background 0.1s;display:flex;align-items:center;gap:8px;"
+      onmouseenter="this.style.background='var(--fondo-3)'" onmouseleave="this.style.background=''"
+      onmousedown="event.preventDefault();seleccionarSugerenciaJuegoTrayectoria('${n.replace(/'/g,"\\'")}')">${escudoImg(n, 16)} ${n}</div>`).join('');
+  drop.style.display = 'block';
+}
+
+function ocultarSugerenciasJuegoTrayectoria() {
+  const drop = document.getElementById('juego-trayectoria-dropdown');
+  if (drop) drop.style.display = 'none';
+}
+
+function seleccionarSugerenciaJuegoTrayectoria(nombre) {
+  const input = document.getElementById('juego-trayectoria-input');
+  if (input) input.value = nombre;
+  ocultarSugerenciasJuegoTrayectoria();
+  comprobarJuegoTrayectoria();
+}
+
+function comprobarJuegoTrayectoria() {
+  if (juegoTrayectoriaBloqueado) return;
+  const input = document.getElementById('juego-trayectoria-input');
+  const feedback = document.getElementById('juego-trayectoria-feedback');
+  const val = (input?.value || '').trim();
+  if (!val) return;
+  const norm = normalizarNombre(val);
+  const club = juegoTrayectoriaActual.clubesOrden.find(c => normalizarNombre(c.nombre) === norm);
+
+  if (!club) {
+    feedback.style.color = 'var(--rojo,#ef4444)';
+    feedback.innerHTML = `❌ No jugó ahí (o no está cargado así). ¡Probá de nuevo!`;
+    if (input) { input.value = ''; input.focus(); }
+    return;
+  }
+  if (juegoTrayectoriaRevelados.has(club.id)) {
+    feedback.style.color = 'var(--texto-2)';
+    feedback.innerHTML = `Ya habías adivinado <b>${club.nombre}</b>.`;
+    if (input) { input.value = ''; input.focus(); }
+    return;
+  }
+
+  juegoTrayectoriaRevelados.add(club.id);
+  if (input) input.value = '';
+  ocultarSugerenciasJuegoTrayectoria();
+
+  if (juegoTrayectoriaRevelados.size === juegoTrayectoriaActual.clubesOrden.length) {
+    juegoTrayectoriaBloqueado = true;
+    juegoTrayectoriaScore++;
+    if (juegoTrayectoriaScore > juegoTrayectoriaMejor) {
+      juegoTrayectoriaMejor = juegoTrayectoriaScore;
+      try { localStorage.setItem('juegoTrayectoria_mejor', juegoTrayectoriaMejor); } catch(e) {}
+    }
+    const nombreCompletado = juegoTrayectoriaActual.nombre;
+    renderJuegoTrayectoria();
+    const fb = document.getElementById('juego-trayectoria-feedback');
+    fb.style.color = 'var(--verde,#22c55e)';
+    fb.innerHTML = `✅ ¡Completaste toda la trayectoria de ${nombreCompletado}!`;
+    setTimeout(nuevaRondaJuegoTrayectoria, 1600);
+  } else {
+    const nombreClub = club.nombre;
+    renderJuegoTrayectoria();
+    const fb = document.getElementById('juego-trayectoria-feedback');
+    fb.style.color = 'var(--verde,#22c55e)';
+    fb.innerHTML = `✅ ¡Correcto! Jugó en <b>${nombreClub}</b>.`;
+  }
+}
+
+function rendirseJuegoTrayectoria() {
+  mostrarFinJuegoTrayectoria();
+}
+
+function mostrarFinJuegoTrayectoria() {
+  document.getElementById('juego-trayectoria-fin-titulo').textContent = '¡Fallaste!';
+  document.getElementById('juego-trayectoria-fin-score').textContent = juegoTrayectoriaScore;
+  document.getElementById('juego-trayectoria-fin-mejor').textContent = juegoTrayectoriaMejor;
+  const j = juegoTrayectoriaActual;
+  const recorrido = j.clubesOrden.map(c => c.nombre).join(' → ');
+  document.getElementById('juego-trayectoria-fin-recorrido').innerHTML =
+    `Trayectoria completa de <b>${j.nombre}</b>:<br>${recorrido}`;
+  document.getElementById('modal-juego-trayectoria-fin').style.display = 'flex';
+}
+
+function reiniciarJuegoTrayectoria() {
+  document.getElementById('modal-juego-trayectoria-fin').style.display = 'none';
+  iniciarJuegoTrayectoria();
 }
 
 function parsearGoleadores(equipoId, torneoId, listaPartidos, excluirEquipoId) {
