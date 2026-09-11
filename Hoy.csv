@@ -1,1 +1,16 @@
-ID_Partido,ID_Temporada,Fecha,Local_ID,Visitante_ID,Goles_Local,Goles_Visitante,Estadio,Hora
+ID_Partido,ID_Temporada,Numero_Fecha,Fase,Fecha,Fecha_Numerica,Hora,Local_ID,Visitante_ID,Goles_Local,Goles_Visitante,Tipo_Definicion,ID_Ganador,Estadio,Goleadores,Amonestados,Expulsados,Penales,Nota,Jugadores,DT
+43888,179,9,Fase Regular,11/9/2026,46276,17:00,19,30,1,1,0,,Estadio Marcelo Bielsa,,,,,,,
+43889,179,9,Fase Regular,11/9/2026,46276,19:15,10,71,,,0,,Estadio Norberto Tomaghello,,,,,,,
+43890,179,9,Fase Regular,11/9/2026,46276,21:30,7,9,,,0,,Estadio Alberto José Armando,,,,,,,
+43891,179,9,Fase Regular,12/9/2026,46277,14:45,12,20,,,0,,Estadio Jorge Luis Hirschi,,,,,,,
+43892,179,9,Fase Regular,12/9/2026,46277,14:45,15,1,,,0,,Estadio Bautista Gargantini,,,,,,,
+43893,179,9,Fase Regular,12/9/2026,46277,17:30,3,22,,,0,,Estadio Monumental José Fierro,,,,,,,
+43894,179,9,Fase Regular,12/9/2026,46277,20:00,27,29,,,0,,Estadio Mario Alberto Kempes,,,,,,,
+43895,179,9,Fase Regular,13/9/2026,46278,14:45,26,6,,,0,,Estadio Eva Perón,,,,,,,
+43896,179,9,Fase Regular,13/9/2026,46278,14:45,28,23,,,0,,Estadio José Dellagiovanna,,,,,,,
+43897,179,9,Fase Regular,13/9/2026,46278,17:00,2,13,,,0,,Estadio Diego Armando Maradona,,,,,,,
+43898,179,9,Fase Regular,13/9/2026,46278,19:15,16,24,,,0,,Estadio Libertadores de America,,,,,,,
+43899,179,9,Fase Regular,13/9/2026,46278,21:30,8,21,,,0,,Estadio Tomás Adolfo Ducó,,,,,,,
+43900,179,9,Fase Regular,14/9/2026,46279,19:00,4,5,,,0,,Estadio Florencio Sola,,,,,,,
+43901,179,9,Fase Regular,14/9/2026,46279,19:00,11,18,,,0,,Estadio Guillermo Laza,,,,,,,
+43902,179,9,Fase Regular,14/9/2026,46279,21:15,17,60,,,0,,Estadio Monumental Presidente Perón,,,,,,,
