@@ -234,11 +234,10 @@
   .juego-goles-botones { flex-direction:column; }
   .juego-btn-eleccion { min-width:100%; font-size:13px; padding:12px; }
   .juego-goles-fin-num { font-size:42px; }
-  .juego-trayectoria-foto { width:130px; height:130px; }
-  .juego-trayectoria-slot { width:56px; height:56px; }
-  .juego-trayectoria-slot-interrogante { font-size:18px; }
-  .juego-trayectoria-slot-escudo img { width:32px !important; height:32px !important; }
-  .juego-trayectoria-slot-nombre { font-size:8px; max-width:56px; }
+  .juego-trayectoria-foto { max-width:170px; }
+  .juego-trayectoria-slot { width:48px; height:48px; }
+  .juego-trayectoria-slot-interrogante { font-size:16px; }
+  .juego-trayectoria-slot-escudo img { width:30px !important; height:30px !important; }
   .bracket-partido { margin:4px 6px; }
   .bracket-equipo { padding:6px 8px; font-size:11px; }
   .bracket-gol { font-size:14px; }
@@ -1056,15 +1055,15 @@ select option{background:#080F20;color:#F0F6FF}
 .juego-goles-fin-num{font-family:var(--fuente-titulo);font-size:56px;font-weight:600;color:var(--celeste-claro);text-align:center;line-height:1}
 .juego-card-juego{background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;padding:22px 16px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;transition:var(--trans);text-align:center}
 .juego-card-juego:hover{border-color:var(--borde-hover);transform:translateY(-3px);box-shadow:0 12px 30px rgba(0,0,0,0.4)}
-.juego-trayectoria-foto{width:150px;height:150px;border-radius:50%;overflow:hidden;margin:0 auto 14px;background:var(--fondo-3);border:3px solid var(--borde-activo)}
+.juego-trayectoria-foto{width:100%;max-width:220px;aspect-ratio:3/4;border-radius:12px;overflow:hidden;margin:0 auto 14px;background:var(--fondo-3)}
 .juego-trayectoria-foto img{width:100%;height:100%;object-fit:cover;object-position:top}
-.juego-trayectoria-row{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:center;gap:12px;max-width:680px;margin:20px auto}
-.juego-trayectoria-slot{width:72px;height:72px;border-radius:14px;background:var(--fondo-3);border:2px dashed var(--borde);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:var(--trans);flex-shrink:0}
+.juego-trayectoria-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px;max-width:680px;margin:20px auto}
+.juego-trayectoria-slot{width:56px;height:56px;border-radius:14px;background:var(--fondo-3);border:2px dashed var(--borde);display:flex;align-items:center;justify-content:center;transition:var(--trans);flex-shrink:0}
 .juego-trayectoria-slot.revelado{border-style:solid;border-color:var(--verde);background:var(--fondo-2);box-shadow:0 0 0 3px var(--verde-glow)}
+.juego-trayectoria-slot.fallado{border-style:solid;border-color:var(--rojo);background:var(--fondo-2);box-shadow:0 0 0 3px var(--rojo-glow)}
 .juego-trayectoria-slot-interrogante{font-size:22px;color:var(--texto-3)}
-.juego-trayectoria-slot-escudo img{width:38px;height:38px;object-fit:contain}
-.juego-trayectoria-slot-nombre{font-size:9px;color:var(--texto-2);text-align:center;line-height:1.15;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.juego-trayectoria-flecha{color:var(--texto-3);font-size:16px;align-self:center;flex-shrink:0}
+.juego-trayectoria-slot-escudo img{width:36px;height:36px;object-fit:contain}
+.juego-trayectoria-flecha{color:var(--texto-3);font-size:16px;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -2356,7 +2355,7 @@ select option{background:#080F20;color:#F0F6FF}
     <div id="juego-trayectoria-pantalla" style="display:none;">
       <button class="btn-volver" onclick="volverMenuJuegos()" style="margin-bottom:18px;">← Volver a Juegos</button>
       <div style="text-align:center;font-family:var(--fuente-titulo);font-size:26px;margin-bottom:4px;">🧭🗓️ Trayectoria</div>
-      <div style="text-align:center;font-size:12px;color:var(--texto-2);margin-bottom:22px;">Nombrá todos los equipos en los que jugó, del más viejo al más nuevo</div>
+      <div style="text-align:center;font-size:12px;color:var(--texto-2);margin-bottom:22px;">Nombrá todos los equipos en los que jugó</div>
       <div id="juego-trayectoria-area"></div>
     </div>
 
@@ -5880,16 +5879,15 @@ function nuevaRondaJuegoTrayectoria() {
   renderJuegoTrayectoria();
 }
 
-function _trayectoriaSlotHTML(club, revelado) {
-  if (revelado) {
-    return `<div class="juego-trayectoria-slot revelado" title="${club.nombre}">
-      <div class="juego-trayectoria-slot-escudo">${escudoImg(club.nombre, 38)}</div>
-      <div class="juego-trayectoria-slot-nombre">${club.nombre}</div>
+function _trayectoriaSlotHTML(club, estado) {
+  // estado: 'oculto' | 'correcto' | 'fallado'
+  if (estado === 'correcto' || estado === 'fallado') {
+    return `<div class="juego-trayectoria-slot ${estado === 'correcto' ? 'revelado' : 'fallado'}" title="${club.nombre}">
+      <div class="juego-trayectoria-slot-escudo">${escudoImg(club.nombre, 36)}</div>
     </div>`;
   }
   return `<div class="juego-trayectoria-slot">
     <div class="juego-trayectoria-slot-interrogante">❓</div>
-    <div class="juego-trayectoria-slot-nombre">&nbsp;</div>
   </div>`;
 }
 
@@ -5897,7 +5895,7 @@ function renderJuegoTrayectoria() {
   const j = juegoTrayectoriaActual;
   const foto = fotoJugadorImg(j.nombre, j.equipoFotoNombre, j.nacionalidad, 'width:100%;height:100%;object-fit:cover;object-position:top;display:block;', '', j.desambiguador);
   const slots = j.clubesOrden.map((c, i) => {
-    const html = _trayectoriaSlotHTML(c, juegoTrayectoriaRevelados.has(c.id));
+    const html = _trayectoriaSlotHTML(c, juegoTrayectoriaRevelados.has(c.id) ? 'correcto' : 'oculto');
     return i === 0 ? html : `<div class="juego-trayectoria-flecha">→</div>${html}`;
   }).join('');
   const faltan = j.clubesOrden.length - juegoTrayectoriaRevelados.size;
@@ -6022,9 +6020,14 @@ function mostrarFinJuegoTrayectoria() {
   document.getElementById('juego-trayectoria-fin-score').textContent = juegoTrayectoriaScore;
   document.getElementById('juego-trayectoria-fin-mejor').textContent = juegoTrayectoriaMejor;
   const j = juegoTrayectoriaActual;
-  const recorrido = j.clubesOrden.map(c => c.nombre).join(' → ');
+  const slots = j.clubesOrden.map((c, i) => {
+    const estado = juegoTrayectoriaRevelados.has(c.id) ? 'correcto' : 'fallado';
+    const html = _trayectoriaSlotHTML(c, estado);
+    return i === 0 ? html : `<div class="juego-trayectoria-flecha">→</div>${html}`;
+  }).join('');
   document.getElementById('juego-trayectoria-fin-recorrido').innerHTML =
-    `Trayectoria completa de <b>${j.nombre}</b>:<br>${recorrido}`;
+    `<div style="margin-bottom:10px;">Trayectoria completa de <b>${j.nombre}</b>:</div>
+     <div class="juego-trayectoria-row" style="margin:0 auto;">${slots}</div>`;
   document.getElementById('modal-juego-trayectoria-fin').style.display = 'flex';
 }
 
