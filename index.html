@@ -10670,20 +10670,11 @@ function renderHoyVacio(msg) {
 
 function renderHoy() {
   const container = document.getElementById('hoy-container');
-  // Incluye los partidos de hoy en adelante, pero solo dentro de una ventana
-  // cercana de días (no todo el fixture restante del torneo, que mostraba
-  // fechas muy lejanas sin relación con "hoy").
-  const HOY_DIAS_ADELANTE = 6;
-  const hoy = new Date();
-  const hoyISO = hoy.toISOString().split('T')[0];
-  const limite = new Date(hoy);
-  limite.setDate(limite.getDate() + HOY_DIAS_ADELANTE);
-  const limiteISO = limite.toISOString().split('T')[0];
-  const deHoy = partidosHoy.filter(p => {
-    const fecha = normalizarFechaISO(p.Fecha) || hoyISO;
-    return fecha >= hoyISO && fecha <= limiteISO;
-  });
-  if (!deHoy.length) { renderHoyVacio('No hay partidos programados.'); return; }
+  // Solo los partidos de hoy (los de otros días se ven con el navegador de fecha de arriba).
+  // Los que todavía no se jugaron muestran su hora en vez del resultado.
+  const hoyISO = new Date().toISOString().split('T')[0];
+  const deHoy = partidosHoy.filter(p => (normalizarFechaISO(p.Fecha) || hoyISO) === hoyISO);
+  if (!deHoy.length) { renderHoyVacio('No hay partidos programados para hoy.'); return; }
 
   // Agrupar por fecha
   const porFecha = new Map();
