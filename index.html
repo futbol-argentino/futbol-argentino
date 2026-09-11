@@ -7589,13 +7589,18 @@ function esTorneoAmateur(t) {
 
 function anioTemporada(t) {
   if (t.Año && parseInt(t.Año) > 0) return parseInt(t.Año);
-  const ps = partidos.filter(p => p.ID_Temporada == t.ID_Temporada && p.Fecha);
+  const fuentes = partidos.concat(partidosHoy);
+  const ps = fuentes.filter(p => p.ID_Temporada == t.ID_Temporada && p.Fecha);
   const anios = ps.map(p => {
     const f = (p.Fecha||'').split('T')[0];
     const m = f.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     return m ? parseInt(m[3]) : parseInt((f.split('-')[0])||0);
   }).filter(a => a > 1800);
-  return anios.length ? Math.max(...anios) : null;
+  if (anios.length) return Math.max(...anios);
+  // Torneo en disputa (sin campeón) del que todavía no tenemos partidos cargados
+  // con fecha: lo ubicamos igual en el año actual en vez de dejarlo sin año.
+  if (!t.Campeon) return new Date().getFullYear();
+  return null;
 }
 
 function cargarCampeones() {
@@ -7622,7 +7627,7 @@ function cargarAniosCampeones() {
 
   const anios = [...new Set(
     temporadasArr
-      .filter(t => t.Campeon && (!division || t.Division === division))
+      .filter(t => (t.Campeon || (t.Competencia||'').trim()) && (!division || t.Division === division))
       .map(t => anioTemporada(t))
       .filter(a => a !== null)
   )].sort((a,b) => b - a);
@@ -7667,7 +7672,8 @@ function filtrarCampeones() {
   };
 
   let lista = temporadasArr.filter(t => {
-    if (!t.Campeon) return false;
+    const enCurso = !t.Campeon && (t.Competencia||'').trim();
+    if (!t.Campeon && !enCurso) return false;
     if (division && t.Division !== division) return false;
     if (buscar && !(t.Competencia||'').toLowerCase().includes(buscar) && !(t.Campeon||'').toLowerCase().includes(buscar)) return false;
     return true;
@@ -7710,10 +7716,11 @@ function filtrarCampeones() {
   }
 
   const cardHTML = (t) => {
+    const enCurso = !t.Campeon;
     const foto = t.Foto_Trofeo ? `trofeos/${t.Foto_Trofeo}` : '';
     const escCampeon = ESCUDOS[t.Campeon] ? `<img src="${ESCUDOS[t.Campeon]}" style="width:22px;height:22px;object-fit:contain;" onerror="this.style.display='none'">` : '';
-    // Si el torneo no tiene foto de trofeo cargada (ej: no se entregó copa), mostramos
-    // el escudo del equipo campeón bien grande como portada, en vez del ícono genérico.
+    // Si el torneo no tiene foto de trofeo cargada (ej: no se entregó copa, o está en disputa),
+    // mostramos el escudo del equipo campeón bien grande como portada, en vez del ícono genérico.
     const escGrande = ESCUDOS[t.Campeon];
     const fallbackSinFoto = escGrande
       ? `<img src="${escGrande}" style="width:80px;height:80px;object-fit:contain;" loading="lazy" decoding="async" alt="${t.Campeon}" onerror="this.parentElement.innerHTML='<div style=font-size:72px>🏆</div>'">`
@@ -7724,12 +7731,18 @@ function filtrarCampeones() {
     const badgeAmateur = esTorneoAmateur(t)
       ? `<span style="display:inline-block;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--texto-3);background:var(--fondo-3);border:1px solid var(--borde);border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:middle;">Amateur</span>`
       : '';
+    const badgeEnCurso = enCurso
+      ? `<span style="display:inline-block;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--verde);background:var(--fondo-3);border:1px solid var(--verde);border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:middle;">🔄 En disputa</span>`
+      : '';
+    const lineaCampeon = enCurso
+      ? `<span style="color:var(--texto-3);">Torneo en disputa</span>`
+      : `${escCampeon}${t.Campeon}`;
     return `<div class="camp-card" onclick="verTorneo('${t.ID_Temporada}')">
       <div class="camp-foto-wrap">${imgTrofeo}</div>
       <div class="camp-info">
-        <div class="camp-año">${t.Division || t.Año || ''}${badgeAmateur}</div>
+        <div class="camp-año">${t.Division || t.Año || ''}${badgeAmateur}${badgeEnCurso}</div>
         <div class="camp-nombre">${t.Competencia}</div>
-        <div class="camp-campeon">${escCampeon}${t.Campeon}</div>
+        <div class="camp-campeon">${lineaCampeon}</div>
       </div>
     </div>`;
   };
@@ -10473,7 +10486,7 @@ function filaPartidoGrid(p) {
         : `${p.Goles_Local} - ${p.Goles_Visitante}`)
     : (esPartidoSuspendido(p)
         ? `<span style="color:var(--rojo);font-weight:700;font-size:11px;letter-spacing:0.5px;">SUSPENDIDO</span>`
-        : `<span style="color:var(--texto-3);font-size:12px;">${p.Hora || p.hora || 'vs'}</span>`);
+        : `<span style="color:var(--texto-3);font-size:17px;letter-spacing:1px;">${p.Hora || p.hora || 'vs'}</span>`);
   const golData = jugado ? construirGolDataGrid(p, local, visita) : null;
   const click = p.ID_Partido != null ? ` onclick="verPartido(${p.ID_Partido})"` : '';
   return `
@@ -10657,10 +10670,19 @@ function renderHoyVacio(msg) {
 
 function renderHoy() {
   const container = document.getElementById('hoy-container');
-  // Incluye los partidos de hoy en adelante (no solo el día de hoy), para que
-  // se vean también los próximos fixtures con su hora hasta que se jueguen.
-  const hoyISO = new Date().toISOString().split('T')[0];
-  const deHoy = partidosHoy.filter(p => (normalizarFechaISO(p.Fecha) || hoyISO) >= hoyISO);
+  // Incluye los partidos de hoy en adelante, pero solo dentro de una ventana
+  // cercana de días (no todo el fixture restante del torneo, que mostraba
+  // fechas muy lejanas sin relación con "hoy").
+  const HOY_DIAS_ADELANTE = 6;
+  const hoy = new Date();
+  const hoyISO = hoy.toISOString().split('T')[0];
+  const limite = new Date(hoy);
+  limite.setDate(limite.getDate() + HOY_DIAS_ADELANTE);
+  const limiteISO = limite.toISOString().split('T')[0];
+  const deHoy = partidosHoy.filter(p => {
+    const fecha = normalizarFechaISO(p.Fecha) || hoyISO;
+    return fecha >= hoyISO && fecha <= limiteISO;
+  });
   if (!deHoy.length) { renderHoyVacio('No hay partidos programados.'); return; }
 
   // Agrupar por fecha
