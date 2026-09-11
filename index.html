@@ -107,7 +107,6 @@
 [data-tema="claro"] .detalle-equipo { background:#F0FDF4; }
 [data-tema="claro"] header { background:#FFFFFF; border-bottom-color:rgba(22,163,74,0.12); }
 [data-tema="claro"] .stats-card { background:#FFFFFF; box-shadow:0 4px 16px rgba(22,163,74,0.1); }
-[data-tema="claro"] .hoy-card { background:#FFFFFF; }
 [data-tema="claro"] .bracket-partido { background:#FFFFFF; }
 [data-tema="claro"] .bracket-ronda-titulo { color:var(--texto-2); }
 [data-tema="claro"] .bracket-equipo.ganador { background:rgba(22,163,74,0.1); }
@@ -241,12 +240,6 @@
   .bracket-partido { margin:4px 6px; }
   .bracket-equipo { padding:6px 8px; font-size:11px; }
   .bracket-gol { font-size:14px; }
-
-  /* Hoy */
-  .hoy-card-header { padding:10px 12px; }
-  .hoy-equipo { min-width:50px; }
-  .hoy-equipo img { width:30px; height:30px; }
-  .hoy-vs, .hoy-resultado { font-size:20px; }
 
   /* Alineaciones */
   .alin-jugador { font-size:12px; }
@@ -628,59 +621,6 @@ td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
   .detalle-filtro{flex-direction:column;align-items:stretch}.detalle-filtro select{width:100%}
 }
 @media(max-width:380px){.equipos-grid{grid-template-columns:repeat(3,1fr)}}
-
-/* ── HOY ── */
-.hoy-fecha-titulo {
-  font-size:11px; font-weight:700; letter-spacing:1.5px;
-  text-transform:uppercase; color:var(--texto-3);
-  margin:20px 0 12px;
-}
-.hoy-card {
-  background:var(--fondo-2); border:1px solid var(--borde);
-  border-radius:14px; overflow:hidden; margin-bottom:14px;
-  transition:var(--trans);
-}
-.hoy-card-header {
-  display:flex; align-items:center; justify-content:space-between;
-  padding:16px 20px; gap:12px;
-}
-.hoy-equipos {
-  display:flex; align-items:center; gap:12px; flex:1;
-  justify-content:center;
-}
-.hoy-equipo {
-  display:flex; flex-direction:column; align-items:center;
-  gap:6px; min-width:80px; max-width:120px; text-align:center;
-}
-.hoy-equipo img { width:44px; height:44px; object-fit:contain; }
-.hoy-equipo-nombre {
-  font-size:13px; font-weight:600; line-height:1.2;
-}
-.hoy-vs {
-  font-family:var(--fuente-titulo); font-size:28px;
-  color:var(--texto-3); letter-spacing:2px; flex-shrink:0; padding:0 8px;
-}
-.hoy-resultado {
-  font-family:var(--fuente-titulo); font-size:32px;
-  letter-spacing:3px; flex-shrink:0; padding:0 8px;
-}
-.hoy-badge {
-  font-size:11px; color:var(--texto-3);
-  background:var(--fondo-3); border:1px solid var(--borde);
-  border-radius:6px; padding:3px 8px; white-space:nowrap;
-  flex-shrink:0;
-}
-.hoy-torneo-txt {
-  font-size:11px; color:var(--texto-2); text-align:center;
-  padding:0 20px 10px; font-weight:500;
-}
-@media(max-width:600px){
-  .hoy-equipo { min-width:60px; max-width:90px; }
-  .hoy-equipo img { width:36px; height:36px; }
-  .hoy-equipo-nombre { font-size:12px; }
-  .hoy-vs, .hoy-resultado { font-size:24px; }
-  .hoy-card-header { padding:12px 14px; }
-}
 
 /* ── ALINEACIÓN ── */
 .alin-bloque { margin-bottom:12px; }
@@ -10717,51 +10657,58 @@ function renderHoyVacio(msg) {
 
 function renderHoy() {
   const container = document.getElementById('hoy-container');
-  // Filas de Hoy.csv sin columna Fecha se siguen tratando como "de hoy" (compatibilidad).
+  // Incluye los partidos de hoy en adelante (no solo el día de hoy), para que
+  // se vean también los próximos fixtures con su hora hasta que se jueguen.
   const hoyISO = new Date().toISOString().split('T')[0];
-  const deHoy = partidosHoy.filter(p => (normalizarFechaISO(p.Fecha) || hoyISO) === hoyISO);
-  if (!deHoy.length) { renderHoyVacio('No hay partidos programados para hoy.'); return; }
+  const deHoy = partidosHoy.filter(p => (normalizarFechaISO(p.Fecha) || hoyISO) >= hoyISO);
+  if (!deHoy.length) { renderHoyVacio('No hay partidos programados.'); return; }
 
-  // Agrupar por torneo/competencia
-  const grupos = {};
+  // Agrupar por fecha
+  const porFecha = new Map();
   deHoy.forEach(p => {
-    const torneo = temporadas[p.ID_Temporada] || p.Competencia || p.Torneo || 'Partidos de Hoy';
-    if (!grupos[torneo]) grupos[torneo] = [];
-    grupos[torneo].push(p);
+    const fecha = normalizarFechaISO(p.Fecha) || hoyISO;
+    if (!porFecha.has(fecha)) porFecha.set(fecha, []);
+    porFecha.get(fecha).push(p);
   });
+  const fechasOrdenadas = [...porFecha.keys()].sort();
 
-  container.innerHTML = Object.entries(grupos).map(([torneo, pts]) => {
-    const cartas = pts.map((p, idx) => renderHoyCard(p, idx)).join('');
-    return `<div class="hoy-fecha-titulo">${torneo}</div>${cartas}`;
+  const divisionPorTemporada = {};
+  temporadasArr.forEach(t => { divisionPorTemporada[t.ID_Temporada] = t.Division; });
+
+  container.innerHTML = fechasOrdenadas.map(fecha => {
+    const partidosFecha = porFecha.get(fecha);
+
+    // Agrupar por torneo/competencia dentro de la fecha
+    const gruposMap = new Map();
+    partidosFecha.forEach(p => {
+      const torneo = temporadas[p.ID_Temporada] || p.Competencia || p.Torneo || 'Partidos';
+      if (!gruposMap.has(torneo)) {
+        const division = divisionPorTemporada[p.ID_Temporada] || '';
+        const rango = DIVISIONES_ORDEN.indexOf(division);
+        gruposMap.set(torneo, { torneo, rango: rango === -1 ? 999 : rango, partidos: [] });
+      }
+      gruposMap.get(torneo).partidos.push(p);
+    });
+    const listaGrupos = [...gruposMap.values()].sort((a, b) => a.rango - b.rango || a.torneo.localeCompare(b.torneo, 'es'));
+
+    const titulo = fecha === hoyISO ? 'Partidos de hoy' : 'Partidos del ' + formatearFechaDisplay(fecha);
+
+    return `
+      <div class="tabla-wrapper" style="margin-bottom:20px;">
+        <div class="tabla-header">
+          <div class="tabla-titulo">${titulo}</div>
+          <div class="tabla-count">${partidosFecha.length.toLocaleString()} partido${partidosFecha.length === 1 ? '' : 's'}</div>
+        </div>
+        ${listaGrupos.map(g => `
+          <div class="hoy-fecha-torneo-header" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:12px 16px;background:var(--fondo-3);border-bottom:1px solid var(--borde);">
+            <span></span>
+            <span style="font-size:14px;font-weight:700;color:var(--texto-1);text-align:center;white-space:nowrap;">🏆 ${g.torneo}</span>
+            <span style="justify-self:end;font-size:11px;color:var(--texto-3);background:var(--fondo-4);padding:2px 8px;border-radius:10px;">${g.partidos.length} partido${g.partidos.length === 1 ? '' : 's'}</span>
+          </div>
+          <div class="grid-simetrica-scroll"><div class="grid-partidos grid-simetrica">${g.partidos.map(filaPartidoGrid).join('')}</div></div>
+        `).join('')}
+      </div>`;
   }).join('');
-}
-
-function renderHoyCard(p, idx) {
-  const local   = equipos[p.Local_ID]    || p.Local    || p.Local_ID    || '?';
-  const visita  = equipos[p.Visitante_ID] || p.Visitante || p.Visitante_ID || '?';
-  const escL    = ESCUDOS[local]   ? `<img src="${ESCUDOS[local]}"   loading="lazy" decoding="async" onerror="this.style.display='none'">` : '<div style="width:44px;height:44px;"></div>';
-  const escV    = ESCUDOS[visita]  ? `<img src="${ESCUDOS[visita]}"  loading="lazy" decoding="async" onerror="this.style.display='none'">` : '<div style="width:44px;height:44px;"></div>';
-  const jugado  = p.Goles_Local !== '' && p.Goles_Local !== undefined && p.Goles_Visitante !== '' && p.Goles_Visitante !== undefined;
-  const hora    = p.Hora || p.hora || '';
-
-  let centroHtml;
-  if (jugado) {
-    const rc = resClase(p.Goles_Local, p.Goles_Visitante);
-    centroHtml = `<div class="hoy-resultado"><span class="${rc}">${p.Goles_Local} - ${p.Goles_Visitante}</span></div>`;
-  } else {
-    centroHtml = `<div class="hoy-vs">${hora || 'VS'}</div>`;
-  }
-
-  return `<div class="hoy-card">
-    <div class="hoy-card-header">
-      <div class="hoy-equipos">
-        <div class="hoy-equipo">${escL}<span class="hoy-equipo-nombre">${local}</span></div>
-        ${centroHtml}
-        <div class="hoy-equipo">${escV}<span class="hoy-equipo-nombre">${visita}</span></div>
-      </div>
-    </div>
-    ${p.Estadio ? `<div class="hoy-torneo-txt">🏟️ ${p.Estadio}</div>` : ''}
-  </div>`;
 }
 
 // ── TEMA ──
