@@ -5322,6 +5322,8 @@ function abrirJuegoGoles() {
 }
 function volverMenuJuegos() {
   document.getElementById('juego-goles-pantalla').style.display = 'none';
+  const pantallaConexion = document.getElementById('juego-conexion-pantalla');
+  if (pantallaConexion) pantallaConexion.style.display = 'none';
   document.getElementById('juegos-menu').style.display = 'block';
 }
 
@@ -5469,19 +5471,36 @@ let JUEGO_CONEXION_INDEX = null;
 function construirIndiceJuegoConexion() {
   if (JUEGO_CONEXION_INDEX) return JUEGO_CONEXION_INDEX;
   const porEquipo = {}; // equipoId -> Set(nombre canónico)
-  Object.entries(jugadoresData).forEach(([nombre, eqs]) => {
-    Object.keys(eqs).forEach(equipoId => {
-      if (!equipos[equipoId]) return; // sin nombre de equipo conocido, descartar
-      if (!porEquipo[equipoId]) porEquipo[equipoId] = new Set();
-      porEquipo[equipoId].add(nombre);
+  const todosLosNombres = new Set();
+
+  // Usamos la misma fuente que el juego "Más o Menos" (columna "Jugadores" de
+  // partidos), que siempre está disponible, en vez de jugadoresData (que depende
+  // de un CSV aparte y opcional que puede no estar cargado).
+  partidos.forEach(p => {
+    const rawJ = p.Jugadores || '';
+    if (!rawJ) return;
+    rawJ.split('/').forEach((parte, idx) => {
+      const equipoId = idx === 0 ? p.Local_ID : p.Visitante_ID;
+      if (!equipoId || !equipos[equipoId]) return;
+      (parte || '').split('-').forEach(entradaRaw => {
+        const entrada = (entradaRaw || '').trim();
+        if (!entrada) return;
+        const nombreLimpio = limpiarNombre(entrada);
+        if (!nombreLimpio || normalizarNombre(nombreLimpio).length < 2) return;
+        const nombre = nombreCanonico(nombreLimpio);
+        if (!porEquipo[equipoId]) porEquipo[equipoId] = new Set();
+        porEquipo[equipoId].add(nombre);
+        todosLosNombres.add(nombre);
+      });
     });
   });
+
   // Umbral mínimo de plantel cargado para que el equipo tenga sentido en el juego
   const MIN_JUGADORES = 4;
   const equiposConDatos = Object.entries(porEquipo)
     .filter(([, set]) => set.size >= MIN_JUGADORES)
     .map(([id, set]) => ({ id, nombre: equipos[id] || id, jugadores: set }));
-  JUEGO_CONEXION_INDEX = { porEquipo, equiposConDatos };
+  JUEGO_CONEXION_INDEX = { porEquipo, equiposConDatos, todosLosNombres: [...todosLosNombres] };
   return JUEGO_CONEXION_INDEX;
 }
 
@@ -5600,7 +5619,8 @@ function filtrarSugerenciasJuegoConexion() {
   if (!input || !drop) return;
   const q = normalizarNombre(input.value.trim());
   if (!q || q.length < 2) { drop.style.display = 'none'; return; }
-  const nombres = Object.keys(jugadoresData)
+  const { todosLosNombres } = construirIndiceJuegoConexion();
+  const nombres = todosLosNombres
     .filter(n => normalizarNombre(n).includes(q) && !juegoConexionAcertados.has(normalizarNombre(n)))
     .sort((x, y) => x.localeCompare(y))
     .slice(0, 20);
