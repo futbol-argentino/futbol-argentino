@@ -2282,6 +2282,11 @@ select option{background:#080F20;color:#F0F6FF}
           <div class="equipo-card-nombre">Más o Menos</div>
           <div style="font-size:11px;color:var(--texto-2);">¿Quién hizo más goles en su carrera?</div>
         </div>
+        <div class="juego-card-juego" onclick="abrirJuegoConexion()">
+          <div style="font-size:38px;">🔗🛡️</div>
+          <div class="equipo-card-nombre">Conexión</div>
+          <div style="font-size:11px;color:var(--texto-2);">¿Qué jugador jugó en los dos equipos?</div>
+        </div>
       </div>
     </div>
 
@@ -2303,6 +2308,28 @@ select option{background:#080F20;color:#F0F6FF}
         <div style="color:var(--texto-3);font-size:12px;margin-top:14px;">Mejor racha: <b id="juego-goles-fin-mejor" style="color:var(--texto-2);">0</b></div>
         <button class="juego-btn-eleccion" style="margin-top:22px;width:100%;" onclick="reiniciarJuegoGoles()">🔄 Jugar de nuevo</button>
         <button class="btn-volver" style="margin-top:10px;width:100%;justify-content:center;" onclick="document.getElementById('modal-juego-goles-fin').style.display='none'; volverMenuJuegos();">← Volver a Juegos</button>
+      </div>
+    </div>
+
+    <!-- Juego: Conexión (jugador en común entre dos equipos) -->
+    <div id="juego-conexion-pantalla" style="display:none;">
+      <button class="btn-volver" onclick="volverMenuJuegos()" style="margin-bottom:18px;">← Volver a Juegos</button>
+      <div style="text-align:center;font-family:var(--fuente-titulo);font-size:26px;margin-bottom:4px;">🔗🛡️ Conexión</div>
+      <div style="text-align:center;font-size:12px;color:var(--texto-2);margin-bottom:22px;">Nombrá un jugador que haya jugado en los dos equipos</div>
+      <div id="juego-conexion-area"></div>
+    </div>
+
+    <!-- Modal de fin de juego: Conexión -->
+    <div class="modal-overlay" id="modal-juego-conexion-fin" style="display:none;">
+      <div class="modal-box" style="max-width:420px;text-align:center;">
+        <div style="font-size:44px;margin-bottom:6px;">💥</div>
+        <div style="font-family:var(--fuente-titulo);font-size:24px;margin-bottom:14px;">¡Fallaste!</div>
+        <div style="color:var(--texto-2);font-size:12px;text-transform:uppercase;letter-spacing:0.8px;">Racha final</div>
+        <div class="juego-goles-fin-num" id="juego-conexion-fin-score">0</div>
+        <div style="color:var(--texto-3);font-size:12px;margin-top:14px;">Mejor racha: <b id="juego-conexion-fin-mejor" style="color:var(--texto-2);">0</b></div>
+        <div id="juego-conexion-fin-ejemplos" style="margin-top:16px;font-size:12px;color:var(--texto-2);line-height:1.5;"></div>
+        <button class="juego-btn-eleccion" style="margin-top:22px;width:100%;" onclick="reiniciarJuegoConexion()">🔄 Jugar de nuevo</button>
+        <button class="btn-volver" style="margin-top:10px;width:100%;justify-content:center;" onclick="document.getElementById('modal-juego-conexion-fin').style.display='none'; volverMenuJuegos();">← Volver a Juegos</button>
       </div>
     </div>
 
@@ -5429,6 +5456,232 @@ function mostrarFinJuegoGoles() {
 function reiniciarJuegoGoles() {
   document.getElementById('modal-juego-goles-fin').style.display = 'none';
   iniciarJuegoGoles();
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// ── JUEGO "CONEXIÓN" (jugador en común entre dos equipos) ──
+// Usa jugadoresData (nombre → equipoId → Set(ID_Partido)), armado a partir de
+// Jugadores.csv, para invertir el índice a equipoId → Set(nombres) y así poder
+// sortear dos equipos al azar que tengan al menos un jugador en común.
+// ══════════════════════════════════════════════════════════════════════════
+let JUEGO_CONEXION_INDEX = null;
+
+function construirIndiceJuegoConexion() {
+  if (JUEGO_CONEXION_INDEX) return JUEGO_CONEXION_INDEX;
+  const porEquipo = {}; // equipoId -> Set(nombre canónico)
+  Object.entries(jugadoresData).forEach(([nombre, eqs]) => {
+    Object.keys(eqs).forEach(equipoId => {
+      if (!equipos[equipoId]) return; // sin nombre de equipo conocido, descartar
+      if (!porEquipo[equipoId]) porEquipo[equipoId] = new Set();
+      porEquipo[equipoId].add(nombre);
+    });
+  });
+  // Umbral mínimo de plantel cargado para que el equipo tenga sentido en el juego
+  const MIN_JUGADORES = 4;
+  const equiposConDatos = Object.entries(porEquipo)
+    .filter(([, set]) => set.size >= MIN_JUGADORES)
+    .map(([id, set]) => ({ id, nombre: equipos[id] || id, jugadores: set }));
+  JUEGO_CONEXION_INDEX = { porEquipo, equiposConDatos };
+  return JUEGO_CONEXION_INDEX;
+}
+
+function _comunesJuegoConexion(a, b) {
+  const comunes = [];
+  a.jugadores.forEach(n => { if (b.jugadores.has(n)) comunes.push(n); });
+  return comunes;
+}
+
+// Sortea dos equipos distintos que tengan al menos un jugador en común, evitando
+// repetir exactamente la misma pareja que la ronda anterior.
+function elegirParJuegoConexion(excluirPar) {
+  const { equiposConDatos } = construirIndiceJuegoConexion();
+  const n = equiposConDatos.length;
+  if (n < 2) return null;
+  for (let intento = 0; intento < 400; intento++) {
+    const a = equiposConDatos[Math.floor(Math.random() * n)];
+    const b = equiposConDatos[Math.floor(Math.random() * n)];
+    if (a.id === b.id) continue;
+    if (excluirPar && ((excluirPar[0] === a.id && excluirPar[1] === b.id) || (excluirPar[0] === b.id && excluirPar[1] === a.id))) continue;
+    const comunes = _comunesJuegoConexion(a, b);
+    if (comunes.length) return { a, b, comunes };
+  }
+  // Fallback: recorrer todas las combinaciones si el sorteo al azar no encontró nada en 400 intentos
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      const comunes = _comunesJuegoConexion(equiposConDatos[i], equiposConDatos[j]);
+      if (comunes.length) return { a: equiposConDatos[i], b: equiposConDatos[j], comunes };
+    }
+  }
+  return null;
+}
+
+// ── Estado del juego ──
+let juegoConexionActual = null; // { a, b, comunes }
+let juegoConexionParAnterior = null; // [idA, idB] de la ronda anterior
+let juegoConexionScore = 0;
+let juegoConexionMejor = 0;
+let juegoConexionBloqueado = false;
+let juegoConexionAcertados = new Set(); // nombres normalizados ya adivinados en la ronda actual
+let juegoConexionPistaNivel = 0;
+try { juegoConexionMejor = parseInt(localStorage.getItem('juegoConexion_mejor')) || 0; } catch(e) {}
+
+function abrirJuegoConexion() {
+  document.getElementById('juegos-menu').style.display = 'none';
+  document.getElementById('juego-conexion-pantalla').style.display = 'block';
+  iniciarJuegoConexion();
+}
+
+function iniciarJuegoConexion() {
+  const { equiposConDatos } = construirIndiceJuegoConexion();
+  const area = document.getElementById('juego-conexion-area');
+  if (equiposConDatos.length < 2) {
+    area.innerHTML = '<div class="filtros-panel" style="text-align:center;color:var(--texto-2);">No hay suficientes datos de planteles cargados para jugar.</div>';
+    return;
+  }
+  juegoConexionScore = 0;
+  juegoConexionBloqueado = false;
+  juegoConexionParAnterior = null;
+  nuevaRondaJuegoConexion();
+}
+
+function nuevaRondaJuegoConexion() {
+  const par = elegirParJuegoConexion(juegoConexionParAnterior);
+  if (!par) {
+    document.getElementById('juego-conexion-area').innerHTML = '<div class="filtros-panel" style="text-align:center;color:var(--texto-2);">No se encontraron equipos con jugadores en común.</div>';
+    return;
+  }
+  juegoConexionActual = par;
+  juegoConexionParAnterior = [par.a.id, par.b.id];
+  juegoConexionAcertados = new Set();
+  juegoConexionPistaNivel = 0;
+  juegoConexionBloqueado = false;
+  renderJuegoConexion();
+}
+
+function renderJuegoConexion() {
+  const { a, b } = juegoConexionActual;
+  const el = document.getElementById('juego-conexion-area');
+  el.innerHTML = `
+    <div class="juego-goles-marcador">
+      <div>Racha <b>${juegoConexionScore}</b></div>
+      <div>Mejor <b>${juegoConexionMejor}</b></div>
+    </div>
+    <div class="juego-vs-row">
+      <div class="juego-jugador-card" style="cursor:default;">
+        <div style="width:88px;height:88px;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;">${escudoImg(a.nombre, 88)}</div>
+        <div class="juego-jugador-nombre">${a.nombre}</div>
+      </div>
+      <div class="juego-vs-divisor">＋</div>
+      <div class="juego-jugador-card" style="cursor:default;">
+        <div style="width:88px;height:88px;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;">${escudoImg(b.nombre, 88)}</div>
+        <div class="juego-jugador-nombre">${b.nombre}</div>
+      </div>
+    </div>
+    <div style="position:relative;max-width:380px;margin:0 auto;">
+      <input type="text" id="juego-conexion-input" class="filtro-input" style="width:100%;box-sizing:border-box;" placeholder="Escribí el nombre de un jugador..." autocomplete="off"
+        oninput="filtrarSugerenciasJuegoConexion()" onfocus="filtrarSugerenciasJuegoConexion()" onblur="setTimeout(ocultarSugerenciasJuegoConexion,200)"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();comprobarJuegoConexion();}">
+      <div id="juego-conexion-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:9999;background:var(--fondo-2);border:1px solid var(--borde-activo);border-radius:10px;max-height:200px;overflow-y:auto;box-shadow:var(--sombra-card);margin-top:3px;text-align:left;"></div>
+    </div>
+    <div class="juego-goles-botones" style="max-width:380px;margin:14px auto 0;">
+      <button class="juego-btn-eleccion" id="juego-conexion-btn-comprobar" onclick="comprobarJuegoConexion()">✅ Comprobar</button>
+      <button class="juego-btn-eleccion" id="juego-conexion-btn-pista" style="opacity:0.85;" onclick="pistaJuegoConexion()">💡 Pista</button>
+    </div>
+    <div id="juego-conexion-feedback" style="min-height:20px;margin-top:14px;font-size:13px;text-align:center;color:var(--texto-2);"></div>
+    <div style="text-align:center;margin-top:6px;">
+      <button class="btn-volver" style="justify-content:center;" onclick="rendirseJuegoConexion()">🏳️ No sé, mostrame uno</button>
+    </div>`;
+  document.getElementById('juego-conexion-input').focus();
+}
+
+function filtrarSugerenciasJuegoConexion() {
+  const input = document.getElementById('juego-conexion-input');
+  const drop = document.getElementById('juego-conexion-dropdown');
+  if (!input || !drop) return;
+  const q = normalizarNombre(input.value.trim());
+  if (!q || q.length < 2) { drop.style.display = 'none'; return; }
+  const nombres = Object.keys(jugadoresData)
+    .filter(n => normalizarNombre(n).includes(q) && !juegoConexionAcertados.has(normalizarNombre(n)))
+    .sort((x, y) => x.localeCompare(y))
+    .slice(0, 20);
+  if (!nombres.length) { drop.style.display = 'none'; return; }
+  drop.innerHTML = nombres.map(n => `
+    <div style="padding:9px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--borde);transition:background 0.1s;"
+      onmouseenter="this.style.background='var(--fondo-3)'" onmouseleave="this.style.background=''"
+      onmousedown="event.preventDefault();seleccionarSugerenciaJuegoConexion('${n.replace(/'/g,"\\'")}')">${n}</div>`).join('');
+  drop.style.display = 'block';
+}
+
+function ocultarSugerenciasJuegoConexion() {
+  const drop = document.getElementById('juego-conexion-dropdown');
+  if (drop) drop.style.display = 'none';
+}
+
+function seleccionarSugerenciaJuegoConexion(nombre) {
+  const input = document.getElementById('juego-conexion-input');
+  if (input) input.value = nombre;
+  ocultarSugerenciasJuegoConexion();
+  comprobarJuegoConexion();
+}
+
+function comprobarJuegoConexion() {
+  if (juegoConexionBloqueado) return;
+  const input = document.getElementById('juego-conexion-input');
+  const feedback = document.getElementById('juego-conexion-feedback');
+  const val = (input?.value || '').trim();
+  if (!val) return;
+  const norm = normalizarNombre(val);
+  const acierto = juegoConexionActual.comunes.find(n => normalizarNombre(n) === norm);
+
+  if (acierto) {
+    juegoConexionBloqueado = true;
+    document.getElementById('juego-conexion-btn-comprobar').disabled = true;
+    document.getElementById('juego-conexion-btn-pista').disabled = true;
+    ocultarSugerenciasJuegoConexion();
+    feedback.style.color = 'var(--verde,#22c55e)';
+    feedback.innerHTML = `✅ ¡Correcto! <b>${acierto}</b> jugó en los dos equipos.`;
+    juegoConexionScore++;
+    if (juegoConexionScore > juegoConexionMejor) {
+      juegoConexionMejor = juegoConexionScore;
+      try { localStorage.setItem('juegoConexion_mejor', juegoConexionMejor); } catch(e) {}
+    }
+    setTimeout(nuevaRondaJuegoConexion, 1400);
+  } else {
+    feedback.style.color = 'var(--rojo,#ef4444)';
+    feedback.innerHTML = `❌ Ese no jugó en los dos equipos (o no está cargado así). ¡Probá de nuevo!`;
+    if (input) { input.value = ''; input.focus(); }
+  }
+}
+
+// Pista: revela progresivamente letras del primer jugador válido en común
+function pistaJuegoConexion() {
+  const feedback = document.getElementById('juego-conexion-feedback');
+  if (!juegoConexionActual || !juegoConexionActual.comunes.length) return;
+  juegoConexionPistaNivel++;
+  const nombre = juegoConexionActual.comunes[0];
+  const cantidad = Math.min(nombre.length, juegoConexionPistaNivel * 2);
+  const revelado = nombre.slice(0, cantidad).padEnd(nombre.length, '·').split('').map(c => c === ' ' ? ' ' : c).join('');
+  feedback.style.color = 'var(--texto-2)';
+  feedback.innerHTML = `💡 Empieza así: <b style="letter-spacing:1px;">${revelado}</b>${juegoConexionActual.comunes.length > 1 ? ` <span style="color:var(--texto-3);">(hay ${juegoConexionActual.comunes.length} jugadores válidos)</span>` : ''}`;
+}
+
+function rendirseJuegoConexion() {
+  mostrarFinJuegoConexion();
+}
+
+function mostrarFinJuegoConexion() {
+  document.getElementById('juego-conexion-fin-score').textContent = juegoConexionScore;
+  document.getElementById('juego-conexion-fin-mejor').textContent = juegoConexionMejor;
+  const ejemplos = juegoConexionActual.comunes.slice(0, 8);
+  const extra = juegoConexionActual.comunes.length > 8 ? ` y ${juegoConexionActual.comunes.length - 8} más` : '';
+  document.getElementById('juego-conexion-fin-ejemplos').innerHTML =
+    `Jugadores válidos entre <b>${juegoConexionActual.a.nombre}</b> y <b>${juegoConexionActual.b.nombre}</b>:<br>${ejemplos.join(', ')}${extra}`;
+  document.getElementById('modal-juego-conexion-fin').style.display = 'flex';
+}
+
+function reiniciarJuegoConexion() {
+  document.getElementById('modal-juego-conexion-fin').style.display = 'none';
+  iniciarJuegoConexion();
 }
 
 function parsearGoleadores(equipoId, torneoId, listaPartidos, excluirEquipoId) {
