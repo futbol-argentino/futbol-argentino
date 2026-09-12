@@ -3244,6 +3244,15 @@ function toggleOrdenDetalle() {
 let fechaNavActiva = null; // 'DD/MM/YYYY' o null
 let fechasDisponibles = []; // array ordenado de fechas únicas en formato ISO 'YYYY-MM-DD'
 
+// "Hoy" en fecha LOCAL del usuario, como YYYY-MM-DD. No usar new Date().toISOString()
+// para esto: toISOString() convierte a UTC, y en Argentina (UTC-3) entre las 21:00 y
+// las 23:59 locales el reloj UTC ya marca el día siguiente, lo que hacía aparecer los
+// partidos de mañana como si fueran "de hoy".
+function hoyISOLocal() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
 function normalizarFechaISO(fechaStr) {
   if (!fechaStr) return null;
   // Soportar DD/MM/YYYY y YYYY-MM-DD
@@ -3262,7 +3271,7 @@ function actualizarFechasDisponibles() {
     const iso = normalizarFechaISO(p.Fecha);
     if (iso) set.add(iso);
   });
-  const hoyISOTmp = new Date().toISOString().split('T')[0];
+  const hoyISOTmp = hoyISOLocal();
   // Partidos.csv es el historial. Hoy.csv puede traer partidos de próximos días (fixture),
   // así que sus fechas también entran al rango navegable con las flechas / calendario.
   partidosHoy.forEach(p => {
@@ -3276,7 +3285,7 @@ function actualizarFechasDisponibles() {
   // para que al navegar con las flechas se recorra día por día sin saltos.
   // El límite hacia adelante no depende de si hay fixtures cargados: siempre
   // se puede seguir avanzando varios años hacia el futuro desde hoy.
-  const hoyISO = new Date().toISOString().split('T')[0];
+  const hoyISO = hoyISOLocal();
   const limiteFuturo = new Date();
   limiteFuturo.setFullYear(limiteFuturo.getFullYear() + 5);
   const limiteFuturoISO = limiteFuturo.toISOString().split('T')[0];
@@ -3321,7 +3330,7 @@ function navegarFecha(delta) {
   if (!fechaNavActiva) {
     // Sin fecha activa partimos de "hoy" y nos movemos un día en la dirección elegida
     // (antes esto saltaba directo a la fecha más antigua/reciente del historial).
-    const hoyISO = new Date().toISOString().split('T')[0];
+    const hoyISO = hoyISOLocal();
     let idxHoy = fechasDisponibles.indexOf(hoyISO);
     if (idxHoy === -1) idxHoy = delta > 0 ? -1 : fechasDisponibles.length; // fallback de seguridad
     const nuevoIdx = idxHoy + delta;
@@ -3364,15 +3373,24 @@ function actualizarVistaHoyFecha() {
   cont.style.display = 'none';
   wrap.style.display = 'block';
 
-  const hoyISOTmp = new Date().toISOString().split('T')[0];
-  const historicos = partidos.filter(p => normalizarFechaISO(p.Fecha) === fechaNavActiva);
-  const idsHistoricos = new Set(historicos.map(p => p.ID_Partido));
+  const hoyISOTmp = hoyISOLocal();
+  const historicosBase = partidos.filter(p => normalizarFechaISO(p.Fecha) === fechaNavActiva);
+  const idsHistoricos = new Set(historicosBase.map(p => p.ID_Partido));
   // Sumar los partidos de Hoy.csv para esa fecha (fixture a futuro) que no estén ya
   // en el historial de Partidos.csv, para no duplicar un partido que ya se jugó y cargó.
   const fixtures = partidosHoy.filter(p => {
     const iso = normalizarFechaISO(p.Fecha) || hoyISOTmp;
     if (iso !== fechaNavActiva) return false;
     return !(p.ID_Partido && idsHistoricos.has(p.ID_Partido));
+  });
+  // Si el partido todavía no se jugó y en Partidos.csv no tiene Hora cargada (solo se
+  // cargó como placeholder del fixture), completarla con la del registro de Hoy.csv
+  // para que la hora se vea igual sin importar de qué archivo venga.
+  const historicos = historicosBase.map(p => {
+    if (esPartidoJugado(p) || p.Hora || p.hora) return p;
+    const enHoy = partidosHoy.find(f => f.ID_Partido && f.ID_Partido === p.ID_Partido)
+      || partidosHoy.find(f => (normalizarFechaISO(f.Fecha) || hoyISOTmp) === fechaNavActiva && f.Local_ID === p.Local_ID && f.Visitante_ID === p.Visitante_ID);
+    return (enHoy && (enHoy.Hora || enHoy.hora)) ? { ...p, Hora: enHoy.Hora || enHoy.hora } : p;
   });
 
   const filtrados = [...historicos, ...fixtures]
@@ -10672,7 +10690,7 @@ function renderHoy() {
   const container = document.getElementById('hoy-container');
   // Solo los partidos de hoy (los de otros días se ven con el navegador de fecha de arriba).
   // Los que todavía no se jugaron muestran su hora en vez del resultado.
-  const hoyISO = new Date().toISOString().split('T')[0];
+  const hoyISO = hoyISOLocal();
   const deHoy = partidosHoy.filter(p => (normalizarFechaISO(p.Fecha) || hoyISO) === hoyISO);
   if (!deHoy.length) { renderHoyVacio('No hay partidos programados para hoy.'); return; }
 
