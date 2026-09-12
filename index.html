@@ -11579,7 +11579,7 @@ function renderH2H(eq1, eq2, contenedorId) {
       ?`<span class="${rc}" style="font-family:var(--fuente-titulo);font-size:28px;">${p.Goles_Local} - ${p.Goles_Visitante}</span>`
       :(esPartidoSuspendido(p)
         ?`<span style="color:var(--rojo);font-weight:700;font-size:15px;letter-spacing:0.5px;">SUSPENDIDO</span>`
-        :`<span style="color:var(--texto-3);font-size:22px;">vs</span>`);
+        :`<span style="color:var(--texto-3);font-size:22px;">${p.Hora || p.hora || 'vs'}</span>`);
     return `
       <div class="tabla-wrapper" style="cursor:pointer;margin-bottom:14px;" onclick="verPartido(${p.ID_Partido})">
         <div class="tabla-header">
