@@ -403,10 +403,11 @@ tbody tr.fila-gol-preview{border-bottom:none;cursor:default}
 tbody tr:last-child{border-bottom:none}
 tbody tr:hover{background:rgba(14,165,233,0.04);box-shadow:inset 3px 0 0 var(--celeste)}
 td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
-.td-fecha{color:var(--texto-3);font-size:12px;white-space:nowrap;font-family:var(--fuente-mono)}
-.td-equipo{display:flex;align-items:center;gap:10px;white-space:nowrap}
+.td-fecha{color:var(--texto-2);font-size:12px;white-space:nowrap;font-family:var(--fuente-cuerpo);font-weight:500}
+.td-equipo{display:flex;align-items:center;gap:10px;white-space:nowrap;max-width:240px;overflow:hidden}
+.td-equipo span{overflow:hidden;text-overflow:ellipsis}
 .td-escudo{width:22px;height:22px;object-fit:contain;flex-shrink:0}
-.td-resultado{text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:400;white-space:nowrap;letter-spacing:2px}
+.td-resultado{text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:400;white-space:nowrap;letter-spacing:2px;width:74px}
 table.tabla-partidos td{padding-left:8px;padding-right:8px}
 .res-local{color:var(--verde)}
 .res-empate{color:var(--amarillo)}
@@ -7600,6 +7601,26 @@ const TORNEOS_AMATEUR_EXCEPCION = new Set([
   'Campeonato de Primera Division AAF 1933',
   'Campeonato de Primera Division AAF 1934',
 ]);
+// Torneos sin campeón que NO están en disputa (ya terminaron o se dieron de baja
+// por algún motivo puntual, ej. pandemia) — se muestran con este texto en vez de
+// "Torneo en disputa" y no cuentan como en curso.
+const TORNEOS_SIN_CAMPEON_MOTIVO = {
+  'Copa De La Superliga 2020': 'Suspendido por la Pandemia',
+};
+// Un torneo sin campeón solo se considera "en disputa" (torneo actual, todavía
+// jugándose) a partir de esta temporada; los anteriores sin campeón cargado se
+// asumen ya finalizados/dados de baja y no en curso.
+const ANIO_MIN_TORNEO_EN_DISPUTA = 2026;
+function motivoSinCampeon(t) {
+  return TORNEOS_SIN_CAMPEON_MOTIVO[(t.Competencia||'').trim()] || null;
+}
+function esTorneoEnDisputa(t) {
+  if (t.Campeon) return false;
+  if (motivoSinCampeon(t)) return false;
+  const anio = anioTemporada(t);
+  return !!(anio && anio >= ANIO_MIN_TORNEO_EN_DISPUTA);
+}
+
 function esTorneoAmateur(t) {
   if (TORNEOS_AMATEUR_EXCEPCION.has((t.Competencia||'').trim())) return true;
   const anio = anioTemporada(t);
@@ -7646,7 +7667,7 @@ function cargarAniosCampeones() {
 
   const anios = [...new Set(
     temporadasArr
-      .filter(t => (t.Campeon || (t.Competencia||'').trim()) && (!division || t.Division === division))
+      .filter(t => (t.Campeon || esTorneoEnDisputa(t) || motivoSinCampeon(t)) && (!division || t.Division === division))
       .map(t => anioTemporada(t))
       .filter(a => a !== null)
   )].sort((a,b) => b - a);
@@ -7691,8 +7712,7 @@ function filtrarCampeones() {
   };
 
   let lista = temporadasArr.filter(t => {
-    const enCurso = !t.Campeon && (t.Competencia||'').trim();
-    if (!t.Campeon && !enCurso) return false;
+    if (!t.Campeon && !esTorneoEnDisputa(t) && !motivoSinCampeon(t)) return false;
     if (division && t.Division !== division) return false;
     if (buscar && !(t.Competencia||'').toLowerCase().includes(buscar) && !(t.Campeon||'').toLowerCase().includes(buscar)) return false;
     return true;
@@ -7735,7 +7755,8 @@ function filtrarCampeones() {
   }
 
   const cardHTML = (t) => {
-    const enCurso = !t.Campeon;
+    const enCurso = esTorneoEnDisputa(t);
+    const motivo = motivoSinCampeon(t);
     const foto = t.Foto_Trofeo ? `trofeos/${t.Foto_Trofeo}` : '';
     const escCampeon = ESCUDOS[t.Campeon] ? `<img src="${ESCUDOS[t.Campeon]}" style="width:22px;height:22px;object-fit:contain;" onerror="this.style.display='none'">` : '';
     // Si el torneo no tiene foto de trofeo cargada (ej: no se entregó copa, o está en disputa),
@@ -7755,7 +7776,9 @@ function filtrarCampeones() {
       : '';
     const lineaCampeon = enCurso
       ? `<span style="color:var(--texto-3);">Torneo en disputa</span>`
-      : `${escCampeon}${t.Campeon}`;
+      : motivo
+        ? `<span style="color:var(--texto-3);">${motivo}</span>`
+        : `${escCampeon}${t.Campeon}`;
     return `<div class="camp-card" onclick="verTorneo('${t.ID_Temporada}')">
       <div class="camp-foto-wrap">${imgTrofeo}</div>
       <div class="camp-info">
