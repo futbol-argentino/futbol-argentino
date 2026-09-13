@@ -3217,7 +3217,7 @@ function filaPartido(p, equipoRef, opciones) {
   return `<tr${claseExtra}${clickAttr}>
     ${ocultarFecha ? '' : `<td class="td-fecha">${fecha}</td>`}
     <td>${escudoLocalDerecha
-      ? `<div class="td-equipo" style="justify-content:flex-end;text-align:right;"><span>${local}</span>${escudoImg(local,22)}</div>`
+      ? `<div class="td-equipo" style="justify-content:flex-end;text-align:right;margin-left:auto;"><span>${local}</span>${escudoImg(local,22)}</div>`
       : `<div class="td-equipo">${escudoImg(local,22)}<span>${local}</span></div>`}</td>
     <td class="td-resultado"><span class="${rc}">${resultadoTxt}</span></td>
     <td><div class="td-equipo">${escudoImg(visita,22)}<span>${visita}</span></div></td>
@@ -7603,16 +7603,20 @@ const TORNEOS_AMATEUR_EXCEPCION = new Set([
 ]);
 // Torneos sin campeón que NO están en disputa (ya terminaron o se dieron de baja
 // por algún motivo puntual, ej. pandemia) — se muestran con este texto en vez de
-// "Torneo en disputa" y no cuentan como en curso.
+// "Torneo en disputa" y no cuentan como en curso. "division" es un respaldo por si
+// la hoja de Temporadas no tiene cargado ese campo para este torneo puntual.
 const TORNEOS_SIN_CAMPEON_MOTIVO = {
-  'Copa De La Superliga 2020': 'Suspendido por la Pandemia',
+  'Copa De La Superliga 2020': { motivo: 'Suspendido por la Pandemia', division: 'Primera Division' },
 };
 // Un torneo sin campeón solo se considera "en disputa" (torneo actual, todavía
 // jugándose) a partir de esta temporada; los anteriores sin campeón cargado se
 // asumen ya finalizados/dados de baja y no en curso.
 const ANIO_MIN_TORNEO_EN_DISPUTA = 2026;
 function motivoSinCampeon(t) {
-  return TORNEOS_SIN_CAMPEON_MOTIVO[(t.Competencia||'').trim()] || null;
+  return TORNEOS_SIN_CAMPEON_MOTIVO[(t.Competencia||'').trim()]?.motivo || null;
+}
+function divisionSinCampeon(t) {
+  return TORNEOS_SIN_CAMPEON_MOTIVO[(t.Competencia||'').trim()]?.division || null;
 }
 function esTorneoEnDisputa(t) {
   if (t.Campeon) return false;
@@ -7761,12 +7765,16 @@ function filtrarCampeones() {
     const escCampeon = ESCUDOS[t.Campeon] ? `<img src="${ESCUDOS[t.Campeon]}" style="width:22px;height:22px;object-fit:contain;" onerror="this.style.display='none'">` : '';
     // Si el torneo no tiene foto de trofeo cargada (ej: no se entregó copa, o está en disputa),
     // mostramos el escudo del equipo campeón bien grande como portada, en vez del ícono genérico.
+    // El ícono genérico se dibuja con el mismo tamaño de caja (160x160) que una foto real,
+    // para que la tarjeta mida exactamente lo mismo que las demás y no quede desalineada.
     const escGrande = ESCUDOS[t.Campeon];
+    const iconoGenericoStyle = 'width:160px;height:160px;display:flex;align-items:center;justify-content:center;font-size:72px;';
+    const iconoGenerico = `<div style="${iconoGenericoStyle}">🏆</div>`;
     const fallbackSinFoto = escGrande
-      ? `<img src="${escGrande}" style="width:80px;height:80px;object-fit:contain;" loading="lazy" decoding="async" alt="${t.Campeon}" onerror="this.parentElement.innerHTML='<div style=font-size:72px>🏆</div>'">`
-      : `<div style="font-size:72px;">🏆</div>`;
+      ? `<img src="${escGrande}" style="width:80px;height:80px;object-fit:contain;" loading="lazy" decoding="async" alt="${t.Campeon}" onerror="this.parentElement.innerHTML='<div style=${iconoGenericoStyle}>🏆</div>'">`
+      : iconoGenerico;
     const imgTrofeo = foto
-      ? `<img src="${foto}" class="camp-foto" loading="lazy" decoding="async" alt="${t.Competencia}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{innerHTML:'🏆',style:'font-size:72px'}))">`
+      ? `<img src="${foto}" class="camp-foto" loading="lazy" decoding="async" alt="${t.Competencia}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{innerHTML:'🏆',style:'${iconoGenericoStyle}'}))">`
       : fallbackSinFoto;
     const badgeAmateur = esTorneoAmateur(t)
       ? `<span style="display:inline-block;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--texto-3);background:var(--fondo-3);border:1px solid var(--borde);border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:middle;">Amateur</span>`
@@ -7777,12 +7785,15 @@ function filtrarCampeones() {
     const lineaCampeon = enCurso
       ? `<span style="color:var(--texto-3);">Torneo en disputa</span>`
       : motivo
-        ? `<span style="color:var(--texto-3);">${motivo}</span>`
+        ? `<span style="color:var(--rojo);font-weight:600;">${motivo}</span>`
         : `${escCampeon}${t.Campeon}`;
+    // Si a este torneo puntual le falta la División cargada en la hoja, usamos la de
+    // respaldo del caso especial en vez de caer al Año (que se ve raro ahí arriba).
+    const divisionMostrada = t.Division || divisionSinCampeon(t) || t.Año || '';
     return `<div class="camp-card" onclick="verTorneo('${t.ID_Temporada}')">
       <div class="camp-foto-wrap">${imgTrofeo}</div>
       <div class="camp-info">
-        <div class="camp-año">${t.Division || t.Año || ''}${badgeAmateur}${badgeEnCurso}</div>
+        <div class="camp-año">${divisionMostrada}${badgeAmateur}${badgeEnCurso}</div>
         <div class="camp-nombre">${t.Competencia}</div>
         <div class="camp-campeon">${lineaCampeon}</div>
       </div>
@@ -11602,7 +11613,7 @@ function renderH2H(eq1, eq2, contenedorId) {
     const golData = construirGolData(p, local, visita, 2, 2);
     return `<tr onclick="verPartido(${p.ID_Partido})" style="cursor:pointer;">
       <td class="td-fecha">${fecha}</td>
-      <td><div class="td-equipo" style="justify-content:flex-end;text-align:right;"><span>${local}</span>${escudoImg(local,18)}</div></td>
+      <td><div class="td-equipo" style="justify-content:flex-end;text-align:right;margin-left:auto;"><span>${local}</span>${escudoImg(local,18)}</div></td>
       <td class="td-resultado"><span class="${rc}">${p.Goles_Local} - ${p.Goles_Visitante}</span>${extra ? `<div style="font-size:10px;color:var(--celeste);font-weight:700;margin-top:2px;">${extra}</div>` : ''}</td>
       <td><div class="td-equipo">${escudoImg(visita,18)}<span>${visita}</span></div></td>
       <td><div style="display:flex;align-items:center;"><span class="badge-torneo" style="font-size:10px;">${temporadas[p.ID_Temporada]||p.Fase||''}</span>${golData ? golData.arrow : ''}</div></td>
