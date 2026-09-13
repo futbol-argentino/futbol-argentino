@@ -403,12 +403,21 @@ tbody tr.fila-gol-preview{border-bottom:none;cursor:default}
 tbody tr:last-child{border-bottom:none}
 tbody tr:hover{background:rgba(14,165,233,0.04);box-shadow:inset 3px 0 0 var(--celeste)}
 td{padding:10px 16px;font-size:14px;color:var(--texto-1);vertical-align:middle}
-.td-fecha{color:var(--texto-2);font-size:12px;white-space:nowrap;font-family:var(--fuente-cuerpo);font-weight:500}
-.td-equipo{display:flex;align-items:center;gap:10px;white-space:nowrap;max-width:240px;overflow:hidden}
-.td-equipo span{overflow:hidden;text-overflow:ellipsis}
+.td-fecha{color:var(--texto-2);font-size:12px;white-space:nowrap;font-family:var(--fuente-cuerpo);font-weight:500;overflow:hidden;text-overflow:ellipsis}
+.td-equipo{display:flex;align-items:center;gap:10px;white-space:nowrap;overflow:hidden;min-width:0}
+.td-equipo span{overflow:hidden;text-overflow:ellipsis;min-width:0}
 .td-escudo{width:22px;height:22px;object-fit:contain;flex-shrink:0}
-.td-resultado{text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:400;white-space:nowrap;letter-spacing:2px;width:74px}
+.td-resultado{text-align:center;font-family:var(--fuente-titulo);font-size:20px;font-weight:400;white-space:nowrap;letter-spacing:2px}
 table.tabla-partidos td{padding-left:8px;padding-right:8px}
+/* Ancho fijo y proporcional por columna: sin esto, el layout automático del navegador
+   repartía el espacio sobrante de forma impredecible (a veces se lo comía la fecha, a
+   veces el nombre del equipo), dejando columnas desalineadas según la tabla. */
+table.tabla-partidos{table-layout:fixed}
+table.tabla-partidos th:nth-child(1),table.tabla-partidos td:nth-child(1){width:11%}
+table.tabla-partidos th:nth-child(2),table.tabla-partidos td:nth-child(2){width:28%}
+table.tabla-partidos th:nth-child(3),table.tabla-partidos td:nth-child(3){width:11%}
+table.tabla-partidos th:nth-child(4),table.tabla-partidos td:nth-child(4){width:28%}
+table.tabla-partidos th:nth-child(5),table.tabla-partidos td:nth-child(5){width:22%}
 .res-local{color:var(--verde)}
 .res-empate{color:var(--amarillo)}
 .res-visita{color:var(--rojo)}
@@ -3223,7 +3232,7 @@ function filaPartido(p, equipoRef, opciones) {
     <td><div class="td-equipo">${escudoImg(visita,22)}<span>${visita}</span></div></td>
     ${ocultarTorneo
       ? `<td class="td-arrow">${golData ? golData.arrow : ''}</td>`
-      : `<td><div style="display:flex;align-items:center;"><span class="badge-torneo">${torneo}</span>${golData ? golData.arrow : ''}</div></td>`}
+      : `<td><div style="display:flex;align-items:center;min-width:0;overflow:hidden;"><span class="badge-torneo" style="overflow:hidden;text-overflow:ellipsis;max-width:100%;">${torneo}</span>${golData ? golData.arrow : ''}</div></td>`}
   </tr>${golData ? golData.drop : ''}`;
 }
 
@@ -7943,6 +7952,7 @@ function verTorneo(idTemporada) {
       'Octavos de Final Ida','Octavos de Final Vuelta','Octavos de Final',
       'Cuartos de Final Ida','Cuartos de Final Vuelta','Cuartos de Final',
       'Semifinal Ida','Semifinal Vuelta','Semifinal',
+      'Semifinales Ida','Semifinales Vuelta','Semifinales',
       'Desempate Descenso',
       // Torneo Nacional (formato ganadores/perdedores, ej. 1985): van antes de "Final"
       // porque cronológicamente se juegan primero (fechas 7 a 17 del torneo).
@@ -8116,6 +8126,7 @@ const BRACKET_FASES = [
   ['Octavos de Final Ida','Octavos de Final Vuelta','Octavos de Final'],
   ['Cuartos de Final Ida','Cuartos de Final Vuelta','Cuartos de Final'],
   ['Semifinal Ida','Semifinal Vuelta','Semifinal'],
+  ['Semifinales Ida','Semifinales Vuelta','Semifinales'],
   ['Desempate Descenso'],
   ['Final Ida','Final Vuelta','Final'],
 ];
