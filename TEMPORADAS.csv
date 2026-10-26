@@ -1,6 +1,6 @@
 ID_Temporada,Año,Competencia,Division,Campeon,Subcampeon,Ascensos,Descensos,Foto_Trofeo
 1,2025,Copa De La Liga Apertura 2025,Primera Division,Platense,Huracan,,,apertura_2025.jpg
-2,2025,Copa De La Liga Clausura 2025,Primera Division,Estudiantes LP,Racing Club,,Godoy Cruz;San Martin de San Juan,clausura_2025.jpg
+2,2025,Copa De La Liga Clausura 2025,Primera Division,Estudiantes LP,Racing Club,,Godoy Cruz;San Martin SJ,clausura_2025.jpg
 3,2024,Copa De La Liga 2024,Primera Division,Estudiantes LP,Velez Sarsfield,,,copa_2024.jpg
 4,2024,Liga Profesional 2024,Primera Division,Velez Sarsfield,Talleres,,,liga_2024.jpg
 5,2023,Copa De La Liga 2023,Primera Division,Rosario Central,Platense,,Arsenal;Colon,copa_2023.jpg
@@ -11,8 +11,8 @@ ID_Temporada,Año,Competencia,Division,Campeon,Subcampeon,Ascensos,Descensos,Fot
 10,2021,Liga Profesional 2021,Primera Division,River Plate,Defensa y Justicia,,,liga_2021.jpg
 11,2020,Copa Diego Armando Maradona 2020,Primera Division,Boca Juniors,Banfield,,,copa_2020.jpg
 12,2019/20,Superliga Argentina 2019/2020,Primera Division,Boca Juniors,River Plate,,,superliga_2020.jpg
-13,2020,Copa De La Superliga 2020,,,,,,
-14,2018/19,Superliga Argentina 2018/2019,Primera Division,Racing Club,Defensa y Justicia,,San Martin de Tucuman;Tigre;San Martin de San Juan;Belgrano,superliga_2019.jpg
+13,2020,Copa De La Superliga 2020,,,,,,copa_2019.jpg
+14,2018/19,Superliga Argentina 2018/2019,Primera Division,Racing Club,Defensa y Justicia,,San Martin Tucuman;Tigre;San Martin SJ;Belgrano,superliga_2019.jpg
 15,2019,Copa De La Superliga 2019,Primera Division,Tigre,Boca Juniors,,,copa_2019.jpg
 16,2017/18,Superliga Argentina 2017/2018,Primera Division,Boca Juniors,Godoy Cruz,,Arsenal;Chacarita Juniors;Temperley;Olimpo,superliga_2018.jpg
 17,2016/17,Superliga Argentina 2016/2017,Primera Division,Boca Juniors,River Plate,,Aldosivi;Atletico Rafaela;Quilmes;Sarmiento,superliga_2017.jpg
@@ -21,7 +21,7 @@ ID_Temporada,Año,Competencia,Division,Campeon,Subcampeon,Ascensos,Descensos,Fot
 20,2014,Torneo Transición 2014,Primera Division,Racing Club,River Plate,,,
 21,2014,Torneo Final 2014,Primera Division,River Plate,Boca Juniors,,Colon;All Boys;Argentinos Juniors,
 22,2013,Torneo Inicial 2013,Primera Division,San Lorenzo,Lanus,,,
-23,2013,Torneo Final 2013,Primera Division,Newells,River Plate,,San Martin de San Juan;Independiente;Union,
+23,2013,Torneo Final 2013,Primera Division,Newells,River Plate,,San Martin SJ;Independiente;Union,
 24,2012,Torneo Inicial 2012,Primera Division,Velez Sarsfield,Newells,,,
 25,2012,Torneo Clausura 2012,Primera Division,Arsenal,Tigre,,Olimpo;Banfield,
 26,2011,Torneo Apertura 2011,Primera Division,Boca Juniors,Racing Club,,,
@@ -29,9 +29,9 @@ ID_Temporada,Año,Competencia,Division,Campeon,Subcampeon,Ascensos,Descensos,Fot
 28,2010,Torneo Apertura 2010,Primera Division,Estudiantes LP,Velez Sarsfield,,,
 29,2010,Torneo Clausura 2010,Primera Division,Argentinos Juniors,Estudiantes LP,,Atletico Tucuman;Chacarita Juniors;Rosario Central,
 30,2009,Torneo Apertura 2009,Primera Division,Banfield,Newells,,,
-31,2009,Torneo Clausura 2009,Primera Division,Velez Sarsfield,Huracan,,San Martin de Tucuman;Gimnasia de Jujuy,
+31,2009,Torneo Clausura 2009,Primera Division,Velez Sarsfield,Huracan,,San Martin Tucuman;Gimnasia de Jujuy,
 32,2008,Torneo Apertura 2008,Primera Division,Boca Juniors,Tigre,,,
-33,2008,Torneo Clausura 2008,Primera Division,River Plate,Boca Juniors,,Olimpo;San Martin de San Juan,
+33,2008,Torneo Clausura 2008,Primera Division,River Plate,Boca Juniors,,Olimpo;San Martin SJ,
 34,2007,Torneo Apertura 2007,Primera Division,Lanus,Tigre,,,
 35,2007,Torneo Clausura 2007,Primera Division,San Lorenzo,Boca Juniors,,Quilmes;Godoy Cruz;Belgrano;Nueva Chicago,
 36,2006,Torneo Apertura 2006,Primera Division,Estudiantes LP,Boca Juniors,,,
@@ -53,7 +53,7 @@ ID_Temporada,Año,Competencia,Division,Campeon,Subcampeon,Ascensos,Descensos,Fot
 52,1998,Torneo Apertura 1998,Primera Division,Boca Juniors,Gimnasia LP,,,
 53,1998,Torneo Clausura 1998,Primera Division,Velez Sarsfield,Lanus,,Deportivo Español;Gimnasia y Tiro,
 54,1997,Torneo Apertura 1997,Primera Division,River Plate,Boca Juniors,,,
-55,1997,Torneo Clausura 1997,Primera Division,River Plate,Colon,,Huracan Corrientes;Banfield,
+55,1997,Torneo Clausura 1997,Primera Division,River Plate,Colon,,Huracán Corrientes;Banfield,
 56,1996,Torneo Apertura 1996,Primera Division,River Plate,Independiente,,,
 57,1996,Torneo Clausura 1996,Primera Division,Velez Sarsfield,Gimnasia LP,,Belgrano;Argentinos Juniors,
 58,1995,Torneo Apertura 1995,Primera Division,Velez Sarsfield,Racing Club,,,
@@ -61,16 +61,16 @@ ID_Temporada,Año,Competencia,Division,Campeon,Subcampeon,Ascensos,Descensos,Fot
 60,1994,Torneo Apertura 1994,Primera Division,River Plate,San Lorenzo,,,
 61,1994,Torneo Clausura 1994,Primera Division,Independiente,Huracan,,Estudiantes LP;Gimnasia y Tiro,
 62,1993,Torneo Apertura 1993,Primera Division,River Plate,Velez Sarsfield,,,
-63,1993,Torneo Clausura 1993,Primera Division,Velez Sarsfield,Independiente,,Talleres;San Martin de Tucuman,
+63,1993,Torneo Clausura 1993,Primera Division,Velez Sarsfield,Independiente,,Talleres;San Martin Tucuman,
 64,1992,Torneo Apertura 1992,Primera Division,Boca Juniors,River Plate,,,
 65,1992,Torneo Clausura 1992,Primera Division,Newells,Velez Sarsfield,,Union;Quilmes,
 66,1991,Torneo Apertura 1991,Primera Division,River Plate,Boca Juniors,,,
 67,1991,Torneo Clausura 1991,Primera Division,Boca Juniors,San Lorenzo,,Chaco For Ever;Lanus,
 68,1990,Torneo Apertura 1990,Primera Division,Newells,River Plate,,,
 69,1989/1990,Campeonato de Primera División 1989-90,Primera Division,River Plate,Independiente,,Racing de Córdoba;Instituto,
-70,1988/1989,Campeonato de Primera División 1988-89,Primera Division,Independiente,Boca Juniors,,San Martin de Tucuman;Deportivo Armenio,
+70,1988/1989,Campeonato de Primera División 1988-89,Primera Division,Independiente,Boca Juniors,,San Martin Tucuman;Deportivo Armenio,
 71,1987/1988,Campeonato de Primera División 1987-88,Primera Division,Newells,San Lorenzo,,Banfield;Union,
-72,1986/1987,Campeonato de Primera División 1986-87,Primera Division,Rosario Central,Newells,,Deportivo Italiano;Temperley,
+72,1986/1987,Campeonato de Primera División 1986-87,Primera Division,Rosario Central,Newells,,Sportivo Italiano;Temperley,
 73,1985/1986,Campeonato de Primera División 1985-86,Primera Division,River Plate,Newells,,Chacarita Juniors;Huracan,
 74,1985,Torneo Nacional 1985,Primera Division,Argentinos Juniors,Velez Sarsfield,,,
 75,1984,Torneo Nacional 1984,Primera Division,Ferro Carril Oeste,River Plate,,,
@@ -178,3 +178,4 @@ ID_Temporada,Año,Competencia,Division,Campeon,Subcampeon,Ascensos,Descensos,Fot
 177,1915,Campeonato de Primera Division 1915,Primera Division,Racing Club,San Isidro,,Sportivo Floresta;Comercio;Defensores de Belgrano;Kimberley,
 178,2026,Copa de la Liga Apertura 2026,Primera Division,Belgrano,River Plate,,,apertura_2025.jpg
 179,2026,Copa De La Liga Clausura 2026,Primera Division,,,,,apertura_2025.jpg
+180,2025,Primera Nacional 2025,Segunda Division,Gimnasia de Mendoza,Deportivo Madryn,Gimnasia de Mendoza;Estudiantes RC,Alvarado;Arsenal;Defensores Unidos;Talleres RdE,
