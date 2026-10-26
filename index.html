@@ -7710,6 +7710,26 @@ function navegarAnioCampeones(delta) {
   filtrarCampeones();
 }
 
+// Posición de una división para ordenar las tarjetas de Campeones: Primera = 1,
+// Segunda = 2, Tercera = 3, etc. Lo que no se reconoce va al final.
+function rangoDivisionCampeones(t) {
+  const div = (t.Division || divisionSinCampeon(t) || '')
+    .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  if (!div) return 999;
+  // Nombres de la estructura actual (por si la hoja los usa en vez de "Segunda Division", etc.)
+  if (/liga profesional/.test(div)) return 1;
+  if (/primera nacional/.test(div)) return 2;
+  if (/primera b\b/.test(div)) return 3;
+  if (/primera c\b/.test(div)) return 4;
+  const ORD = ['primera','segunda','tercera','cuarta','quinta','sexta','septima','octava','novena','decima'];
+  for (let i = 0; i < ORD.length; i++) {
+    if (new RegExp('\\b' + ORD[i] + '\\b').test(div)) return i + 1;
+  }
+  const num = div.match(/\b(\d{1,2})\s*(?:ra|da|era|ta|a|°|º)?\b/);
+  if (num) return parseInt(num[1]);
+  return 900; // división no reconocida: al final
+}
+
 function filtrarCampeones() {
   const division = document.getElementById('camp-filtro-division').value;
   const anioSel = document.getElementById('camp-filtro-anio').value;
@@ -7734,9 +7754,13 @@ function filtrarCampeones() {
 
   if (anioSel) lista = lista.filter(x => x.anio === parseInt(anioSel));
 
-  // Orden principal: año descendente. Dentro del mismo año: fecha más reciente primero.
+  // Orden principal: año descendente. Dentro del mismo año: primero por división
+  // (Primera, Segunda, Tercera...) y, dentro de la misma división, fecha más reciente primero.
   lista.sort((a, b) => {
     if ((b.anio||0) !== (a.anio||0)) return (b.anio||0) - (a.anio||0);
+    const ra = rangoDivisionCampeones(a.t);
+    const rb = rangoDivisionCampeones(b.t);
+    if (ra !== rb) return ra - rb;
     const fa = fechaMax(a.t.ID_Temporada);
     const fb = fechaMax(b.t.ID_Temporada);
     if (fa && fb) return fb.localeCompare(fa);
