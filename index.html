@@ -1926,7 +1926,7 @@ header::after{animation:none;height:4px;background:var(--azul)}
       <div class="filtros-panel" style="margin-bottom:20px;">
         <div class="filtros-titulo">Ascensos y Descensos por Temporada</div>
         <div style="color:var(--texto-3);font-size:13px;margin-top:6px;">
-          Movimientos entre Primera División y la categoría inferior, temporada por temporada.
+          Equipos que ascienden y descienden en cada categoría, temporada por temporada.
         </div>
       </div>
       <div id="movimientos-lista"></div>
@@ -11450,11 +11450,13 @@ function cambiarCampeonesSubTab(tab) {
 }
 
 // ── VISTA GLOBAL: Ascensos y Descensos por temporada ──
+// Se agrupa por AÑO → CATEGORÍA (división) → torneo, así se ve de qué categoría
+// sale cada equipo que asciende o desciende (los movimientos de cada fila de
+// TEMPORADAS.csv pertenecen a la división de esa fila).
 function renderMovimientosAscensoDescenso() {
   const cont = document.getElementById('movimientos-lista');
   if (!cont) return;
 
-  // Agrupar por año, uniendo ascensos/descensos de todos los torneos de esa temporada
   const porAnio = {};
   temporadasArr.forEach(t => {
     const ascensos  = (t.Ascensos||'').split(';').map(s=>s.trim()).filter(Boolean);
@@ -11463,10 +11465,14 @@ function renderMovimientosAscensoDescenso() {
 
     const anio = obtenerAnioTemporada(t);
     const anioLabel = t.Año || anio || '?';
-    const key = anioLabel;
-    if (!porAnio[key]) porAnio[key] = { anioLabel, anioNum: anio||0, division: t.Division||'', ascensos: new Set(), descensos: new Set() };
-    ascensos.forEach(e => porAnio[key].ascensos.add(e));
-    descensos.forEach(e => porAnio[key].descensos.add(e));
+    const division = (t.Division || divisionSinCampeon(t) || 'Sin categoría').trim();
+
+    if (!porAnio[anioLabel]) porAnio[anioLabel] = { anioLabel, anioNum: anio||0, divisiones: {} };
+    const divs = porAnio[anioLabel].divisiones;
+    if (!divs[division]) divs[division] = { division, rango: rangoDivisionCampeones(t), ascensos: new Set(), descensos: new Set(), torneos: new Set() };
+    ascensos.forEach(e => divs[division].ascensos.add(e));
+    descensos.forEach(e => divs[division].descensos.add(e));
+    if (t.Competencia) divs[division].torneos.add(String(t.Competencia).trim());
   });
 
   const temporadas = Object.values(porAnio).sort((a,b) => b.anioNum - a.anioNum);
@@ -11490,26 +11496,42 @@ function renderMovimientosAscensoDescenso() {
     </div>`;
   };
 
+  const vacio = (txt) => `<span style="font-size:12px;color:var(--texto-3);font-style:italic;">${txt}</span>`;
+
+  const bloqueDivision = (d) => {
+    const divs = Object.values(d.divisiones).sort((a,b) => a.rango - b.rango);
+    return divs.map((dv, i) => {
+      const torneos = [...dv.torneos].join(' · ');
+      return `
+      <div style="${i > 0 ? 'border-top:1px solid var(--borde);padding-top:14px;margin-top:14px;' : ''}">
+        <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+          <span style="font-size:14px;font-weight:700;color:var(--celeste-claro, var(--texto));">${dv.division}</span>
+          ${torneos ? `<span style="font-size:11px;color:var(--texto-3);">${torneos}</span>` : ''}
+        </div>
+        <div class="movimiento-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--verde);margin-bottom:8px;">▲ ASCIENDEN</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              ${dv.ascensos.size ? [...dv.ascensos].map(e => chip(e,'asc')).join('') : vacio(dv.rango > 1 ? 'Aún no cargado' : '—')}
+            </div>
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--rojo);margin-bottom:8px;">▼ DESCIENDEN</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              ${dv.descensos.size ? [...dv.descensos].map(e => chip(e,'desc')).join('') : vacio('Sin descensos registrados')}
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  };
+
   cont.innerHTML = temporadas.map(reg => `
     <div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;padding:18px 20px;margin-bottom:14px;">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
         <span style="font-family:var(--fuente-titulo);font-size:20px;letter-spacing:0.5px;">${reg.anioLabel}</span>
-        ${reg.division ? `<span style="font-size:12px;color:var(--texto-3);">${reg.division}</span>` : ''}
       </div>
-      <div class="movimiento-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
-        <div>
-          <div style="font-size:12px;font-weight:700;color:var(--verde);margin-bottom:8px;">▲ ASCIENDEN</div>
-          <div style="display:flex;flex-direction:column;gap:6px;">
-            ${reg.ascensos.size ? [...reg.ascensos].map(e => chip(e,'asc')).join('') : `<span style="font-size:12px;color:var(--texto-3);font-style:italic;">Aún no cargado</span>`}
-          </div>
-        </div>
-        <div>
-          <div style="font-size:12px;font-weight:700;color:var(--rojo);margin-bottom:8px;">▼ DESCIENDEN</div>
-          <div style="display:flex;flex-direction:column;gap:6px;">
-            ${reg.descensos.size ? [...reg.descensos].map(e => chip(e,'desc')).join('') : `<span style="font-size:12px;color:var(--texto-3);font-style:italic;">Sin descensos registrados</span>`}
-          </div>
-        </div>
-      </div>
+      ${bloqueDivision(reg)}
     </div>
   `).join('') + `
     <div style="text-align:center;margin-top:6px;color:var(--texto-3);font-size:12px;">
