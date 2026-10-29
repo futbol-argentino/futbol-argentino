@@ -1899,6 +1899,7 @@ header::after{animation:none;height:4px;background:var(--azul)}
         <button class="torneo-tab-btn"         id="ttab-partidos" onclick="cambiarTorneoTab('partidos')">Partidos</button>
         <button class="torneo-tab-btn"         id="ttab-bracket"  onclick="cambiarTorneoTab('bracket')">Cuadro</button>
         <button class="torneo-tab-btn"         id="ttab-stats"    onclick="cambiarTorneoTab('stats')">Estadísticas</button>
+        <button class="torneo-tab-btn"         id="ttab-equipos"  onclick="cambiarTorneoTab('equipos')">Equipos</button>
       </div>
       <div id="torneo-panel-tablas">
         <div id="torneo-posiciones-container"></div>
@@ -1909,6 +1910,9 @@ header::after{animation:none;height:4px;background:var(--azul)}
       </div>
       <div id="torneo-panel-bracket" style="display:none;">
         <div id="torneo-bracket-container" style="overflow-x:auto;"></div>
+      </div>
+      <div id="torneo-panel-equipos" style="display:none;">
+        <div id="torneo-equipos-container"></div>
       </div>
       <div id="torneo-panel-stats" style="display:none;">
         <!-- Sub-tabs jugadores / equipos -->
@@ -7931,12 +7935,78 @@ function filtrarCampeones() {
 let torneoActualId = null;
 
 function cambiarTorneoTab(tab) {
-  ['tablas','partidos','bracket','stats'].forEach(t => {
+  ['tablas','partidos','bracket','stats','equipos'].forEach(t => {
     document.getElementById('torneo-panel-'+t).style.display = t===tab ? 'block' : 'none';
     document.getElementById('ttab-'+t)?.classList.toggle('activo', t===tab);
   });
   if (tab === 'stats' && torneoActualId) renderStatsTorneo(torneoActualId);
   if (tab === 'bracket' && torneoActualId) renderBracket(torneoActualId);
+  if (tab === 'equipos' && torneoActualId) renderEquiposTorneo(torneoActualId);
+}
+
+// ── Pestaña "Equipos" de un torneo: nombres y escudos de todos los que lo jugaron ──
+function renderEquiposTorneo(idTemporada) {
+  const cont = document.getElementById('torneo-equipos-container');
+  if (!cont) return;
+
+  const norm = n => (n||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'');
+  const lista = {}; // clave normalizada → { id, nombre }
+
+  const agregar = (id, nombre) => {
+    nombre = (nombre||'').trim().replace(/^"+|"+$/g,'');
+    if (!nombre) return;
+    const k = norm(nombre);
+    if (!lista[k]) lista[k] = { id: id || null, nombre };
+    else if (!lista[k].id && id) lista[k].id = id;
+  };
+
+  // Equipos que aparecen en los partidos del torneo
+  partidos.forEach(p => {
+    if (p.ID_Temporada != idTemporada) return;
+    [p.Local_ID, p.Visitante_ID].forEach(id => { if (id && equipos[id]) agregar(id, equipos[id]); });
+  });
+
+  // Equipos de las tablas de posiciones (por si el torneo no tiene todos los partidos cargados)
+  posicionesData.forEach(r => {
+    if (r.ID_Temporada != idTemporada) return;
+    const { nombre } = parsearClasifCodes(r.Equipo || '');
+    if (!nombre) return;
+    agregar(idEquipoPorNombre(nombre), nombre);
+  });
+
+  const items = Object.values(lista).sort((a,b) => a.nombre.localeCompare(b.nombre, 'es'));
+
+  if (!items.length) {
+    cont.innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">Sin equipos cargados para este torneo.</div>';
+    return;
+  }
+
+  cont.innerHTML = `
+    <div class="tabla-header" style="margin-bottom:14px;">
+      <div class="tabla-titulo">🛡️ Equipos participantes</div>
+      <div class="tabla-count">${items.length} equipos</div>
+    </div>
+    <div class="equipos-grid">
+      ${items.map(e => {
+        const esc = ESCUDOS[e.nombre]
+          ? `<img src="${ESCUDOS[e.nombre]}" class="equipo-card-escudo" alt="${e.nombre}" loading="lazy" onerror="this.style.display='none'">`
+          : `<div style="width:56px;height:56px;background:var(--fondo-3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;">⚽</div>`;
+        return `<div class="equipo-card" ${e.id ? `onclick="irAEquipoDesdeTorneo('${e.id}')"` : 'style="cursor:default;"'}>
+          ${esc}
+          <div class="equipo-card-nombre">${e.nombre}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function irAEquipoDesdeTorneo(equipoId) {
+  if (!equipoId) return;
+  document.getElementById('vista-torneo').style.display = 'none';
+  torneoActualId = null;
+  cambiarTab('equipos');
+  const wrap = document.getElementById('todos-equipos-wrap');
+  if (wrap) wrap.style.display = 'none';
+  verDetalleEquipo(equipoId);
 }
 
 function tieneFasesEliminatorias(idTemporada) {
@@ -7956,6 +8026,8 @@ function verTorneo(idTemporada) {
   torneoActualId = idTemporada;
   document.getElementById('torneo-stats-container').innerHTML = '';
   document.getElementById('torneo-bracket-container').innerHTML = '';
+  const eqTorneoC = document.getElementById('torneo-equipos-container');
+  if (eqTorneoC) eqTorneoC.innerHTML = '';
   const eqC = document.getElementById('torneo-stats-equipos-container');
   eqC.innerHTML = ''; eqC.dataset.loaded = '';
   cambiarStatsSubTab('jugadores');
