@@ -8082,6 +8082,8 @@ function irAEquipoDesdeTorneo(equipoId) {
 
 function tieneFasesEliminatorias(idTemporada) {
   const FASES_EXCLUIDAS = ['Fase Regular','Fase Clasificatoria','Fase Complementación','Fase Complementacion','Fase Campeonato','Fase Campeonato Final','Primera Fase','Torneo Apertura','Torneo Clausura','Fase Revalida','Fase Revalidá'];
+  // Un torneo de un solo partido (Supercopa, etc.) siempre muestra su Cuadro (tarjeta especial)
+  if (partidos.filter(p => p.ID_Temporada == idTemporada).length === 1) return true;
   return partidos.some(p => p.ID_Temporada == idTemporada && !FASES_EXCLUIDAS.includes(p.Fase));
 }
 
@@ -8495,10 +8497,70 @@ function _bracketConstruirRondas(ptsGrupo, ordenarPorNombre, limpiar) {
   return rondas;
 }
 
+// Tarjeta grande para torneos de un solo partido (Supercopas, etc.)
+function _bracketRenderPartidoUnico(p) {
+  const jugado = p.Goles_Local !== '' && p.Goles_Local !== undefined && p.Goles_Local !== null;
+  const nomL = equipos[p.Local_ID] || p.Local_ID;
+  const nomV = equipos[p.Visitante_ID] || p.Visitante_ID;
+  const gl = parseInt(p.Goles_Local), gv = parseInt(p.Goles_Visitante);
+  const scorePen = jugado && typeof esDefinicionPorPenales === 'function' && esDefinicionPorPenales(p.Tipo_Definicion) && p.Penales
+    ? calcularScorePenales(p.Penales) : null;
+
+  // Ganador: ID_Ganador si está cargado; si no, por goles y, en caso de empate, por penales
+  let ganador = p.ID_Ganador || null;
+  if (!ganador && jugado) {
+    if (gl > gv) ganador = p.Local_ID;
+    else if (gv > gl) ganador = p.Visitante_ID;
+    else if (scorePen) ganador = scorePen.local > scorePen.visita ? p.Local_ID : scorePen.visita > scorePen.local ? p.Visitante_ID : null;
+  }
+
+  const fecha = p.Fecha ? formatearFechaDisplay(String(p.Fecha).split('T')[0]) : '';
+  const hora = p.Hora || p.hora || '';
+  const lado = (idEq, nombre, goles, pen) => {
+    const gana = ganador === idEq;
+    const esc = ESCUDOS[nombre]
+      ? `<img src="${ESCUDOS[nombre]}" style="width:92px;height:92px;object-fit:contain;${jugado && ganador && !gana ? 'opacity:0.55;filter:grayscale(0.5);' : ''}" onerror="this.style.display='none'">`
+      : `<div style="width:92px;height:92px;"></div>`;
+    return `
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:10px;min-width:0;">
+        ${gana ? `<div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--oro);">🏆 CAMPEÓN</div>` : `<div style="height:16px;"></div>`}
+        ${esc}
+        <div style="font-size:16px;font-weight:700;text-align:center;color:${jugado && ganador && !gana ? 'var(--texto-3)' : 'var(--texto-1)'};">${nombre}</div>
+      </div>`;
+  };
+
+  const marcador = jugado
+    ? `<div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;">
+        <div style="font-family:var(--fuente-titulo);font-size:54px;line-height:1;letter-spacing:2px;color:var(--texto-1);">
+          <span style="${ganador === p.Local_ID ? 'color:var(--celeste);' : ''}">${gl}</span><span style="color:var(--texto-3);margin:0 8px;">-</span><span style="${ganador === p.Visitante_ID ? 'color:var(--celeste);' : ''}">${gv}</span>
+        </div>
+        ${scorePen ? `<div style="font-size:13px;color:var(--amarillo);font-weight:600;">Penales: ${scorePen.local} - ${scorePen.visita}</div>` : ''}
+      </div>`
+    : `<div style="font-family:var(--fuente-titulo);font-size:34px;color:var(--texto-3);flex-shrink:0;">${hora || 'vs'}</div>`;
+
+  const dato = (icono, txt) => txt ? `<span style="display:inline-flex;align-items:center;gap:6px;">${icono} ${txt}</span>` : '';
+  return `
+    <div onclick="verPartido(${p.ID_Partido})" style="max-width:720px;margin:0 auto;cursor:pointer;background:var(--fondo-2);border:1px solid var(--borde);border-radius:16px;overflow:hidden;transition:var(--trans);" onmouseover="this.style.borderColor='var(--borde-hover)'" onmouseout="this.style.borderColor=''">
+      <div style="background:linear-gradient(90deg,rgba(250,204,21,0.12),transparent);border-bottom:1px solid var(--borde);padding:12px 20px;text-align:center;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--oro);">${p.Fase || 'Final'}</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:20px;padding:26px 20px 22px;">
+        ${lado(p.Local_ID, nomL, gl)}
+        ${marcador}
+        ${lado(p.Visitante_ID, nomV, gv)}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px 22px;padding:12px 20px;border-top:1px solid var(--borde);font-size:12px;color:var(--texto-2);">
+        ${dato('📅', fecha)}${dato('🕒', jugado ? hora : '')}${dato('🏟️', p.Estadio && p.Estadio.toLowerCase() !== 'no disponible' ? p.Estadio : '')}
+      </div>
+    </div>`;
+}
+
 function renderBracket(idTemporada) {
   const container = document.getElementById('torneo-bracket-container');
   const pts = partidos.filter(p => p.ID_Temporada == idTemporada && !BRACKET_FASES_EXCLUIDAS.includes(p.Fase));
   const vacio = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">No hay fases eliminatorias para este torneo.</div>';
+
+  // ── Torneos de un solo partido (Supercopas, etc.): tarjeta grande en vez de cuadro ──
+  const ptsTemporada = partidos.filter(p => p.ID_Temporada == idTemporada);
+  if (ptsTemporada.length === 1) { container.innerHTML = _bracketRenderPartidoUnico(ptsTemporada[0]); return; }
 
   if (!pts.length) { container.innerHTML = vacio; return; }
 
