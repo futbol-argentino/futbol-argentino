@@ -8081,7 +8081,7 @@ function irAEquipoDesdeTorneo(equipoId) {
 }
 
 function tieneFasesEliminatorias(idTemporada) {
-  const FASES_EXCLUIDAS = ['Fase Regular','Fase Clasificatoria','Fase Complementación','Fase Complementacion','Fase Campeonato','Fase Campeonato Final','Primera Fase','Torneo Apertura','Torneo Clausura'];
+  const FASES_EXCLUIDAS = ['Fase Regular','Fase Clasificatoria','Fase Complementación','Fase Complementacion','Fase Campeonato','Fase Campeonato Final','Primera Fase','Torneo Apertura','Torneo Clausura','Fase Revalida','Fase Revalidá'];
   return partidos.some(p => p.ID_Temporada == idTemporada && !FASES_EXCLUIDAS.includes(p.Fase));
 }
 
@@ -8147,7 +8147,7 @@ function verTorneo(idTemporada) {
     // porque es una fase de todos-contra-todos jugada en fechas numeradas.
     const esFaseRegular = fase === 'Fase Regular' || fase === 'Primera Fase';
     // Fases numeradas (Clasificatoria, Complementación, Campeonato) usan Numero_Fecha
-    const esFaseNumerada = ['Fase Clasificatoria','Fase Complementación','Fase Complementacion','Fase Campeonato','Torneo Apertura','Torneo Clausura'].includes(fase);
+    const esFaseNumerada = ['Fase Clasificatoria','Fase Complementación','Fase Complementacion','Fase Campeonato','Fase Revalida','Fase Revalidá','Torneo Apertura','Torneo Clausura'].includes(fase);
     let clave;
     if (esFaseRegular) {
       clave = `Fecha ${p.Numero_Fecha}`;
@@ -8169,7 +8169,7 @@ function verTorneo(idTemporada) {
       // Fases numeradas de Copa Maradona
       'Torneo Apertura','Torneo Clausura',
       'Fase Clasificatoria','Fase Complementación','Fase Complementacion',
-      'Fase Campeonato','Fase Campeonato Final',
+      'Fase Campeonato','Fase Campeonato Final','Fase Revalida','Fase Revalidá',
       // Copa Superliga 2019: fases ordenadas correctamente
       'Primera Fase Ida','Primera Fase Vuelta','Primera Fase',
       'Segunda Fase Ida','Segunda Fase Vuelta','Segunda Fase',
@@ -8358,7 +8358,7 @@ const BRACKET_FASES = [
 
 // Fases que nunca se muestran en el Cuadro: fases de todos-contra-todos (no eliminatorias).
 // "Primera Fase" corresponde a la fase regular del Torneo Nacional (y similares): no va en el cuadro.
-const BRACKET_FASES_EXCLUIDAS = ['Fase Regular','Fase Clasificatoria','Fase Complementación','Fase Complementacion','Fase Campeonato','Fase Campeonato Final','Primera Fase','Torneo Apertura','Torneo Clausura'];
+const BRACKET_FASES_EXCLUIDAS = ['Fase Regular','Fase Clasificatoria','Fase Complementación','Fase Complementacion','Fase Campeonato','Fase Campeonato Final','Primera Fase','Torneo Apertura','Torneo Clausura','Fase Revalida','Fase Revalidá'];
 
 // Agrupa partidos en enfrentamientos (por par de equipos) y calcula el ganador de cada uno
 function _bracketAgruparEnfrentamientos(pts) {
@@ -8456,6 +8456,44 @@ function _bracketNombreCanonico(fase) {
   return fase.replace(/\s+(ida|vuelta|desempate)\s*$/i,'').trim();
 }
 
+// Orden de una ronda eliminatoria según su nombre (rondas numeradas < 16avos < octavos < cuartos < semis < final)
+function _bracketRangoRonda(nombre) {
+  const n = nombre.toLowerCase();
+  const ord = n.match(/(primera|segunda|tercera|cuarta|quinta|sexta|s[eé]ptima)\s+ronda/);
+  if (ord) return 0.1 * (['primera','segunda','tercera','cuarta','quinta','sexta','séptima','septima'].indexOf(ord[1]) + 1);
+  if (/16avos|dieciseisavos/.test(n)) return 0.9;
+  if (/octavos/.test(n)) return 1;
+  if (/cuartos/.test(n)) return 2;
+  if (/semi/.test(n)) return 3;
+  if (/final/.test(n)) return 4;
+  return 0.95;
+}
+
+// Arma las rondas de un cuadro a partir de partidos de varias fases (agrupa Ida/Vuelta/Desempate).
+// ordenarPorNombre: ordena por tipo de ronda; si no, cronológicamente.
+// limpiar: regex para sacar del título de cada ronda el nombre de la fase (ya figura en el encabezado).
+function _bracketConstruirRondas(ptsGrupo, ordenarPorNombre, limpiar) {
+  const porClave = {};
+  ptsGrupo.forEach(p => {
+    const clave = _bracketNombreCanonico(p.Fase);
+    if (!porClave[clave]) porClave[clave] = { clave, partidos: [], orden: Infinity };
+    porClave[clave].partidos.push(p);
+    const fn = parseInt(p.Fecha_Numerica), nf = parseInt(p.Numero_Fecha);
+    const o = !isNaN(fn) ? fn : (!isNaN(nf) ? nf : Infinity);
+    porClave[clave].orden = Math.min(porClave[clave].orden, o);
+  });
+  const lista = Object.values(porClave);
+  lista.sort((a, b) => ordenarPorNombre
+    ? (_bracketRangoRonda(a.clave) - _bracketRangoRonda(b.clave)) || (a.orden - b.orden)
+    : a.orden - b.orden);
+  const rondas = lista.map(r => ({
+    nombre: limpiar ? r.clave.replace(limpiar, ' ').replace(/\s+/g, ' ').trim() : r.clave,
+    enfrentamientos: _bracketAgruparEnfrentamientos(r.partidos)
+  }));
+  _bracketOrdenarRondas(rondas);
+  return rondas;
+}
+
 function renderBracket(idTemporada) {
   const container = document.getElementById('torneo-bracket-container');
   const pts = partidos.filter(p => p.ID_Temporada == idTemporada && !BRACKET_FASES_EXCLUIDAS.includes(p.Fase));
@@ -8518,57 +8556,37 @@ function renderBracket(idTemporada) {
     return;
   }
 
+  const h3 = 'font-family:var(--fuente-titulo);font-size:20px;letter-spacing:0.5px;color:var(--texto-1);margin:0 0 12px;';
+  const bloque = (titulo, rondas, primero) => `
+    <div style="${primero ? '' : 'margin-top:28px;'}">
+      <h3 style="${h3}">${titulo}</h3>
+      <div style="overflow-x:auto;">${_bracketRenderRondas(rondas)}</div>
+    </div>`;
+
   // ── Torneos con Reducido (ej. Primera Nacional) ──
-  // Fases como "Final por el 1er Ascenso" (ascenso directo) y "Octavos / Cuartos / Semifinales / Final Reducido".
-  // El Reducido se muestra como su propio cuadro, desde octavos de final hasta la final.
+  // "Final por el 1er Ascenso" (ascenso directo) por un lado y el Reducido (octavos a final) por otro.
   const esFaseReducido = f => /reducido/i.test(f || '');
   if (pts.some(p => esFaseReducido(p.Fase))) {
-    const rangoReducido = (nombre) => {
-      const n = nombre.toLowerCase();
-      if (/16avos|dieciseisavos/.test(n)) return 0;
-      if (/octavos/.test(n)) return 1;
-      if (/cuartos/.test(n)) return 2;
-      if (/semi/.test(n)) return 3;
-      if (/final/.test(n)) return 4;
-      return 0.5;
-    };
-    const construirRondas = (ptsGrupo, esReducidoGrupo) => {
-      const porClave = {};
-      ptsGrupo.forEach(p => {
-        const clave = _bracketNombreCanonico(p.Fase);
-        if (!porClave[clave]) porClave[clave] = { clave, partidos: [], orden: Infinity };
-        porClave[clave].partidos.push(p);
-        const fn = parseInt(p.Fecha_Numerica), nf = parseInt(p.Numero_Fecha);
-        const o = !isNaN(fn) ? fn : (!isNaN(nf) ? nf : Infinity);
-        porClave[clave].orden = Math.min(porClave[clave].orden, o);
-      });
-      const lista = Object.values(porClave);
-      lista.sort((a, b) => esReducidoGrupo
-        ? (rangoReducido(a.clave) - rangoReducido(b.clave)) || (a.orden - b.orden)
-        : a.orden - b.orden);
-      const rondas = lista.map(r => ({
-        // En el título de cada ronda del Reducido se saca la palabra "Reducido" (ya figura en el encabezado)
-        nombre: esReducidoGrupo ? r.clave.replace(/\s*reducido\s*/i, ' ').replace(/\s+/g, ' ').trim() : r.clave,
-        enfrentamientos: _bracketAgruparEnfrentamientos(r.partidos)
-      }));
-      _bracketOrdenarRondas(rondas);
-      return rondas;
-    };
-
-    const rondasPrevias   = construirRondas(pts.filter(p => !esFaseReducido(p.Fase)), false);
-    const rondasReducido  = construirRondas(pts.filter(p =>  esFaseReducido(p.Fase)), true);
-    const h3 = 'font-family:var(--fuente-titulo);font-size:20px;letter-spacing:0.5px;color:var(--texto-1);margin:0 0 12px;';
-
+    const previas  = _bracketConstruirRondas(pts.filter(p => !esFaseReducido(p.Fase)), false, /\s*reducido\s*/i);
+    const reducido = _bracketConstruirRondas(pts.filter(p =>  esFaseReducido(p.Fase)), true,  /\s*reducido\s*/i);
     container.innerHTML =
-      (rondasPrevias.length ? `
-        <div>
-          <h3 style="${h3}">🥇 Ascenso directo</h3>
-          <div style="overflow-x:auto;">${_bracketRenderRondas(rondasPrevias)}</div>
-        </div>` : '') +
-      `<div style="${rondasPrevias.length ? 'margin-top:28px;' : ''}">
-        <h3 style="${h3}">🔁 Reducido</h3>
-        <div style="overflow-x:auto;">${_bracketRenderRondas(rondasReducido)}</div>
-      </div>`;
+      (previas.length ? bloque('🥇 Ascenso directo', previas, true) : '') +
+      bloque('🔁 Reducido', reducido, !previas.length);
+    return;
+  }
+
+  // ── Torneos con dos fases eliminatorias separadas: Fase Campeonato y Fase Revalida (ej. Federal A) ──
+  const esCamp = f => /fase campeonato/i.test(f || '');
+  const esReval = f => /fase reval[ií]da/i.test(f || '');
+  if (pts.some(p => esCamp(p.Fase) || esReval(p.Fase))) {
+    const ptsCamp  = pts.filter(p => esCamp(p.Fase));
+    const ptsReval = pts.filter(p => esReval(p.Fase) && !esCamp(p.Fase));
+    const ptsOtros = pts.filter(p => !esCamp(p.Fase) && !esReval(p.Fase));
+    const bloques = [];
+    if (ptsCamp.length)  bloques.push(['🏆 Fase Campeonato', _bracketConstruirRondas(ptsCamp,  true, /\s*fase campeonato\s*/i)]);
+    if (ptsReval.length) bloques.push(['🔁 Fase Revalida',   _bracketConstruirRondas(ptsReval, true, /\s*fase reval[ií]da\s*/i)]);
+    if (ptsOtros.length) bloques.push(['Otras fases',        _bracketConstruirRondas(ptsOtros, true, null)]);
+    container.innerHTML = bloques.map(([t, r], i) => bloque(t, r, i === 0)).join('');
     return;
   }
 
