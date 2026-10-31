@@ -8176,6 +8176,12 @@ function verTorneo(idTemporada) {
       'Primera Fase Ida','Primera Fase Vuelta','Primera Fase',
       'Segunda Fase Ida','Segunda Fase Vuelta','Segunda Fase',
       'Tercera Fase Ida','Tercera Fase Vuelta','Tercera Fase',
+      // Copa Argentina y similares: las rondas más tempranas van primero
+      'Treintidosavos de Final Ida','Treintidosavos de Final Vuelta','Treintidosavos de Final',
+      'Treintaidosavos de Final Ida','Treintaidosavos de Final Vuelta','Treintaidosavos de Final',
+      '32avos de Final Ida','32avos de Final Vuelta','32avos de Final',
+      'Dieciseisavos de Final Ida','Dieciseisavos de Final Vuelta','Dieciseisavos de Final',
+      '16avos de Final Ida','16avos de Final Vuelta','16avos de Final',
       'Octavos de Final Ida','Octavos de Final Vuelta','Octavos de Final',
       'Cuartos de Final Ida','Cuartos de Final Vuelta','Cuartos de Final',
       'Semifinal Ida','Semifinal Vuelta','Semifinal',
@@ -8463,6 +8469,7 @@ function _bracketRangoRonda(nombre) {
   const n = nombre.toLowerCase();
   const ord = n.match(/(primera|segunda|tercera|cuarta|quinta|sexta|s[eé]ptima)\s+ronda/);
   if (ord) return 0.1 * (['primera','segunda','tercera','cuarta','quinta','sexta','séptima','septima'].indexOf(ord[1]) + 1);
+  if (/32avos|treint(?:ai|i)dosavos/.test(n)) return 0.8;
   if (/16avos|dieciseisavos/.test(n)) return 0.9;
   if (/octavos|8avos/.test(n)) return 1;
   if (/cuartos|4tos/.test(n)) return 2;
