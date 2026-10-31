@@ -8462,8 +8462,9 @@ function _bracketRangoRonda(nombre) {
   const ord = n.match(/(primera|segunda|tercera|cuarta|quinta|sexta|s[eé]ptima)\s+ronda/);
   if (ord) return 0.1 * (['primera','segunda','tercera','cuarta','quinta','sexta','séptima','septima'].indexOf(ord[1]) + 1);
   if (/16avos|dieciseisavos/.test(n)) return 0.9;
-  if (/octavos/.test(n)) return 1;
-  if (/cuartos/.test(n)) return 2;
+  if (/octavos|8avos/.test(n)) return 1;
+  if (/cuartos|4tos/.test(n)) return 2;
+  if (/desempate/.test(n)) return 2.5;
   if (/semi/.test(n)) return 3;
   if (/final/.test(n)) return 4;
   return 0.95;
@@ -8563,15 +8564,25 @@ function renderBracket(idTemporada) {
       <div style="overflow-x:auto;">${_bracketRenderRondas(rondas)}</div>
     </div>`;
 
-  // ── Torneos con Reducido (ej. Primera Nacional) ──
-  // "Final por el 1er Ascenso" (ascenso directo) por un lado y el Reducido (octavos a final) por otro.
+  // ── Torneos con Reducido (ej. Primera Nacional, Primera C) ──
+  // Reducido principal por un lado; si hay, el Reducido por el cupo a Copa Argentina en otro bloque;
+  // y lo que no sea Reducido (ej. "Final por el 1er Ascenso", "Promoción por la Permanencia") aparte.
   const esFaseReducido = f => /reducido/i.test(f || '');
+  const esFaseCopa = f => /copa argentina/i.test(f || '');
   if (pts.some(p => esFaseReducido(p.Fase))) {
-    const previas  = _bracketConstruirRondas(pts.filter(p => !esFaseReducido(p.Fase)), false, /\s*reducido\s*/i);
-    const reducido = _bracketConstruirRondas(pts.filter(p =>  esFaseReducido(p.Fase)), true,  /\s*reducido\s*/i);
-    container.innerHTML =
-      (previas.length ? bloque('🥇 Ascenso directo', previas, true) : '') +
-      bloque('🔁 Reducido', reducido, !previas.length);
+    const ptsCopa     = pts.filter(p => esFaseReducido(p.Fase) && esFaseCopa(p.Fase));
+    const ptsReducido = pts.filter(p => esFaseReducido(p.Fase) && !esFaseCopa(p.Fase));
+    const ptsOtras    = pts.filter(p => !esFaseReducido(p.Fase));
+    const bloques = [];
+    if (ptsOtras.length) {
+      const rondas = _bracketConstruirRondas(ptsOtras, false, null);
+      const todas = re => rondas.every(r => re.test(r.nombre));
+      const titulo = todas(/ascenso/i) ? '🥇 Ascenso directo' : todas(/promoci[oó]n/i) ? '⚖️ Promoción' : 'Otras fases';
+      bloques.push([titulo, rondas]);
+    }
+    if (ptsReducido.length) bloques.push(['🔁 Reducido', _bracketConstruirRondas(ptsReducido, true, /\s*reducido\s*/i)]);
+    if (ptsCopa.length)     bloques.push(['🏅 Reducido por el 4to cupo a Copa Argentina', _bracketConstruirRondas(ptsCopa, true, /\s*reducido(\s+por el 4to cupo a)?(\s+copa argentina)?\s*/i)]);
+    container.innerHTML = bloques.map(([t, r], i) => bloque(t, r, i === 0)).join('');
     return;
   }
 
