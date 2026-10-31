@@ -8081,7 +8081,7 @@ function irAEquipoDesdeTorneo(equipoId) {
 }
 
 function tieneFasesEliminatorias(idTemporada) {
-  const FASES_EXCLUIDAS = ['Fase Regular','Fase Clasificatoria','Fase Complementación','Fase Complementacion','Fase Campeonato','Fase Campeonato Final','Primera Fase'];
+  const FASES_EXCLUIDAS = ['Fase Regular','Fase Clasificatoria','Fase Complementación','Fase Complementacion','Fase Campeonato','Fase Campeonato Final','Primera Fase','Torneo Apertura','Torneo Clausura'];
   return partidos.some(p => p.ID_Temporada == idTemporada && !FASES_EXCLUIDAS.includes(p.Fase));
 }
 
@@ -8147,7 +8147,7 @@ function verTorneo(idTemporada) {
     // porque es una fase de todos-contra-todos jugada en fechas numeradas.
     const esFaseRegular = fase === 'Fase Regular' || fase === 'Primera Fase';
     // Fases numeradas (Clasificatoria, Complementación, Campeonato) usan Numero_Fecha
-    const esFaseNumerada = ['Fase Clasificatoria','Fase Complementación','Fase Complementacion','Fase Campeonato'].includes(fase);
+    const esFaseNumerada = ['Fase Clasificatoria','Fase Complementación','Fase Complementacion','Fase Campeonato','Torneo Apertura','Torneo Clausura'].includes(fase);
     let clave;
     if (esFaseRegular) {
       clave = `Fecha ${p.Numero_Fecha}`;
@@ -8167,6 +8167,7 @@ function verTorneo(idTemporada) {
   } else {
     const faseOrder = [
       // Fases numeradas de Copa Maradona
+      'Torneo Apertura','Torneo Clausura',
       'Fase Clasificatoria','Fase Complementación','Fase Complementacion',
       'Fase Campeonato','Fase Campeonato Final',
       // Copa Superliga 2019: fases ordenadas correctamente
@@ -8357,7 +8358,7 @@ const BRACKET_FASES = [
 
 // Fases que nunca se muestran en el Cuadro: fases de todos-contra-todos (no eliminatorias).
 // "Primera Fase" corresponde a la fase regular del Torneo Nacional (y similares): no va en el cuadro.
-const BRACKET_FASES_EXCLUIDAS = ['Fase Regular','Fase Clasificatoria','Fase Complementación','Fase Complementacion','Fase Campeonato','Fase Campeonato Final','Primera Fase'];
+const BRACKET_FASES_EXCLUIDAS = ['Fase Regular','Fase Clasificatoria','Fase Complementación','Fase Complementacion','Fase Campeonato','Fase Campeonato Final','Primera Fase','Torneo Apertura','Torneo Clausura'];
 
 // Agrupa partidos en enfrentamientos (por par de equipos) y calcula el ganador de cada uno
 function _bracketAgruparEnfrentamientos(pts) {
