@@ -8517,6 +8517,60 @@ function renderBracket(idTemporada) {
     return;
   }
 
+  // ── Torneos con Reducido (ej. Primera Nacional) ──
+  // Fases como "Final por el 1er Ascenso" (ascenso directo) y "Octavos / Cuartos / Semifinales / Final Reducido".
+  // El Reducido se muestra como su propio cuadro, desde octavos de final hasta la final.
+  const esFaseReducido = f => /reducido/i.test(f || '');
+  if (pts.some(p => esFaseReducido(p.Fase))) {
+    const rangoReducido = (nombre) => {
+      const n = nombre.toLowerCase();
+      if (/16avos|dieciseisavos/.test(n)) return 0;
+      if (/octavos/.test(n)) return 1;
+      if (/cuartos/.test(n)) return 2;
+      if (/semi/.test(n)) return 3;
+      if (/final/.test(n)) return 4;
+      return 0.5;
+    };
+    const construirRondas = (ptsGrupo, esReducidoGrupo) => {
+      const porClave = {};
+      ptsGrupo.forEach(p => {
+        const clave = _bracketNombreCanonico(p.Fase);
+        if (!porClave[clave]) porClave[clave] = { clave, partidos: [], orden: Infinity };
+        porClave[clave].partidos.push(p);
+        const fn = parseInt(p.Fecha_Numerica), nf = parseInt(p.Numero_Fecha);
+        const o = !isNaN(fn) ? fn : (!isNaN(nf) ? nf : Infinity);
+        porClave[clave].orden = Math.min(porClave[clave].orden, o);
+      });
+      const lista = Object.values(porClave);
+      lista.sort((a, b) => esReducidoGrupo
+        ? (rangoReducido(a.clave) - rangoReducido(b.clave)) || (a.orden - b.orden)
+        : a.orden - b.orden);
+      const rondas = lista.map(r => ({
+        // En el título de cada ronda del Reducido se saca la palabra "Reducido" (ya figura en el encabezado)
+        nombre: esReducidoGrupo ? r.clave.replace(/\s*reducido\s*/i, ' ').replace(/\s+/g, ' ').trim() : r.clave,
+        enfrentamientos: _bracketAgruparEnfrentamientos(r.partidos)
+      }));
+      _bracketOrdenarRondas(rondas);
+      return rondas;
+    };
+
+    const rondasPrevias   = construirRondas(pts.filter(p => !esFaseReducido(p.Fase)), false);
+    const rondasReducido  = construirRondas(pts.filter(p =>  esFaseReducido(p.Fase)), true);
+    const h3 = 'font-family:var(--fuente-titulo);font-size:20px;letter-spacing:0.5px;color:var(--texto-1);margin:0 0 12px;';
+
+    container.innerHTML =
+      (rondasPrevias.length ? `
+        <div>
+          <h3 style="${h3}">🥇 Ascenso directo</h3>
+          <div style="overflow-x:auto;">${_bracketRenderRondas(rondasPrevias)}</div>
+        </div>` : '') +
+      `<div style="${rondasPrevias.length ? 'margin-top:28px;' : ''}">
+        <h3 style="${h3}">🔁 Reducido</h3>
+        <div style="overflow-x:auto;">${_bracketRenderRondas(rondasReducido)}</div>
+      </div>`;
+    return;
+  }
+
   // ── Cuadro simple (un solo bracket, ej. eliminación directa clásica) ──
   const fasesPresentes = new Set(pts.map(p => p.Fase));
   const rondasData = [];
