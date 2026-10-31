@@ -11696,10 +11696,13 @@ function renderMovimientosAscensoDescenso() {
 
     if (!porAnio[anioLabel]) porAnio[anioLabel] = { anioLabel, anioNum: anio||0, divisiones: {} };
     const divs = porAnio[anioLabel].divisiones;
-    if (!divs[division]) divs[division] = { division, rango: rangoDivisionCampeones(t), ascensos: new Set(), descensos: new Set(), torneos: new Set() };
-    ascensos.forEach(e => divs[division].ascensos.add(e));
-    descensos.forEach(e => divs[division].descensos.add(e));
-    if (t.Competencia) divs[division].torneos.add(String(t.Competencia).trim());
+    if (!divs[division]) divs[division] = { division, rango: rangoDivisionCampeones(t), torneos: {} };
+    // Cada torneo de la división tiene sus propios ascensos y descensos (ej. Tercera División:
+    // Primera B Metropolitana y Federal A van por separado).
+    const nombreTorneo = String(t.Competencia || '').trim();
+    if (!divs[division].torneos[nombreTorneo]) divs[division].torneos[nombreTorneo] = { nombre: nombreTorneo, ascensos: new Set(), descensos: new Set() };
+    ascensos.forEach(e => divs[division].torneos[nombreTorneo].ascensos.add(e));
+    descensos.forEach(e => divs[division].torneos[nombreTorneo].descensos.add(e));
   });
 
   const temporadas = Object.values(porAnio).sort((a,b) => b.anioNum - a.anioNum);
@@ -11725,30 +11728,43 @@ function renderMovimientosAscensoDescenso() {
 
   const vacio = (txt) => `<span style="font-size:12px;color:var(--texto-3);font-style:italic;">${txt}</span>`;
 
-  const bloqueDivision = (d) => {
-    const divs = Object.values(d.divisiones).sort((a,b) => a.rango - b.rango);
-    return divs.map((dv, i) => {
-      const torneos = [...dv.torneos].join(' · ');
-      return `
-      <div style="${i > 0 ? 'border-top:1px solid var(--borde);padding-top:14px;margin-top:14px;' : ''}">
-        <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
-          <span style="font-size:14px;font-weight:700;color:var(--celeste-claro, var(--texto));">${dv.division}</span>
-          ${torneos ? `<span style="font-size:11px;color:var(--texto-3);">${torneos}</span>` : ''}
-        </div>
+  // Grilla de ascensos / descensos de un torneo
+  const grillaMov = (tv, rango) => `
         <div class="movimiento-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
           <div>
             <div style="font-size:12px;font-weight:700;color:var(--verde);margin-bottom:8px;">▲ ASCIENDEN</div>
             <div style="display:flex;flex-direction:column;gap:6px;">
-              ${dv.ascensos.size ? [...dv.ascensos].map(e => chip(e,'asc')).join('') : vacio(dv.rango > 1 ? 'Aún no cargado' : '—')}
+              ${tv.ascensos.size ? [...tv.ascensos].map(e => chip(e,'asc')).join('') : vacio(rango > 1 ? 'Aún no cargado' : '—')}
             </div>
           </div>
           <div>
             <div style="font-size:12px;font-weight:700;color:var(--rojo);margin-bottom:8px;">▼ DESCIENDEN</div>
             <div style="display:flex;flex-direction:column;gap:6px;">
-              ${dv.descensos.size ? [...dv.descensos].map(e => chip(e,'desc')).join('') : vacio('Sin descensos registrados')}
+              ${tv.descensos.size ? [...tv.descensos].map(e => chip(e,'desc')).join('') : vacio('Sin descensos registrados')}
             </div>
           </div>
+        </div>`;
+
+  const bloqueDivision = (d) => {
+    const divs = Object.values(d.divisiones).sort((a,b) => a.rango - b.rango);
+    return divs.map((dv, i) => {
+      const torneos = Object.values(dv.torneos);
+      const separado = torneos.length > 1; // más de un torneo en la división: cada uno con su propio bloque
+      const titulo = `<span style="font-size:14px;font-weight:700;color:var(--celeste-claro, var(--texto));">${dv.division}</span>`;
+      const cuerpo = separado
+        ? torneos.map((tv, j) => `
+          <div style="${j > 0 ? 'border-top:1px dashed var(--borde);padding-top:12px;margin-top:12px;' : ''}">
+            <div style="font-size:13px;font-weight:600;color:var(--oro);margin-bottom:8px;">${tv.nombre || 'Sin torneo'}</div>
+            ${grillaMov(tv, dv.rango)}
+          </div>`).join('')
+        : grillaMov(torneos[0], dv.rango);
+      return `
+      <div style="${i > 0 ? 'border-top:1px solid var(--borde);padding-top:14px;margin-top:14px;' : ''}">
+        <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+          ${titulo}
+          ${!separado && torneos[0].nombre ? `<span style="font-size:11px;color:var(--texto-3);">${torneos[0].nombre}</span>` : ''}
         </div>
+        ${cuerpo}
       </div>`;
     }).join('');
   };
