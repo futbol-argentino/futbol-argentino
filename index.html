@@ -558,6 +558,17 @@ table.tabla-partidos-fija th:nth-child(5),table.tabla-partidos-fija td:nth-child
 .modal-desplegable-contenido{display:none;margin-top:10px;font-size:14px;color:var(--texto-1);padding-top:10px;border-top:1px solid var(--borde)}
 
 /* CAMPEONES */
+.camp-divs{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.camp-div-chip{position:relative;display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:9px;border:1px solid var(--borde);background:var(--fondo-3);color:var(--texto-2);font-size:13px;font-weight:500;cursor:pointer;user-select:none;transition:var(--trans)}
+.camp-div-chip:hover{border-color:var(--celeste)}
+.camp-div-chip input{position:absolute;opacity:0;pointer-events:none}
+.camp-div-box{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--texto-3);display:inline-flex;align-items:center;justify-content:center;font-size:11px;line-height:1;font-weight:700;color:transparent;transition:var(--trans)}
+.camp-div-chip.activo{border-color:var(--celeste);color:var(--texto-1)}
+.camp-div-chip.activo .camp-div-box{background:var(--celeste);border-color:var(--celeste);color:var(--fondo-1)}
+.camp-div-chip input:focus-visible + .camp-div-box{box-shadow:0 0 0 3px rgba(34,197,94,0.25)}
+.camp-div-n{font-size:11px;color:var(--texto-3);font-weight:400}
+.camp-div-acc{background:none;border:none;color:var(--celeste);font-size:12px;font-weight:600;cursor:pointer;padding:6px 4px;font-family:var(--fuente-cuerpo)}
+.camp-div-acc:hover{text-decoration:underline}
 .camp-card{background:var(--fondo-2);border:1px solid var(--borde);border-radius:16px;overflow:hidden;cursor:pointer;transition:var(--trans);display:flex;flex-direction:column;position:relative}
 .camp-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(251,191,36,0.06),transparent 50%);opacity:0;transition:opacity 0.3s ease}
 .camp-card:hover{border-color:rgba(251,191,36,0.3);transform:translateY(-4px);box-shadow:0 16px 40px rgba(0,0,0,0.5),0 0 0 1px rgba(251,191,36,0.15)}
@@ -1854,13 +1865,15 @@ header::after{animation:none;height:4px;background:var(--azul)}
     <div id="vista-campeones">
       <div class="filtros-panel" style="margin-bottom:20px;">
         <div class="filtros-titulo">Campeones Históricos</div>
+        <div class="filtro-grupo" style="margin-bottom:14px;">
+          <label class="filtro-label" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            Divisiones a mostrar
+            <button type="button" class="camp-div-acc" onclick="campDivisionesTodas(true)">Todas</button>
+            <button type="button" class="camp-div-acc" onclick="campDivisionesTodas(false)">Ninguna</button>
+          </label>
+          <div id="camp-divisiones-checklist" class="camp-divs"></div>
+        </div>
         <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
-          <div class="filtro-grupo" style="flex:1;min-width:180px;">
-            <label class="filtro-label">División</label>
-            <select id="camp-filtro-division" class="filtro-select" onchange="cargarAniosCampeones();filtrarCampeones();">
-              <option value="">Todas las divisiones</option>
-            </select>
-          </div>
           <div class="filtro-grupo" style="min-width:160px;">
             <label class="filtro-label">Año</label>
             <select id="camp-filtro-anio" class="filtro-select" onchange="filtrarCampeones()">
@@ -7801,17 +7814,66 @@ function anioTemporada(t) {
   return null;
 }
 
-function cargarCampeones() {
-  const selDiv = document.getElementById('camp-filtro-division');
-  const divActual = selDiv.value;
-  selDiv.innerHTML = '<option value="">Todas las divisiones</option>';
-  const divisiones = [...new Set(temporadasArr.map(t => t.Division).filter(Boolean))].sort();
-  divisiones.forEach(d => {
-    const opt = document.createElement('option');
-    opt.value = d; opt.textContent = d;
-    selDiv.appendChild(opt);
+// ── Checklist de divisiones (Campeones) ──
+// Guardamos las DESMARCADAS: así, cualquier división nueva que aparezca en el CSV
+// entra tildada por defecto. La clave '' agrupa los torneos sin división cargada.
+let campDivsDesmarcadas = new Set();
+
+function divisionCamp(t) {
+  return t.Division || divisionSinCampeon(t) || '';
+}
+function pasaFiltroDivisionCamp(t) {
+  return !campDivsDesmarcadas.has(divisionCamp(t));
+}
+
+function renderChecklistDivisionesCampeones() {
+  const cont = document.getElementById('camp-divisiones-checklist');
+  if (!cont) return;
+  const conteo = {};
+  temporadasArr.forEach(t => {
+    if (!(t.Campeon || esTorneoEnDisputa(t) || motivoSinCampeon(t))) return;
+    const d = divisionCamp(t);
+    conteo[d] = (conteo[d] || 0) + 1;
   });
-  selDiv.value = divActual;
+  // Orden: Primera, Segunda, Tercera... (mismo criterio que las tarjetas); empate → alfabético
+  const divs = Object.keys(conteo).sort((a, b) => {
+    const ra = rangoDivisionCampeones({ Division: a });
+    const rb = rangoDivisionCampeones({ Division: b });
+    return ra !== rb ? ra - rb : a.localeCompare(b, 'es');
+  });
+  cont.innerHTML = divs.map((d, i) => {
+    const activo = !campDivsDesmarcadas.has(d);
+    return `<label class="camp-div-chip${activo ? ' activo' : ''}">
+      <input type="checkbox" data-div-idx="${i}" ${activo ? 'checked' : ''} onchange="toggleDivisionCamp(this)">
+      <span class="camp-div-box">✓</span>
+      <span>${d || 'Sin división'}</span>
+      <span class="camp-div-n">${conteo[d]}</span>
+    </label>`;
+  }).join('');
+  // Guardamos los nombres reales en un array para no pasar texto crudo por atributos HTML
+  cont._divs = divs;
+}
+
+function toggleDivisionCamp(input) {
+  const cont = document.getElementById('camp-divisiones-checklist');
+  const d = cont._divs[parseInt(input.dataset.divIdx)];
+  if (input.checked) campDivsDesmarcadas.delete(d); else campDivsDesmarcadas.add(d);
+  input.closest('.camp-div-chip').classList.toggle('activo', input.checked);
+  cargarAniosCampeones();
+  filtrarCampeones();
+}
+
+function campDivisionesTodas(marcar) {
+  const cont = document.getElementById('camp-divisiones-checklist');
+  if (!cont || !cont._divs) return;
+  campDivsDesmarcadas = marcar ? new Set() : new Set(cont._divs);
+  renderChecklistDivisionesCampeones();
+  cargarAniosCampeones();
+  filtrarCampeones();
+}
+
+function cargarCampeones() {
+  renderChecklistDivisionesCampeones();
   cargarAniosCampeones();
   filtrarCampeones();
 }
@@ -7819,13 +7881,12 @@ function cargarCampeones() {
 // Llena el <select> de año con los años en los que hay campeones cargados,
 // respetando el filtro de división activo, de más reciente a más antiguo.
 function cargarAniosCampeones() {
-  const division = document.getElementById('camp-filtro-division').value;
   const selAnio = document.getElementById('camp-filtro-anio');
   const anioActual = selAnio.value;
 
   const anios = [...new Set(
     temporadasArr
-      .filter(t => (t.Campeon || esTorneoEnDisputa(t) || motivoSinCampeon(t)) && (!division || t.Division === division))
+      .filter(t => (t.Campeon || esTorneoEnDisputa(t) || motivoSinCampeon(t)) && pasaFiltroDivisionCamp(t))
       .map(t => anioTemporada(t))
       .filter(a => a !== null)
   )].sort((a,b) => b - a);
@@ -7875,7 +7936,6 @@ function rangoDivisionCampeones(t) {
 }
 
 function filtrarCampeones() {
-  const division = document.getElementById('camp-filtro-division').value;
   const anioSel = document.getElementById('camp-filtro-anio').value;
   const buscar = (document.getElementById('camp-buscar')?.value || '').toLowerCase().trim();
 
@@ -7891,7 +7951,7 @@ function filtrarCampeones() {
 
   let lista = temporadasArr.filter(t => {
     if (!t.Campeon && !esTorneoEnDisputa(t) && !motivoSinCampeon(t)) return false;
-    if (division && t.Division !== division) return false;
+    if (!pasaFiltroDivisionCamp(t)) return false;
     if (buscar && !(t.Competencia||'').toLowerCase().includes(buscar) && !(t.Campeon||'').toLowerCase().includes(buscar)) return false;
     return true;
   }).map(t => ({ t, anio: anioTemporada(t) }));
@@ -7929,9 +7989,12 @@ function filtrarCampeones() {
   }
 
   if (lista.length === 0) {
+    const hayFiltroDiv = campDivsDesmarcadas.size > 0;
     grid.innerHTML = `<div style="text-align:center;padding:60px;color:var(--texto-3);">
       <div style="font-size:48px;margin-bottom:16px;">🏆</div>
-      <div style="font-size:15px;">No hay torneos cargados aún.<br>Agregá las columnas Division, Campeon y Foto_Trofeo a tu hoja Temporadas.</div>
+      <div style="font-size:15px;">${hayFiltroDiv
+        ? 'No hay torneos para mostrar con las divisiones tildadas.<br>Marcá al menos una división en el checklist.'
+        : 'No hay torneos cargados aún.<br>Agregá las columnas Division, Campeon y Foto_Trofeo a tu hoja Temporadas.'}</div>
     </div>`;
     return;
   }
