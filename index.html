@@ -558,6 +558,31 @@ table.tabla-partidos-fija th:nth-child(5),table.tabla-partidos-fija td:nth-child
 .modal-desplegable-contenido{display:none;margin-top:10px;font-size:14px;color:var(--texto-1);padding-top:10px;border-top:1px solid var(--borde)}
 
 /* CAMPEONES */
+.rec-leyenda{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--texto-3);margin-bottom:6px}
+.rec-seccion{font-family:var(--fuente-titulo);font-size:22px;letter-spacing:1px;color:var(--celeste);margin:26px 0 6px;padding-bottom:8px;border-bottom:1px solid var(--borde)}
+.rec-seccion:first-of-type{margin-top:14px}
+.rec-nota{font-size:12px;color:var(--texto-3);margin-bottom:12px}
+.rec-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+.rec-card{background:var(--fondo-2);border:1px solid var(--borde);border-left:3px solid var(--texto-3);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.rec-card.bueno{border-left-color:var(--verde)}
+.rec-card.malo{border-left-color:var(--rojo)}
+.rec-card.neutro{border-left-color:var(--celeste)}
+.rec-head{display:flex;align-items:center;gap:8px;font-size:12px}
+.rec-titulo{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--texto-2)}
+.rec-valor{font-family:var(--fuente-titulo);font-size:34px;line-height:1;color:var(--texto-1)}
+.rec-card.bueno .rec-valor{color:var(--verde)}
+.rec-card.malo .rec-valor{color:var(--rojo)}
+.rec-valor small{font-family:var(--fuente-cuerpo);font-size:12px;font-weight:500;color:var(--texto-3);letter-spacing:0}
+.rec-items{display:flex;flex-direction:column;gap:2px;margin-top:4px}
+.rec-item{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 0;border-top:1px solid var(--borde);font-size:13px}
+.rec-item:first-child{border-top:none}
+.rec-partido{flex-direction:column;align-items:flex-start;gap:2px;cursor:pointer}
+.rec-partido:hover .rec-nombre{color:var(--celeste)}
+.rec-nombre{font-weight:600}
+.rec-link{cursor:pointer}
+.rec-link:hover{color:var(--celeste);text-decoration:underline}
+.rec-score{font-family:var(--fuente-titulo);font-size:18px;color:var(--celeste);padding:0 2px}
+.rec-sub{font-size:11px;color:var(--texto-3);margin-left:auto}
 .camp-divs{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .camp-div-chip{position:relative;display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:9px;border:1px solid var(--borde);background:var(--fondo-3);color:var(--texto-2);font-size:13px;font-weight:500;cursor:pointer;user-select:none;transition:var(--trans)}
 .camp-div-chip:hover{border-color:var(--celeste)}
@@ -1912,6 +1937,7 @@ header::after{animation:none;height:4px;background:var(--azul)}
         <button class="torneo-tab-btn"         id="ttab-partidos" onclick="cambiarTorneoTab('partidos')">Partidos</button>
         <button class="torneo-tab-btn"         id="ttab-bracket"  onclick="cambiarTorneoTab('bracket')">Cuadro</button>
         <button class="torneo-tab-btn"         id="ttab-stats"    onclick="cambiarTorneoTab('stats')">Estadísticas</button>
+        <button class="torneo-tab-btn"         id="ttab-records"  onclick="cambiarTorneoTab('records')">Récords</button>
         <button class="torneo-tab-btn"         id="ttab-equipos"  onclick="cambiarTorneoTab('equipos')">Equipos</button>
       </div>
       <div id="torneo-panel-tablas">
@@ -1923,6 +1949,9 @@ header::after{animation:none;height:4px;background:var(--azul)}
       </div>
       <div id="torneo-panel-bracket" style="display:none;">
         <div id="torneo-bracket-container" style="overflow-x:auto;"></div>
+      </div>
+      <div id="torneo-panel-records" style="display:none;">
+        <div id="torneo-records-container"></div>
       </div>
       <div id="torneo-panel-equipos" style="display:none;">
         <div id="torneo-equipos-container"></div>
@@ -8082,14 +8111,418 @@ function filtrarCampeones() {
 let torneoActualId = null;
 
 function cambiarTorneoTab(tab) {
-  ['tablas','partidos','bracket','stats','equipos'].forEach(t => {
+  ['tablas','partidos','bracket','stats','equipos','records'].forEach(t => {
     document.getElementById('torneo-panel-'+t).style.display = t===tab ? 'block' : 'none';
     document.getElementById('ttab-'+t)?.classList.toggle('activo', t===tab);
   });
   if (tab === 'stats' && torneoActualId) renderStatsTorneo(torneoActualId);
   if (tab === 'bracket' && torneoActualId) renderBracket(torneoActualId);
   if (tab === 'equipos' && torneoActualId) renderEquiposTorneo(torneoActualId);
+  if (tab === 'records' && torneoActualId) renderRecordsTorneo(torneoActualId);
 }
+
+// ══════════════════════════════════════════════════════════════
+// RÉCORDS DEL TORNEO — pestaña "Récords" dentro de cada torneo
+// ══════════════════════════════════════════════════════════════
+const REC_FASES_EXCLUIDAS = ['Promoción Ida','Promoción Vuelta','Promocion Ida','Promocion Vuelta'];
+const REC_MAX_ITEMS = 5; // máximo de empatados que se muestran por récord
+
+function recSerial(p) {
+  const n = parseInt(p.Fecha_Numerica);
+  if (!isNaN(n)) return n;
+  const f = (p.Fecha || '').split('T')[0];
+  let m = f.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/), y, mo, d;
+  if (m) { d = +m[1]; mo = +m[2]; y = +m[3]; }
+  else {
+    m = f.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (m) { y = +m[1]; mo = +m[2]; d = +m[3]; }
+  }
+  return y ? Math.round(Date.UTC(y, mo - 1, d) / 86400000) + 25569 : null;
+}
+function recFmtFecha(f) {
+  f = (f || '').split('T')[0];
+  const m = f.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : f;
+}
+function recEscAttr(s) {
+  return String(s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+function recEscudo(id, size) {
+  const nombre = equipos[id] || id;
+  const s = size || 18;
+  return ESCUDOS[nombre]
+    ? `<img src="${ESCUDOS[nombre]}" style="width:${s}px;height:${s}px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">`
+    : '';
+}
+function recEquipoHTML(id, sub) {
+  return `<div class="rec-item">${recEscudo(id)}<span class="rec-nombre">${equipos[id] || id}</span>${sub ? `<span class="rec-sub">${sub}</span>` : ''}</div>`;
+}
+function recPartidoHTML(m) {
+  const p = m.p;
+  const loc = equipos[m.l] || m.l, vis = equipos[m.v] || m.v;
+  const scorePen = esDefinicionPorPenales(p.Tipo_Definicion) && p.Penales ? calcularScorePenales(p.Penales) : null;
+  const pen = scorePen ? `<span style="color:var(--amarillo);font-size:11px;"> (pen. ${scorePen.local}-${scorePen.visita})</span>` : '';
+  const ctx = [p.Fase, p.Numero_Fecha ? `Fecha ${p.Numero_Fecha}` : '', recFmtFecha(p.Fecha)].filter(Boolean).join(' · ');
+  const click = p.ID_Partido ? ` onclick="verPartido('${p.ID_Partido}')" style="cursor:pointer;"` : '';
+  return `<div class="rec-item rec-partido"${click}>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      ${recEscudo(m.l)}<span class="rec-nombre">${loc}</span>
+      <span class="rec-score">${m.gl} - ${m.gv}${pen}</span>
+      <span class="rec-nombre">${vis}</span>${recEscudo(m.v)}
+    </div>
+    <div class="rec-sub" style="margin-left:0;">${ctx}</div>
+  </div>`;
+}
+function recJugadorHTML(reg, clave, detalle, teamIds) {
+  const r = reg[clave] || { nombre: clave, nac: '', desamb: '' };
+  const escs = [...(teamIds || [])].slice(0, 2).map(id => recEscudo(id)).join('');
+  return `<div class="rec-item">${escs}<span class="rec-nombre rec-link" onclick="verFichaJugador('${recEscAttr(r.nombre)}','${recEscAttr(r.nac)}','${recEscAttr(r.desamb)}')">${r.nombre}</span>${detalle ? `<span class="rec-sub">${detalle}</span>` : ''}</div>`;
+}
+function recLimitar(items) {
+  if (items.length <= REC_MAX_ITEMS) return items.join('');
+  return items.slice(0, REC_MAX_ITEMS).join('') + `<div class="rec-sub" style="margin-top:6px;">… y ${items.length - REC_MAX_ITEMS} más con el mismo registro</div>`;
+}
+function recCard(titulo, tono, valor, unidad, items) {
+  const tag = tono === 'bueno' ? '🟢' : tono === 'malo' ? '🔴' : '⚪';
+  return `<div class="rec-card ${tono}">
+    <div class="rec-head"><span>${tag}</span><span class="rec-titulo">${titulo}</span></div>
+    <div class="rec-valor">${valor}${unidad ? ` <small>${unidad}</small>` : ''}</div>
+    <div class="rec-items">${recLimitar(items)}</div>
+  </div>`;
+}
+function recSeccion(titulo, cards, nota) {
+  const c = cards.filter(Boolean);
+  if (!c.length) return '';
+  return `<div class="rec-seccion">${titulo}</div>${nota ? `<div class="rec-nota">${nota}</div>` : ''}<div class="rec-grid">${c.join('')}</div>`;
+}
+// Elementos [id, obj] que tienen el máximo/mínimo según keyFn
+function recExtremos(arr, keyFn, modo) {
+  if (!arr.length) return null;
+  const vals = arr.map(keyFn);
+  const target = modo === 'max' ? Math.max(...vals) : Math.min(...vals);
+  return { valor: target, items: arr.filter((a, i) => vals[i] === target) };
+}
+function recMejorRacha(seq, pred) {
+  let best = { len: 0 }, cur = 0, ini = null;
+  seq.forEach(e => {
+    if (pred(e)) {
+      if (cur === 0) ini = e;
+      cur++;
+      if (cur > best.len) best = { len: cur, desde: ini.fecha, hasta: e.fecha };
+    } else cur = 0;
+  });
+  return best;
+}
+function recCardRacha(titulo, tono, seqs, filtro, pred, unidad) {
+  const res = [];
+  Object.entries(seqs).forEach(([id, seq]) => {
+    const b = recMejorRacha(filtro ? seq.filter(filtro) : seq, pred);
+    if (b.len >= 2) res.push({ id, ...b });
+  });
+  if (!res.length) return '';
+  const max = Math.max(...res.map(r => r.len));
+  const top = res.filter(r => r.len === max);
+  return recCard(titulo, tono, max, unidad || 'partidos',
+    top.map(r => recEquipoHTML(r.id, r.desde && r.hasta && r.desde !== r.hasta ? `${recFmtFecha(r.desde)} → ${recFmtFecha(r.hasta)}` : recFmtFecha(r.desde))));
+}
+
+function renderRecordsTorneo(idTemporada) {
+  const cont = document.getElementById('torneo-records-container');
+  const todos = partidos.filter(p => p.ID_Temporada == idTemporada && !REC_FASES_EXCLUIDAS.includes(p.Fase));
+  const jugados = todos.filter(p => esPartidoJugado(p) && p.Local_ID && p.Visitante_ID);
+  if (jugados.length === 0) {
+    cont.innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">Todavía no hay partidos jugados para calcular récords.</div>';
+    return;
+  }
+
+  // Orden cronológico (Fecha_Numerica o fecha real; después Numero_Fecha e ID)
+  jugados.sort((a, b) => {
+    const sa = recSerial(a), sb = recSerial(b);
+    if (sa !== null && sb !== null && sa !== sb) return sa - sb;
+    const na = parseInt(a.Numero_Fecha) || 0, nb = parseInt(b.Numero_Fecha) || 0;
+    if (na !== nb) return na - nb;
+    return (parseInt(a.ID_Partido) || 0) - (parseInt(b.ID_Partido) || 0);
+  });
+  const ms = jugados.map(p => ({ p, l: p.Local_ID, v: p.Visitante_ID, gl: parseInt(p.Goles_Local) || 0, gv: parseInt(p.Goles_Visitante) || 0 }));
+
+  // ── Registro de jugadores y secuencias por equipo ──
+  const reg = {};            // clave → { nombre, nac, desamb }
+  const seqs = {};           // equipoId → [{ res, gf, gc, home, fecha, sc }]
+  const equiposDeJug = {};   // clave → Set(equipoId)
+  const goleadasPartido = []; // { clave, n, teamId, m }
+  const hatTricks = {}, dobletes = {};
+  const partesGol = m => (m.p.Goleadores || '').split('/');
+
+  ms.forEach(m => {
+    const p = m.p;
+    const neutral = p.Tipo_Definicion === '3' || p.Tipo_Definicion === '4';
+    const scPorEquipo = { [m.l]: {}, [m.v]: {} };
+    partesGol(m).forEach((parte, idx) => {
+      if (idx > 1) return;
+      const teamId = idx === 0 ? m.l : m.v;
+      parte.split('-').forEach(entrada => {
+        entrada = entrada.trim();
+        if (!entrada || entrada.toLowerCase() === 'ninguno' || /\(EC\)/i.test(entrada)) return;
+        const nac = extraerNacionalidad(entrada);
+        const desamb = extraerDesambiguador(entrada);
+        const nombreLimpio = limpiarNombre(entrada);
+        const nombre = nombreCanonico(nombreLimpio);
+        if (!nombre || nombre.length < 2) return;
+        const clave = claveJugador(nombreLimpio, nac, desamb);
+        reg[clave] = { nombre, nac: nac || '', desamb: desamb || '' };
+        scPorEquipo[teamId][clave] = (scPorEquipo[teamId][clave] || 0) + 1;
+        if (!equiposDeJug[clave]) equiposDeJug[clave] = new Set();
+        equiposDeJug[clave].add(teamId);
+      });
+    });
+    [m.l, m.v].forEach(teamId => {
+      Object.entries(scPorEquipo[teamId]).forEach(([clave, n]) => {
+        goleadasPartido.push({ clave, n, teamId, m });
+        if (n >= 3) hatTricks[clave] = (hatTricks[clave] || 0) + 1;
+        else if (n === 2) dobletes[clave] = (dobletes[clave] || 0) + 1;
+      });
+    });
+    const fecha = p.Fecha || '';
+    if (!seqs[m.l]) seqs[m.l] = [];
+    if (!seqs[m.v]) seqs[m.v] = [];
+    seqs[m.l].push({ res: resultadoParaEquipo(p, m.l), gf: m.gl, gc: m.gv, home: neutral ? null : true,  fecha, sc: scPorEquipo[m.l] });
+    seqs[m.v].push({ res: resultadoParaEquipo(p, m.v), gf: m.gv, gc: m.gl, home: neutral ? null : false, fecha, sc: scPorEquipo[m.v] });
+  });
+
+  // ── Totales por equipo ──
+  const st = {};
+  Object.entries(seqs).forEach(([id, seq]) => {
+    const o = { pj: seq.length, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, sinGol: 0, valla: 0,
+      loc: { pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0 }, vis: { pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0 } };
+    seq.forEach(e => {
+      o.gf += e.gf; o.gc += e.gc;
+      if (e.res === 'G') o.pg++; else if (e.res === 'P') o.pp++; else o.pe++;
+      if (e.gf === 0) o.sinGol++;
+      if (e.gc === 0) o.valla++;
+      const lado = e.home === true ? o.loc : e.home === false ? o.vis : null;
+      if (lado) {
+        lado.pj++; lado.gf += e.gf; lado.gc += e.gc;
+        if (e.res === 'G') lado.pg++; else if (e.res === 'P') lado.pp++; else lado.pe++;
+      }
+    });
+    st[id] = o;
+  });
+  const maxPJ = Math.max(...Object.values(st).map(o => o.pj));
+  const hayLiga = maxPJ >= 8; // con menos partidos por equipo, rachas y totales no tienen sentido
+  const elegibles = Object.entries(st).filter(([, o]) => o.pj >= Math.ceil(maxPJ * 0.5));
+
+  // ══ PARTIDOS ══
+  const cardsPartidos = [];
+  const cardPartido = (titulo, tono, keyFn, unidadFn, minimo) => {
+    const lista = ms.filter(m => keyFn(m) !== null);
+    if (!lista.length) return '';
+    const max = Math.max(...lista.map(keyFn));
+    if (max < (minimo || 1)) return '';
+    const top = lista.filter(m => keyFn(m) === max);
+    return recCard(titulo, tono, max, unidadFn(max), top.map(recPartidoHTML));
+  };
+  cardsPartidos.push(cardPartido('Mayor goleada', 'neutro', m => Math.abs(m.gl - m.gv), n => n === 1 ? 'gol de diferencia' : 'goles de diferencia'));
+  cardsPartidos.push(cardPartido('Partido con más goles', 'neutro', m => m.gl + m.gv, n => n === 1 ? 'gol' : 'goles'));
+  cardsPartidos.push(cardPartido('Más goles de un solo equipo', 'neutro', m => Math.max(m.gl, m.gv), n => n === 1 ? 'gol' : 'goles'));
+  cardsPartidos.push(cardPartido('Empate con más goles', 'neutro', m => m.gl === m.gv ? m.gl + m.gv : null, n => n === 1 ? 'gol' : 'goles'));
+
+  // ══ RACHAS ══
+  const cardsRachas = [];
+  if (hayLiga) {
+    cardsRachas.push(recCardRacha('Mayor racha ganadora', 'bueno', seqs, null, e => e.res === 'G'));
+    cardsRachas.push(recCardRacha('Mayor racha invicta', 'bueno', seqs, null, e => e.res !== 'P'));
+    cardsRachas.push(recCardRacha('Mayor racha perdedora', 'malo', seqs, null, e => e.res === 'P'));
+    cardsRachas.push(recCardRacha('Mayor racha sin ganar', 'malo', seqs, null, e => e.res !== 'G'));
+    cardsRachas.push(recCardRacha('Mayor racha de empates', 'neutro', seqs, null, e => e.res === 'E'));
+    cardsRachas.push(recCardRacha('Mayor racha anotando', 'bueno', seqs, null, e => e.gf > 0));
+    cardsRachas.push(recCardRacha('Mayor racha sin anotar', 'malo', seqs, null, e => e.gf === 0));
+    cardsRachas.push(recCardRacha('Mayor racha con la valla invicta', 'bueno', seqs, null, e => e.gc === 0));
+    cardsRachas.push(recCardRacha('Mayor racha recibiendo goles', 'malo', seqs, null, e => e.gc > 0));
+    cardsRachas.push(recCardRacha('Más victorias seguidas de local', 'bueno', seqs, e => e.home === true, e => e.res === 'G', 'partidos de local'));
+    cardsRachas.push(recCardRacha('Más victorias seguidas de visitante', 'bueno', seqs, e => e.home === false, e => e.res === 'G', 'partidos de visitante'));
+  }
+
+  // ══ TOTALES ══
+  const cardsTotales = [];
+  if (hayLiga && elegibles.length > 1) {
+    const ext = (titulo, tono, keyFn, modo, unidad, subFn, fmt) => {
+      const e = recExtremos(elegibles, a => keyFn(a[1]), modo);
+      if (!e) return '';
+      const val = fmt ? fmt(e.valor) : e.valor;
+      return recCard(titulo, tono, val, unidad, e.items.map(([id, o]) => recEquipoHTML(id, subFn(o))));
+    };
+    const sub = o => `${o.pj} PJ · ${o.pg}G ${o.pe}E ${o.pp}P · ${o.gf}:${o.gc}`;
+    const signo = n => (n > 0 ? '+' : '') + n;
+    cardsTotales.push(ext('Más victorias', 'bueno', o => o.pg, 'max', 'victorias', sub));
+    cardsTotales.push(ext('Menos victorias', 'malo', o => o.pg, 'min', 'victorias', sub));
+    cardsTotales.push(ext('Más derrotas', 'malo', o => o.pp, 'max', 'derrotas', sub));
+    cardsTotales.push(ext('Menos derrotas', 'bueno', o => o.pp, 'min', 'derrotas', sub));
+    cardsTotales.push(ext('Más empates', 'neutro', o => o.pe, 'max', 'empates', sub));
+    cardsTotales.push(ext('Menos empates', 'neutro', o => o.pe, 'min', 'empates', sub));
+    cardsTotales.push(ext('Mejor diferencia de gol', 'bueno', o => o.gf - o.gc, 'max', 'de diferencia', sub, signo));
+    cardsTotales.push(ext('Peor diferencia de gol', 'malo', o => o.gf - o.gc, 'min', 'de diferencia', sub, signo));
+    cardsTotales.push(ext('Más partidos con la valla invicta', 'bueno', o => o.valla, 'max', 'partidos', sub));
+    cardsTotales.push(ext('Más partidos sin convertir', 'malo', o => o.sinGol, 'max', 'partidos', sub));
+
+    // Puntos: se toman de la tabla de posiciones (respeta 2 o 3 puntos por victoria)
+    const filasPos = (typeof posicionesData !== 'undefined' ? posicionesData : []).filter(r => r.ID_Temporada == idTemporada);
+    if (filasPos.length) {
+      const idPorNombre = {};
+      Object.entries(equipos).forEach(([id, n]) => { idPorNombre[n] = id; });
+      const ptsPorId = {}, repetidos = new Set();
+      filasPos.forEach(r => {
+        const id = idPorNombre[parsearClasifCodes(r.Equipo || '').nombre];
+        if (!id) return;
+        if (id in ptsPorId) repetidos.add(id);
+        ptsPorId[id] = parseFloat(r.Pts) || 0;
+      });
+      const conPts = elegibles.filter(([id]) => id in ptsPorId && !repetidos.has(id));
+      if (conPts.length > 1) {
+        const sp = o => `${o.pj} PJ · ${o.pg}G ${o.pe}E ${o.pp}P`;
+        [['Más puntos', 'bueno', 'max'], ['Menos puntos', 'malo', 'min']].forEach(([t, tono, modo]) => {
+          const e = recExtremos(conPts, a => ptsPorId[a[0]], modo);
+          cardsTotales.push(recCard(t, tono, e.valor, 'puntos', e.items.map(([id, o]) => recEquipoHTML(id, sp(o)))));
+        });
+      }
+    }
+
+    // Mejor / peor local y visitante (rendimiento con 3-1-0 sobre partidos en cada condición)
+    ['loc', 'vis'].forEach(lado => {
+      const maxLado = Math.max(...Object.values(st).map(o => o[lado].pj));
+      const el = Object.entries(st).filter(([, o]) => o[lado].pj >= Math.max(1, Math.ceil(maxLado * 0.5)));
+      if (el.length < 2) return;
+      const rend = o => Number(((3 * o[lado].pg + o[lado].pe) / o[lado].pj).toFixed(4));
+      const dg = o => o[lado].gf - o[lado].gc;
+      const ordenados = el.slice().sort((a, b) => rend(b[1]) - rend(a[1]) || dg(b[1]) - dg(a[1]));
+      const mejor = ordenados[0], peor = ordenados[ordenados.length - 1];
+      const topDe = (ref, arr) => arr.filter(a => rend(a[1]) === rend(ref[1]) && dg(a[1]) === dg(ref[1]));
+      const subL = o => `${o[lado].pj} PJ · ${o[lado].pg}G ${o[lado].pe}E ${o[lado].pp}P · ${o[lado].gf}:${o[lado].gc}`;
+      const pts = o => 3 * o[lado].pg + o[lado].pe;
+      const nombre = lado === 'loc' ? 'local' : 'visitante';
+      cardsTotales.push(recCard(`Mejor ${nombre}`, 'bueno', pts(mejor[1]), `pts como ${nombre}`, topDe(mejor, ordenados).map(([id, o]) => recEquipoHTML(id, subL(o)))));
+      cardsTotales.push(recCard(`Peor ${nombre}`, 'malo', pts(peor[1]), `pts como ${nombre}`, topDe(peor, ordenados).map(([id, o]) => recEquipoHTML(id, subL(o)))));
+    });
+  }
+
+  // ══ JUGADORES ══
+  const cardsJug = [];
+  const unico = (arr) => arr; // (ayuda de legibilidad)
+  // Más goles en un partido
+  if (goleadasPartido.length) {
+    const max = Math.max(...goleadasPartido.map(g => g.n));
+    if (max >= 2) {
+      const top = goleadasPartido.filter(g => g.n === max);
+      cardsJug.push(recCard('Más goles en un partido', 'bueno', max, 'goles',
+        top.map(g => {
+          const rival = g.teamId === g.m.l ? g.m.v : g.m.l;
+          return recJugadorHTML(reg, g.clave, `${g.m.gl}-${g.m.gv} vs ${equipos[rival] || rival} · ${recFmtFecha(g.m.p.Fecha)}`, [g.teamId]);
+        })));
+    }
+  }
+  const cardConteo = (titulo, tono, conteo, unidad, minimo) => {
+    const entradas = Object.entries(conteo);
+    if (!entradas.length) return '';
+    const max = Math.max(...entradas.map(e => e[1]));
+    if (max < minimo) return '';
+    return recCard(titulo, tono, max, unidad, entradas.filter(e => e[1] === max).map(([c]) => recJugadorHTML(reg, c, '', equiposDeJug[c])));
+  };
+  cardsJug.push(cardConteo('Más hat-tricks (3 goles o más)', 'bueno', hatTricks, 'hat-tricks', 1));
+  cardsJug.push(cardConteo('Más dobletes', 'bueno', dobletes, 'dobletes', 2));
+
+  // Racha de partidos seguidos convirtiendo
+  const rachasJug = [];
+  Object.entries(seqs).forEach(([teamId, seq]) => {
+    const cur = {}, best = {};
+    seq.forEach(e => {
+      Object.keys(e.sc).forEach(c => {
+        if (!cur[c]) cur[c] = { len: 0, ini: e.fecha };
+        cur[c].len++;
+        if (!best[c] || cur[c].len > best[c].len) best[c] = { len: cur[c].len, desde: cur[c].ini, hasta: e.fecha };
+      });
+      Object.keys(cur).forEach(c => { if (!e.sc[c]) delete cur[c]; });
+    });
+    Object.entries(best).forEach(([c, b]) => rachasJug.push({ clave: c, teamId, ...b }));
+  });
+  if (rachasJug.length) {
+    const max = Math.max(...rachasJug.map(r => r.len));
+    if (max >= 2) {
+      cardsJug.push(recCard('Racha de partidos seguidos convirtiendo', 'bueno', max, 'partidos',
+        rachasJug.filter(r => r.len === max).map(r => recJugadorHTML(reg, r.clave, r.desde !== r.hasta ? `${recFmtFecha(r.desde)} → ${recFmtFecha(r.hasta)}` : recFmtFecha(r.desde), [r.teamId]))));
+    }
+  }
+
+  // Penales, goles en contra y tarjetas (reutiliza los parseos de la pestaña Estadísticas)
+  const pg = parsearGoleadores(null, idTemporada);
+  Object.keys(pg.nombresDisplay).forEach(c => {
+    if (!reg[c]) reg[c] = { nombre: pg.nombresDisplay[c], nac: pg.nacionalidades[c] || '', desamb: pg.desambiguadores[c] || '' };
+  });
+  const penales = {}, ecs = {};
+  Object.entries(pg.goles).forEach(([c, g]) => { if (g.penales) penales[c] = g.penales; });
+  Object.entries(pg.ec).forEach(([c, n]) => { ecs[c] = n; });
+  const cardConEquipos = (titulo, tono, conteo, unidad, equiposMap) => {
+    const entradas = Object.entries(conteo);
+    if (!entradas.length) return '';
+    const max = Math.max(...entradas.map(e => e[1]));
+    return recCard(titulo, tono, max, unidad, entradas.filter(e => e[1] === max).map(([c]) => recJugadorHTML(reg, c, '', equiposMap[c] || equiposDeJug[c])));
+  };
+  cardsJug.push(cardConEquipos('Más goles de penal', 'bueno', penales, 'penales', pg.equiposGoles));
+  cardsJug.push(cardConEquipos('Más goles en contra', 'malo', ecs, 'goles en contra', pg.equiposEC));
+  [['Amonestados', 'Más amonestados', 'amarillas'], ['Expulsados', 'Más expulsados', 'rojas']].forEach(([campo, titulo, unidad]) => {
+    const t = parsearTarjetas(campo, null, idTemporada);
+    Object.keys(t.nombresDisplay).forEach(c => {
+      if (!reg[c]) reg[c] = { nombre: t.nombresDisplay[c], nac: t.nacionalidades[c] || '', desamb: t.desambiguadores[c] || '' };
+    });
+    const entradas = Array.isArray(t.datos) ? t.datos : Object.entries(t.datos || {});
+    if (!entradas.length) return;
+    const val = e => (typeof e[1] === 'number' ? e[1] : parseInt(e[1]) || 0);
+    const max = Math.max(...entradas.map(val));
+    if (max < 1) return;
+    cardsJug.push(recCard(titulo, 'malo', max, unidad, entradas.filter(e => val(e) === max).map(e => recJugadorHTML(reg, e[0], '', t.equiposPorJugador[e[0]]))));
+  });
+
+  // ══ CURIOSIDADES ══
+  const cardsCur = [];
+  const totalGoles = ms.reduce((a, m) => a + m.gl + m.gv, 0);
+  cardsCur.push(recCard('Promedio de goles por partido', 'neutro', (totalGoles / ms.length).toFixed(2), 'goles por partido',
+    [`<div class="rec-item"><span class="rec-sub" style="margin-left:0;">${totalGoles} goles en ${ms.length} partidos</span></div>`]));
+
+  // Fecha con más / menos goles (solo fechas completas y de tamaño normal)
+  const grupos = {};
+  todos.forEach(p => {
+    if (!p.Numero_Fecha) return;
+    const k = `${p.Fase || ''}|${p.Numero_Fecha}`;
+    if (!grupos[k]) grupos[k] = { fase: p.Fase || '', num: p.Numero_Fecha, total: 0, ms: [] };
+    grupos[k].total++;
+  });
+  ms.forEach(m => {
+    if (!m.p.Numero_Fecha) return;
+    const g = grupos[`${m.p.Fase || ''}|${m.p.Numero_Fecha}`];
+    if (g) g.ms.push(m);
+  });
+  const lista = Object.values(grupos).filter(g => g.ms.length === g.total);
+  const maxTam = Math.max(0, ...lista.map(g => g.total));
+  const comp = lista.filter(g => g.total >= Math.ceil(maxTam * 0.7) && g.total >= 2).map(g => {
+    const goles = g.ms.reduce((a, m) => a + m.gl + m.gv, 0);
+    const esReg = g.fase === 'Fase Regular' || g.fase === 'Primera Fase' || !g.fase;
+    return { etiqueta: esReg ? `Fecha ${g.num}` : `${g.fase} — Fecha ${g.num}`, goles, n: g.total, prom: Number((goles / g.total).toFixed(4)) };
+  });
+  if (comp.length >= 3) {
+    const itemFecha = f => `<div class="rec-item"><span class="rec-nombre">${f.etiqueta}</span><span class="rec-sub">${f.goles} goles en ${f.n} partidos</span></div>`;
+    const maxP = Math.max(...comp.map(f => f.prom)), minP = Math.min(...comp.map(f => f.prom));
+    cardsCur.push(recCard('Fecha con más goles', 'neutro', maxP.toFixed(2), 'goles por partido', comp.filter(f => f.prom === maxP).map(itemFecha)));
+    cardsCur.push(recCard('Fecha con menos goles', 'neutro', minP.toFixed(2), 'goles por partido', comp.filter(f => f.prom === minP).map(itemFecha)));
+  }
+
+  const html =
+    `<div class="rec-leyenda"><span>🟢 lo bueno</span><span>🔴 lo malo</span><span>⚪ neutro</span><span style="margin-left:auto;">${ms.length} partidos jugados</span></div>` +
+    recSeccion('⚽ Partidos', cardsPartidos, 'Se cuentan los goles de los 90 minutos. Tocá un partido para ver el detalle.') +
+    recSeccion('🔥 Rachas de equipos', cardsRachas, 'Se muestran rachas de 2 partidos o más. Un partido definido por penales cuenta como empate.') +
+    recSeccion('📊 Totales del torneo', cardsTotales, 'Se comparan los equipos que jugaron al menos la mitad de los partidos del que más jugó.') +
+    recSeccion('👤 Jugadores', cardsJug) +
+    recSeccion('🎲 Curiosidades', cardsCur);
+  cont.innerHTML = html;
+}
+
 
 // ── Pestaña "Equipos" de un torneo: nombres y escudos de todos los que lo jugaron ──
 function renderEquiposTorneo(idTemporada) {
@@ -8175,6 +8608,8 @@ function verTorneo(idTemporada) {
   torneoActualId = idTemporada;
   document.getElementById('torneo-stats-container').innerHTML = '';
   document.getElementById('torneo-bracket-container').innerHTML = '';
+  const recC = document.getElementById('torneo-records-container');
+  if (recC) recC.innerHTML = '';
   const eqTorneoC = document.getElementById('torneo-equipos-container');
   if (eqTorneoC) eqTorneoC.innerHTML = '';
   const eqC = document.getElementById('torneo-stats-equipos-container');
@@ -8189,6 +8624,9 @@ function verTorneo(idTemporada) {
   // Mostrar/ocultar el tab de Cuadro según si hay fases eliminatorias
   const btnBracket = document.getElementById('ttab-bracket');
   if (btnBracket) btnBracket.style.display = tieneFasesEliminatorias(idTemporada) ? '' : 'none';
+  // Récords: no tiene sentido en torneos de un solo partido (Supercopa, etc.)
+  const btnRecords = document.getElementById('ttab-records');
+  if (btnRecords) btnRecords.style.display = partidos.filter(p => p.ID_Temporada == idTemporada && esPartidoJugado(p)).length >= 2 ? '' : 'none';
   window.scrollTo(0, 0);
 
   document.getElementById('torneo-nombre').textContent = temp.Competencia;
