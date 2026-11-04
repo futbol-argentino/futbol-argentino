@@ -576,8 +576,15 @@ table.tabla-partidos-fija th:nth-child(5),table.tabla-partidos-fija td:nth-child
 .rec-items{display:flex;flex-direction:column;gap:2px;margin-top:4px}
 .rec-item{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 0;border-top:1px solid var(--borde);font-size:13px}
 .rec-item:first-child{border-top:none}
-.rec-partido{flex-direction:column;align-items:flex-start;gap:2px;cursor:pointer}
-.rec-partido:hover .rec-nombre{color:var(--celeste)}
+.rec-partido{display:block;padding:10px 0;cursor:pointer}
+.rec-m-row{display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:8px;padding:2px 0}
+.rec-m-esc{display:flex;align-items:center;justify-content:center;width:22px;height:22px}
+.rec-m-eq{font-size:13px;font-weight:500;color:var(--texto-2);line-height:1.25;min-width:0}
+.rec-m-gol{font-family:var(--fuente-titulo);font-size:20px;min-width:22px;text-align:right;color:var(--texto-2);line-height:1}
+.rec-m-row.gana .rec-m-eq{font-weight:700;color:var(--texto-1)}
+.rec-m-row.gana .rec-m-gol{color:var(--celeste)}
+.rec-m-ctx{font-size:11px;color:var(--texto-3);margin-top:6px;padding-left:30px}
+.rec-partido:hover .rec-m-eq{color:var(--celeste)}
 .rec-nombre{font-weight:600}
 .rec-link{cursor:pointer}
 .rec-link:hover{color:var(--celeste);text-decoration:underline}
@@ -8159,18 +8166,19 @@ function recEquipoHTML(id, sub) {
 }
 function recPartidoHTML(m) {
   const p = m.p;
-  const loc = equipos[m.l] || m.l, vis = equipos[m.v] || m.v;
   const scorePen = esDefinicionPorPenales(p.Tipo_Definicion) && p.Penales ? calcularScorePenales(p.Penales) : null;
-  const pen = scorePen ? `<span style="color:var(--amarillo);font-size:11px;"> (pen. ${scorePen.local}-${scorePen.visita})</span>` : '';
-  const ctx = [p.Fase, p.Numero_Fecha ? `Fecha ${p.Numero_Fecha}` : '', recFmtFecha(p.Fecha)].filter(Boolean).join(' · ');
-  const click = p.ID_Partido ? ` onclick="verPartido('${p.ID_Partido}')" style="cursor:pointer;"` : '';
+  const ctx = [p.Fase, p.Numero_Fecha ? `Fecha ${p.Numero_Fecha}` : '', recFmtFecha(p.Fecha), scorePen ? `Penales ${scorePen.local}-${scorePen.visita}` : '']
+    .filter(Boolean).join(' · ');
+  const click = p.ID_Partido ? ` onclick="verPartido('${p.ID_Partido}')"` : '';
+  const fila = (id, goles, rival) => `<div class="rec-m-row${goles > rival ? ' gana' : ''}">
+      <span class="rec-m-esc">${recEscudo(id, 20)}</span>
+      <span class="rec-m-eq">${equipos[id] || id}</span>
+      <span class="rec-m-gol">${goles}</span>
+    </div>`;
   return `<div class="rec-item rec-partido"${click}>
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-      ${recEscudo(m.l)}<span class="rec-nombre">${loc}</span>
-      <span class="rec-score">${m.gl} - ${m.gv}${pen}</span>
-      <span class="rec-nombre">${vis}</span>${recEscudo(m.v)}
-    </div>
-    <div class="rec-sub" style="margin-left:0;">${ctx}</div>
+    ${fila(m.l, m.gl, m.gv)}
+    ${fila(m.v, m.gv, m.gl)}
+    <div class="rec-m-ctx">${ctx}</div>
   </div>`;
 }
 function recJugadorHTML(reg, clave, detalle, teamIds) {
