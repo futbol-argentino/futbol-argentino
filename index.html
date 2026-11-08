@@ -3564,6 +3564,40 @@ function limpiarFiltroFecha() {
 }
 
 // Alterna entre los partidos "en vivo" de hoy y el listado histórico de la fecha elegida
+// ── Orden de torneos en "Hoy" / navegador de fechas ──
+// Arriba de todo: copas internacionales, luego copas nacionales; después por división
+// (Primera, Segunda, Tercera...) hacia abajo. Se decide por la columna Division de
+// TEMPORADAS.csv y, si no alcanza, por el nombre del torneo.
+function _hoyNorm(s) {
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+}
+const _HOY_RX_INTERNACIONAL = /libertadores|sudamericana|recopa|mundial de clubes|intercontinental|supercopa internacional|copa suruga|conmebol|mercosur|merconorte|copa master|copa de campeones de america|copa interamericana|internacional/;
+const _HOY_RX_COPA_NACIONAL = /copa argentina|supercopa|trofeo de campeones|copa de campeones|copa bicentenario|copa federacion|copa competencia|copa de honor|copa de oro|copa nacional|copas nacionales/;
+function rangoTorneoHoy(nombreTorneo, division) {
+  const n = _hoyNorm(nombreTorneo), d = _hoyNorm(division);
+  if (_HOY_RX_INTERNACIONAL.test(d) || _HOY_RX_INTERNACIONAL.test(n)) return 0;
+  if (_HOY_RX_COPA_NACIONAL.test(d) || _HOY_RX_COPA_NACIONAL.test(n)) return 1;
+  // Coincidencia exacta con la lista fija de divisiones
+  const idx = DIVISIONES_ORDEN.findIndex(x => _hoyNorm(x) === d);
+  if (idx !== -1) return 10 + idx;
+  // Por patrón (primero la columna Division, después el nombre del torneo)
+  for (const t of [d, n]) {
+    if (!t) continue;
+    if (/liga profesional|copa de la liga|superliga|copa maradona/.test(t)) return 10;
+    if (/primera nacional|primera b nacional|\bb nacional\b/.test(t)) return 11;
+    if (/primera b\b/.test(t)) return 12;
+    if (/federal a\b|argentino a\b/.test(t)) return 13;
+    if (/primera c\b/.test(t)) return 14;
+    if (/primera d\b/.test(t)) return 14.5;
+    if (/promocional amateur/.test(t)) return 15;
+    if (/regional federal amateur|federal amateur|torneo regional/.test(t)) return 16;
+    if (/liga/.test(t) && /regional|provincial/.test(t)) return 17;
+    const ORD = ['primera','segunda','tercera','cuarta','quinta','sexta','septima'];
+    for (let i = 0; i < ORD.length; i++) if (new RegExp('\\b' + ORD[i] + '\\b').test(t)) return 10 + i;
+  }
+  return 99;
+}
+
 function actualizarVistaHoyFecha() {
   const wrap = document.getElementById('hoy-fecha-resultados-wrap');
   const cont = document.getElementById('hoy-container');
@@ -3625,8 +3659,7 @@ function actualizarVistaHoyFecha() {
     const torneo = temporadas[p.ID_Temporada] || p.Competencia || p.Torneo || p.Fase || 'Sin torneo';
     if (!gruposMap.has(torneo)) {
       const division = divisionPorTemporada[p.ID_Temporada] || '';
-      const rango = DIVISIONES_ORDEN.indexOf(division);
-      gruposMap.set(torneo, { torneo, rango: rango === -1 ? 999 : rango, partidos: [] });
+      gruposMap.set(torneo, { torneo, rango: rangoTorneoHoy(torneo, division), partidos: [] });
     }
     gruposMap.get(torneo).partidos.push(p);
   });
@@ -8877,7 +8910,13 @@ const BRACKET_FASES = [
   ['Primera Fase Ida','Primera Fase Vuelta','Primera Fase'],
   ['Segunda Fase Ida','Segunda Fase Vuelta','Segunda Fase'],
   ['Tercera Fase Ida','Tercera Fase Vuelta','Tercera Fase'],
-  ['16avos de Final Ida','16avos de Final Vuelta','16avos de Final'],
+  // Copa Argentina y similares: arrancan en 32avos. Se aceptan las distintas grafías del CSV.
+  // (el último elemento de cada grupo es el nombre que se muestra en el cuadro)
+  ['32avos de Final Ida','32avos de Final Vuelta','32avos de Final',
+   'Treintaidosavos de Final Ida','Treintaidosavos de Final Vuelta','Treintaidosavos de Final',
+   'Treintidosavos de Final Ida','Treintidosavos de Final Vuelta','Treintidosavos de Final'],
+  ['Dieciseisavos de Final Ida','Dieciseisavos de Final Vuelta','Dieciseisavos de Final',
+   '16avos de Final Ida','16avos de Final Vuelta','16avos de Final'],
   ['Octavos de Final Ida','Octavos de Final Vuelta','Octavos de Final'],
   ['Cuartos de Final Ida','Cuartos de Final Vuelta','Cuartos de Final'],
   ['Semifinal Ida','Semifinal Vuelta','Semifinal'],
@@ -11660,8 +11699,7 @@ function renderHoy() {
       const torneo = temporadas[p.ID_Temporada] || p.Competencia || p.Torneo || 'Partidos';
       if (!gruposMap.has(torneo)) {
         const division = divisionPorTemporada[p.ID_Temporada] || '';
-        const rango = DIVISIONES_ORDEN.indexOf(division);
-        gruposMap.set(torneo, { torneo, rango: rango === -1 ? 999 : rango, partidos: [] });
+        gruposMap.set(torneo, { torneo, rango: rangoTorneoHoy(torneo, division), partidos: [] });
       }
       gruposMap.get(torneo).partidos.push(p);
     });
