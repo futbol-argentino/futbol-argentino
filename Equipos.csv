@@ -178,7 +178,7 @@ ID_Equipo,Nombre_Equipo,Division,Provincia,Liga
 177,JJ Urquiza,Primera C,,
 178,Leandro N. Alem,Primera C,,
 179,Claypole,Primera C,,
-180,Mercedes,Primera C,Claypole,Primera C
+180,Mercedes,Primera C,,
 181,Muñiz,Primera C,,
 182,Lugano,Primera C,,
 183,Defensores de Cambaceres,Primera C,,
@@ -232,3 +232,6 @@ ID_Equipo,Nombre_Equipo,Division,Provincia,Liga
 231,Nautico Hacoaj,Promocional Amateur,,
 232,Provincial Lobos,Promocional Amateur,,
 233,Social Atletico Television,Promocional Amateur,,
+234,Sansisena,Ligas Regionales,Buenos Aires,Liga del Sur
+235,Defensores de Pronunciamiento,Torneo Regional Federal Amateur,Entre Rios,
+236,Union de Sunchales,Ligas Regionales,Santa Fe,Liga Rafaelina de Futbol
