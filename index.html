@@ -1981,6 +1981,21 @@ header::after{animation:none;height:4px;background:var(--azul)}
         <div style="color:var(--texto-3);font-size:13px;margin-top:6px;">
           Equipos que ascienden y descienden en cada categoría, temporada por temporada.
         </div>
+        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-top:14px;">
+          <div class="filtro-grupo" style="min-width:160px;">
+            <label class="filtro-label">Año</label>
+            <select id="mov-filtro-anio" class="filtro-select" onchange="renderMovimientosAscensoDescenso()">
+              <option value="">Todos los años</option>
+            </select>
+          </div>
+          <div class="filtro-grupo" style="flex:0 0 auto;">
+            <label class="filtro-label">&nbsp;</label>
+            <div style="display:flex;gap:6px;">
+              <button id="mov-anio-prev" class="btn-volver" onclick="navegarAnioMovimientos(-1)" title="Año anterior">← Año</button>
+              <button id="mov-anio-next" class="btn-volver" onclick="navegarAnioMovimientos(1)" title="Año siguiente">Año →</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div id="movimientos-lista"></div>
     </div>
@@ -12305,6 +12320,18 @@ function cambiarCampeonesSubTab(tab) {
   if (esMov) renderMovimientosAscensoDescenso();
 }
 
+// Año anterior / siguiente dentro de Ascensos y Descensos (-1 = más antiguo, 1 = más reciente)
+function navegarAnioMovimientos(delta) {
+  const sel = document.getElementById('mov-filtro-anio');
+  if (!sel) return;
+  const anios = [...sel.options].map(o => o.value).filter(v => v !== ''); // ya vienen de más reciente a más antiguo
+  if (!anios.length) return;
+  let idx = sel.value ? anios.indexOf(sel.value) - delta : 0;
+  idx = Math.max(0, Math.min(anios.length - 1, idx));
+  sel.value = anios[idx];
+  renderMovimientosAscensoDescenso();
+}
+
 // ── VISTA GLOBAL: Ascensos y Descensos por temporada ──
 // Se agrupa por AÑO → CATEGORÍA (división) → torneo, así se ve de qué categoría
 // sale cada equipo que asciende o desciende (los movimientos de cada fila de
@@ -12334,7 +12361,30 @@ function renderMovimientosAscensoDescenso() {
     descensos.forEach(e => divs[division].torneos[nombreTorneo].descensos.add(e));
   });
 
-  const temporadas = Object.values(porAnio).sort((a,b) => b.anioNum - a.anioNum);
+  const todasTemporadas = Object.values(porAnio).sort((a,b) => b.anioNum - a.anioNum);
+
+  // Filtro por año: el <select> se llena con los años que tienen movimientos (del más reciente al más antiguo)
+  const selAnio = document.getElementById('mov-filtro-anio');
+  const etiquetas = todasTemporadas.map(r => String(r.anioLabel));
+  let anioSel = '';
+  if (selAnio) {
+    const previo = selAnio.value;
+    selAnio.innerHTML = '<option value="">Todos los años</option>' +
+      etiquetas.map(a => `<option value="${a}">${a}</option>`).join('');
+    selAnio.value = etiquetas.includes(previo) ? previo : '';
+    anioSel = selAnio.value;
+    const btnPrev = document.getElementById('mov-anio-prev');
+    const btnNext = document.getElementById('mov-anio-next');
+    if (btnPrev && btnNext) {
+      const idx = etiquetas.indexOf(anioSel);
+      if (!anioSel) { btnPrev.disabled = btnNext.disabled = etiquetas.length === 0; }
+      else {
+        btnNext.disabled = idx <= 0;                        // no hay año más reciente
+        btnPrev.disabled = idx >= etiquetas.length - 1;     // no hay año más antiguo
+      }
+    }
+  }
+  const temporadas = anioSel ? todasTemporadas.filter(r => String(r.anioLabel) === anioSel) : todasTemporadas;
 
   if (!temporadas.length) {
     cont.innerHTML = `<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">
@@ -12358,14 +12408,15 @@ function renderMovimientosAscensoDescenso() {
   const vacio = (txt) => `<span style="font-size:12px;color:var(--texto-3);font-style:italic;">${txt}</span>`;
 
   // Grilla de ascensos / descensos de un torneo
+  // En la máxima categoría (rango 1) no hay ascensos: solo se muestran los descensos
   const grillaMov = (tv, rango) => `
-        <div class="movimiento-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
-          <div>
+        <div class="movimiento-grid" style="display:grid;grid-template-columns:${rango === 1 && !tv.ascensos.size ? '1fr' : '1fr 1fr'};gap:18px;">
+          ${rango === 1 && !tv.ascensos.size ? '' : `<div>
             <div style="font-size:12px;font-weight:700;color:var(--verde);margin-bottom:8px;">▲ ASCIENDEN</div>
             <div style="display:flex;flex-direction:column;gap:6px;">
-              ${tv.ascensos.size ? [...tv.ascensos].map(e => chip(e,'asc')).join('') : vacio(rango > 1 ? 'Aún no cargado' : '—')}
+              ${tv.ascensos.size ? [...tv.ascensos].map(e => chip(e,'asc')).join('') : vacio('Aún no cargado')}
             </div>
-          </div>
+          </div>`}
           <div>
             <div style="font-size:12px;font-weight:700;color:var(--rojo);margin-bottom:8px;">▼ DESCIENDEN</div>
             <div style="display:flex;flex-direction:column;gap:6px;">
