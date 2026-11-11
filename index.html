@@ -557,6 +557,80 @@ table.tabla-partidos-fija th:nth-child(5),table.tabla-partidos-fija td:nth-child
 .modal-desplegable:hover{border-color:var(--borde-hover)}
 .modal-desplegable-contenido{display:none;margin-top:10px;font-size:14px;color:var(--texto-1);padding-top:10px;border-top:1px solid var(--borde)}
 
+
+/* ═══ FORMATO DEL TORNEO (pestaña "Formato" dentro de cada torneo) ═══ */
+.fmt-wrap{display:flex;flex-direction:column;gap:18px}
+.fmt-card{background:var(--fondo-2);border:1px solid var(--borde);border-radius:16px;padding:20px 22px}
+.fmt-h{font-family:var(--fuente-titulo);font-size:22px;letter-spacing:1px;color:var(--celeste);margin:0 0 6px;display:flex;align-items:center;gap:10px}
+.fmt-p{font-size:14px;line-height:1.6;color:var(--texto-2);margin:0 0 14px}
+.fmt-p b{color:var(--texto-1);font-weight:600}
+.fmt-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.fmt-stat{background:linear-gradient(160deg,var(--fondo-3) 0%,var(--fondo-4) 100%);border:1px solid var(--borde);border-radius:12px;padding:14px 10px;text-align:center}
+.fmt-stat-n{font-family:var(--fuente-titulo);font-size:38px;line-height:1;color:var(--texto-1)}
+.fmt-stat-l{font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--texto-3);font-weight:600;margin-top:6px}
+.fmt-zonas{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:4px 0 6px}
+.fmt-zona{border:1px solid var(--borde);border-radius:12px;padding:14px;background:var(--fondo-3)}
+.fmt-zona-t{font-family:var(--fuente-titulo);font-size:20px;letter-spacing:1px;color:var(--texto-1);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.fmt-zona-t span{font-family:var(--fuente-cuerpo);font-size:12px;color:var(--texto-3);font-weight:500;letter-spacing:0}
+.fmt-dots{display:grid;grid-template-columns:repeat(15,1fr);gap:4px}
+.fmt-dot{aspect-ratio:1;border-radius:50%;background:var(--texto-3);opacity:.45}
+.fmt-dot.q{background:var(--celeste);opacity:1}
+.fmt-dots-leg{font-size:12px;color:var(--texto-3);margin-top:10px;display:flex;gap:14px;flex-wrap:wrap}
+.fmt-dots-leg i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+.fmt-bar{display:flex;gap:3px;height:46px;margin:6px 0 12px}
+.fmt-bar div{flex:1;border-radius:5px;display:flex;align-items:center;justify-content:center;font-family:var(--fuente-titulo);font-size:15px;color:#04140a;background:var(--celeste)}
+.fmt-bar div.cla{background:var(--oro)}
+.fmt-bar div.sor{background:var(--hito);color:#fff}
+.fmt-leg{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.fmt-leg-i{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--texto-2);line-height:1.45}
+.fmt-leg-i b{color:var(--texto-1)}
+.fmt-sw{flex:0 0 14px;height:14px;border-radius:4px;margin-top:3px;background:var(--celeste)}
+.fmt-sw.cla{background:var(--oro)}.fmt-sw.sor{background:var(--hito)}
+.fmt-flow{display:grid;grid-template-columns:repeat(5,1fr);gap:0;align-items:stretch}
+.fmt-step{position:relative;padding:14px 8px;text-align:center;background:var(--fondo-3);border:1px solid var(--borde);margin-right:-1px}
+.fmt-step:first-child{border-radius:12px 0 0 12px}.fmt-step:last-child{border-radius:0 12px 12px 0;background:linear-gradient(160deg,rgba(251,191,36,.16),var(--fondo-3));border-color:rgba(251,191,36,.4)}
+.fmt-step-n{font-family:var(--fuente-titulo);font-size:34px;line-height:1;color:var(--texto-1)}
+.fmt-step:last-child .fmt-step-n{color:var(--oro)}
+.fmt-step-t{font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--celeste);margin-top:6px}
+.fmt-step-s{font-size:11px;color:var(--texto-3);margin-top:4px;line-height:1.35}
+.fmt-step:not(:last-child)::after{content:'›';position:absolute;right:-9px;top:50%;transform:translateY(-50%);z-index:2;width:18px;height:18px;border-radius:50%;background:var(--fondo-2);border:1px solid var(--borde-hover);color:var(--celeste);font-size:14px;line-height:15px;text-align:center}
+.fmt-notas{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-top:14px}
+.fmt-nota{background:var(--fondo-3);border:1px solid var(--borde);border-radius:10px;padding:11px 13px;font-size:13px;color:var(--texto-2);line-height:1.45}
+.fmt-nota b{color:var(--texto-1)}
+.fmt-desc{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fmt-dcard{border:1px solid rgba(244,63,94,.35);border-radius:14px;padding:16px;background:linear-gradient(160deg,rgba(244,63,94,.08),var(--fondo-3))}
+.fmt-dcard-top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.fmt-dcard-n{font-family:var(--fuente-titulo);font-size:40px;line-height:1;color:var(--rojo)}
+.fmt-dcard-t{font-family:var(--fuente-titulo);font-size:19px;letter-spacing:.8px;color:var(--texto-1);line-height:1.1}
+.fmt-dcard p{font-size:13px;color:var(--texto-2);line-height:1.5;margin:0 0 12px}
+.fmt-dcard p b{color:var(--texto-1)}
+.fmt-eq{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;background:var(--fondo-2);border:1px solid var(--borde);border-radius:10px;padding:12px 8px}
+.fmt-eq-box{text-align:center;padding:6px 10px;border-radius:8px;background:var(--fondo-3);border:1px solid var(--borde)}
+.fmt-eq-box b{display:block;font-family:var(--fuente-titulo);font-size:20px;color:var(--texto-1);line-height:1.1}
+.fmt-eq-box span{font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--texto-3);font-weight:600}
+.fmt-eq-op{font-family:var(--fuente-titulo);font-size:22px;color:var(--celeste)}
+.fmt-eq-res{background:rgba(244,63,94,.14);border-color:rgba(244,63,94,.4)}
+.fmt-eq-res b{color:var(--rojo)}
+.fmt-years{display:flex;gap:6px;margin-top:10px}
+.fmt-year{flex:1;text-align:center;padding:7px 4px;border-radius:8px;background:var(--fondo-3);border:1px solid var(--borde);font-family:var(--fuente-titulo);font-size:18px;color:var(--texto-2)}
+.fmt-year.act{border-color:var(--celeste);color:var(--texto-1)}
+.fmt-swap{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:center;margin-top:6px}
+.fmt-swap-b{border-radius:12px;padding:12px;text-align:center;border:1px solid var(--borde);background:var(--fondo-3)}
+.fmt-swap-b b{font-family:var(--fuente-titulo);font-size:30px;line-height:1;display:block}
+.fmt-swap-b span{font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--texto-3);font-weight:600}
+.fmt-swap-b.dn b{color:var(--rojo)}.fmt-swap-b.up b{color:var(--verde)}
+.fmt-swap-m{font-size:12px;color:var(--texto-3);text-align:center;max-width:150px;line-height:1.4}
+@media(max-width:700px){
+  .fmt-card{padding:16px 14px}
+  .fmt-zonas,.fmt-desc{grid-template-columns:1fr}
+  .fmt-flow{grid-template-columns:1fr}
+  .fmt-step{margin:0 0 -1px;border-radius:0!important}
+  .fmt-step:first-child{border-radius:12px 12px 0 0!important}.fmt-step:last-child{border-radius:0 0 12px 12px!important}
+  .fmt-step:not(:last-child)::after{content:'⌄';right:auto;left:50%;top:auto;bottom:-9px;transform:translateX(-50%)}
+  .fmt-swap{grid-template-columns:1fr}
+  .fmt-bar div{font-size:12px}
+}
+
 /* CAMPEONES */
 .rec-leyenda{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--texto-3);margin-bottom:6px}
 .rec-seccion{font-family:var(--fuente-titulo);font-size:22px;letter-spacing:1px;color:var(--celeste);margin:26px 0 6px;padding-bottom:8px;border-bottom:1px solid var(--borde)}
@@ -1946,6 +2020,7 @@ header::after{animation:none;height:4px;background:var(--azul)}
         <button class="torneo-tab-btn"         id="ttab-stats"    onclick="cambiarTorneoTab('stats')">Estadísticas</button>
         <button class="torneo-tab-btn"         id="ttab-records"  onclick="cambiarTorneoTab('records')">Récords</button>
         <button class="torneo-tab-btn"         id="ttab-equipos"  onclick="cambiarTorneoTab('equipos')">Equipos</button>
+        <button class="torneo-tab-btn"         id="ttab-formato"  onclick="cambiarTorneoTab('formato')" style="display:none;">Formato</button>
       </div>
       <div id="torneo-panel-tablas">
         <div id="torneo-posiciones-container"></div>
@@ -1959,6 +2034,9 @@ header::after{animation:none;height:4px;background:var(--azul)}
       </div>
       <div id="torneo-panel-records" style="display:none;">
         <div id="torneo-records-container"></div>
+      </div>
+      <div id="torneo-panel-formato" style="display:none;">
+        <div id="torneo-formato-container"></div>
       </div>
       <div id="torneo-panel-equipos" style="display:none;">
         <div id="torneo-equipos-container"></div>
@@ -8168,8 +8246,141 @@ function filtrarCampeones() {
 
 let torneoActualId = null;
 
+// ══════════════════════════════════════════════════════════════
+// FORMATO DEL TORNEO — pestaña "Formato" dentro de cada torneo
+// Para sumar un torneo nuevo: agregar una entrada a FORMATOS_TORNEO con
+//   { match: t => boolean, render: (t) => htmlString }
+// y la pestaña aparece sola en los torneos que coincidan.
+// ══════════════════════════════════════════════════════════════
+function _fmtNorm(x) { return String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); }
+function _fmtEsc(x) { return String(x||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// Copa de la Liga (Apertura / Clausura) 2026
+function _fmtEsCopaLiga2026(t) {
+  const n = _fmtNorm(t.Competencia), d = _fmtNorm(t.Division);
+  if (!n.includes('2026') || !/(apertura|clausura)/.test(n)) return false;
+  if (/(nacional|federal|metropolitano|reserva|femenin|promocion|copa argentina|supercopa)/.test(n)) return false;
+  return n.includes('copa de la liga') || d === 'primera division' || d === 'primera';
+}
+
+function _fmtRenderCopaLiga2026(t) {
+  const nombre = _fmtEsc(t.Competencia);
+  const dotsZona = Array.from({length:15}, (_,i) => `<div class="fmt-dot${i<8?' q':''}"></div>`).join('');
+  const zona = (L) => `<div class="fmt-zona">
+      <div class="fmt-zona-t">Zona ${L} <span>15 clubes</span></div>
+      <div class="fmt-dots">${dotsZona}</div>
+    </div>`;
+  const barra = Array.from({length:16}, (_,i) => i<14 ? `<div>${i+1}</div>` : (i===14 ? '<div class="cla">C</div>' : '<div class="sor">S</div>')).join('');
+  return `<div class="fmt-wrap">
+
+    <div class="fmt-card">
+      <h3 class="fmt-h">🏆 Cómo se juega</h3>
+      <p class="fmt-p">El <b>${nombre}</b> se disputa con los <b>30 equipos de Primera División</b> divididos en dos zonas (A y B) de 15 clubes cada una.</p>
+      <div class="fmt-stats">
+        <div class="fmt-stat"><div class="fmt-stat-n">30</div><div class="fmt-stat-l">Equipos</div></div>
+        <div class="fmt-stat"><div class="fmt-stat-n">2</div><div class="fmt-stat-l">Zonas (A y B)</div></div>
+        <div class="fmt-stat"><div class="fmt-stat-n">15</div><div class="fmt-stat-l">Clubes por zona</div></div>
+        <div class="fmt-stat"><div class="fmt-stat-n">16</div><div class="fmt-stat-l">Fechas</div></div>
+        <div class="fmt-stat"><div class="fmt-stat-n">16</div><div class="fmt-stat-l">A playoffs</div></div>
+      </div>
+    </div>
+
+    <div class="fmt-card">
+      <h3 class="fmt-h">📅 Fase regular</h3>
+      <p class="fmt-p">Cada equipo juega <b>16 fechas</b> en total: <b>14 partidos</b> contra todos los rivales de su propia zona, <b>una fecha interzonal</b> contra su clásico rival y <b>un encuentro interzonal adicional</b> definido por sorteo.</p>
+      <div class="fmt-bar" role="img" aria-label="14 fechas de zona, 1 clásico interzonal y 1 interzonal por sorteo">${barra}</div>
+      <div class="fmt-leg">
+        <div class="fmt-leg-i"><span class="fmt-sw"></span><div><b>14 partidos</b> contra los demás equipos de la propia zona</div></div>
+        <div class="fmt-leg-i"><span class="fmt-sw cla"></span><div><b>1 fecha interzonal</b> contra el clásico rival</div></div>
+        <div class="fmt-leg-i"><span class="fmt-sw sor"></span><div><b>1 interzonal por sorteo</b> contra un rival de la otra zona</div></div>
+      </div>
+      <div style="font-size:11px;color:var(--texto-3);margin-top:8px;">La barra muestra la composición de las 16 fechas, no el orden en que se juegan.</div>
+    </div>
+
+    <div class="fmt-card">
+      <h3 class="fmt-h">🎯 Clasificación a playoffs</h3>
+      <p class="fmt-p">Al finalizar las 16 jornadas, los <b>ocho mejores equipos de cada zona</b> clasifican a los playoffs.</p>
+      <div class="fmt-zonas">${zona('A')}${zona('B')}</div>
+      <div class="fmt-dots-leg">
+        <span><i style="background:var(--celeste)"></i>Clasifica a playoffs (puestos 1º a 8º)</span>
+        <span><i style="background:var(--texto-3);opacity:.5"></i>Queda eliminado (puestos 9º a 15º)</span>
+      </div>
+    </div>
+
+    <div class="fmt-card">
+      <h3 class="fmt-h">⚔️ Playoffs</h3>
+      <p class="fmt-p">Todas las instancias eliminatorias se juegan a <b>partido único</b>.</p>
+      <div class="fmt-flow">
+        <div class="fmt-step"><div class="fmt-step-n">16</div><div class="fmt-step-t">Octavos</div><div class="fmt-step-s">8 partidos<br>Local: mejor ubicado</div></div>
+        <div class="fmt-step"><div class="fmt-step-n">8</div><div class="fmt-step-t">Cuartos</div><div class="fmt-step-s">4 partidos<br>Local: mejor ubicado</div></div>
+        <div class="fmt-step"><div class="fmt-step-n">4</div><div class="fmt-step-t">Semifinales</div><div class="fmt-step-s">2 partidos<br>Local: mejor ubicado</div></div>
+        <div class="fmt-step"><div class="fmt-step-n">2</div><div class="fmt-step-t">Final</div><div class="fmt-step-s">1 partido<br>Estadio neutral</div></div>
+        <div class="fmt-step"><div class="fmt-step-n">🏆</div><div class="fmt-step-t">Campeón</div><div class="fmt-step-s">&nbsp;</div></div>
+      </div>
+      <div class="fmt-notas">
+        <div class="fmt-nota"><b>Octavos a semifinales:</b> hace de local el equipo que haya terminado mejor ubicado en la tabla de su zona.</div>
+        <div class="fmt-nota"><b>Final:</b> se disputa en un estadio neutral.</div>
+      </div>
+    </div>
+
+    <div class="fmt-card">
+      <h3 class="fmt-h">⬇️ ¿Cómo se definen los descensos y cuántos son?</h3>
+      <p class="fmt-p">A lo largo de la <b>temporada 2026</b> (que suma los puntos de la fase regular tanto del Apertura como del Clausura) descienden un total de <b>2 equipos</b> a la Primera Nacional y ascienden otros 2 desde esa categoría, manteniendo el torneo de 30 clubes. Los descensos se definen al cierre de la fase regular del Torneo Clausura mediante <b>dos tablas diferentes</b>.</p>
+      <div class="fmt-swap" style="margin-bottom:16px;">
+        <div class="fmt-swap-b dn"><b>−2</b><span>Descienden a Primera Nacional</span></div>
+        <div class="fmt-swap-m">Se mantiene el torneo de 30 clubes</div>
+        <div class="fmt-swap-b up"><b>+2</b><span>Ascienden desde Primera Nacional</span></div>
+      </div>
+      <div class="fmt-desc">
+        <div class="fmt-dcard">
+          <div class="fmt-dcard-top"><div class="fmt-dcard-n">1</div><div class="fmt-dcard-t">Descenso por<br>Tabla de Promedios</div></div>
+          <p>Pierde la categoría el equipo que termine con el <b>peor coeficiente</b> tras dividir los puntos obtenidos por la cantidad de partidos jugados en las últimas tres temporadas.</p>
+          <div class="fmt-eq">
+            <div class="fmt-eq-box"><b>Puntos</b><span>2024 + 2025 + 2026</span></div>
+            <div class="fmt-eq-op">÷</div>
+            <div class="fmt-eq-box"><b>Partidos</b><span>jugados</span></div>
+            <div class="fmt-eq-op">=</div>
+            <div class="fmt-eq-box fmt-eq-res"><b>Coeficiente</b><span>el peor desciende</span></div>
+          </div>
+          <div class="fmt-years"><div class="fmt-year">2024</div><div class="fmt-year">2025</div><div class="fmt-year act">2026</div></div>
+        </div>
+        <div class="fmt-dcard">
+          <div class="fmt-dcard-top"><div class="fmt-dcard-n">1</div><div class="fmt-dcard-t">Descenso por<br>Tabla Anual</div></div>
+          <p>Pierde la categoría el equipo que sume la <b>menor cantidad de puntos</b> en la tabla general del año calendario.</p>
+          <div class="fmt-eq">
+            <div class="fmt-eq-box"><b>16 fechas</b><span>Apertura</span></div>
+            <div class="fmt-eq-op">+</div>
+            <div class="fmt-eq-box"><b>16 fechas</b><span>Clausura</span></div>
+            <div class="fmt-eq-op">=</div>
+            <div class="fmt-eq-box fmt-eq-res"><b>Puntos 2026</b><span>el que menos suma desciende</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>`;
+}
+
+const FORMATOS_TORNEO = [
+  { match: _fmtEsCopaLiga2026, render: _fmtRenderCopaLiga2026 }
+];
+
+function formatoDeTorneo(temp) {
+  if (!temp) return null;
+  return FORMATOS_TORNEO.find(f => { try { return f.match(temp); } catch(e) { return false; } }) || null;
+}
+
+function renderFormatoTorneo(idTemporada) {
+  const cont = document.getElementById('torneo-formato-container');
+  if (!cont) return;
+  const temp = temporadasArr.find(t => t.ID_Temporada == idTemporada);
+  const f = formatoDeTorneo(temp);
+  cont.innerHTML = f ? f.render(temp) : '';
+}
+
+
 function cambiarTorneoTab(tab) {
-  ['tablas','partidos','bracket','stats','equipos','records'].forEach(t => {
+  ['tablas','partidos','bracket','stats','equipos','records','formato'].forEach(t => {
     document.getElementById('torneo-panel-'+t).style.display = t===tab ? 'block' : 'none';
     document.getElementById('ttab-'+t)?.classList.toggle('activo', t===tab);
   });
@@ -8177,6 +8388,7 @@ function cambiarTorneoTab(tab) {
   if (tab === 'bracket' && torneoActualId) renderBracket(torneoActualId);
   if (tab === 'equipos' && torneoActualId) renderEquiposTorneo(torneoActualId);
   if (tab === 'records' && torneoActualId) renderRecordsTorneo(torneoActualId);
+  if (tab === 'formato' && torneoActualId) renderFormatoTorneo(torneoActualId);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -8686,6 +8898,11 @@ function verTorneo(idTemporada) {
   // Récords: no tiene sentido en torneos de un solo partido (Supercopa, etc.)
   const btnRecords = document.getElementById('ttab-records');
   if (btnRecords) btnRecords.style.display = partidos.filter(p => p.ID_Temporada == idTemporada && esPartidoJugado(p)).length >= 2 ? '' : 'none';
+  // Formato: solo aparece en los torneos que tienen su formato cargado (ver FORMATOS_TORNEO)
+  const btnFormato = document.getElementById('ttab-formato');
+  if (btnFormato) btnFormato.style.display = formatoDeTorneo(temp) ? '' : 'none';
+  const fmtC = document.getElementById('torneo-formato-container');
+  if (fmtC) fmtC.innerHTML = '';
   window.scrollTo(0, 0);
 
   document.getElementById('torneo-nombre').textContent = temp.Competencia;
