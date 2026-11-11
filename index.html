@@ -648,6 +648,16 @@ table.tabla-partidos-fija th:nth-child(5),table.tabla-partidos-fija td:nth-child
 .fmt-pair i{font-style:normal;color:var(--celeste);font-size:11px}
 .fmt-pair.sp{border-color:rgba(251,191,36,.4)}
 
+
+.fmt-flow.f4{grid-template-columns:repeat(4,1fr)}
+.fmt-dots.d21{grid-template-columns:repeat(7,1fr);gap:5px;max-width:420px}
+.fmt-dots.d21 .fmt-dot{display:flex;align-items:center;justify-content:center;font-family:var(--fuente-titulo);font-size:13px;color:var(--texto-1);opacity:.45}
+.fmt-dots.d21 .fmt-dot.r{background:var(--rojo);color:#fff;opacity:1}
+.fmt-bar.b21{height:34px;gap:2px;margin:6px 0 4px}
+.fmt-bar.b21 div{font-size:11px;border-radius:4px}
+.fmt-bar-l{font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;margin-top:10px}
+@media(max-width:700px){.fmt-flow.f4{grid-template-columns:1fr}.fmt-bar.b21 div{font-size:8px}}
+
 /* CAMPEONES */
 .rec-leyenda{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--texto-3);margin-bottom:6px}
 .rec-seccion{font-family:var(--fuente-titulo);font-size:22px;letter-spacing:1px;color:var(--celeste);margin:26px 0 6px;padding-bottom:8px;border-bottom:1px solid var(--borde)}
@@ -8545,10 +8555,112 @@ function _fmtRenderPrimeraNacional2025(t) {
   </div>`;
 }
 
+
+// Primera B Metropolitana 2025
+function _fmtEsPrimeraBMetro2025(t) {
+  const n = _fmtNorm(t.Competencia);
+  if (!/\b2025\b/.test(n)) return false;
+  if (/(femenin|reserva|copa|supercopa|nacional|primera c|federal|promocion)/.test(n)) return false;
+  return /b metropolitana|primera b\b/.test(n);
+}
+
+function _fmtRenderPrimeraBMetro2025(t) {
+  const fechas = (cls) => Array.from({length:21}, (_,i) => `<div${cls?` class="${cls}"`:''}>${i+1}</div>`).join('');
+  const tabla = Array.from({length:21}, (_,i) => `<div class="fmt-dot${i>=19?' r':''}">${i+1}</div>`).join('');
+  return `<div class="fmt-wrap">
+
+    <div class="fmt-card">
+      <h3 class="fmt-h">🏆 Primera B Metropolitana 2025: cómo se jugó</h3>
+      <p class="fmt-p">La Primera B Metropolitana 2025 se disputó con <b>21 equipos</b> bajo un formato dividido en <b>dos torneos cortos</b> (Apertura y Clausura), otorgando <b>2 ascensos</b> a la Primera Nacional y determinando <b>2 descensos directos</b> a la Primera C.</p>
+      <div class="fmt-stats">
+        <div class="fmt-stat"><div class="fmt-stat-n">21</div><div class="fmt-stat-l">Equipos</div></div>
+        <div class="fmt-stat"><div class="fmt-stat-n">2</div><div class="fmt-stat-l">Torneos cortos</div></div>
+        <div class="fmt-stat"><div class="fmt-stat-n">20</div><div class="fmt-stat-l">Partidos por torneo</div></div>
+        <div class="fmt-stat"><div class="fmt-stat-n">42</div><div class="fmt-stat-l">Jornadas en total</div></div>
+        <div class="fmt-stat"><div class="fmt-stat-n" style="color:var(--verde)">2</div><div class="fmt-stat-l">Ascensos</div></div>
+        <div class="fmt-stat"><div class="fmt-stat-n" style="color:var(--rojo)">2</div><div class="fmt-stat-l">Descensos</div></div>
+      </div>
+    </div>
+
+    <div class="fmt-card">
+      <h3 class="fmt-h">📅 Fase regular (Apertura y Clausura)</h3>
+      <p class="fmt-p">Se jugaron <b>dos certámenes independientes</b> (Torneo Apertura en el primer semestre y Torneo Clausura en el segundo) bajo el formato de <b>todos contra todos a una sola rueda</b>.</p>
+      <div class="fmt-bar-l" style="color:var(--celeste)">Torneo Apertura · 21 fechas</div>
+      <div class="fmt-bar b21">${fechas('')}</div>
+      <div class="fmt-bar-l" style="color:var(--oro)">Torneo Clausura · 21 fechas</div>
+      <div class="fmt-bar b21">${fechas('cla')}</div>
+      <div class="fmt-notas">
+        <div class="fmt-nota"><b>Fecha libre.</b> Al ser un número impar de participantes (21 clubes), cada torneo tuvo 21 fechas en total, quedando un equipo libre por jornada y disputando cada club 20 partidos por semestre.</div>
+        <div class="fmt-nota"><b>Localías invertidas.</b> En el Clausura se invirtieron las localías respecto del Apertura.</div>
+      </div>
+    </div>
+
+    <div class="fmt-card">
+      <h3 class="fmt-h">⬆️ ¿Cómo se definieron los 2 ascensos?</h3>
+      <p class="fmt-p"><b>Primer ascenso (final o título directo).</b> Depende de si el Apertura y el Clausura los ganó el mismo equipo o dos distintos:</p>
+      <div class="fmt-desc">
+        <div class="fmt-dcard" style="border-color:rgba(251,191,36,.45);background:linear-gradient(160deg,rgba(251,191,36,.1),var(--fondo-3));">
+          <div class="fmt-dcard-t" style="margin-bottom:8px;color:var(--oro);">DOS CAMPEONES DISTINTOS</div>
+          <div class="fmt-vs" style="margin:0 0 10px">
+            <div class="fmt-vs-t"><b>Apertura</b><span>Campeón</span></div>
+            <div class="fmt-vs-x">vs</div>
+            <div class="fmt-vs-t"><b>Clausura</b><span>Campeón</span></div>
+          </div>
+          <p>Debían disputar una <b>final a ida y vuelta</b> (definiendo de local el mejor ubicado en la tabla general) para consagrarse campeón y lograr el primer ascenso.</p>
+        </div>
+        <div class="fmt-dcard" style="border-color:rgba(34,197,94,.45);background:linear-gradient(160deg,rgba(34,197,94,.08),var(--fondo-3));">
+          <div class="fmt-dcard-t" style="margin-bottom:8px;color:var(--celeste);">EL MISMO CAMPEÓN EN AMBOS</div>
+          <div class="fmt-eq" style="margin-bottom:10px">
+            <div class="fmt-eq-box"><b>Apertura</b><span>Campeón</span></div>
+            <div class="fmt-eq-op">+</div>
+            <div class="fmt-eq-box"><b>Clausura</b><span>Campeón</span></div>
+            <div class="fmt-eq-op">=</div>
+            <div class="fmt-eq-box fmt-eq-res" style="background:rgba(34,197,94,.14);border-color:rgba(34,197,94,.4)"><b style="color:var(--celeste)">Ascenso directo</b><span>sin final</span></div>
+          </div>
+          <p>Obtiene el <b>título y el ascenso directo</b> sin necesidad de jugar final.</p>
+        </div>
+      </div>
+      <p class="fmt-p" style="margin-top:16px;"><b>Segundo ascenso (Torneo Reducido).</b> Como un mismo club ganó ambos torneos, el segundo ascenso se definió mediante un <b>Torneo Reducido</b> disputado por los <b>8 mejores equipos de la Tabla General</b> (excluyendo al campeón ascendido).</p>
+      <div class="fmt-flow f4">
+        <div class="fmt-step"><div class="fmt-step-n">8</div><div class="fmt-step-t">Cuartos</div><div class="fmt-step-s">4 llaves<br>Ida y vuelta</div></div>
+        <div class="fmt-step"><div class="fmt-step-n">4</div><div class="fmt-step-t">Semifinales</div><div class="fmt-step-s">2 llaves<br>Ida y vuelta</div></div>
+        <div class="fmt-step"><div class="fmt-step-n">2</div><div class="fmt-step-t">Final</div><div class="fmt-step-s">Ida y vuelta</div></div>
+        <div class="fmt-step"><div class="fmt-step-n">⬆️</div><div class="fmt-step-t">2º ascenso</div><div class="fmt-step-s">a Primera Nacional</div></div>
+      </div>
+      <div class="fmt-notas">
+        <div class="fmt-nota"><b>Localía:</b> en todas las instancias, la revancha se juega de local para el mejor posicionado en la tabla general.</div>
+        <div class="fmt-nota"><b>Sin ventaja deportiva:</b> en caso de empate global, se definía por penales.</div>
+      </div>
+    </div>
+
+    <div class="fmt-card">
+      <h3 class="fmt-h">⬇️ ¿Cómo se definieron los 2 descensos?</h3>
+      <p class="fmt-p"><b>Tabla General Anual.</b> Al finalizar las <b>42 jornadas</b> de la temporada regular (sumando los puntos del Apertura y del Clausura), descendieron de manera directa a la Primera C los <b>dos últimos equipos de la tabla general</b> (puestos 20º y 21º).</p>
+      <div class="fmt-eq" style="margin-bottom:14px">
+        <div class="fmt-eq-box"><b>21 fechas</b><span>Apertura</span></div>
+        <div class="fmt-eq-op">+</div>
+        <div class="fmt-eq-box"><b>21 fechas</b><span>Clausura</span></div>
+        <div class="fmt-eq-op">=</div>
+        <div class="fmt-eq-box fmt-eq-res"><b>Tabla General</b><span>42 jornadas</span></div>
+      </div>
+      <div class="fmt-zona" style="border-color:rgba(244,63,94,.3)">
+        <div class="fmt-zona-t">Tabla General Anual <span style="color:var(--rojo)">−2 a Primera C</span></div>
+        <div class="fmt-dots d21">${tabla}</div>
+      </div>
+      <div class="fmt-dots-leg">
+        <span><i style="background:var(--texto-3);opacity:.5"></i>Permanecen en Primera B Metropolitana</span>
+        <span><i style="background:var(--rojo)"></i>20º y 21º: descienden a la Primera C</span>
+      </div>
+    </div>
+
+  </div>`;
+}
+
 const FORMATOS_TORNEO = [
   { match: t => _fmtEsCopaLiga(t, 2026), render: t => _fmtRenderCopaLiga(t, 2026) },
   { match: t => _fmtEsCopaLiga(t, 2025), render: t => _fmtRenderCopaLiga(t, 2025) },
-  { match: _fmtEsPrimeraNacional2025, render: _fmtRenderPrimeraNacional2025 }
+  { match: _fmtEsPrimeraNacional2025, render: _fmtRenderPrimeraNacional2025 },
+  { match: _fmtEsPrimeraBMetro2025, render: _fmtRenderPrimeraBMetro2025 }
 ];
 
 function formatoDeTorneo(temp) {
