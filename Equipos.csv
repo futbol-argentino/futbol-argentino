@@ -1,4 +1,4 @@
-ID_Equipo,Nombre_Equipo,Division,Provincia,Liga
+yupanqui,Nombre_Equipo,Division,Provincia,Liga
 1,Aldosivi,Liga Profesional,,
 42,All Boys,Primera Nacional,,
 46,Almagro,Primera Nacional,,
@@ -235,3 +235,5 @@ ID_Equipo,Nombre_Equipo,Division,Provincia,Liga
 234,Sansisena,Ligas Regionales,Buenos Aires,Liga del Sur
 235,Defensores de Pronunciamiento,Torneo Regional Federal Amateur,Entre Rios,
 236,Union de Sunchales,Ligas Regionales,Santa Fe,Liga Rafaelina de Futbol
+237,Liniers de Bahia Blanca,Ligas Regionales,Buenos Aires,Liga del Sur
+238,Sportivo Peñarol,Ligas Regionales,San Juan,Liga Sanjuanina de Futbol
