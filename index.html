@@ -8255,27 +8255,74 @@ let torneoActualId = null;
 function _fmtNorm(x) { return String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); }
 function _fmtEsc(x) { return String(x||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-// Copa de la Liga (Apertura / Clausura) 2026
-function _fmtEsCopaLiga2026(t) {
+// Copa de la Liga (Apertura / Clausura) 2025 y 2026
+function _fmtEsCopaLiga(t, anio) {
   const n = _fmtNorm(t.Competencia), d = _fmtNorm(t.Division);
-  if (!n.includes('2026') || !/(apertura|clausura)/.test(n)) return false;
+  if (!new RegExp('\\b' + anio + '\\b').test(n) || !/(apertura|clausura)/.test(n)) return false;
   if (/(nacional|federal|metropolitano|reserva|femenin|promocion|copa argentina|supercopa)/.test(n)) return false;
   return n.includes('copa de la liga') || d === 'primera division' || d === 'primera';
 }
+// Nombre unificado: siempre "Copa de la Liga Apertura/Clausura AAAA", aunque en la planilla figure distinto
+function _fmtNombreCopaLiga(t, anio) {
+  const k = /clausura/.test(_fmtNorm(t.Competencia)) ? 'Clausura' : 'Apertura';
+  return `Copa de la Liga ${k} ${anio}`;
+}
 
-function _fmtRenderCopaLiga2026(t) {
-  const nombre = _fmtEsc(t.Competencia);
+function _fmtRenderCopaLiga(t, anio) {
+  const P = anio < 2026;                 // true = torneo ya jugado (tiempo pasado)
+  const nombre = _fmtNombreCopaLiga(t, anio);
+  const esClausura = /clausura/.test(_fmtNorm(t.Competencia));
   const dotsZona = Array.from({length:15}, (_,i) => `<div class="fmt-dot${i<8?' q':''}"></div>`).join('');
   const zona = (L) => `<div class="fmt-zona">
       <div class="fmt-zona-t">Zona ${L} <span>15 clubes</span></div>
       <div class="fmt-dots">${dotsZona}</div>
     </div>`;
   const barra = Array.from({length:16}, (_,i) => i<14 ? `<div>${i+1}</div>` : (i===14 ? '<div class="cla">C</div>' : '<div class="sor">S</div>')).join('');
+
+  const intro = P
+    ? `<p class="fmt-p">En la temporada ${anio}, la Liga Profesional eliminó el antiguo esquema de <b>un torneo largo + una Copa de la Liga</b> y pasó a disputar <b>dos torneos cortos idénticos</b> (Apertura y Clausura) con <b>título oficial de liga</b>, jugando cada uno bajo el formato de zonas y playoffs con <b>30 equipos en Primera División</b>.</p>
+       <p class="fmt-p">Ambos torneos tuvieron <b>exactamente la misma estructura</b>, con la única diferencia de que en el Clausura se <b>invirtieron las localías</b> respecto del Apertura.</p>`
+    : `<p class="fmt-p">El <b>${nombre}</b> se disputa con los <b>30 equipos de Primera División</b> divididos en dos zonas (A y B) de 15 clubes cada una.</p>`;
+
+  const cambio = !P ? '' : `
+    <div class="fmt-card">
+      <h3 class="fmt-h">🆕 Qué cambió en ${anio}</h3>
+      <div class="fmt-desc">
+        <div class="fmt-dcard" style="border-color:var(--borde);background:var(--fondo-3);">
+          <div class="fmt-dcard-t" style="margin-bottom:10px;color:var(--texto-3);">ANTES</div>
+          <div class="fmt-eq"><div class="fmt-eq-box"><b>1 torneo largo</b><span>todos contra todos</span></div><div class="fmt-eq-op">+</div><div class="fmt-eq-box"><b>Copa de la Liga</b><span>zonas y playoffs</span></div></div>
+        </div>
+        <div class="fmt-dcard" style="border-color:rgba(34,197,94,.45);background:linear-gradient(160deg,rgba(34,197,94,.08),var(--fondo-3));">
+          <div class="fmt-dcard-t" style="margin-bottom:10px;color:var(--celeste);">DESDE ${anio}</div>
+          <div class="fmt-eq"><div class="fmt-eq-box"><b>Apertura</b><span>zonas y playoffs</span></div><div class="fmt-eq-op">+</div><div class="fmt-eq-box"><b>Clausura</b><span>zonas y playoffs</span></div></div>
+          <div style="font-size:12px;color:var(--texto-2);margin-top:10px;text-align:center;">Dos torneos idénticos, ambos con <b style="color:var(--oro)">título oficial de liga</b></div>
+        </div>
+      </div>
+    </div>`;
+
+  const localias = !P ? '' : `
+    <div class="fmt-card">
+      <h3 class="fmt-h">🔁 Apertura y Clausura: localías invertidas</h3>
+      <p class="fmt-p">Ambos torneos tuvieron la misma estructura. La única diferencia es que en el <b>Clausura se invirtieron las localías</b> respecto del Apertura: el que fue local en un torneo, fue visitante en el otro.</p>
+      <div class="fmt-desc">
+        <div class="fmt-dcard" style="border-color:${esClausura?'var(--borde)':'rgba(34,197,94,.5)'};background:var(--fondo-3);">
+          <div class="fmt-dcard-t" style="margin-bottom:10px;color:var(--celeste);">APERTURA ${anio}</div>
+          <div class="fmt-eq"><div class="fmt-eq-box"><b>Equipo A</b><span>🏠 Local</span></div><div class="fmt-eq-op">vs</div><div class="fmt-eq-box"><b>Equipo B</b><span>✈️ Visitante</span></div></div>
+        </div>
+        <div class="fmt-dcard" style="border-color:${esClausura?'rgba(34,197,94,.5)':'var(--borde)'};background:var(--fondo-3);">
+          <div class="fmt-dcard-t" style="margin-bottom:10px;color:var(--oro);">CLAUSURA ${anio}</div>
+          <div class="fmt-eq"><div class="fmt-eq-box"><b>Equipo A</b><span>✈️ Visitante</span></div><div class="fmt-eq-op">vs</div><div class="fmt-eq-box"><b>Equipo B</b><span>🏠 Local</span></div></div>
+        </div>
+      </div>
+    </div>`;
+
+  const aniosProm = [anio-2, anio-1, anio];
+
   return `<div class="fmt-wrap">
 
     <div class="fmt-card">
-      <h3 class="fmt-h">🏆 Cómo se juega</h3>
-      <p class="fmt-p">El <b>${nombre}</b> se disputa con los <b>30 equipos de Primera División</b> divididos en dos zonas (A y B) de 15 clubes cada una.</p>
+      <h3 class="fmt-h">🏆 ${nombre}: cómo se ${P?'jugó':'juega'}</h3>
+      ${intro}
       <div class="fmt-stats">
         <div class="fmt-stat"><div class="fmt-stat-n">30</div><div class="fmt-stat-l">Equipos</div></div>
         <div class="fmt-stat"><div class="fmt-stat-n">2</div><div class="fmt-stat-l">Zonas (A y B)</div></div>
@@ -8284,10 +8331,11 @@ function _fmtRenderCopaLiga2026(t) {
         <div class="fmt-stat"><div class="fmt-stat-n">16</div><div class="fmt-stat-l">A playoffs</div></div>
       </div>
     </div>
+    ${cambio}
 
     <div class="fmt-card">
       <h3 class="fmt-h">📅 Fase regular</h3>
-      <p class="fmt-p">Cada equipo juega <b>16 fechas</b> en total: <b>14 partidos</b> contra todos los rivales de su propia zona, <b>una fecha interzonal</b> contra su clásico rival y <b>un encuentro interzonal adicional</b> definido por sorteo.</p>
+      <p class="fmt-p">Cada equipo ${P?'disputó':'juega'} <b>16 fechas</b> en total: <b>14 partidos</b> contra los rivales de su propio grupo, <b>1 fecha interzonal</b> frente a su clásico rival y <b>1 partido interzonal adicional</b> definido por sorteo.</p>
       <div class="fmt-bar" role="img" aria-label="14 fechas de zona, 1 clásico interzonal y 1 interzonal por sorteo">${barra}</div>
       <div class="fmt-leg">
         <div class="fmt-leg-i"><span class="fmt-sw"></span><div><b>14 partidos</b> contra los demás equipos de la propia zona</div></div>
@@ -8296,63 +8344,68 @@ function _fmtRenderCopaLiga2026(t) {
       </div>
       <div style="font-size:11px;color:var(--texto-3);margin-top:8px;">La barra muestra la composición de las 16 fechas, no el orden en que se juegan.</div>
     </div>
+    ${localias}
 
     <div class="fmt-card">
       <h3 class="fmt-h">🎯 Clasificación a playoffs</h3>
-      <p class="fmt-p">Al finalizar las 16 jornadas, los <b>ocho mejores equipos de cada zona</b> clasifican a los playoffs.</p>
+      <p class="fmt-p">Los <b>ocho mejores de cada zona</b> ${P?'clasificaron a los octavos de final':'clasifican a los playoffs al finalizar las 16 jornadas'}.</p>
       <div class="fmt-zonas">${zona('A')}${zona('B')}</div>
       <div class="fmt-dots-leg">
-        <span><i style="background:var(--celeste)"></i>Clasifica a playoffs (puestos 1º a 8º)</span>
+        <span><i style="background:var(--celeste)"></i>Clasifica a octavos de final (puestos 1º a 8º)</span>
         <span><i style="background:var(--texto-3);opacity:.5"></i>Queda eliminado (puestos 9º a 15º)</span>
       </div>
     </div>
 
     <div class="fmt-card">
       <h3 class="fmt-h">⚔️ Playoffs</h3>
-      <p class="fmt-p">Todas las instancias eliminatorias se juegan a <b>partido único</b>.</p>
+      <p class="fmt-p">${P
+        ? 'Las llaves de <b>octavos, cuartos y semifinales</b> se jugaron a <b>partido único</b> en el estadio del equipo mejor ubicado en la tabla, mientras que la <b>final</b> se disputó en sede neutral.'
+        : 'Todas las instancias eliminatorias se juegan a <b>partido único</b>.'}</p>
       <div class="fmt-flow">
         <div class="fmt-step"><div class="fmt-step-n">16</div><div class="fmt-step-t">Octavos</div><div class="fmt-step-s">8 partidos<br>Local: mejor ubicado</div></div>
         <div class="fmt-step"><div class="fmt-step-n">8</div><div class="fmt-step-t">Cuartos</div><div class="fmt-step-s">4 partidos<br>Local: mejor ubicado</div></div>
         <div class="fmt-step"><div class="fmt-step-n">4</div><div class="fmt-step-t">Semifinales</div><div class="fmt-step-s">2 partidos<br>Local: mejor ubicado</div></div>
-        <div class="fmt-step"><div class="fmt-step-n">2</div><div class="fmt-step-t">Final</div><div class="fmt-step-s">1 partido<br>Estadio neutral</div></div>
+        <div class="fmt-step"><div class="fmt-step-n">2</div><div class="fmt-step-t">Final</div><div class="fmt-step-s">1 partido<br>Sede neutral</div></div>
         <div class="fmt-step"><div class="fmt-step-n">🏆</div><div class="fmt-step-t">Campeón</div><div class="fmt-step-s">&nbsp;</div></div>
       </div>
       <div class="fmt-notas">
-        <div class="fmt-nota"><b>Octavos a semifinales:</b> hace de local el equipo que haya terminado mejor ubicado en la tabla de su zona.</div>
-        <div class="fmt-nota"><b>Final:</b> se disputa en un estadio neutral.</div>
+        <div class="fmt-nota"><b>Octavos a semifinales:</b> hace de local el equipo que ${P?'terminó':'haya terminado'} mejor ubicado en la tabla ${P?'':'de su zona'}.</div>
+        <div class="fmt-nota"><b>Final:</b> se ${P?'disputó':'disputa'} en un estadio neutral.</div>
       </div>
     </div>
 
     <div class="fmt-card">
-      <h3 class="fmt-h">⬇️ ¿Cómo se definen los descensos y cuántos son?</h3>
-      <p class="fmt-p">A lo largo de la <b>temporada 2026</b> (que suma los puntos de la fase regular tanto del Apertura como del Clausura) descienden un total de <b>2 equipos</b> a la Primera Nacional y ascienden otros 2 desde esa categoría, manteniendo el torneo de 30 clubes. Los descensos se definen al cierre de la fase regular del Torneo Clausura mediante <b>dos tablas diferentes</b>.</p>
+      <h3 class="fmt-h">⬇️ ¿Cómo se ${P?'definieron':'definen'} los descensos y cuántos ${P?'fueron':'son'}?</h3>
+      <p class="fmt-p">${P
+        ? `Al finalizar la fase regular del <b>Clausura</b> bajaron <b>2 equipos</b> a la Primera Nacional (y ascendieron otros 2). Uno descendió por terminar último en la <b>Tabla de Promedios</b> (contando las temporadas ${aniosProm[0]}, ${aniosProm[1]} y ${aniosProm[2]}) y el otro por ocupar el último lugar de la <b>Tabla Anual</b>.`
+        : `A lo largo de la <b>temporada ${anio}</b> (que suma los puntos de la fase regular tanto del Apertura como del Clausura) descienden un total de <b>2 equipos</b> a la Primera Nacional y ascienden otros 2 desde esa categoría, manteniendo el torneo de 30 clubes. Los descensos se definen al cierre de la fase regular del Torneo Clausura mediante <b>dos tablas diferentes</b>.`}</p>
       <div class="fmt-swap" style="margin-bottom:16px;">
-        <div class="fmt-swap-b dn"><b>−2</b><span>Descienden a Primera Nacional</span></div>
+        <div class="fmt-swap-b dn"><b>−2</b><span>${P?'Descendieron':'Descienden'} a Primera Nacional</span></div>
         <div class="fmt-swap-m">Se mantiene el torneo de 30 clubes</div>
-        <div class="fmt-swap-b up"><b>+2</b><span>Ascienden desde Primera Nacional</span></div>
+        <div class="fmt-swap-b up"><b>+2</b><span>${P?'Ascendieron':'Ascienden'} desde Primera Nacional</span></div>
       </div>
       <div class="fmt-desc">
         <div class="fmt-dcard">
           <div class="fmt-dcard-top"><div class="fmt-dcard-n">1</div><div class="fmt-dcard-t">Descenso por<br>Tabla de Promedios</div></div>
-          <p>Pierde la categoría el equipo que termine con el <b>peor coeficiente</b> tras dividir los puntos obtenidos por la cantidad de partidos jugados en las últimas tres temporadas.</p>
+          <p>${P?'Descendió':'Pierde la categoría'} el equipo que ${P?'terminó último':'termine con el <b>peor coeficiente</b>'} ${P?'en la <b>Tabla de Promedios</b>':'tras dividir los puntos obtenidos por la cantidad de partidos jugados en las últimas tres temporadas'}.</p>
           <div class="fmt-eq">
-            <div class="fmt-eq-box"><b>Puntos</b><span>2024 + 2025 + 2026</span></div>
+            <div class="fmt-eq-box"><b>Puntos</b><span>${aniosProm.join(' + ')}</span></div>
             <div class="fmt-eq-op">÷</div>
             <div class="fmt-eq-box"><b>Partidos</b><span>jugados</span></div>
             <div class="fmt-eq-op">=</div>
-            <div class="fmt-eq-box fmt-eq-res"><b>Coeficiente</b><span>el peor desciende</span></div>
+            <div class="fmt-eq-box fmt-eq-res"><b>Coeficiente</b><span>el peor ${P?'descendió':'desciende'}</span></div>
           </div>
-          <div class="fmt-years"><div class="fmt-year">2024</div><div class="fmt-year">2025</div><div class="fmt-year act">2026</div></div>
+          <div class="fmt-years">${aniosProm.map((y,i)=>`<div class="fmt-year${i===2?' act':''}">${y}</div>`).join('')}</div>
         </div>
         <div class="fmt-dcard">
           <div class="fmt-dcard-top"><div class="fmt-dcard-n">1</div><div class="fmt-dcard-t">Descenso por<br>Tabla Anual</div></div>
-          <p>Pierde la categoría el equipo que sume la <b>menor cantidad de puntos</b> en la tabla general del año calendario.</p>
+          <p>${P?'Descendió':'Pierde la categoría'} el equipo que ${P?'ocupó el último lugar de':'sume la <b>menor cantidad de puntos</b> en'} la <b>Tabla Anual</b>${P?'':' del año calendario'}.</p>
           <div class="fmt-eq">
             <div class="fmt-eq-box"><b>16 fechas</b><span>Apertura</span></div>
             <div class="fmt-eq-op">+</div>
             <div class="fmt-eq-box"><b>16 fechas</b><span>Clausura</span></div>
             <div class="fmt-eq-op">=</div>
-            <div class="fmt-eq-box fmt-eq-res"><b>Puntos 2026</b><span>el que menos suma desciende</span></div>
+            <div class="fmt-eq-box fmt-eq-res"><b>Puntos ${anio}</b><span>el que menos suma ${P?'descendió':'desciende'}</span></div>
           </div>
         </div>
       </div>
@@ -8362,7 +8415,8 @@ function _fmtRenderCopaLiga2026(t) {
 }
 
 const FORMATOS_TORNEO = [
-  { match: _fmtEsCopaLiga2026, render: _fmtRenderCopaLiga2026 }
+  { match: t => _fmtEsCopaLiga(t, 2026), render: t => _fmtRenderCopaLiga(t, 2026) },
+  { match: t => _fmtEsCopaLiga(t, 2025), render: t => _fmtRenderCopaLiga(t, 2025) }
 ];
 
 function formatoDeTorneo(temp) {
