@@ -669,6 +669,13 @@ table.tabla-partidos-fija th:nth-child(5),table.tabla-partidos-fija td:nth-child
 @media(max-width:900px){.fmt-zonas.z4{grid-template-columns:1fr 1fr}}
 @media(max-width:700px){.fmt-zonas.z4{grid-template-columns:1fr}.fmt-split div{font-size:12px}}
 
+
+.fmt-dots.dz .fmt-dot.o{background:var(--oro);color:#04140a;opacity:1}
+.fmt-bar.b26{height:30px;gap:2px;margin:6px 0 4px}
+.fmt-bar.b26 div{font-size:10px;border-radius:4px}
+.fmt-bar.b26 div.lib{background:transparent;border:1px dashed var(--texto-3);color:var(--texto-3)}
+@media(max-width:700px){.fmt-bar.b26 div{font-size:7px}}
+
 /* CAMPEONES */
 .rec-leyenda{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--texto-3);margin-bottom:6px}
 .rec-seccion{font-family:var(--fuente-titulo);font-size:22px;letter-spacing:1px;color:var(--celeste);margin:26px 0 6px;padding-bottom:8px;border-bottom:1px solid var(--borde)}
@@ -8770,12 +8777,122 @@ function _fmtRenderFederalA2025(t) {
   </div>`;
 }
 
+
+// Primera C 2025
+function _fmtEsPrimeraC2025(t) {
+  const n = _fmtNorm(t.Competencia);
+  if (!/\b2025\b/.test(n)) return false;
+  if (/(femenin|reserva|copa|supercopa|promocional|amateur|promocion)/.test(n)) return false;
+  return /primera c\b/.test(n);
+}
+
+function _fmtRenderPrimeraC2025(t) {
+  const zona = (L, n) => {
+    const dots = Array.from({length:n}, (_,i) => {
+      const pos = i+1;
+      const c = pos===1 ? 'o' : (pos<=7 ? 'q' : (pos===n ? 'r' : ''));
+      return `<div class="fmt-dot ${c}">${pos}</div>`;
+    }).join('');
+    return `<div class="fmt-zona"><div class="fmt-zona-t">Zona ${L} <span>${n} clubes</span></div><div class="fmt-dots dz">${dots}</div></div>`;
+  };
+  const barra = (libres) => Array.from({length:26}, (_,i) => i < 26-libres ? `<div>${i+1}</div>` : `<div class="lib">L</div>`).join('');
+  return `<div class="fmt-wrap">
+
+    <div class="fmt-card">
+      <h3 class="fmt-h">🏆 Primera C 2025: cómo se jugó</h3>
+      <p class="fmt-p">La Primera C 2025 se jugó con <b>27 equipos</b> divididos en dos zonas (una de 13 y otra de 14 clubes) bajo un formato de <b>torneo largo a dos ruedas</b>, otorgando <b>2 ascensos</b> a la Primera B Metropolitana y poniendo en juego <b>1 desafiliación</b> (descenso) al Torneo Promocional Amateur.</p>
+      <div class="fmt-stats">
+        <div class="fmt-stat"><div class="fmt-stat-n">27</div><div class="fmt-stat-l">Equipos</div></div>
+        <div class="fmt-stat"><div class="fmt-stat-n">2</div><div class="fmt-stat-l">Zonas (13 y 14)</div></div>
+        <div class="fmt-stat"><div class="fmt-stat-n">2</div><div class="fmt-stat-l">Ruedas</div></div>
+        <div class="fmt-stat"><div class="fmt-stat-n" style="color:var(--verde)">2</div><div class="fmt-stat-l">Ascensos</div></div>
+        <div class="fmt-stat"><div class="fmt-stat-n" style="color:var(--rojo)">1</div><div class="fmt-stat-l">Desafiliación</div></div>
+      </div>
+    </div>
+
+    <div class="fmt-card">
+      <h3 class="fmt-h">📅 Fase regular</h3>
+      <p class="fmt-p"><b>División por zonas.</b> Los 27 participantes se repartieron en dos grupos: la <b>Zona A con 13 equipos</b> (que jugaron 24 partidos cada uno y tuvieron dos fechas libres en el año) y la <b>Zona B con 14 equipos</b> (que disputaron 26 encuentros sin fechas libres).<br><b>Sistema de disputa.</b> En cada zona se jugó <b>todos contra todos a dos ruedas</b> (local y visitante).</p>
+      <div class="fmt-bar-l" style="color:var(--celeste)">Zona A · 13 equipos · 24 partidos + 2 libres</div>
+      <div class="fmt-bar b26">${barra(2)}</div>
+      <div class="fmt-bar-l" style="color:var(--oro)">Zona B · 14 equipos · 26 partidos, sin libres</div>
+      <div class="fmt-bar b26">${barra(0)}</div>
+      <div style="font-size:11px;color:var(--texto-3);margin-top:6px;">Cada casilla es una fecha; “L” es fecha libre. La barra muestra la composición, no el orden en que se jugaron.</div>
+      <p class="fmt-p" style="margin-top:16px;">Dónde termina cada equipo en la tabla de su zona define su destino:</p>
+      <div class="fmt-zonas">${zona('A',13)}${zona('B',14)}</div>
+      <div class="fmt-dots-leg">
+        <span><i style="background:var(--oro)"></i>1º: final por el título y el 1er ascenso</span>
+        <span><i style="background:var(--celeste)"></i>2º a 7º: Torneo Reducido</span>
+        <span><i style="background:var(--texto-3);opacity:.5"></i>Sin consecuencias</span>
+        <span><i style="background:var(--rojo)"></i>Último: cruce por la desafiliación</span>
+      </div>
+    </div>
+
+    <div class="fmt-card">
+      <h3 class="fmt-h">⬆️ ¿Cómo se definieron los 2 ascensos?</h3>
+      <div class="fmt-desc">
+        <div class="fmt-dcard" style="border-color:rgba(251,191,36,.45);background:linear-gradient(160deg,rgba(251,191,36,.1),var(--fondo-3));">
+          <div class="fmt-dcard-top"><div class="fmt-dcard-n" style="color:var(--oro)">1</div><div class="fmt-dcard-t">Primer ascenso<br>Final por el título</div></div>
+          <p>Los equipos que terminaron en el <b>1º puesto de cada zona</b> disputaron una <b>final a ida y vuelta</b> por el campeonato y el primer boleto a la Primera B Metropolitana.</p>
+          <div class="fmt-vs" style="margin-bottom:0">
+            <div class="fmt-vs-t"><b>1º Zona A</b><span>Líder</span></div>
+            <div class="fmt-vs-x">vs</div>
+            <div class="fmt-vs-t"><b>1º Zona B</b><span>Líder</span></div>
+          </div>
+          <div style="font-size:12px;color:var(--texto-2);text-align:center;margin-top:10px;">Final a ida y vuelta</div>
+        </div>
+        <div class="fmt-dcard" style="border-color:rgba(34,197,94,.45);background:linear-gradient(160deg,rgba(34,197,94,.08),var(--fondo-3));">
+          <div class="fmt-dcard-top"><div class="fmt-dcard-n" style="color:var(--celeste)">2</div><div class="fmt-dcard-t">Segundo ascenso<br>Torneo Reducido</div></div>
+          <p>Participaron <b>13 equipos</b>: los clubes ubicados del <b>2º al 7º puesto de cada zona</b> (12 en total), más el <b>perdedor de la final</b> por el primer ascenso, que ingresó directamente en las semifinales.</p>
+          <div class="fmt-eq">
+            <div class="fmt-eq-box"><b>12</b><span>2º a 7º de cada zona</span></div>
+            <div class="fmt-eq-op">+</div>
+            <div class="fmt-eq-box"><b>1</b><span>Perdedor de la final</span></div>
+            <div class="fmt-eq-op">=</div>
+            <div class="fmt-eq-box fmt-eq-res" style="background:rgba(34,197,94,.14);border-color:rgba(34,197,94,.4)"><b style="color:var(--celeste)">13</b><span>Equipos</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="fmt-p" style="margin-top:16px;"><b>Formato del Reducido.</b> Todas las llaves se jugaron a <b>doble partido</b> (ida y vuelta).</p>
+      <div class="fmt-flow">
+        <div class="fmt-step"><div class="fmt-step-n">12</div><div class="fmt-step-t">Instancias previas</div><div class="fmt-step-s">2º a 7º de cada zona<br>Ida y vuelta</div></div>
+        <div class="fmt-step" style="border-color:rgba(251,191,36,.4)"><div class="fmt-step-n" style="color:var(--oro)">+1</div><div class="fmt-step-t">Perdedor de la final</div><div class="fmt-step-s">Ingresa directo<br>en semifinales</div></div>
+        <div class="fmt-step"><div class="fmt-step-n">4</div><div class="fmt-step-t">Semifinales</div><div class="fmt-step-s">Ida y vuelta</div></div>
+        <div class="fmt-step"><div class="fmt-step-n">2</div><div class="fmt-step-t">Final</div><div class="fmt-step-s">Ida y vuelta</div></div>
+        <div class="fmt-step"><div class="fmt-step-n">⬆️</div><div class="fmt-step-t">2º ascenso</div><div class="fmt-step-s">a Primera B Metropolitana</div></div>
+      </div>
+    </div>
+
+    <div class="fmt-card">
+      <h3 class="fmt-h">⬇️ ¿Cómo se definió la desafiliación (descenso)?</h3>
+      <p class="fmt-p"><b>Cruce entre los últimos.</b> Al ser la última categoría profesional de los clubes directamente afiliados, <b>no hay descenso tradicional</b> sino una <b>desafiliación por una temporada</b>. Los equipos que ocuparon el último puesto de cada zona se enfrentaron en un <b>partido definitorio</b> para evitar la desafiliación directa.</p>
+      <div class="fmt-vs">
+        <div class="fmt-vs-t"><b style="color:var(--rojo)">Último A</b><span>Zona A</span></div>
+        <div class="fmt-vs-x">vs</div>
+        <div class="fmt-vs-t"><b style="color:var(--rojo)">Último B</b><span>Zona B</span></div>
+      </div>
+      <div class="fmt-desc" style="margin-top:6px;">
+        <div class="fmt-dcard" style="border-color:rgba(34,197,94,.45);background:linear-gradient(160deg,rgba(34,197,94,.08),var(--fondo-3));">
+          <div class="fmt-dcard-t" style="margin-bottom:8px;color:var(--celeste);">GANADOR DEL CRUCE</div>
+          <p style="margin:0">Mantiene la categoría.</p>
+        </div>
+        <div class="fmt-dcard">
+          <div class="fmt-dcard-t" style="margin-bottom:8px;color:var(--rojo);">PERDEDOR DEL CRUCE</div>
+          <p style="margin:0"><b>Reválida final.</b> Debe disputar una promoción adicional frente a un representante del <b>Torneo Promocional Amateur</b> para revalidar su plaza.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>`;
+}
+
 const FORMATOS_TORNEO = [
   { match: t => _fmtEsCopaLiga(t, 2026), render: t => _fmtRenderCopaLiga(t, 2026) },
   { match: t => _fmtEsCopaLiga(t, 2025), render: t => _fmtRenderCopaLiga(t, 2025) },
   { match: _fmtEsPrimeraNacional2025, render: _fmtRenderPrimeraNacional2025 },
   { match: _fmtEsPrimeraBMetro2025, render: _fmtRenderPrimeraBMetro2025 },
-  { match: _fmtEsFederalA2025, render: _fmtRenderFederalA2025 }
+  { match: _fmtEsFederalA2025, render: _fmtRenderFederalA2025 },
+  { match: _fmtEsPrimeraC2025, render: _fmtRenderPrimeraC2025 }
 ];
 
 function formatoDeTorneo(temp) {
