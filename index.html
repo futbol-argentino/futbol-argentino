@@ -658,6 +658,17 @@ table.tabla-partidos-fija th:nth-child(5),table.tabla-partidos-fija td:nth-child
 .fmt-bar-l{font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;margin-top:10px}
 @media(max-width:700px){.fmt-flow.f4{grid-template-columns:1fr}.fmt-bar.b21 div{font-size:8px}}
 
+
+.fmt-dots.dz{grid-template-columns:repeat(5,1fr);gap:5px;max-width:260px}
+.fmt-dots.dz .fmt-dot{display:flex;align-items:center;justify-content:center;font-family:var(--fuente-titulo);font-size:13px;color:var(--texto-1);opacity:.45}
+.fmt-dots.dz .fmt-dot.q{background:var(--celeste);color:#04140a;opacity:1}
+.fmt-dots.dz .fmt-dot.r{background:var(--rojo);color:#fff;opacity:1}
+.fmt-zonas.z4{grid-template-columns:repeat(4,1fr)}
+.fmt-split{display:flex;gap:3px;height:44px;margin:6px 0 10px}
+.fmt-split div{display:flex;align-items:center;justify-content:center;font-family:var(--fuente-titulo);font-size:16px;border-radius:6px;color:#04140a;white-space:nowrap}
+@media(max-width:900px){.fmt-zonas.z4{grid-template-columns:1fr 1fr}}
+@media(max-width:700px){.fmt-zonas.z4{grid-template-columns:1fr}.fmt-split div{font-size:12px}}
+
 /* CAMPEONES */
 .rec-leyenda{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--texto-3);margin-bottom:6px}
 .rec-seccion{font-family:var(--fuente-titulo);font-size:22px;letter-spacing:1px;color:var(--celeste);margin:26px 0 6px;padding-bottom:8px;border-bottom:1px solid var(--borde)}
@@ -8656,11 +8667,115 @@ function _fmtRenderPrimeraBMetro2025(t) {
   </div>`;
 }
 
+
+// Torneo Federal A 2025
+function _fmtEsFederalA2025(t) {
+  const n = _fmtNorm(t.Competencia);
+  if (!/\b2025\b/.test(n)) return false;
+  if (/(femenin|reserva|copa|supercopa|amateur|regional|promocion)/.test(n)) return false;
+  return /federal a\b/.test(n);
+}
+
+function _fmtRenderFederalA2025(t) {
+  const zona = (titulo, n, clasif, cls) => {
+    const dots = Array.from({length:n}, (_,i) => `<div class="fmt-dot ${i<clasif?'q':''}">${i+1}</div>`).join('');
+    return `<div class="fmt-zona"><div class="fmt-zona-t">${titulo} <span>${n} clubes</span></div><div class="fmt-dots dz">${dots}</div></div>`;
+  };
+  const zonaReval = (L) => {
+    const dots = Array.from({length:10}, (_,i) => `<div class="fmt-dot ${i>=8?'r':''}">${i+1}</div>`).join('');
+    return `<div class="fmt-zona" style="border-color:rgba(244,63,94,.3)"><div class="fmt-zona-t">Zona ${L} · Reválida <span style="color:var(--rojo)">−2</span></div><div class="fmt-dots dz">${dots}</div></div>`;
+  };
+  return `<div class="fmt-wrap">
+
+    <div class="fmt-card">
+      <h3 class="fmt-h">🏆 Torneo Federal A 2025: cómo se jugó</h3>
+      <p class="fmt-p">El Torneo Federal A 2025 se jugó con <b>38 equipos del interior del país</b> agrupados por cercanía geográfica, otorgando <b>2 ascensos directos</b> a la Primera Nacional y determinando <b>4 descensos directos</b> al Torneo Regional Federal Amateur.</p>
+      <div class="fmt-stats">
+        <div class="fmt-stat"><div class="fmt-stat-n">38</div><div class="fmt-stat-l">Equipos</div></div>
+        <div class="fmt-stat"><div class="fmt-stat-n">4</div><div class="fmt-stat-l">Zonas iniciales</div></div>
+        <div class="fmt-stat"><div class="fmt-stat-n">18</div><div class="fmt-stat-l">A Zona Campeonato</div></div>
+        <div class="fmt-stat"><div class="fmt-stat-n">20</div><div class="fmt-stat-l">A Fase Reválida</div></div>
+        <div class="fmt-stat"><div class="fmt-stat-n" style="color:var(--verde)">2</div><div class="fmt-stat-l">Ascensos</div></div>
+        <div class="fmt-stat"><div class="fmt-stat-n" style="color:var(--rojo)">4</div><div class="fmt-stat-l">Descensos</div></div>
+      </div>
+    </div>
+
+    <div class="fmt-card">
+      <h3 class="fmt-h">📅 Primera Fase (etapa de grupos)</h3>
+      <p class="fmt-p"><b>División por zonas.</b> Los 38 clubes se repartieron en cuatro zonas: <b>dos grupos de 10 equipos</b> y <b>dos grupos de 9 equipos</b>.<br><b>Sistema de disputa.</b> En cada zona se jugó bajo el formato de <b>todos contra todos a dos ruedas</b> (ida y vuelta).</p>
+      <div class="fmt-zonas z4">
+        ${zona('Zona de 10',10,5)}${zona('Zona de 10',10,5)}${zona('Zona de 9',9,4)}${zona('Zona de 9',9,4)}
+      </div>
+      <div class="fmt-dots-leg">
+        <span><i style="background:var(--celeste)"></i>Avanza a la Zona Campeonato</span>
+        <span><i style="background:var(--texto-3);opacity:.5"></i>Pasa a la Fase Reválida</span>
+      </div>
+      <p class="fmt-p" style="margin-top:14px;"><b>Clasificación.</b> Avanzaron a la <b>Zona Campeonato</b> los <b>5 primeros</b> de las zonas de diez equipos y los <b>4 primeros</b> de las zonas de nueve clubes (18 equipos en total). Los <b>20 clubes restantes</b> pasaron a jugar la <b>Fase Reválida</b>.</p>
+      <div class="fmt-split" role="img" aria-label="18 equipos a Zona Campeonato y 20 a Fase Reválida">
+        <div style="flex:18;background:var(--celeste)">18 · Zona Campeonato</div>
+        <div style="flex:20;background:var(--oro)">20 · Fase Reválida</div>
+      </div>
+      <div class="fmt-notas">
+        <div class="fmt-nota"><b>Cuenta de los 18:</b> 5 + 5 (zonas de 10) + 4 + 4 (zonas de 9).</div>
+        <div class="fmt-nota"><b>Cuenta de los 20:</b> 5 + 5 (zonas de 10) + 5 + 5 (zonas de 9).</div>
+      </div>
+    </div>
+
+    <div class="fmt-card">
+      <h3 class="fmt-h">⬆️ ¿Cómo se definieron los 2 ascensos?</h3>
+      <div class="fmt-dcard" style="border-color:rgba(251,191,36,.45);background:linear-gradient(160deg,rgba(251,191,36,.1),var(--fondo-3));margin-bottom:14px;">
+        <div class="fmt-dcard-top"><div class="fmt-dcard-n" style="color:var(--oro)">1</div><div class="fmt-dcard-t">Primer ascenso<br>Zona Campeonato</div></div>
+        <p style="margin-bottom:14px">Los <b>18 clasificados</b> se dividieron en dos zonas (A y B) de <b>9 equipos</b> cada una y jugaron a una <b>sola rueda</b> todos contra todos (partiendo desde cero puntos). Los <b>4 mejores de cada grupo</b> (8 clubes) disputaron cuartos de final y semifinales a <b>doble partido</b>, mientras que los dos ganadores jugaron una <b>final a partido único en estadio neutral</b> por el título y el ascenso directo.</p>
+        <div class="fmt-flow">
+          <div class="fmt-step"><div class="fmt-step-n">18</div><div class="fmt-step-t">Zona Campeonato</div><div class="fmt-step-s">2 zonas de 9<br>Una rueda, desde 0</div></div>
+          <div class="fmt-step"><div class="fmt-step-n">8</div><div class="fmt-step-t">Cuartos</div><div class="fmt-step-s">Top 4 de cada zona<br>Doble partido</div></div>
+          <div class="fmt-step"><div class="fmt-step-n">4</div><div class="fmt-step-t">Semifinales</div><div class="fmt-step-s">Doble partido</div></div>
+          <div class="fmt-step"><div class="fmt-step-n">2</div><div class="fmt-step-t">Final</div><div class="fmt-step-s">Partido único<br>Estadio neutral</div></div>
+          <div class="fmt-step"><div class="fmt-step-n">🏆</div><div class="fmt-step-t">Campeón</div><div class="fmt-step-s">Ascenso directo</div></div>
+        </div>
+      </div>
+      <div class="fmt-dcard" style="border-color:rgba(34,197,94,.45);background:linear-gradient(160deg,rgba(34,197,94,.08),var(--fondo-3));">
+        <div class="fmt-dcard-top"><div class="fmt-dcard-n" style="color:var(--celeste)">2</div><div class="fmt-dcard-t">Segundo ascenso<br>Fase Reválida</div></div>
+        <p style="margin-bottom:14px">Los <b>20 equipos</b> que no habían clasificado a la Zona Campeonato se dividieron en <b>dos zonas de 10 clubes</b> y jugaron una rueda todos contra todos. Los <b>5 mejores de cada grupo</b> avanzaron a los cruces eliminatorios a <b>ida y vuelta</b>, donde se fueron sumando progresivamente los equipos eliminados de la Zona Campeonato (incluido el perdedor de la final por el primer ascenso).</p>
+        <div class="fmt-flow f4">
+          <div class="fmt-step"><div class="fmt-step-n">20</div><div class="fmt-step-t">Reválida</div><div class="fmt-step-s">2 zonas de 10<br>Una rueda</div></div>
+          <div class="fmt-step"><div class="fmt-step-n">10</div><div class="fmt-step-t">Clasifican</div><div class="fmt-step-s">Los 5 mejores<br>de cada zona</div></div>
+          <div class="fmt-step"><div class="fmt-step-n">⚔️</div><div class="fmt-step-t">Cruces</div><div class="fmt-step-s">Ida y vuelta<br>Se suman eliminados de la Zona Campeonato</div></div>
+          <div class="fmt-step"><div class="fmt-step-n">⬆️</div><div class="fmt-step-t">2º ascenso</div><div class="fmt-step-s">a Primera Nacional</div></div>
+        </div>
+        <div class="fmt-notas">
+          <div class="fmt-nota"><b>Se suman progresivamente</b> los equipos eliminados de la Zona Campeonato, incluido el <b>perdedor de la final</b> por el primer ascenso.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fmt-card">
+      <h3 class="fmt-h">⬇️ ¿Cómo se definieron los 4 descensos?</h3>
+      <p class="fmt-p"><b>Tabla acumulada.</b> Al terminar la primera etapa de la Fase Reválida, se armó una tabla general por cada una de esas dos zonas sumando los puntos obtenidos tanto en la <b>Primera Fase</b> como en esa <b>rueda de Reválida</b>.</p>
+      <div class="fmt-eq" style="margin-bottom:14px">
+        <div class="fmt-eq-box"><b>Puntos</b><span>Primera Fase</span></div>
+        <div class="fmt-eq-op">+</div>
+        <div class="fmt-eq-box"><b>Puntos</b><span>Rueda de Reválida</span></div>
+        <div class="fmt-eq-op">=</div>
+        <div class="fmt-eq-box fmt-eq-res"><b>Tabla acumulada</b><span>una por zona</span></div>
+      </div>
+      <div class="fmt-zonas">${zonaReval('A')}${zonaReval('B')}</div>
+      <div class="fmt-dots-leg">
+        <span><i style="background:var(--texto-3);opacity:.5"></i>Permanecen en el Federal A</span>
+        <span><i style="background:var(--rojo)"></i>Últimos dos de cada zona: descienden</span>
+      </div>
+      <p class="fmt-p" style="margin-top:14px;"><b>Descensos directos.</b> Los <b>dos últimos equipos de cada zona</b> (4 en total) descendieron directamente al <b>Torneo Regional Federal Amateur</b>.</p>
+    </div>
+
+  </div>`;
+}
+
 const FORMATOS_TORNEO = [
   { match: t => _fmtEsCopaLiga(t, 2026), render: t => _fmtRenderCopaLiga(t, 2026) },
   { match: t => _fmtEsCopaLiga(t, 2025), render: t => _fmtRenderCopaLiga(t, 2025) },
   { match: _fmtEsPrimeraNacional2025, render: _fmtRenderPrimeraNacional2025 },
-  { match: _fmtEsPrimeraBMetro2025, render: _fmtRenderPrimeraBMetro2025 }
+  { match: _fmtEsPrimeraBMetro2025, render: _fmtRenderPrimeraBMetro2025 },
+  { match: _fmtEsFederalA2025, render: _fmtRenderFederalA2025 }
 ];
 
 function formatoDeTorneo(temp) {
