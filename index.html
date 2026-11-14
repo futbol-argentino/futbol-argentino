@@ -419,6 +419,21 @@ table.tabla-partidos-fija th:nth-child(2),table.tabla-partidos-fija td:nth-child
 table.tabla-partidos-fija th:nth-child(3),table.tabla-partidos-fija td:nth-child(3){width:11%}
 table.tabla-partidos-fija th:nth-child(4),table.tabla-partidos-fija td:nth-child(4){width:28%}
 table.tabla-partidos-fija th:nth-child(5),table.tabla-partidos-fija td:nth-child(5){width:22%}
+
+/* Tablas de partidos del Buscador: mismas columnas, mismas posiciones y simétricas en todas las tarjetas
+   (Fecha 14% · Local 28% · Resultado 16% · Visitante 28% · Torneo 14%) => el resultado queda siempre
+   en el centro exacto y los escudos/nombres alineados entre secciones. Solo escritorio: en celular/tablet
+   se mantiene el layout automático con scroll horizontal. */
+@media(min-width:901px){
+  table.tabla-partidos.tp-centrada{table-layout:fixed;width:100%!important;min-width:0!important}
+  table.tabla-partidos.tp-centrada th:nth-child(1),table.tabla-partidos.tp-centrada td:nth-child(1){width:14%}
+  table.tabla-partidos.tp-centrada th:nth-child(2),table.tabla-partidos.tp-centrada td:nth-child(2){width:28%}
+  table.tabla-partidos.tp-centrada th:nth-child(3),table.tabla-partidos.tp-centrada td:nth-child(3){width:16%}
+  table.tabla-partidos.tp-centrada th:nth-child(4),table.tabla-partidos.tp-centrada td:nth-child(4){width:28%}
+  table.tabla-partidos.tp-centrada th:nth-child(5),table.tabla-partidos.tp-centrada td:nth-child(5){width:14%}
+  table.tabla-partidos.tp-centrada .td-equipo{max-width:100%}
+  table.tabla-partidos.tp-centrada td.td-resultado{width:auto}
+}
 .res-local{color:var(--verde)}
 .res-empate{color:var(--amarillo)}
 .res-visita{color:var(--rojo)}
@@ -1472,7 +1487,7 @@ header::after{animation:none;height:4px;background:var(--azul)}
         </div>
       </div>
       <div class="tabla-scroll">
-        <table class="tabla-partidos">
+        <table class="tabla-partidos tp-centrada">
           <thead>
             <tr>
               <th>Fecha</th><th style="text-align:right;">Local</th>
@@ -1667,7 +1682,7 @@ header::after{animation:none;height:4px;background:var(--azul)}
           </div>
         </div>
         <div class="tabla-scroll">
-          <table class="tabla-partidos">
+          <table class="tabla-partidos tp-centrada">
             <thead>
               <tr>
                 <th>Fecha</th><th style="text-align:right;">Local</th>
@@ -13502,7 +13517,7 @@ function renderH2H(eq1, eq2, contenedorId) {
       ${masGoles.length?`
       <div class="tabla-wrapper" style="margin-bottom:14px;">
         <div class="tabla-header"><div class="tabla-titulo">🔥 Partidos con más goles</div></div>
-        <div class="tabla-scroll"><table class="tabla-partidos" style="width:100%;border-collapse:collapse;min-width:0;"><tbody>
+        <div class="tabla-scroll"><table class="tabla-partidos tp-centrada" style="width:100%;border-collapse:collapse;min-width:0;"><tbody>
           ${masGoles.map(({p,tot})=>filaPartidoH2H(p,tot+' ⚽')).join('')}
         </tbody></table></div>
       </div>`:''}
@@ -13512,14 +13527,14 @@ function renderH2H(eq1, eq2, contenedorId) {
         ${goleadasEq1.length?`
         <div class="tabla-wrapper" style="margin-bottom:12px;">
           <div class="tabla-header"><div class="tabla-titulo">💥 Goleadas de ${n1.split(' ')[0]}</div></div>
-          <div class="tabla-scroll"><table class="tabla-partidos" style="width:100%;border-collapse:collapse;min-width:0;"><tbody>
+          <div class="tabla-scroll"><table class="tabla-partidos tp-centrada" style="width:100%;border-collapse:collapse;min-width:0;"><tbody>
             ${goleadasEq1.map(x=>filaGoleada(x)).join('')}
           </tbody></table></div>
         </div>`:''}
         ${goleadasEq2.length?`
         <div class="tabla-wrapper">
           <div class="tabla-header"><div class="tabla-titulo">💥 Goleadas de ${n2.split(' ')[0]}</div></div>
-          <div class="tabla-scroll"><table class="tabla-partidos" style="width:100%;border-collapse:collapse;min-width:0;"><tbody>
+          <div class="tabla-scroll"><table class="tabla-partidos tp-centrada" style="width:100%;border-collapse:collapse;min-width:0;"><tbody>
             ${goleadasEq2.map(x=>filaGoleada(x)).join('')}
           </tbody></table></div>
         </div>`:''}
