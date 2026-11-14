@@ -12879,9 +12879,18 @@ function renderLineaTiempoEquipo(equipoId) {
     const fueAscenso = listaAscensos.includes(nmEqNorm);
     const fueDescenso = !fueAscenso && listaDescensos.includes(nmEqNorm);
 
-    if (!porAnio[anio]) porAnio[anio] = { anio, divisiones: new Set(), campeon:false, subcampeon:false, ascenso:false, descenso:false };
+    if (!porAnio[anio]) porAnio[anio] = { anio, ligas: new Set(), copas: new Set(), campeon:false, subcampeon:false, ascenso:false, descenso:false };
     const reg = porAnio[anio];
-    if (t.Division) reg.divisiones.add(t.Division);
+    // Primera División se muestra como "Primera Division" (ya se sabe cuál es el torneo). En cambio, de Segunda División
+    // para abajo (Segunda, Tercera, Cuarta, Quinta...) y en las copas (nacionales o internacionales) se muestra el
+    // NOMBRE del torneo que jugó, no la división.
+    if (t.Division) {
+      const divN = String(t.Division).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+      const esPrimera = divN === 'primera division';
+      const esCopa = /copa/.test(divN);
+      const etiqueta = esPrimera ? t.Division : (t.Competencia || t.Division);
+      (esCopa ? reg.copas : reg.ligas).add(etiqueta);
+    }
     reg.campeon    = reg.campeon    || fueCampeon;
     reg.subcampeon = reg.subcampeon || fueSubcampeon;
     reg.ascenso    = reg.ascenso    || fueAscenso;
@@ -12934,7 +12943,7 @@ function renderLineaTiempoEquipo(equipoId) {
           ${etiqueta ? `<span style="font-size:10px;background:${dotBg};color:${dotColor};padding:2px 7px;border-radius:5px;border:1px solid ${dotColor};font-weight:700;">${etiqueta}</span>` : ''}
           ${extraBadges.join('')}
         </div>
-        <div style="font-size:13px;color:var(--texto-2);">${[...reg.divisiones].join(' · ') || '—'}</div>
+        <div style="font-size:13px;color:var(--texto-2);">${[...reg.ligas, ...reg.copas].join(' · ') || '—'}</div>
       </div>
     </div>`;
   }).join('');
