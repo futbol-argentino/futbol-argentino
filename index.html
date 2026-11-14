@@ -10324,7 +10324,7 @@ function filtrarEquipoDropdown(contexto) {
   if (!listaFinal.length) { drop.style.display = 'none'; return; }
 
   drop.innerHTML = listaFinal.map((e, i) => `
-    <div id="${contexto}-equipo-sug-${i}" data-index="${i}" style="padding:9px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--borde);transition:background 0.1s;"
+    <div id="${contexto}-equipo-sug-${i}" data-index="${i}" style="padding:9px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--borde);transition:background 0.1s;display:flex;align-items:center;gap:8px;"
       onmouseenter="_dropdownIndiceSel['${contexto}']=${i};_actualizarResaltadoEquipoDropdown('${contexto}')" onmouseleave="this.style.background=''"
       onclick="seleccionarEquipoDropdown('${contexto}','${e.ID_Equipo}','${e.Nombre_Equipo.replace(/'/g,"\\'")}')">
       ${escudoImg(e.Nombre_Equipo, 16)} ${e.Nombre_Equipo}
