@@ -1645,6 +1645,7 @@ header::after{animation:none;height:4px;background:var(--azul)}
               <tbody id="tabla-rivales"></tbody>
             </table>
           </div>
+          <div class="paginacion" id="pag-rivales" style="display:none;"></div>
         </div>
       </div>
 
@@ -4077,29 +4078,19 @@ function verDetalleEquipo(id, moverScrollArriba = true) {
     }
   });
 
-  const rivalesOrdenados = Object.entries(rivalStats)
+  // Los equipos extintos no aparecen en el historial vs rivales (ya no existen).
+  // Excepción: si el equipo que se está mirando es, a su vez, un equipo extinto, no se filtra
+  // (sino su tabla quedaría casi vacía).
+  const divisionDeEquipo = (eqId) => (equiposArr.find(e => String(e.ID_Equipo) === String(eqId)) || {}).Division;
+  const esExtinto = (eqId) => divisionDeEquipo(eqId) === 'Extintos';
+  const equipoActualExtinto = esExtinto(id);
+
+  _rivalesLista = Object.entries(rivalStats)
+    .filter(([rid]) => equipoActualExtinto || !esExtinto(rid))
     .map(([rid, s]) => ({ rid, nombre: equipos[rid]||rid, ...s, dif: s.pg - s.pp }))
     .sort((a, b) => b.dif - a.dif);
-
-  document.getElementById('detalle-rivales-count').textContent = rivalesOrdenados.length + ' rivales';
-  document.getElementById('tabla-rivales').innerHTML = rivalesOrdenados.map((r, i) => {
-    const dg = r.gf - r.gc;
-    const difColor = r.dif > 0 ? 'var(--verde)' : (r.dif < 0 ? 'var(--rojo)' : 'var(--amarillo)');
-    const difTxt = r.dif > 0 ? `+${r.dif}` : `${r.dif}`;
-    const esc = ESCUDOS[r.nombre] ? `<img src="${ESCUDOS[r.nombre]}" style="width:20px;height:20px;object-fit:contain;margin-right:6px;" onerror="this.style.display='none'">` : '';
-    return `<tr>
-      <td style="color:var(--texto-2);font-size:13px;">${i+1}</td>
-      <td><div style="display:flex;align-items:center;">${esc}${r.nombre}</div></td>
-      <td style="text-align:center;font-weight:600;">${r.pj}</td>
-      <td style="text-align:center;color:var(--verde);">${r.pg}</td>
-      <td style="text-align:center;color:var(--amarillo);">${r.pe}</td>
-      <td style="text-align:center;color:var(--rojo);">${r.pp}</td>
-      <td style="text-align:center;">${r.gf}</td>
-      <td style="text-align:center;">${r.gc}</td>
-      <td style="text-align:center;color:var(--texto-2);">${dg > 0 ? '+'+dg : dg}</td>
-      <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;font-weight:700;color:${difColor};">${difTxt}</td>
-    </tr>`;
-  }).join('');
+  _rivalesPag = 0;
+  renderRivalesPagina();
   const selRival = document.getElementById('detalle-filtro-rival');
   selRival.innerHTML = '<option value="">Todos los rivales</option>';
   const rivalesIds = [...new Set(pe.map(p => p.Local_ID===id ? p.Visitante_ID : p.Local_ID))];
@@ -4609,6 +4600,52 @@ function filtrarDetalle() {
   document.getElementById('tabla-detalle').innerHTML = lista.length === 0
     ? '<tr class="loading-row"><td colspan="5">No se encontraron partidos.</td></tr>'
     : lista.slice(0, 200).map(p => filaPartido(p, id, { escudoLocalDerecha: true })).join('');
+}
+
+// ── Historial vs Rivales: se muestra de a 20 rivales por página ──
+const RIVALES_POR_PAG = 20;
+let _rivalesLista = [];
+let _rivalesPag = 0;
+
+function renderRivalesPagina() {
+  const total = _rivalesLista.length;
+  const paginas = Math.max(1, Math.ceil(total / RIVALES_POR_PAG));
+  if (_rivalesPag >= paginas) _rivalesPag = paginas - 1;
+  if (_rivalesPag < 0) _rivalesPag = 0;
+  const inicio = _rivalesPag * RIVALES_POR_PAG;
+
+  document.getElementById('detalle-rivales-count').textContent = total + ' rivales';
+  document.getElementById('tabla-rivales').innerHTML = _rivalesLista.slice(inicio, inicio + RIVALES_POR_PAG).map((r, i) => {
+    const dg = r.gf - r.gc;
+    const difColor = r.dif > 0 ? 'var(--verde)' : (r.dif < 0 ? 'var(--rojo)' : 'var(--amarillo)');
+    const difTxt = r.dif > 0 ? `+${r.dif}` : `${r.dif}`;
+    const esc = ESCUDOS[r.nombre] ? `<img src="${ESCUDOS[r.nombre]}" style="width:20px;height:20px;object-fit:contain;margin-right:6px;" onerror="this.style.display='none'">` : '';
+    return `<tr>
+      <td style="color:var(--texto-2);font-size:13px;">${inicio + i + 1}</td>
+      <td><div style="display:flex;align-items:center;">${esc}${r.nombre}</div></td>
+      <td style="text-align:center;font-weight:600;">${r.pj}</td>
+      <td style="text-align:center;color:var(--verde);">${r.pg}</td>
+      <td style="text-align:center;color:var(--amarillo);">${r.pe}</td>
+      <td style="text-align:center;color:var(--rojo);">${r.pp}</td>
+      <td style="text-align:center;">${r.gf}</td>
+      <td style="text-align:center;">${r.gc}</td>
+      <td style="text-align:center;color:var(--texto-2);">${dg > 0 ? '+'+dg : dg}</td>
+      <td style="text-align:center;font-family:var(--fuente-titulo);font-size:18px;font-weight:700;color:${difColor};">${difTxt}</td>
+    </tr>`;
+  }).join('');
+
+  const pag = document.getElementById('pag-rivales');
+  if (paginas <= 1) { pag.style.display = 'none'; pag.innerHTML = ''; return; }
+  pag.style.display = 'flex';
+  pag.innerHTML = `
+    <button class="pag-btn" onclick="moverRivalesPagina(-1)" ${_rivalesPag === 0 ? 'disabled' : ''}>← Anterior</button>
+    <span style="font-size:13px;color:var(--texto-2);">${inicio + 1}–${Math.min(inicio + RIVALES_POR_PAG, total)} de ${total}</span>
+    <button class="pag-btn" onclick="moverRivalesPagina(1)" ${_rivalesPag >= paginas - 1 ? 'disabled' : ''}>Siguiente →</button>`;
+}
+
+function moverRivalesPagina(delta) {
+  _rivalesPag += delta;
+  renderRivalesPagina();
 }
 
 function toggleRivales() {
