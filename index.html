@@ -1631,6 +1631,16 @@ header::after{animation:none;height:4px;background:var(--azul)}
           </div>
         </div>
         <div id="rivales-contenido" style="display:none;">
+          <div id="rivales-filtros" style="display:flex;gap:12px;flex-wrap:wrap;padding:14px 16px;border-bottom:1px solid var(--borde);">
+            <div style="flex:1;min-width:180px;">
+              <label class="filtro-label" style="display:block;margin-bottom:5px;">División</label>
+              <select id="rivales-filtro-division" class="filtro-select" onchange="cambioFiltroRivalesDivision()"></select>
+            </div>
+            <div style="flex:1;min-width:180px;">
+              <label class="filtro-label" style="display:block;margin-bottom:5px;">Torneo</label>
+              <select id="rivales-filtro-torneo" class="filtro-select" onchange="recalcularRivales()"></select>
+            </div>
+          </div>
           <div class="tabla-scroll">
             <table style="min-width:700px;">
               <thead>
@@ -4058,39 +4068,8 @@ function verDetalleEquipo(id, moverScrollArriba = true) {
   // Directores Técnicos del equipo
   renderDTsEquipo(id);
 
-  // Tabla de rivales
-  const rivalStats = {};
-  pe.forEach(p => {
-    const rivalId = p.Local_ID === id ? p.Visitante_ID : p.Local_ID;
-    if (!rivalStats[rivalId]) rivalStats[rivalId] = { pj:0, pg:0, pe:0, pp:0, gf:0, gc:0 };
-    const r = rivalStats[rivalId];
-    r.pj++;
-    const esLocal = p.Local_ID === id;
-    const gl = parseInt(p.Goles_Local)||0, gv = parseInt(p.Goles_Visitante)||0;
-    r.gf += esLocal ? gl : gv;
-    r.gc += esLocal ? gv : gl;
-    if (esDefinicionDecisiva(p.Tipo_Definicion)) {
-      if (p.ID_Ganador === id) r.pg++;
-      else if (p.ID_Ganador && p.ID_Ganador !== '') r.pp++;
-      else r.pe++;
-    } else {
-      r.pe++;
-    }
-  });
-
-  // Los equipos extintos no aparecen en el historial vs rivales (ya no existen).
-  // Excepción: si el equipo que se está mirando es, a su vez, un equipo extinto, no se filtra
-  // (sino su tabla quedaría casi vacía).
-  const divisionDeEquipo = (eqId) => (equiposArr.find(e => String(e.ID_Equipo) === String(eqId)) || {}).Division;
-  const esExtinto = (eqId) => divisionDeEquipo(eqId) === 'Extintos';
-  const equipoActualExtinto = esExtinto(id);
-
-  _rivalesLista = Object.entries(rivalStats)
-    .filter(([rid]) => equipoActualExtinto || !esExtinto(rid))
-    .map(([rid, s]) => ({ rid, nombre: equipos[rid]||rid, ...s, dif: s.pg - s.pp }))
-    .sort((a, b) => b.dif - a.dif);
-  _rivalesPag = 0;
-  renderRivalesPagina();
+  // Tabla de rivales (con filtros por división / torneo)
+  iniciarFiltrosRivales(id, pe);
   const selRival = document.getElementById('detalle-filtro-rival');
   selRival.innerHTML = '<option value="">Todos los rivales</option>';
   const rivalesIds = [...new Set(pe.map(p => p.Local_ID===id ? p.Visitante_ID : p.Local_ID))];
@@ -4602,6 +4581,120 @@ function filtrarDetalle() {
     : lista.slice(0, 200).map(p => filaPartido(p, id, { escudoLocalDerecha: true })).join('');
 }
 
+// ── Historial vs Rivales: filtros por División y por Torneo ──
+let _rivalesPartidos = [];
+let _rivalesEquipoId = null;
+let _rivalesInfoTemp = {};
+
+// Nombre del torneo sin el año (ej: "Copa Argentina 2025" -> "Copa Argentina"), para agrupar todas sus ediciones
+function _nombreBaseTorneo(comp) {
+  return String(comp || '')
+    .replace(/\b(18|19|20)\d{2}(\s*[\/-]\s*\d{2,4})?\b/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/[\s\-–·:,]+$/,'')
+    .trim();
+}
+
+function iniciarFiltrosRivales(id, pe) {
+  _rivalesEquipoId = id;
+  _rivalesPartidos = pe;
+
+  // Info (división / torneo) de cada temporada
+  _rivalesInfoTemp = {};
+  temporadasArr.forEach(t => {
+    const divN = String(t.Division || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+    _rivalesInfoTemp[t.ID_Temporada] = {
+      division: t.Division || '',
+      esPrimera: divN === 'primera division',
+      torneo: _nombreBaseTorneo(t.Competencia)
+    };
+  });
+
+  // Divisiones en las que el equipo jugó, en orden de jerarquía
+  const ORDEN = ['primera division','segunda division','tercera division','cuarta division','quinta division','sexta division'];
+  const norm = (x) => String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+  const divs = [...new Set(pe.map(p => (_rivalesInfoTemp[p.ID_Temporada] || {}).division).filter(Boolean))]
+    .sort((a, b) => {
+      const ia = ORDEN.indexOf(norm(a)), ib = ORDEN.indexOf(norm(b));
+      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b, 'es');
+    });
+  const selDiv = document.getElementById('rivales-filtro-division');
+  selDiv.innerHTML = '<option value="">Todas las divisiones</option>' +
+    divs.map(d => `<option value="${d.replace(/"/g,'&quot;')}">${d}</option>`).join('');
+
+  poblarTorneosRivales();
+  recalcularRivales();
+}
+
+// El desplegable de torneos muestra los torneos que jugó el equipo (sin año), SIN los de Primera División
+// (ya se filtran con el desplegable de División). Si hay una división elegida, solo los de esa división.
+function poblarTorneosRivales() {
+  const divSel = document.getElementById('rivales-filtro-division').value;
+  const torneos = new Set();
+  _rivalesPartidos.forEach(p => {
+    const inf = _rivalesInfoTemp[p.ID_Temporada];
+    if (!inf || inf.esPrimera || !inf.torneo) return;
+    if (divSel && inf.division !== divSel) return;
+    torneos.add(inf.torneo);
+  });
+  const selT = document.getElementById('rivales-filtro-torneo');
+  selT.innerHTML = '<option value="">Todos los torneos</option>' +
+    [...torneos].sort((a, b) => a.localeCompare(b, 'es'))
+      .map(t => `<option value="${t.replace(/"/g,'&quot;')}">${t}</option>`).join('');
+}
+
+function cambioFiltroRivalesDivision() {
+  poblarTorneosRivales();
+  recalcularRivales();
+}
+
+function recalcularRivales() {
+  const id = _rivalesEquipoId;
+  const divSel = (document.getElementById('rivales-filtro-division') || {}).value || '';
+  const torSel = (document.getElementById('rivales-filtro-torneo') || {}).value || '';
+
+  const filtrados = _rivalesPartidos.filter(p => {
+    if (!divSel && !torSel) return true;
+    const inf = _rivalesInfoTemp[p.ID_Temporada];
+    if (!inf) return false;
+    if (divSel && inf.division !== divSel) return false;
+    if (torSel && (inf.esPrimera || inf.torneo !== torSel)) return false;
+    return true;
+  });
+
+  const rivalStats = {};
+  filtrados.forEach(p => {
+    const rivalId = p.Local_ID === id ? p.Visitante_ID : p.Local_ID;
+    if (!rivalStats[rivalId]) rivalStats[rivalId] = { pj:0, pg:0, pe:0, pp:0, gf:0, gc:0 };
+    const r = rivalStats[rivalId];
+    r.pj++;
+    const esLocal = p.Local_ID === id;
+    const gl = parseInt(p.Goles_Local)||0, gv = parseInt(p.Goles_Visitante)||0;
+    r.gf += esLocal ? gl : gv;
+    r.gc += esLocal ? gv : gl;
+    if (esDefinicionDecisiva(p.Tipo_Definicion)) {
+      if (p.ID_Ganador === id) r.pg++;
+      else if (p.ID_Ganador && p.ID_Ganador !== '') r.pp++;
+      else r.pe++;
+    } else {
+      r.pe++;
+    }
+  });
+
+  // Los equipos extintos no aparecen en el historial vs rivales (ya no existen).
+  // Excepción: si el equipo que se está mirando es, a su vez, un equipo extinto, no se filtra
+  // (sino su tabla quedaría casi vacía).
+  const esExtinto = (eqId) => ((equiposArr.find(e => String(e.ID_Equipo) === String(eqId)) || {}).Division) === 'Extintos';
+  const equipoActualExtinto = esExtinto(id);
+
+  _rivalesLista = Object.entries(rivalStats)
+    .filter(([rid]) => equipoActualExtinto || !esExtinto(rid))
+    .map(([rid, s]) => ({ rid, nombre: equipos[rid]||rid, ...s, dif: s.pg - s.pp }))
+    .sort((a, b) => b.dif - a.dif);
+  _rivalesPag = 0;
+  renderRivalesPagina();
+}
+
 // ── Historial vs Rivales: se muestra de a 20 rivales por página ──
 const RIVALES_POR_PAG = 20;
 let _rivalesLista = [];
@@ -4615,6 +4708,11 @@ function renderRivalesPagina() {
   const inicio = _rivalesPag * RIVALES_POR_PAG;
 
   document.getElementById('detalle-rivales-count').textContent = total + ' rivales';
+  if (!total) {
+    document.getElementById('tabla-rivales').innerHTML = '<tr class="loading-row"><td colspan="10">No hay partidos con ese filtro.</td></tr>';
+    const pg = document.getElementById('pag-rivales'); pg.style.display = 'none'; pg.innerHTML = '';
+    return;
+  }
   document.getElementById('tabla-rivales').innerHTML = _rivalesLista.slice(inicio, inicio + RIVALES_POR_PAG).map((r, i) => {
     const dg = r.gf - r.gc;
     const difColor = r.dif > 0 ? 'var(--verde)' : (r.dif < 0 ? 'var(--rojo)' : 'var(--amarillo)');
