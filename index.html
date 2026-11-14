@@ -784,6 +784,13 @@ table.tabla-partidos-fija th:nth-child(5),table.tabla-partidos-fija td:nth-child
   .records-mas-btn:hover{border-color:var(--borde-hover);color:var(--texto-1);}
 }
 .camp-año{font-size:10px;color:var(--texto-3);margin-bottom:4px;text-transform:uppercase;letter-spacing:1.2px;font-weight:600}
+/* Campeones: todas las tarjetas con las mismas alturas internas, así la división, el nombre del torneo y el
+   campeón quedan en el mismo renglón en toda la fila (antes la foto del trofeo medía 8px más que el escudo
+   de reemplazo y desplazaba todo lo de abajo). */
+@media(min-width:901px){.campeones-year-grid .camp-foto-wrap{height:208px;min-height:0}}
+.campeones-year-grid .camp-año{height:16px;display:flex;align-items:center;justify-content:center;white-space:nowrap;margin-bottom:4px}
+.campeones-year-grid .camp-nombre{height:2.4em;min-height:0}
+.campeones-year-grid .camp-campeon{height:24px}
 @media(max-width:900px){.campeones-year-grid{grid-template-columns:repeat(2,1fr)!important;gap:14px}.camp-foto{width:120px;height:120px}.camp-foto-wrap{min-height:160px;padding:16px}}
 @media(max-width:600px){.movimiento-grid{grid-template-columns:1fr!important;gap:14px!important;}}
 @media(max-width:500px){.campeones-year-grid{grid-template-columns:repeat(2,1fr)!important;gap:10px}.camp-foto{width:90px;height:90px}.camp-foto-wrap{min-height:130px;padding:12px}.camp-nombre{font-size:14px}}
