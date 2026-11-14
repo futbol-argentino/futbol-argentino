@@ -398,6 +398,12 @@ thead tr{background:var(--fondo-3);border-bottom:1px solid var(--borde);position
 .btn-logout:hover{color:var(--rojo)}
 th{padding:10px 16px;text-align:left;font-family:var(--fuente-cuerpo);font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--texto-3);white-space:nowrap}
 th.center{text-align:center}
+/* Historial vs Rivales: encabezados ordenables */
+th.ord{cursor:pointer;user-select:none;transition:color .15s}
+th.ord:hover{color:var(--texto-1)}
+th.ord.activo{color:var(--celeste)}
+th.ord.activo.desc::after{content:' ▼';font-size:8px}
+th.ord.activo.asc::after{content:' ▲';font-size:8px}
 tbody tr{border-bottom:1px solid var(--borde);transition:background 0.15s,box-shadow 0.15s;cursor:pointer}
 tbody tr.fila-gol-preview{border-bottom:none;cursor:default}
 tbody tr:last-child{border-bottom:none}
@@ -1645,11 +1651,16 @@ header::after{animation:none;height:4px;background:var(--azul)}
             <table style="min-width:700px;">
               <thead>
                 <tr>
-                  <th>#</th><th>Rival</th>
-                  <th style="text-align:center;">PJ</th><th style="text-align:center;">PG</th>
-                  <th style="text-align:center;">PE</th><th style="text-align:center;">PP</th>
-                  <th style="text-align:center;">GF</th><th style="text-align:center;">GC</th>
-                  <th style="text-align:center;">DG</th><th style="text-align:center;">Diferencia</th>
+                  <th class="ord" data-col="rank" onclick="ordenarRivales('rank')" title="Volver al orden por diferencia">#</th>
+                  <th class="ord" data-col="nombre" onclick="ordenarRivales('nombre')" title="Ordenar por nombre">Rival</th>
+                  <th class="ord" data-col="pj" style="text-align:center;" onclick="ordenarRivales('pj')" title="Ordenar por partidos jugados">PJ</th>
+                  <th class="ord" data-col="pg" style="text-align:center;" onclick="ordenarRivales('pg')" title="Ordenar por partidos ganados">PG</th>
+                  <th class="ord" data-col="pe" style="text-align:center;" onclick="ordenarRivales('pe')" title="Ordenar por empates">PE</th>
+                  <th class="ord" data-col="pp" style="text-align:center;" onclick="ordenarRivales('pp')" title="Ordenar por partidos perdidos">PP</th>
+                  <th class="ord" data-col="gf" style="text-align:center;" onclick="ordenarRivales('gf')" title="Ordenar por goles a favor">GF</th>
+                  <th class="ord" data-col="gc" style="text-align:center;" onclick="ordenarRivales('gc')" title="Ordenar por goles en contra">GC</th>
+                  <th class="ord" data-col="dg" style="text-align:center;" onclick="ordenarRivales('dg')" title="Ordenar por diferencia de gol">DG</th>
+                  <th class="ord" data-col="dif" style="text-align:center;" onclick="ordenarRivales('dif')" title="Ordenar por diferencia (PG - PP)">Diferencia</th>
                 </tr>
               </thead>
               <tbody id="tabla-rivales"></tbody>
@@ -4598,6 +4609,7 @@ function _nombreBaseTorneo(comp) {
 function iniciarFiltrosRivales(id, pe) {
   _rivalesEquipoId = id;
   _rivalesPartidos = pe;
+  _rivalesOrden = { col: 'dif', dir: 'desc' };
 
   // Info (división / torneo) de cada temporada
   _rivalesInfoTemp = {};
@@ -4689,9 +4701,42 @@ function recalcularRivales() {
 
   _rivalesLista = Object.entries(rivalStats)
     .filter(([rid]) => equipoActualExtinto || !esExtinto(rid))
-    .map(([rid, s]) => ({ rid, nombre: equipos[rid]||rid, ...s, dif: s.pg - s.pp }))
-    .sort((a, b) => b.dif - a.dif);
+    .map(([rid, s]) => ({ rid, nombre: equipos[rid]||rid, ...s, dg: s.gf - s.gc, dif: s.pg - s.pp }));
   _rivalesPag = 0;
+  aplicarOrdenRivales();
+  renderRivalesPagina();
+}
+
+// ── Orden de la tabla: al tocar un encabezado se ordena por esa columna (1er click: mayor a menor; 2do: invierte) ──
+let _rivalesOrden = { col: 'dif', dir: 'desc' };
+
+function aplicarOrdenRivales() {
+  const { col, dir } = _rivalesOrden;
+  const m = dir === 'asc' ? 1 : -1;
+  _rivalesLista.sort((a, b) => {
+    const c = col === 'nombre' ? a.nombre.localeCompare(b.nombre, 'es') : (a[col] - b[col]);
+    if (c) return c * m;
+    // desempate estable: diferencia, partidos jugados y nombre
+    return (b.dif - a.dif) || (b.pj - a.pj) || a.nombre.localeCompare(b.nombre, 'es');
+  });
+  document.querySelectorAll('th.ord').forEach(th => {
+    const activo = th.dataset.col === col;
+    th.classList.toggle('activo', activo);
+    th.classList.toggle('asc', activo && dir === 'asc');
+    th.classList.toggle('desc', activo && dir === 'desc');
+  });
+}
+
+function ordenarRivales(col) {
+  if (col === 'rank') {
+    _rivalesOrden = { col: 'dif', dir: 'desc' };          // "#": vuelve al orden original
+  } else if (_rivalesOrden.col === col) {
+    _rivalesOrden.dir = _rivalesOrden.dir === 'desc' ? 'asc' : 'desc';
+  } else {
+    _rivalesOrden = { col, dir: col === 'nombre' ? 'asc' : 'desc' };   // números: de mayor a menor; nombre: A→Z
+  }
+  _rivalesPag = 0;
+  aplicarOrdenRivales();
   renderRivalesPagina();
 }
 
