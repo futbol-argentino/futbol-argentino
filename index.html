@@ -746,6 +746,10 @@ table.tabla-partidos-fija th:nth-child(5),table.tabla-partidos-fija td:nth-child
 .camp-div-n{font-size:11px;color:var(--texto-3);font-weight:400}
 .camp-div-acc{background:none;border:none;color:var(--celeste);font-size:12px;font-weight:600;cursor:pointer;padding:6px 4px;font-family:var(--fuente-cuerpo)}
 .camp-div-acc:hover{text-decoration:underline}
+/* Equipos > Por División: grilla de divisiones. En PC, filas de 5 (con 8 divisiones queda 5 + 3, sin una sola suelta);
+   en pantallas más chicas se acomoda sola según el ancho. */
+#divisiones-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:20px}
+@media(min-width:1000px){#divisiones-grid{grid-template-columns:repeat(5,1fr)}}
 .camp-card{background:var(--fondo-2);border:1px solid var(--borde);border-radius:16px;overflow:hidden;cursor:pointer;transition:var(--trans);display:flex;flex-direction:column;position:relative}
 .camp-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(251,191,36,0.06),transparent 50%);opacity:0;transition:opacity 0.3s ease}
 .camp-card:hover{border-color:rgba(251,191,36,0.3);transform:translateY(-4px);box-shadow:0 16px 40px rgba(0,0,0,0.5),0 0 0 1px rgba(251,191,36,0.15)}
@@ -1533,7 +1537,7 @@ header::after{animation:none;height:4px;background:var(--azul)}
           </div>
         </div>
       </div>
-      <div id="divisiones-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:20px;"></div>
+      <div id="divisiones-grid"></div>
       <!-- Vista todos los equipos directamente -->
       <div id="todos-equipos-wrap" style="display:none;">
         <div class="equipos-buscar" style="margin-bottom:16px;">
@@ -11382,8 +11386,10 @@ function setVistaEquipos(modo) {
 
 function renderizarEquiposTodos(filtro) {
   const grid = document.getElementById('equipos-grid-todos');
+  // Los equipos extintos no aparecen en el listado general: solo salen cuando se los busca a mano
+  const hayBusqueda = !!normalizarNombre(filtro || '').trim();
   const lista = equiposArr
-    .filter(e => normalizarNombre(e.Nombre_Equipo).includes(normalizarNombre(filtro)))
+    .filter(e => (hayBusqueda || e.Division !== 'Extintos') && normalizarNombre(e.Nombre_Equipo).includes(normalizarNombre(filtro || '')))
     .sort((a,b) => a.Nombre_Equipo.localeCompare(b.Nombre_Equipo));
   grid.innerHTML = lista.map(e => {
     const n = (e.Nombre_Equipo||'').trim().replace(/^"+|"+$/g,'');
@@ -11551,9 +11557,11 @@ function renderDivisiones() {
   }
 
   // Mostrar en el orden fijo, solo las que tienen equipos en el CSV
-  const divsOrdenadas = DIVISIONES_ORDEN.filter(d => divsEnCSV.has(d));
+  // 'Extintos' no se muestra como tarjeta: esos equipos solo se encuentran buscándolos a mano en "Todos"
+  const DIVISIONES_OCULTAS = ['Extintos'];
+  const divsOrdenadas = DIVISIONES_ORDEN.filter(d => divsEnCSV.has(d) && !DIVISIONES_OCULTAS.includes(d));
   // Agregar las que no están en DIVISIONES_ORDEN al final
-  divsEnCSV.forEach(d => { if (!DIVISIONES_ORDEN.includes(d)) divsOrdenadas.push(d); });
+  divsEnCSV.forEach(d => { if (!DIVISIONES_ORDEN.includes(d) && !DIVISIONES_OCULTAS.includes(d)) divsOrdenadas.push(d); });
 
   grid.innerHTML = divsOrdenadas.map(div => {
     const cfg = DIVISIONES_CONFIG[div] || {};
