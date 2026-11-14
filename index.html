@@ -420,19 +420,21 @@ table.tabla-partidos-fija th:nth-child(3),table.tabla-partidos-fija td:nth-child
 table.tabla-partidos-fija th:nth-child(4),table.tabla-partidos-fija td:nth-child(4){width:28%}
 table.tabla-partidos-fija th:nth-child(5),table.tabla-partidos-fija td:nth-child(5){width:22%}
 
-/* Tablas de partidos del Buscador: mismas columnas, mismas posiciones y simétricas en todas las tarjetas
-   (Fecha 14% · Local 28% · Resultado 16% · Visitante 28% · Torneo 14%) => el resultado queda siempre
-   en el centro exacto y los escudos/nombres alineados entre secciones. Solo escritorio: en celular/tablet
-   se mantiene el layout automático con scroll horizontal. */
-@media(min-width:901px){
+/* Tablas de partidos del Buscador: mismas columnas y posiciones en todas las tarjetas.
+   Fecha y Torneo ocupan el mismo ancho (17%), el Resultado es angosto (84px, igual que en Hoy) y
+   Local / Visitante se reparten el resto por igual => el resultado queda en el centro exacto, pegado
+   a los equipos, y todo alineado entre secciones. Solo escritorio: en celular/tablet se mantiene el
+   layout automático con scroll horizontal. */
+@media(min-width:1000px){
   table.tabla-partidos.tp-centrada{table-layout:fixed;width:100%!important;min-width:0!important}
-  table.tabla-partidos.tp-centrada th:nth-child(1),table.tabla-partidos.tp-centrada td:nth-child(1){width:14%}
-  table.tabla-partidos.tp-centrada th:nth-child(2),table.tabla-partidos.tp-centrada td:nth-child(2){width:28%}
-  table.tabla-partidos.tp-centrada th:nth-child(3),table.tabla-partidos.tp-centrada td:nth-child(3){width:16%}
-  table.tabla-partidos.tp-centrada th:nth-child(4),table.tabla-partidos.tp-centrada td:nth-child(4){width:28%}
-  table.tabla-partidos.tp-centrada th:nth-child(5),table.tabla-partidos.tp-centrada td:nth-child(5){width:14%}
+  table.tabla-partidos.tp-centrada th,table.tabla-partidos.tp-centrada td{box-sizing:border-box}
+  table.tabla-partidos.tp-centrada th:nth-child(1),table.tabla-partidos.tp-centrada td:nth-child(1){width:17%}
+  table.tabla-partidos.tp-centrada th:nth-child(3),table.tabla-partidos.tp-centrada td:nth-child(3){width:84px;padding-left:2px;padding-right:2px}
+  table.tabla-partidos.tp-centrada th:nth-child(5),table.tabla-partidos.tp-centrada td:nth-child(5){width:17%}
+  table.tabla-partidos.tp-centrada th:nth-child(2),table.tabla-partidos.tp-centrada td:nth-child(2),
+  table.tabla-partidos.tp-centrada th:nth-child(4),table.tabla-partidos.tp-centrada td:nth-child(4){width:auto}
   table.tabla-partidos.tp-centrada .td-equipo{max-width:100%}
-  table.tabla-partidos.tp-centrada td.td-resultado{width:auto}
+}
 }
 .res-local{color:var(--verde)}
 .res-empate{color:var(--amarillo)}
@@ -457,6 +459,8 @@ table.tabla-partidos-fija th:nth-child(5),table.tabla-partidos-fija td:nth-child
    grupo/fecha en particular (marcador con más o menos dígitos, con o sin
    flecha de goleadores), tanto dentro de un mismo torneo como entre distintos. */
 .grid-partidos.grid-simetrica{grid-template-columns:1fr 84px 1fr 40px;width:100%}
+/* Hoy: espacio que separa un torneo del siguiente dentro de la misma tarjeta de partidos */
+.hoy-torneo-sep{height:14px;background:var(--fondo);border-top:1px solid var(--borde);border-bottom:1px solid var(--borde)}
 .grid-partidos .gp-celda{display:flex;align-items:center;padding:10px 6px;font-size:13px;font-weight:500;border-bottom:1px solid var(--borde);cursor:pointer;box-sizing:border-box;transition:background 0.15s}
 .grid-partidos .gp-celda:hover{background:rgba(14,165,233,0.04)}
 .grid-partidos .gp-local{gap:8px;white-space:nowrap}
@@ -3822,7 +3826,8 @@ function actualizarVistaHoyFecha() {
 
   const listaGrupos = [...gruposMap.values()].sort((a, b) => a.rango - b.rango || a.torneo.localeCompare(b.torneo, 'es'));
 
-  grupos.innerHTML = listaGrupos.map(g => `
+  grupos.innerHTML = listaGrupos.map((g, gi) => `
+    ${gi > 0 ? '<div class="hoy-torneo-sep"></div>' : ''}
     <div class="hoy-fecha-torneo-header" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:12px 16px;background:var(--fondo-3);border-bottom:1px solid var(--borde);">
       <span></span>
       <span style="font-size:14px;font-weight:700;color:var(--texto-1);text-align:center;white-space:nowrap;">🏆 ${g.torneo}</span>
@@ -12493,7 +12498,8 @@ function renderHoy() {
           <div class="tabla-titulo">${titulo}</div>
           <div class="tabla-count">${partidosFecha.length.toLocaleString()} partido${partidosFecha.length === 1 ? '' : 's'}</div>
         </div>
-        ${listaGrupos.map(g => `
+        ${listaGrupos.map((g, gi) => `
+          ${gi > 0 ? '<div class="hoy-torneo-sep"></div>' : ''}
           <div class="hoy-fecha-torneo-header" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:12px 16px;background:var(--fondo-3);border-bottom:1px solid var(--borde);">
             <span></span>
             <span style="font-size:14px;font-weight:700;color:var(--texto-1);text-align:center;white-space:nowrap;">🏆 ${g.torneo}</span>
