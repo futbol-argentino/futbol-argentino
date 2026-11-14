@@ -459,6 +459,13 @@ table.tabla-partidos-fija th:nth-child(5),table.tabla-partidos-fija td:nth-child
    grupo/fecha en particular (marcador con más o menos dígitos, con o sin
    flecha de goleadores), tanto dentro de un mismo torneo como entre distintos. */
 .grid-partidos.grid-simetrica{grid-template-columns:1fr 84px 1fr 40px;width:100%}
+/* Hoy: el título del torneo usa las MISMAS columnas que la grilla de partidos (1fr 84px 1fr 40px),
+   así su centro coincide exactamente con el del resultado. La copa va aparte (::before, absoluta, a la
+   izquierda del nombre) para que NO cuente en el centrado: se centra solo el texto del nombre. */
+.hoy-fecha-torneo-header{display:grid!important;grid-template-columns:1fr 84px 1fr 40px!important;align-items:center;gap:0!important;padding:12px 0!important;background:var(--fondo-3);border-bottom:1px solid var(--borde)}
+.hoy-fecha-torneo-header .hoy-torneo-nombre{grid-column:2;justify-self:center;position:relative;white-space:nowrap;font-size:14px;font-weight:700;color:var(--texto-1)}
+.hoy-fecha-torneo-header .hoy-torneo-nombre::before{content:'🏆';position:absolute;right:100%;margin-right:6px;font-weight:400}
+.hoy-fecha-torneo-header .hoy-torneo-count{grid-column:3 / 5;justify-self:end;margin-right:16px;font-size:11px;color:var(--texto-3);background:var(--fondo-4);padding:2px 8px;border-radius:10px;white-space:nowrap}
 /* Hoy: espacio que separa un torneo del siguiente dentro de la misma tarjeta de partidos */
 .hoy-torneo-sep{height:14px;background:var(--fondo);border-top:1px solid var(--borde);border-bottom:1px solid var(--borde)}
 .grid-partidos .gp-celda{display:flex;align-items:center;padding:10px 6px;font-size:13px;font-weight:500;border-bottom:1px solid var(--borde);cursor:pointer;box-sizing:border-box;transition:background 0.15s}
@@ -3828,10 +3835,9 @@ function actualizarVistaHoyFecha() {
 
   grupos.innerHTML = listaGrupos.map((g, gi) => `
     ${gi > 0 ? '<div class="hoy-torneo-sep"></div>' : ''}
-    <div class="hoy-fecha-torneo-header" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:12px 16px;background:var(--fondo-3);border-bottom:1px solid var(--borde);">
-      <span></span>
-      <span style="font-size:14px;font-weight:700;color:var(--texto-1);text-align:center;white-space:nowrap;">🏆 ${g.torneo}</span>
-      <span style="justify-self:end;font-size:11px;color:var(--texto-3);background:var(--fondo-4);padding:2px 8px;border-radius:10px;">${g.partidos.length} partido${g.partidos.length === 1 ? '' : 's'}</span>
+    <div class="hoy-fecha-torneo-header">
+      <span class="hoy-torneo-nombre">${g.torneo}</span>
+      <span class="hoy-torneo-count">${g.partidos.length} partido${g.partidos.length === 1 ? '' : 's'}</span>
     </div>
     <div class="grid-simetrica-scroll"><div class="grid-partidos grid-simetrica">${g.partidos.map(filaPartidoGrid).join('')}</div></div>
   `).join('');
@@ -12500,11 +12506,10 @@ function renderHoy() {
         </div>
         ${listaGrupos.map((g, gi) => `
           ${gi > 0 ? '<div class="hoy-torneo-sep"></div>' : ''}
-          <div class="hoy-fecha-torneo-header" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:12px 16px;background:var(--fondo-3);border-bottom:1px solid var(--borde);">
-            <span></span>
-            <span style="font-size:14px;font-weight:700;color:var(--texto-1);text-align:center;white-space:nowrap;">🏆 ${g.torneo}</span>
-            <span style="justify-self:end;font-size:11px;color:var(--texto-3);background:var(--fondo-4);padding:2px 8px;border-radius:10px;">${g.partidos.length} partido${g.partidos.length === 1 ? '' : 's'}</span>
-          </div>
+          <div class="hoy-fecha-torneo-header">
+      <span class="hoy-torneo-nombre">${g.torneo}</span>
+      <span class="hoy-torneo-count">${g.partidos.length} partido${g.partidos.length === 1 ? '' : 's'}</span>
+    </div>
           <div class="grid-simetrica-scroll"><div class="grid-partidos grid-simetrica">${g.partidos.map(filaPartidoGrid).join('')}</div></div>
         `).join('')}
       </div>`;
