@@ -398,6 +398,15 @@ thead tr{background:var(--fondo-3);border-bottom:1px solid var(--borde);position
 .btn-logout:hover{color:var(--rojo)}
 th{padding:10px 16px;text-align:left;font-family:var(--fuente-cuerpo);font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--texto-3);white-space:nowrap}
 th.center{text-align:center}
+/* Historial vs Rivales: columnas de ancho fijo, para que la tabla NO se corra hacia los costados al reordenar
+   (con ancho automático cada columna se ajustaba a los números que tuviera en ese momento). */
+table.tabla-rivales-fija{table-layout:fixed;width:100%;min-width:860px}
+table.tabla-rivales-fija th:nth-child(1),table.tabla-rivales-fija td:nth-child(1){width:56px}
+table.tabla-rivales-fija th:nth-child(n+3):nth-child(-n+9),table.tabla-rivales-fija td:nth-child(n+3):nth-child(-n+9){width:80px;padding-left:6px;padding-right:6px}
+table.tabla-rivales-fija th:nth-child(10),table.tabla-rivales-fija td:nth-child(10){width:120px;padding-left:6px;padding-right:6px}
+table.tabla-rivales-fija td:nth-child(2){overflow:hidden;white-space:nowrap}
+table.tabla-rivales-fija th{overflow:hidden;text-overflow:clip}
+@media(max-width:600px){.tabla-scroll table.tabla-rivales-fija{width:1000px!important;min-width:1000px!important}}
 /* Historial vs Rivales: encabezados ordenables */
 th.ord{cursor:pointer;user-select:none;transition:color .15s}
 th.ord:hover{color:var(--texto-1)}
@@ -1648,7 +1657,7 @@ header::after{animation:none;height:4px;background:var(--azul)}
             </div>
           </div>
           <div class="tabla-scroll">
-            <table style="min-width:700px;">
+            <table class="tabla-rivales-fija">
               <thead>
                 <tr>
                   <th class="ord" data-col="rank" onclick="ordenarRivales('rank')" title="Volver al orden por diferencia">#</th>
