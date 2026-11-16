@@ -407,6 +407,8 @@ table.tabla-rivales-fija th:nth-child(10),table.tabla-rivales-fija td:nth-child(
 table.tabla-rivales-fija td:nth-child(2){overflow:hidden;white-space:nowrap}
 table.tabla-rivales-fija th{overflow:hidden;text-overflow:clip}
 @media(max-width:600px){.tabla-scroll table.tabla-rivales-fija{width:1000px!important;min-width:1000px!important}}
+/* Historial vs Rivales: filas clickeables (filtran la lista de partidos por ese rival) */
+tr.rival-fila{cursor:pointer}
 /* Historial vs Rivales: encabezados ordenables */
 th.ord{cursor:pointer;user-select:none;transition:color .15s}
 th.ord:hover{color:var(--texto-1)}
@@ -1705,7 +1707,7 @@ header::after{animation:none;height:4px;background:var(--azul)}
       </div>
 
       <!-- Filtro rival -->
-      <div class="detalle-filtro">
+      <div class="detalle-filtro" id="detalle-filtro-wrap">
         <span class="detalle-filtro-label">Filtrar rival:</span>
         <select id="detalle-filtro-rival" onchange="filtrarDetalle()">
           <option value="">Todos los rivales</option>
@@ -4519,6 +4521,18 @@ function actualizarSelectResultado(equipoId, equipoNombre) {
   sel.value = valorActual;
 }
 
+// Al tocar un rival en el Historial vs Rivales, se filtra la lista de partidos del equipo contra ese rival
+// (es lo mismo que elegirlo a mano en "Filtrar rival") y se baja hasta ahí.
+function verPartidosContraRival(rid) {
+  const sel = document.getElementById('detalle-filtro-rival');
+  if (!sel || ![...sel.options].some(o => o.value === String(rid))) return;
+  sel.value = String(rid);
+  document.getElementById('detalle-filtro-resultado').value = '';   // el filtro de resultado previo podría no aplicar
+  filtrarDetalle();
+  const dest = document.getElementById('detalle-filtro-wrap');
+  if (dest) dest.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 function filtrarDetalle() {
   const id = equipoDetalleID;
   const rival = document.getElementById('detalle-filtro-rival').value;
@@ -4800,7 +4814,7 @@ function renderRivalesPagina() {
     const difColor = r.dif > 0 ? 'var(--verde)' : (r.dif < 0 ? 'var(--rojo)' : 'var(--amarillo)');
     const difTxt = r.dif > 0 ? `+${r.dif}` : `${r.dif}`;
     const esc = ESCUDOS[r.nombre] ? `<img src="${ESCUDOS[r.nombre]}" style="width:20px;height:20px;object-fit:contain;margin-right:6px;" onerror="this.style.display='none'">` : '';
-    return `<tr>
+    return `<tr class="rival-fila" onclick="verPartidosContraRival('${r.rid}')" title="Ver los partidos contra ${String(r.nombre).replace(/"/g,'&quot;')}">
       <td style="color:var(--texto-2);font-size:13px;">${inicio + i + 1}</td>
       <td><div style="display:flex;align-items:center;">${renderCambioPosicion(r.cambio)}${esc}${r.nombre}</div></td>
       <td style="text-align:center;font-weight:600;">${r.pj}</td>
