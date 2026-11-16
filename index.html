@@ -4669,22 +4669,17 @@ function cambioFiltroRivalesDivision() {
   recalcularRivales();
 }
 
-function recalcularRivales() {
-  const id = _rivalesEquipoId;
-  const divSel = (document.getElementById('rivales-filtro-division') || {}).value || '';
-  const torSel = (document.getElementById('rivales-filtro-torneo') || {}).value || '';
+// Las flechitas ▲/▼ de la tabla de rivales cuentan cuántos puestos subió o bajó cada rival por los partidos jugados
+// A PARTIR de este ID (inclusive: el partido con este ID es el primero que cuenta). Se compara la tabla con TODOS los
+// partidos contra la tabla con solo los partidos ANTERIORES a este ID. Cada columna tiene su propia posición
+// (la de PJ es distinta de la de PG, etc.). Para "reiniciar" el punto de comparación, alcanza con subir este número.
+const ID_PARTIDO_CORTE_RIVALES = 50829;
+let _rivalesAntesLista = [];
 
-  const filtrados = _rivalesPartidos.filter(p => {
-    if (!divSel && !torSel) return true;
-    const inf = _rivalesInfoTemp[p.ID_Temporada];
-    if (!inf) return false;
-    if (divSel && inf.division !== divSel) return false;
-    if (torSel && (inf.esPrimera || inf.torneo !== torSel)) return false;
-    return true;
-  });
-
+// Estadísticas por rival (PJ, PG, PE, PP, GF, GC, DG, Diferencia) para una lista de partidos del equipo `id`
+function armarListaRivales(listaPartidos, id) {
   const rivalStats = {};
-  filtrados.forEach(p => {
+  listaPartidos.forEach(p => {
     const rivalId = p.Local_ID === id ? p.Visitante_ID : p.Local_ID;
     if (!rivalStats[rivalId]) rivalStats[rivalId] = { pj:0, pg:0, pe:0, pp:0, gf:0, gc:0 };
     const r = rivalStats[rivalId];
@@ -4708,9 +4703,29 @@ function recalcularRivales() {
   const esExtinto = (eqId) => ((equiposArr.find(e => String(e.ID_Equipo) === String(eqId)) || {}).Division) === 'Extintos';
   const equipoActualExtinto = esExtinto(id);
 
-  _rivalesLista = Object.entries(rivalStats)
+  return Object.entries(rivalStats)
     .filter(([rid]) => equipoActualExtinto || !esExtinto(rid))
-    .map(([rid, s]) => ({ rid, nombre: equipos[rid]||rid, ...s, dg: s.gf - s.gc, dif: s.pg - s.pp }));
+    .map(([rid, s]) => ({ rid, nombre: equipos[rid]||rid, ...s, dg: s.gf - s.gc, dif: s.pg - s.pp, cambio: 0 }));
+}
+
+function recalcularRivales() {
+  const id = _rivalesEquipoId;
+  const divSel = (document.getElementById('rivales-filtro-division') || {}).value || '';
+  const torSel = (document.getElementById('rivales-filtro-torneo') || {}).value || '';
+
+  const filtrados = _rivalesPartidos.filter(p => {
+    if (!divSel && !torSel) return true;
+    const inf = _rivalesInfoTemp[p.ID_Temporada];
+    if (!inf) return false;
+    if (divSel && inf.division !== divSel) return false;
+    if (torSel && (inf.esPrimera || inf.torneo !== torSel)) return false;
+    return true;
+  });
+
+  // Lista "ahora" (todos los partidos) y lista "antes" (solo los ANTERIORES a ID_PARTIDO_CORTE_RIVALES),
+  // con los mismos filtros de División / Torneo, para poder comparar posiciones.
+  _rivalesLista = armarListaRivales(filtrados, id);
+  _rivalesAntesLista = armarListaRivales(filtrados.filter(p => Number(p.ID_Partido) < ID_PARTIDO_CORTE_RIVALES), id);
   _rivalesPag = 0;
   aplicarOrdenRivales();
   renderRivalesPagina();
@@ -4719,15 +4734,28 @@ function recalcularRivales() {
 // ── Orden de la tabla: al tocar un encabezado se ordena por esa columna (1er click: mayor a menor; 2do: invierte) ──
 let _rivalesOrden = { col: 'dif', dir: 'desc' };
 
-function aplicarOrdenRivales() {
+// Comparador según la columna y el sentido elegidos (con desempate: diferencia, partidos jugados y nombre)
+function compararRivales(a, b) {
   const { col, dir } = _rivalesOrden;
   const m = dir === 'asc' ? 1 : -1;
-  _rivalesLista.sort((a, b) => {
-    const c = col === 'nombre' ? a.nombre.localeCompare(b.nombre, 'es') : (a[col] - b[col]);
-    if (c) return c * m;
-    // desempate estable: diferencia, partidos jugados y nombre
-    return (b.dif - a.dif) || (b.pj - a.pj) || a.nombre.localeCompare(b.nombre, 'es');
+  const c = col === 'nombre' ? a.nombre.localeCompare(b.nombre, 'es') : (a[col] - b[col]);
+  if (c) return c * m;
+  return (b.dif - a.dif) || (b.pj - a.pj) || a.nombre.localeCompare(b.nombre, 'es');
+}
+
+function aplicarOrdenRivales() {
+  const { col, dir } = _rivalesOrden;
+  _rivalesLista.sort(compararRivales);
+
+  // Cambio de posición: puesto que tenía en esta misma columna "antes" menos el puesto actual.
+  // Es independiente para cada columna (y respeta el sentido, así la flecha siempre coincide con el # que se ve).
+  // Sin flecha si no tenía posición previa (rival nuevo) o si se ordena por nombre.
+  const posAntes = {};
+  _rivalesAntesLista.slice().sort(compararRivales).forEach((r, i) => { posAntes[r.rid] = i + 1; });
+  _rivalesLista.forEach((r, i) => {
+    r.cambio = (col !== 'nombre' && posAntes[r.rid]) ? posAntes[r.rid] - (i + 1) : 0;
   });
+
   document.querySelectorAll('th.ord').forEach(th => {
     const activo = th.dataset.col === col;
     th.classList.toggle('activo', activo);
@@ -4774,7 +4802,7 @@ function renderRivalesPagina() {
     const esc = ESCUDOS[r.nombre] ? `<img src="${ESCUDOS[r.nombre]}" style="width:20px;height:20px;object-fit:contain;margin-right:6px;" onerror="this.style.display='none'">` : '';
     return `<tr>
       <td style="color:var(--texto-2);font-size:13px;">${inicio + i + 1}</td>
-      <td><div style="display:flex;align-items:center;">${esc}${r.nombre}</div></td>
+      <td><div style="display:flex;align-items:center;">${renderCambioPosicion(r.cambio)}${esc}${r.nombre}</div></td>
       <td style="text-align:center;font-weight:600;">${r.pj}</td>
       <td style="text-align:center;color:var(--verde);">${r.pg}</td>
       <td style="text-align:center;color:var(--amarillo);">${r.pe}</td>
