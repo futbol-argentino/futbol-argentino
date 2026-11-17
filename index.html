@@ -9630,22 +9630,111 @@ function renderEquiposTorneo(idTemporada) {
     return;
   }
 
-  cont.innerHTML = `
+  const tarjeta = (e) => {
+    const esc = ESCUDOS[e.nombre]
+      ? `<img src="${ESCUDOS[e.nombre]}" class="equipo-card-escudo" alt="${e.nombre}" loading="lazy" onerror="this.style.display='none'">`
+      : `<div style="width:56px;height:56px;background:var(--fondo-3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;">⚽</div>`;
+    return `<div class="equipo-card" ${e.id ? `onclick="irAEquipoDesdeTorneo('${e.id}')"` : 'style="cursor:default;"'}>
+          ${esc}
+          <div class="equipo-card-nombre">${e.nombre}</div>
+        </div>`;
+  };
+
+  // En las copas nacionales (Copa Argentina, etc.) los equipos se separan por la división en la que estaban ESE año
+  const temp = temporadasArr.find(t => t.ID_Temporada == idTemporada);
+  const divTemp = String((temp && temp.Division) || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+  const esCopaNacional = /copa/.test(divTemp) && !/internacional/.test(divTemp);
+  const grupos = esCopaNacional ? agruparEquiposPorDivisionDelAnio(items, temp, norm) : null;
+
+  if (!grupos) {
+    cont.innerHTML = `
     <div class="tabla-header" style="margin-bottom:14px;">
       <div class="tabla-titulo">🛡️ Equipos participantes</div>
       <div class="tabla-count">${items.length} equipos</div>
     </div>
     <div class="equipos-grid">
-      ${items.map(e => {
-        const esc = ESCUDOS[e.nombre]
-          ? `<img src="${ESCUDOS[e.nombre]}" class="equipo-card-escudo" alt="${e.nombre}" loading="lazy" onerror="this.style.display='none'">`
-          : `<div style="width:56px;height:56px;background:var(--fondo-3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;">⚽</div>`;
-        return `<div class="equipo-card" ${e.id ? `onclick="irAEquipoDesdeTorneo('${e.id}')"` : 'style="cursor:default;"'}>
-          ${esc}
-          <div class="equipo-card-nombre">${e.nombre}</div>
-        </div>`;
-      }).join('')}
+      ${items.map(tarjeta).join('')}
     </div>`;
+    return;
+  }
+
+  cont.innerHTML = `
+    <div class="tabla-header" style="margin-bottom:6px;">
+      <div class="tabla-titulo">🛡️ Equipos participantes</div>
+      <div class="tabla-count">${items.length} equipos</div>
+    </div>
+    ${grupos.map(g => `
+      <div class="tabla-header" style="margin:22px 0 14px;">
+        <div class="tabla-titulo" style="font-size:16px;">${g.titulo}</div>
+        <div class="tabla-count">${g.items.length} ${g.items.length === 1 ? 'equipo' : 'equipos'}</div>
+      </div>
+      <div class="equipos-grid">
+        ${g.items.map(tarjeta).join('')}
+      </div>`).join('')}`;
+}
+
+// Agrupa los equipos de una copa por la división en la que jugaban ese año, buscándola en los demás torneos de liga
+// del mismo año (Primera, Primera Nacional, Federal A, etc.). Devuelve [{ titulo, rango, items }] ordenado de la
+// división más alta a la más baja. El título es "Primera División" para Primera y, en el resto, el NOMBRE del torneo.
+function agruparEquiposPorDivisionDelAnio(items, temp, norm) {
+  if (!temp) return null;
+  const quitarAcentos = (x) => String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+  const anio = String(obtenerAnioTemporada(temp));
+
+  // Torneos de liga (no copas) del mismo año
+  const ligas = temporadasArr.filter(tt => {
+    if (tt.ID_Temporada == temp.ID_Temporada || !tt.Division) return false;
+    const d = quitarAcentos(tt.Division);
+    if (/copa/.test(d) || d === 'extintos') return false;
+    const a = (tt.Año && parseInt(tt.Año) > 0) ? parseInt(tt.Año) : obtenerAnioTemporada(tt);
+    return String(a) === anio;
+  });
+  if (!ligas.length) return null;
+
+  // Qué equipos jugaron cada torneo de liga (por partidos y por tablas de posiciones)
+  const info = {};
+  ligas.forEach(tt => { info[tt.ID_Temporada] = { t: tt, ids: new Set(), nombres: new Set(), rango: rangoDivisionCampeones(tt) }; });
+  partidos.forEach(p => {
+    const inf = info[p.ID_Temporada];
+    if (!inf) return;
+    if (p.Local_ID) inf.ids.add(String(p.Local_ID));
+    if (p.Visitante_ID) inf.ids.add(String(p.Visitante_ID));
+  });
+  posicionesData.forEach(r => {
+    const inf = info[r.ID_Temporada];
+    if (!inf) return;
+    const { nombre } = parsearClasifCodes(r.Equipo || '');
+    if (nombre) inf.nombres.add(norm(nombre));
+  });
+  const infos = Object.values(info);
+
+  // Nombre del torneo sin año ni "Apertura/Clausura" (ej: "Primera Nacional 2025" -> "Primera Nacional")
+  const nombreLindo = (tt) => _nombreBaseTorneo(tt.Competencia)
+    .replace(/\b(apertura|clausura)\b/gi, '').replace(/\s{2,}/g,' ').trim() || tt.Division;
+
+  const grupos = {};
+  items.forEach(e => {
+    // La división "más alta" en la que figura ese año
+    let mejor = null;
+    infos.forEach(inf => {
+      if ((e.id && inf.ids.has(String(e.id))) || inf.nombres.has(norm(e.nombre))) {
+        if (!mejor || inf.rango < mejor.rango) mejor = inf;
+      }
+    });
+    const clave = mejor ? quitarAcentos(mejor.t.Division) : '__otros__';
+    if (!grupos[clave]) grupos[clave] = { rango: mejor ? mejor.rango : 9999, nombres: {}, items: [] };
+    const g = grupos[clave];
+    if (mejor) { const n = nombreLindo(mejor.t); g.nombres[n] = (g.nombres[n] || 0) + 1; }
+    g.items.push(e);
+  });
+
+  return Object.entries(grupos).map(([clave, g]) => {
+    let titulo;
+    if (clave === '__otros__') titulo = 'Otros equipos';
+    else if (clave === 'primera division') titulo = 'Primera División';
+    else titulo = Object.entries(g.nombres).sort((a, b) => b[1] - a[1])[0][0];
+    return { titulo, rango: g.rango, items: g.items };
+  }).sort((a, b) => a.rango - b.rango);
 }
 
 function irAEquipoDesdeTorneo(equipoId) {
@@ -13075,14 +13164,12 @@ function renderLineaTiempoEquipo(equipoId) {
 
     if (!porAnio[anio]) porAnio[anio] = { anio, ligas: new Map(), copas: new Map(), campeon:false, subcampeon:false, ascenso:false, descenso:false };
     const reg = porAnio[anio];
-    // Primera División se muestra como "Primera Division" (ya se sabe cuál es el torneo). En cambio, de Segunda División
-    // para abajo (Segunda, Tercera, Cuarta, Quinta...) y en las copas (nacionales o internacionales) se muestra el
-    // NOMBRE del torneo que jugó, no la división.
+    // Se muestra el NOMBRE de cada torneo que jugó en el año (también los de Primera División, para saber de cuál salió
+    // campeón). Primero los torneos de liga y después las copas.
     if (t.Division) {
       const divN = String(t.Division).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
-      const esPrimera = divN === 'primera division';
       const esCopa = /copa/.test(divN);
-      const etiqueta = esPrimera ? t.Division : (t.Competencia || t.Division);
+      const etiqueta = t.Competencia || t.Division;
       // Mapa nombre -> ¿lo ganó? (si hay varios torneos con la misma etiqueta en el año, alcanza con que haya ganado uno)
       const mapa = esCopa ? reg.copas : reg.ligas;
       mapa.set(etiqueta, (mapa.get(etiqueta) || false) || fueCampeon);
@@ -13128,12 +13215,16 @@ function renderLineaTiempoEquipo(equipoId) {
       </div>`;
     }
 
-    // Torneos del año: los que ganó se marcan con el mismo dorado del número del año
-    const torneosHTML = [...reg.ligas, ...reg.copas]
-      .map(([nombre, ganado]) => ganado
-        ? `<span style="color:var(--oro);font-weight:600;">${nombre}</span>`
-        : `<span>${nombre}</span>`)
-      .join('<span style="color:var(--texto-3);"> · </span>') || '—';
+    // Torneos del año: los que ganó se marcan con el mismo dorado del número del año.
+    // Con 1 o 2 torneos van en una sola línea separados por "·"; con 3 o más, uno debajo del otro.
+    const listaTorneos = [...reg.ligas, ...reg.copas];
+    const spanTorneo = ([nombre, ganado]) => ganado
+      ? `<span style="color:var(--oro);font-weight:600;">${nombre}</span>`
+      : `<span>${nombre}</span>`;
+    const torneosHTML = !listaTorneos.length ? '—'
+      : listaTorneos.length >= 3
+        ? `<div style="display:flex;flex-direction:column;gap:3px;margin-top:2px;">${listaTorneos.map(x => `<div>${spanTorneo(x)}</div>`).join('')}</div>`
+        : listaTorneos.map(spanTorneo).join('<span style="color:var(--texto-3);"> · </span>');
 
     return `${hueco}<div style="display:flex;gap:14px;">
       <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;">
