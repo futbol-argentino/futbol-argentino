@@ -13073,7 +13073,7 @@ function renderLineaTiempoEquipo(equipoId) {
     const fueAscenso = listaAscensos.includes(nmEqNorm);
     const fueDescenso = !fueAscenso && listaDescensos.includes(nmEqNorm);
 
-    if (!porAnio[anio]) porAnio[anio] = { anio, ligas: new Set(), copas: new Set(), campeon:false, subcampeon:false, ascenso:false, descenso:false };
+    if (!porAnio[anio]) porAnio[anio] = { anio, ligas: new Map(), copas: new Map(), campeon:false, subcampeon:false, ascenso:false, descenso:false };
     const reg = porAnio[anio];
     // Primera División se muestra como "Primera Division" (ya se sabe cuál es el torneo). En cambio, de Segunda División
     // para abajo (Segunda, Tercera, Cuarta, Quinta...) y en las copas (nacionales o internacionales) se muestra el
@@ -13083,7 +13083,9 @@ function renderLineaTiempoEquipo(equipoId) {
       const esPrimera = divN === 'primera division';
       const esCopa = /copa/.test(divN);
       const etiqueta = esPrimera ? t.Division : (t.Competencia || t.Division);
-      (esCopa ? reg.copas : reg.ligas).add(etiqueta);
+      // Mapa nombre -> ¿lo ganó? (si hay varios torneos con la misma etiqueta en el año, alcanza con que haya ganado uno)
+      const mapa = esCopa ? reg.copas : reg.ligas;
+      mapa.set(etiqueta, (mapa.get(etiqueta) || false) || fueCampeon);
     }
     reg.campeon    = reg.campeon    || fueCampeon;
     reg.subcampeon = reg.subcampeon || fueSubcampeon;
@@ -13126,6 +13128,13 @@ function renderLineaTiempoEquipo(equipoId) {
       </div>`;
     }
 
+    // Torneos del año: los que ganó se marcan con el mismo dorado del número del año
+    const torneosHTML = [...reg.ligas, ...reg.copas]
+      .map(([nombre, ganado]) => ganado
+        ? `<span style="color:var(--oro);font-weight:600;">${nombre}</span>`
+        : `<span>${nombre}</span>`)
+      .join('<span style="color:var(--texto-3);"> · </span>') || '—';
+
     return `${hueco}<div style="display:flex;gap:14px;">
       <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;">
         <div style="width:40px;height:40px;border-radius:50%;background:${dotBg};border:2px solid ${dotColor};display:flex;align-items:center;justify-content:center;font-size:16px;">${icono}</div>
@@ -13137,7 +13146,7 @@ function renderLineaTiempoEquipo(equipoId) {
           ${etiqueta ? `<span style="font-size:10px;background:${dotBg};color:${dotColor};padding:2px 7px;border-radius:5px;border:1px solid ${dotColor};font-weight:700;">${etiqueta}</span>` : ''}
           ${extraBadges.join('')}
         </div>
-        <div style="font-size:13px;color:var(--texto-2);">${[...reg.ligas, ...reg.copas].join(' · ') || '—'}</div>
+        <div style="font-size:13px;color:var(--texto-2);">${torneosHTML}</div>
       </div>
     </div>`;
   }).join('');
