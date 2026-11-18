@@ -13172,7 +13172,10 @@ function renderLineaTiempoEquipo(equipoId) {
       const etiqueta = t.Competencia || t.Division;
       // Mapa nombre -> ¿lo ganó? (si hay varios torneos con la misma etiqueta en el año, alcanza con que haya ganado uno)
       const mapa = esCopa ? reg.copas : reg.ligas;
-      mapa.set(etiqueta, (mapa.get(etiqueta) || false) || fueCampeon);
+      // Resultado en ese torneo: 'oro' (campeón), 'plata' (subcampeón) o false. El campeón tiene prioridad.
+      const prev = mapa.get(etiqueta) || false;
+      const res = fueCampeon ? 'oro' : (fueSubcampeon ? (prev === 'oro' ? 'oro' : 'plata') : prev);
+      mapa.set(etiqueta, res);
     }
     reg.campeon    = reg.campeon    || fueCampeon;
     reg.subcampeon = reg.subcampeon || fueSubcampeon;
@@ -13215,12 +13218,14 @@ function renderLineaTiempoEquipo(equipoId) {
       </div>`;
     }
 
-    // Torneos del año: los que ganó se marcan con el mismo dorado del número del año.
+    // Torneos del año: los que ganó se marcan en dorado (el mismo del número del año) y en los que fue subcampeón, en plateado.
     // Con 1 o 2 torneos van en una sola línea separados por "·"; con 3 o más, uno debajo del otro.
     const listaTorneos = [...reg.ligas, ...reg.copas];
-    const spanTorneo = ([nombre, ganado]) => ganado
+    const spanTorneo = ([nombre, res]) => res === 'oro'
       ? `<span style="color:var(--oro);font-weight:600;">${nombre}</span>`
-      : `<span>${nombre}</span>`;
+      : (res === 'plata'
+        ? `<span style="color:#C0C0C0;font-weight:600;">${nombre}</span>`
+        : `<span>${nombre}</span>`);
     const torneosHTML = !listaTorneos.length ? '—'
       : listaTorneos.length >= 3
         ? `<div style="display:flex;flex-direction:column;gap:3px;margin-top:2px;">${listaTorneos.map(x => `<div>${spanTorneo(x)}</div>`).join('')}</div>`
