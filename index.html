@@ -13224,7 +13224,7 @@ function renderLineaTiempoEquipo(equipoId) {
     const spanTorneo = ([nombre, res]) => res === 'oro'
       ? `<span style="color:var(--oro);font-weight:600;">${nombre}</span>`
       : (res === 'plata'
-        ? `<span style="color:#C0C0C0;font-weight:600;">${nombre}</span>`
+        ? `<span style="display:inline-block;color:#AEBBCB;font-weight:700;background:rgba(174,187,203,0.16);border:1px solid rgba(174,187,203,0.55);border-radius:5px;padding:0 6px;line-height:1.5;">${nombre}</span>`
         : `<span>${nombre}</span>`);
     const torneosHTML = !listaTorneos.length ? '—'
       : listaTorneos.length >= 3
