@@ -9929,8 +9929,34 @@ function verTorneo(idTemporada) {
       return a.localeCompare(b);
     });
 
-    container.innerHTML = gruposOrdenados.map(([grupoNombre, grupo], gi) => {
-      const gid = 'g_' + idTemporada + '_' + gi;
+    const quitarAc = (x) => String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+
+    // A qué FASE pertenece cada acordeón: "Fecha N" -> Fase Regular (o Primera Fase); "Fase X — Fecha N" -> Fase X;
+    // "Fase Campeonato/Revalida ..." (rondas eliminatorias de esas fases) -> esa fase; el resto -> Fase Final.
+    const seccionDe = (nombre, grupo) => {
+      if (/^Fecha \d+$/.test(nombre)) {
+        const t = grupo.fase === 'Primera Fase' ? 'Primera Fase' : 'Fase Regular';
+        return { key: '__regular__', titulo: t, base: '', rank: -1 };
+      }
+      let m = nombre.match(/^(.+?) — Fecha \d+$/);
+      if (!m) m = nombre.match(/^(Fase (?:Campeonato|Revalid[aá]))\b/i);
+      if (m) {
+        const idx = faseOrderLower.indexOf(m[1].toLowerCase());
+        return { key: quitarAc(m[1]), titulo: m[1], base: m[1], rank: idx === -1 ? 500 : idx };
+      }
+      return { key: '__final__', titulo: 'Fase Final', base: '', rank: 9000 };
+    };
+
+    // Etiqueta corta del acordeón dentro de su sección (el título de la fase ya la explica)
+    const etiquetaGrupo = (nombre, base) => {
+      if (!base || !nombre.toLowerCase().startsWith(base.toLowerCase())) return nombre;
+      const resto = nombre.slice(base.length).replace(/^\s*[—-]\s*/, '').trim();
+      return resto || nombre;
+    };
+
+    let contGid = 0;
+    const acordeon = (grupoNombre, grupo, etiqueta) => {
+      const gid = 'g_' + idTemporada + '_' + (contGid++);
       const porFecha = {};
       grupo.partidos.forEach(p => {
         const f = p.Fecha ? p.Fecha.split('T')[0] : 'Sin fecha';
@@ -9939,18 +9965,16 @@ function verTorneo(idTemporada) {
       });
 
       const fechasHTML = Object.entries(porFecha).map(([fecha, pFecha]) => {
-        const filas = pFecha.map(p => {
-          return filaPartidoGrid(p);
-        }).join('');
-        const diaFormateado = formatearFechaDia(fecha);
-        return `<div class="gp-dia-header">${diaFormateado}</div>${filas}`;
+        const filas = pFecha.map(p => filaPartidoGrid(p)).join('');
+        return `<div class="gp-dia-header">${formatearFechaDia(fecha)}</div>${filas}`;
       }).join('');
 
-      const esFinal = !grupoNombre.startsWith('Fecha');
+      // En dorado las rondas eliminatorias; las fechas numeradas, en el color normal
+      const esFinal = !/^(Fecha )?\d+$/.test(etiqueta) && !/^Fecha \d+$/.test(etiqueta);
       return `<div style="margin-bottom:10px;border:1px solid var(--borde);border-radius:12px;overflow:hidden;">
         <div onclick="toggleGrupo('${gid}')" style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:var(--fondo-3);cursor:pointer;user-select:none;">
           <div style="display:flex;align-items:center;gap:10px;">
-            <span style="font-family:var(--fuente-titulo);font-size:17px;letter-spacing:1px;color:${esFinal ? 'var(--oro)' : 'var(--texto-1)'};">${grupoNombre}</span>
+            <span style="font-family:var(--fuente-titulo);font-size:17px;letter-spacing:1px;color:${esFinal ? 'var(--oro)' : 'var(--texto-1)'};">${etiqueta}</span>
             <span style="font-size:11px;color:var(--texto-3);background:var(--fondo-4);padding:2px 8px;border-radius:10px;border:1px solid var(--borde);">${grupo.partidos.length} partidos</span>
           </div>
           <span id="arr_${gid}" style="color:var(--texto-2);font-size:13px;transition:transform 0.2s;">▼</span>
@@ -9959,7 +9983,35 @@ function verTorneo(idTemporada) {
           <div class="grid-simetrica-scroll"><div class="grid-partidos grid-simetrica">${fechasHTML}</div></div>
         </div>
       </div>`;
-    }).join('');
+    };
+
+    // Agrupar los acordeones (ya ordenados) por fase
+    const secciones = new Map();
+    gruposOrdenados.forEach(([nombre, grupo]) => {
+      const sec = seccionDe(nombre, grupo);
+      if (!secciones.has(sec.key)) secciones.set(sec.key, { ...sec, ins: secciones.size, grupos: [] });
+      secciones.get(sec.key).grupos.push([nombre, grupo, sec.base]);
+    });
+    const listaSecciones = [...secciones.values()].sort((x, y) => (x.rank - y.rank) || (x.ins - y.ins));
+
+    if (listaSecciones.length <= 1) {
+      // Una sola fase (ej. Copa Argentina, todo eliminatorias): lista simple, sin títulos de sección
+      container.innerHTML = gruposOrdenados.map(([nombre, grupo]) => acordeon(nombre, grupo, nombre)).join('');
+    } else {
+      container.innerHTML = listaSecciones.map((sec, si) => {
+        const total = sec.grupos.reduce((n, g) => n + g[1].partidos.length, 0);
+        return `<div style="margin-bottom:26px;">
+          <div style="display:flex;align-items:center;gap:10px;margin:0 0 12px 2px;">
+            ${si > 0 ? '<span style="color:var(--celeste);font-size:20px;line-height:1;">↳</span>' : ''}
+            <span style="font-family:var(--fuente-titulo);font-size:22px;letter-spacing:1.5px;color:var(--celeste);text-transform:uppercase;">${sec.titulo}</span>
+            <span style="font-size:11px;color:var(--texto-3);background:var(--fondo-4);padding:2px 8px;border-radius:10px;border:1px solid var(--borde);">${total} partidos</span>
+          </div>
+          <div style="border:1px solid var(--borde);border-radius:14px;padding:12px 12px 2px;background:var(--fondo-2);">
+            ${sec.grupos.map(([nombre, grupo, base]) => acordeon(nombre, grupo, etiquetaGrupo(nombre, base))).join('')}
+          </div>
+        </div>`;
+      }).join('');
+    }
   }
 }
 
