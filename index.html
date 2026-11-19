@@ -8276,8 +8276,26 @@ function esTorneoAmateur(t) {
   return !!(anio && anio <= 1930);
 }
 
+// Año de una temporada a partir de sus campos (columna Año y nombre del torneo), sin mirar partidos.
+// Si el torneo abarca dos años (ej: "Superliga Argentina 2019/2020", "2019-20" o Año = "2019/2020"), cuenta para el
+// SEGUNDO año (2020). Si no, se usa la columna Año como siempre. Devuelve null si no hay nada que usar.
+function anioDesdeCampos(t) {
+  const re = /\b(1[89]\d{2}|20\d{2})\s*[\/\-–]\s*(\d{4}|\d{2})\b/;
+  for (const txt of [t.Año, t.Competencia]) {
+    const m = String(txt || '').match(re);
+    if (!m) continue;
+    const primero = parseInt(m[1]);
+    let segundo = parseInt(m[2]);
+    if (m[2].length === 2) segundo = Math.floor(primero / 100) * 100 + segundo + (segundo + Math.floor(primero / 100) * 100 <= primero ? 100 : 0);
+    if (segundo === primero + 1) return segundo;      // temporadas consecutivas: 2019/2020 -> 2020
+  }
+  const a = parseInt(t.Año);
+  return a > 0 ? a : null;
+}
+
 function anioTemporada(t) {
-  if (t.Año && parseInt(t.Año) > 0) return parseInt(t.Año);
+  const anioCampos = anioDesdeCampos(t);
+  if (anioCampos) return anioCampos;
   const fuentes = partidos.concat(partidosHoy);
   const ps = fuentes.filter(p => p.ID_Temporada == t.ID_Temporada && p.Fecha);
   const anios = ps.map(p => {
@@ -9686,7 +9704,7 @@ function agruparEquiposPorDivisionDelAnio(items, temp, norm) {
     if (tt.ID_Temporada == temp.ID_Temporada || !tt.Division) return false;
     const d = quitarAcentos(tt.Division);
     if (/copa/.test(d) || d === 'extintos') return false;
-    const a = (tt.Año && parseInt(tt.Año) > 0) ? parseInt(tt.Año) : obtenerAnioTemporada(tt);
+    const a = obtenerAnioTemporada(tt);
     return String(a) === anio;
   });
   if (!ligas.length) return null;
@@ -13113,7 +13131,8 @@ function cambiarDetalleTab(tab) {
 
 // Devuelve el año numérico de una temporada (campo Año si existe, si no lo infiere de los partidos)
 function obtenerAnioTemporada(t) {
-  if (t.Año && parseInt(t.Año) > 0) return parseInt(t.Año);
+  const anioCampos = anioDesdeCampos(t);
+  if (anioCampos) return anioCampos;
   const psTorneo = partidos.filter(p => p.ID_Temporada == t.ID_Temporada && p.Fecha);
   const anios = psTorneo.map(p => {
     const f = (p.Fecha||'').split('T')[0];
@@ -13278,8 +13297,9 @@ function renderHistorialTorneos(equipoId) {
     // Año = primero se usa el campo Año de la temporada; si no existe, se calcula
     // a partir de la fecha máxima entre los partidos de ese torneo.
     let anio = '?';
-    if (t.Año && parseInt(t.Año) > 0) {
-      anio = parseInt(t.Año);
+    const anioCampos = anioDesdeCampos(t);
+    if (anioCampos) {
+      anio = anioCampos;
     } else {
       const anios = psTorneo.map(p => {
         const f = (p.Fecha||'').split('T')[0];
@@ -13394,8 +13414,9 @@ function renderPalmares(equipoId) {
     (t.Campeon||'').toLowerCase().replace(/\s+/g,'') === nmEqNorm
   ).map(t => {
     let anio = '?';
-    if (t.Año && parseInt(t.Año) > 0) {
-      anio = parseInt(t.Año);
+    const anioCampos = anioDesdeCampos(t);
+    if (anioCampos) {
+      anio = anioCampos;
     } else {
       const psTorneo = partidos.filter(p => p.ID_Temporada == t.ID_Temporada && p.Fecha);
       const anios = psTorneo.map(p => {
@@ -13483,7 +13504,7 @@ function renderMovimientosAscensoDescenso() {
     if (!ascensos.length && !descensos.length) return;
 
     const anio = obtenerAnioTemporada(t);
-    const anioLabel = t.Año || anio || '?';
+    const anioLabel = anio || t.Año || '?';
     const division = (t.Division || divisionSinCampeon(t) || 'Sin categoría').trim();
 
     if (!porAnio[anioLabel]) porAnio[anioLabel] = { anioLabel, anioNum: anio||0, divisiones: {} };
