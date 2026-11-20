@@ -8252,16 +8252,33 @@ const TORNEOS_AMATEUR_EXCEPCION = new Set([
 // la hoja de Temporadas no tiene cargado ese campo para este torneo puntual.
 const TORNEOS_SIN_CAMPEON_MOTIVO = {
   'Copa De La Superliga 2020': { motivo: 'Suspendido por la Pandemia', division: 'Primera Division' },
+  'Primera Nacional 2019/2020':        { motivo: 'Suspendido por la Pandemia', division: 'Segunda Division' },
+  'Primera B Metropolitana 2019/2020': { motivo: 'Suspendido por la Pandemia', division: 'Tercera Division' },
+  'Federal A 2019/2020':               { motivo: 'Suspendido por la Pandemia', division: 'Tercera Division' },
+  'Primera C 2019/2020':               { motivo: 'Suspendido por la Pandemia', division: 'Cuarta Division' },
+  'Primera D 2019/2020':               { motivo: 'Suspendido por la Pandemia', division: 'Quinta Division' },
 };
+// Búsqueda tolerante: ignora mayúsculas, tildes, espacios repetidos y acepta "2019/20" o "2019-2020".
+function _claveSinCampeon(nombre) {
+  return String(nombre || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/\s+/g, ' ').trim()
+    .replace(/\b2019\s*[\/\-]\s*(?:20)?20\b/, '2019/2020');
+}
+const _TORNEOS_SIN_CAMPEON_NORM = Object.fromEntries(
+  Object.entries(TORNEOS_SIN_CAMPEON_MOTIVO).map(([k, v]) => [_claveSinCampeon(k), v])
+);
+function _infoSinCampeon(t) {
+  return _TORNEOS_SIN_CAMPEON_NORM[_claveSinCampeon(t.Competencia)] || null;
+}
 // Un torneo sin campeón solo se considera "en disputa" (torneo actual, todavía
 // jugándose) a partir de esta temporada; los anteriores sin campeón cargado se
 // asumen ya finalizados/dados de baja y no en curso.
 const ANIO_MIN_TORNEO_EN_DISPUTA = 2026;
 function motivoSinCampeon(t) {
-  return TORNEOS_SIN_CAMPEON_MOTIVO[(t.Competencia||'').trim()]?.motivo || null;
+  return _infoSinCampeon(t)?.motivo || null;
 }
 function divisionSinCampeon(t) {
-  return TORNEOS_SIN_CAMPEON_MOTIVO[(t.Competencia||'').trim()]?.division || null;
+  return _infoSinCampeon(t)?.division || null;
 }
 function esTorneoEnDisputa(t) {
   if (t.Campeon) return false;
