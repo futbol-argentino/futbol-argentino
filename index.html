@@ -13431,19 +13431,52 @@ let _partGrupoActual = null;
 // "Primera B Metropolitana Transicion 2020" y "Primera B Metropolitana 2019/2020" -> "Primera B Metropolitana"
 function _familiaTorneoPart(t) {
   const base = _nombreBaseTorneo(t.Competencia)
-    .replace(/\b(transicion|transición|apertura|clausura)\b/ig, '')
+    .replace(/\b(transicion|transición|apertura|clausura|inicial|final)\b/ig, '')
     .replace(/\s{2,}/g, ' ').replace(/[\s\-–·:,]+$/, '').trim();
   return base || String(t.Competencia || '').trim();
 }
 
-// Clave de temporada (año). Los torneos sin año conocido cuentan de a uno.
+// Año/mes de una fecha "dd/mm/aaaa" o ISO.
+function _fechaYMPart(f) {
+  const s = String(f || '').split('T')[0];
+  let m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) return { y: parseInt(m[3]), m: parseInt(m[2]) };
+  m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  return m ? { y: parseInt(m[1]), m: parseInt(m[2]) } : null;
+}
+
+// Temporada (identificada por su año de cierre) de un torneo, para contar participaciones.
+// Los torneos partidos de una misma temporada cuentan UNA sola vez:
+//   Apertura/Clausura y Torneo Inicial/Final (que pueden cruzar de un año al siguiente,
+//   ej. Inicial 2012 + Final 2013 = temporada 2013), según las fechas de los partidos.
+// Torneo Nacional/Metropolitano ya comparten año, así que caen en la misma temporada.
+function _temporadaPart(e) {
+  if (e._tempPart !== undefined) return e._tempPart;
+  let res = parseInt(e.anio) > 0 ? parseInt(e.anio) : null;
+  const n = _hoyNorm(e.t.Competencia);
+  const esA = /\bapertura\b|\btorneo inicial\b|\binicial\s+\d{4}/.test(n);
+  const esC = /\bclausura\b|\btorneo final\b|\bfinal\s+\d{4}/.test(n);
+  if (esA !== esC) {
+    const fechas = (e.jugados || []).map(p => _fechaYMPart(p.Fecha)).filter(Boolean)
+      .sort((a, b) => a.y - b.y || a.m - b.m);
+    if (fechas.length) {
+      if (esA) { const f = fechas[0]; res = f.m >= 7 ? f.y + 1 : f.y; }   // arranca en 2º semestre -> cierra el año siguiente
+      else { res = fechas[fechas.length - 1].y; }                          // el cierre es el año de su último partido
+    }
+  }
+  e._tempPart = res;
+  return res;
+}
+
+// Clave de temporada. Los torneos sin año conocido cuentan de a uno.
 function _claveAnioPart(e) {
-  return (e.anio && e.anio !== '?') ? String(e.anio) : 'sin-anio-' + e.t.ID_Temporada;
+  const t = _temporadaPart(e);
+  return t ? String(t) : 'sin-anio-' + e.t.ID_Temporada;
 }
 
 // [2012,2013,2014,2015,2018] -> "2012-2015, 2018"
 function _aniosComprimidosPart(entries) {
-  const an = [...new Set(entries.map(e => parseInt(e.anio)).filter(a => a > 0))].sort((a, b) => a - b);
+  const an = [...new Set(entries.map(_temporadaPart).filter(a => a > 0))].sort((a, b) => a - b);
   const out = [];
   let i = 0;
   while (i < an.length) {
@@ -13548,9 +13581,13 @@ function renderParticipacionesModal() {
   // ── Torneos de la división / ediciones de la copa ──
   let detalleHTML = '';
   if (esDiv) {
+    // En Primera División se juntan todos los torneos (Apertura/Clausura, Nacional/Metropolitano,
+    // Torneo Inicial/Final, Liga Profesional, etc.) en una sola fila: sigue siendo Primera.
+    const esPrimera = rangoDivisionCampeones({ Division: g.nombre }) === 1;
     const fams = {};
     ents.forEach(e => {
-      const f = fams[e.famKey] || (fams[e.famKey] = { nombre: e.fam, entries: [] });
+      const k = esPrimera ? 'primera' : e.famKey;
+      const f = fams[k] || (fams[k] = { nombre: esPrimera ? g.nombre : e.fam, entries: [] });
       f.entries.push(e);
     });
     const famArr = Object.values(fams).sort((a, b) =>
