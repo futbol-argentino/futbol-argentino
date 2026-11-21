@@ -13505,7 +13505,7 @@ function _rangoFasePart(fase) {
   if (ord) return 0.05 * (['primera', 'segunda', 'tercera', 'cuarta', 'quinta', 'sexta'].indexOf(ord[1]) + 1);
   return 0.45;
 }
-function _faseMaxPart(jugados) {
+function _faseMaxInfoPart(jugados) {
   let best = null;
   (jugados || []).forEach(p => {
     if (!p.Fase) return;
@@ -13513,7 +13513,11 @@ function _faseMaxPart(jugados) {
     const id = parseInt(p.ID_Partido) || 0;
     if (!best || r > best.r || (r === best.r && id > best.id)) best = { r, id, fase: p.Fase };
   });
-  return best ? _bracketNombreCanonico(best.fase) : '';
+  return best ? { r: best.r, nombre: _bracketNombreCanonico(best.fase) } : null;
+}
+function _faseMaxPart(jugados) {
+  const i = _faseMaxInfoPart(jugados);
+  return i ? i.nombre : '';
 }
 
 function construirResumenParticipaciones(equipoId, entries) {
@@ -13637,16 +13641,26 @@ function renderParticipacionesModal() {
       </div>`;
     }).join('') + '<div style="height:12px;"></div>';
   } else {
-    detalleHTML = `<div class="ficha-seccion-titulo">Ediciones</div>` + ents.slice().reverse().map(e => {
+    // Si el equipo nunca fue campeón ni subcampeón de esta copa, se marca su mejor participación
+    // (la fase más avanzada alcanzada); si hay empate, se marcan todas las ediciones empatadas.
+    const infos = ents.map(e => _faseMaxInfoPart(e.jugados));
+    const hayPodio = ents.some(e => e.fueCampeon || e.fueSubcampeon);
+    const rangos = infos.map(f => f ? f.r : -1);
+    const mejorR = Math.max(...rangos);
+    const todasIguales = ents.length > 1 && rangos.every(r => r === rangos[0]);
+    const marcar = !hayPodio && mejorR >= 0 && !todasIguales;
+    detalleHTML = `<div class="ficha-seccion-titulo">Ediciones</div>` + ents.map((e, k) => ({ e, f: infos[k] })).reverse().map(({ e, f }) => {
+      const mejor = marcar && f && f.r === mejorR;
       const res = e.fueCampeon ? '<span style="color:var(--oro);font-weight:700;">🏆 Campeón</span>'
         : (e.fueSubcampeon ? '<span style="color:#C0C0C0;font-weight:700;">🥈 Subcampeón</span>'
-          : (_faseMaxPart(e.jugados) ? `<span style="color:var(--texto-2);">${_faseMaxPart(e.jugados)}</span>` : '<span style="color:var(--texto-3);">—</span>'));
-      return `<div class="part-fam">
+          : (f ? (mejor ? `<span style="color:var(--verde);font-weight:700;">⭐ ${f.nombre}</span>` : `<span style="color:var(--texto-2);">${f.nombre}</span>`)
+                : '<span style="color:var(--texto-3);">—</span>'));
+      return `<div class="part-fam"${mejor ? ' style="border-color:rgba(74,222,128,0.55);background:rgba(74,222,128,0.08);"' : ''}>
         <span style="font-family:var(--fuente-titulo);font-size:17px;color:var(--celeste);min-width:46px;">${e.anio}</span>
         <div style="flex:1;font-size:12px;"><span style="color:var(--texto-3);">${e.pj} PJ</span> · <span style="color:var(--texto-2);">${e.gf}-${e.gc}</span></div>
         <div style="font-size:12px;white-space:nowrap;">${res}</div>
       </div>`;
-    }).join('') + '<div style="height:12px;"></div>';
+    }).join('') + (marcar ? '<div style="font-size:11px;color:var(--texto-3);margin:2px 2px 0;">⭐ Mejor participación en esta copa</div>' : '') + '<div style="height:12px;"></div>';
   }
 
   // ── Rivales: sin equipos extintos (igual que el Historial vs Rivales).
