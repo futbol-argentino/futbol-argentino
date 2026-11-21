@@ -13488,6 +13488,34 @@ function _aniosComprimidosPart(entries) {
   return out.join(', ');
 }
 
+// Fase más avanzada que alcanzó el equipo en una edición de copa, a partir del campo Fase de sus partidos.
+// Devuelve el nombre de la fase (sin Ida/Vuelta/Desempate) o '' si no hay fases cargadas.
+function _rangoFasePart(fase) {
+  const n = _hoyNorm(fase);
+  if (/semi/.test(n)) return 3;
+  if (/tercer\s+puesto|3er\s+puesto|tercer y cuarto|tercero y cuarto/.test(n)) return 3;
+  if (/cuartos|4tos/.test(n)) return 2;
+  if (/octavos|8avos/.test(n)) return 1;
+  if (/16avos|dieciseisavos|diecis[ei]isavos/.test(n)) return 0.9;
+  if (/32avos|treint(?:ai|i)dosavos/.test(n)) return 0.8;
+  if (/\bfinal\b/.test(n) && !/ronda de (ganadores|perdedores)/.test(n)) return 4;
+  if (/grupo|zona|regular/.test(n)) return 0.5;
+  if (/previa|preliminar/.test(n)) return 0.1;
+  const ord = n.match(/\b(primera|segunda|tercera|cuarta|quinta|sexta)\s+(fase|ronda)\b/);
+  if (ord) return 0.05 * (['primera', 'segunda', 'tercera', 'cuarta', 'quinta', 'sexta'].indexOf(ord[1]) + 1);
+  return 0.45;
+}
+function _faseMaxPart(jugados) {
+  let best = null;
+  (jugados || []).forEach(p => {
+    if (!p.Fase) return;
+    const r = _rangoFasePart(p.Fase);
+    const id = parseInt(p.ID_Partido) || 0;
+    if (!best || r > best.r || (r === best.r && id > best.id)) best = { r, id, fase: p.Fase };
+  });
+  return best ? _bracketNombreCanonico(best.fase) : '';
+}
+
 function construirResumenParticipaciones(equipoId, entries) {
   const grupos = {};
   entries.forEach(e => {
@@ -13611,7 +13639,8 @@ function renderParticipacionesModal() {
   } else {
     detalleHTML = `<div class="ficha-seccion-titulo">Ediciones</div>` + ents.slice().reverse().map(e => {
       const res = e.fueCampeon ? '<span style="color:var(--oro);font-weight:700;">🏆 Campeón</span>'
-        : (e.fueSubcampeon ? '<span style="color:#C0C0C0;font-weight:700;">🥈 Subcampeón</span>' : '<span style="color:var(--texto-3);">—</span>');
+        : (e.fueSubcampeon ? '<span style="color:#C0C0C0;font-weight:700;">🥈 Subcampeón</span>'
+          : (_faseMaxPart(e.jugados) ? `<span style="color:var(--texto-2);">${_faseMaxPart(e.jugados)}</span>` : '<span style="color:var(--texto-3);">—</span>'));
       return `<div class="part-fam">
         <span style="font-family:var(--fuente-titulo);font-size:17px;color:var(--celeste);min-width:46px;">${e.anio}</span>
         <div style="flex:1;font-size:12px;"><span style="color:var(--texto-3);">${e.pj} PJ</span> · <span style="color:var(--texto-2);">${e.gf}-${e.gc}</span></div>
