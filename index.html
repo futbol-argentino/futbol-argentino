@@ -13583,8 +13583,12 @@ function renderParticipacionesModal() {
     }).join('') + '<div style="height:12px;"></div>';
   }
 
-  // ── Rivales (incluye equipos extintos: en divisiones antiguas son rivales reales) ──
-  const conComp = ents.flatMap(e => (e.jugados || []).map(p => ({ p, comp: e.t.Competencia })));
+  // ── Rivales: sin equipos extintos (igual que el Historial vs Rivales).
+  // Excepción: si el equipo que se está mirando es extinto, no se filtra (sino quedaría vacío). ──
+  const _esExtintoPart = (eqId) => ((equiposArr.find(e => String(e.ID_Equipo) === String(eqId)) || {}).Division) === 'Extintos';
+  const _equipoExtinto = _esExtintoPart(id);
+  const conComp = ents.flatMap(e => (e.jugados || []).map(p => ({ p, comp: e.t.Competencia })))
+    .filter(({ p }) => _equipoExtinto || !_esExtintoPart(p.Local_ID === id ? p.Visitante_ID : p.Local_ID));
   const rs = {};
   conComp.forEach(({ p }) => {
     const rid = p.Local_ID === id ? p.Visitante_ID : p.Local_ID;
