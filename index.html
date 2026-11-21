@@ -8250,37 +8250,18 @@ const TORNEOS_AMATEUR_EXCEPCION = new Set([
 // por algún motivo puntual, ej. pandemia) — se muestran con este texto en vez de
 // "Torneo en disputa" y no cuentan como en curso. "division" es un respaldo por si
 // la hoja de Temporadas no tiene cargado ese campo para este torneo puntual.
-// Icono de virus (icons8) para las tarjetas de torneos suspendidos por la pandemia sin foto de trofeo.
-const ICONO_VIRUS_PANDEMIA = 'data:image/png;base64,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';
 const TORNEOS_SIN_CAMPEON_MOTIVO = {
   'Copa De La Superliga 2020': { motivo: 'Suspendido por la Pandemia', division: 'Primera Division' },
-  'Primera Nacional 2019/2020':        { motivo: 'Suspendido por la Pandemia', division: 'Segunda Division' },
-  'Primera B Metropolitana 2019/2020': { motivo: 'Suspendido por la Pandemia', division: 'Tercera Division' },
-  'Federal A 2019/2020':               { motivo: 'Suspendido por la Pandemia', division: 'Tercera Division' },
-  'Primera C 2019/2020':               { motivo: 'Suspendido por la Pandemia', division: 'Cuarta Division' },
-  'Primera D 2019/2020':               { motivo: 'Suspendido por la Pandemia', division: 'Quinta Division' },
 };
-// Búsqueda tolerante: ignora mayúsculas, tildes, espacios repetidos y acepta "2019/20" o "2019-2020".
-function _claveSinCampeon(nombre) {
-  return String(nombre || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase().replace(/\s+/g, ' ').trim()
-    .replace(/\b2019\s*[\/\-]\s*(?:20)?20\b/, '2019/2020');
-}
-const _TORNEOS_SIN_CAMPEON_NORM = Object.fromEntries(
-  Object.entries(TORNEOS_SIN_CAMPEON_MOTIVO).map(([k, v]) => [_claveSinCampeon(k), v])
-);
-function _infoSinCampeon(t) {
-  return _TORNEOS_SIN_CAMPEON_NORM[_claveSinCampeon(t.Competencia)] || null;
-}
 // Un torneo sin campeón solo se considera "en disputa" (torneo actual, todavía
 // jugándose) a partir de esta temporada; los anteriores sin campeón cargado se
 // asumen ya finalizados/dados de baja y no en curso.
 const ANIO_MIN_TORNEO_EN_DISPUTA = 2026;
 function motivoSinCampeon(t) {
-  return _infoSinCampeon(t)?.motivo || null;
+  return TORNEOS_SIN_CAMPEON_MOTIVO[(t.Competencia||'').trim()]?.motivo || null;
 }
 function divisionSinCampeon(t) {
-  return _infoSinCampeon(t)?.division || null;
+  return TORNEOS_SIN_CAMPEON_MOTIVO[(t.Competencia||'').trim()]?.division || null;
 }
 function esTorneoEnDisputa(t) {
   if (t.Campeon) return false;
@@ -8473,21 +8454,6 @@ function filtrarCampeones() {
 
   if (anioSel) lista = lista.filter(x => x.anio === parseInt(anioSel));
 
-  // Familia de torneo (sin año ni Transición/Apertura/Clausura) para agrupar torneos hermanos.
-  const _famCamp = (x) => _nombreBaseTorneo(x.t.Competencia)
-    .replace(/\b(transicion|transición|apertura|clausura)\b/ig, '').replace(/\s{2,}/g, ' ').trim().toLowerCase()
-    + '|' + x.anio + '|' + rangoDivisionCampeones(x.t);
-  const _infoFamCamp = {};
-  lista.forEach(x => {
-    const k = _famCamp(x);
-    const i = _infoFamCamp[k] || (_infoFamCamp[k] = { fecha: '', id: 0 });
-    if (motivoSinCampeon(x.t)) return; // los suspendidos no definen el lugar de la familia
-    const f = fechaMax(x.t.ID_Temporada) || '';
-    if (f > i.fecha) i.fecha = f;
-    const id = parseInt(x.t.ID_Temporada || 0) || 0;
-    if (id > i.id) i.id = id;
-  });
-
   // Orden principal: año descendente. Dentro del mismo año: primero por división
   // (Primera, Segunda, Tercera...) y, dentro de la misma división, fecha más reciente primero.
   lista.sort((a, b) => {
@@ -8495,18 +8461,6 @@ function filtrarCampeones() {
     const ra = rangoDivisionCampeones(a.t);
     const rb = rangoDivisionCampeones(b.t);
     if (ra !== rb) return ra - rb;
-    // Misma división: se agrupan por "familia" de torneo (ej. Primera B Metropolitana
-    // Transición 2020 + Primera B Metropolitana 2019/2020 quedan juntos). Las familias
-    // se ordenan por su torneo más reciente; dentro de la familia, los suspendidos van al final.
-    const famA = _famCamp(a), famB = _famCamp(b);
-    if (famA !== famB) {
-      const ia = _infoFamCamp[famA], ib = _infoFamCamp[famB];
-      if (ia.fecha !== ib.fecha) return ib.fecha.localeCompare(ia.fecha);
-      if (ia.id !== ib.id) return ib.id - ia.id;
-      return famA.localeCompare(famB, 'es');
-    }
-    const sa = motivoSinCampeon(a.t) ? 1 : 0, sb = motivoSinCampeon(b.t) ? 1 : 0;
-    if (sa !== sb) return sa - sb;
     const fa = fechaMax(a.t.ID_Temporada);
     const fb = fechaMax(b.t.ID_Temporada);
     if (fa && fb) return fb.localeCompare(fa);
@@ -8556,11 +8510,7 @@ function filtrarCampeones() {
     const fallbackSinFoto = escGrande
       ? `<img src="${escGrande}" style="width:80px;height:80px;object-fit:contain;" loading="lazy" decoding="async" alt="${t.Campeon}" onerror="this.parentElement.innerHTML='<div style=${iconoGenericoStyle}>🏆</div>'">`
       : iconoGenerico;
-    // Torneo suspendido por la pandemia y sin foto de trofeo: icono de virus como portada.
-    const virusPortada = `<img src="${ICONO_VIRUS_PANDEMIA}" style="width:96px;height:96px;object-fit:contain;" loading="lazy" decoding="async" alt="Suspendido por la pandemia">`;
-    const imgTrofeo = (!foto && motivo)
-      ? virusPortada
-      : foto
+    const imgTrofeo = foto
       ? `<img src="${foto}" class="camp-foto" loading="lazy" decoding="async" alt="${t.Competencia}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{innerHTML:'🏆',style:'${iconoGenericoStyle}'}))">`
       : fallbackSinFoto;
     const badgeAmateur = esTorneoAmateur(t)
@@ -13448,7 +13398,49 @@ function renderHistorialTorneos(equipoId) {
     return;
   }
 
-  lista.innerHTML = aniosOrdenados.map(anio => {
+  // ── Resumen de participaciones (arriba de todo) ──
+  // Por división: cantidad de TEMPORADAS (años) distintas en que el equipo jugó esa división.
+  // Por copa: cantidad de EDICIONES jugadas de cada copa (Copa Argentina, Libertadores, Sudamericana, etc.).
+  const _normDiv = (x) => String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+  const porDivision = {}, porCopa = {};
+  aniosOrdenados.forEach(anio => {
+    torneosPorAnio[anio].forEach(({ t }) => {
+      if (!t.Division) return;
+      if (/copa/.test(_normDiv(t.Division))) {
+        const nombreCopa = _nombreBaseTorneo(t.Competencia) || t.Competencia;
+        if (!porCopa[nombreCopa]) porCopa[nombreCopa] = new Set();
+        porCopa[nombreCopa].add(String(t.ID_Temporada));
+      } else {
+        if (!porDivision[t.Division]) porDivision[t.Division] = { rango: rangoDivisionCampeones(t), anios: new Set() };
+        porDivision[t.Division].anios.add(String(anio));
+      }
+    });
+  });
+  const chip = (n, label, color) => `
+    <div style="background:var(--fondo-3);border:1px solid var(--borde);border-radius:12px;padding:12px 10px;text-align:center;">
+      <div style="font-family:var(--fuente-titulo);font-size:32px;line-height:1;color:${color};">${n}</div>
+      <div style="font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--texto-3);margin-top:6px;line-height:1.3;">${label}</div>
+    </div>`;
+  const grillaChips = (html) => `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;">${html}</div>`;
+  const subtitulo = (txt) => `<div style="font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--texto-2);font-weight:600;margin:0 0 8px;">${txt}</div>`;
+
+  const divisionesOrd = Object.entries(porDivision).sort((a, b) => (a[1].rango - b[1].rango) || a[0].localeCompare(b[0], 'es'));
+  const copasOrd = Object.entries(porCopa).sort((a, b) => (b[1].size - a[1].size) || a[0].localeCompare(b[0], 'es'));
+
+  const resumenHTML = `
+    <div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;padding:18px 20px;margin-bottom:26px;">
+      <div style="font-family:var(--fuente-titulo);font-size:22px;color:var(--celeste);margin-bottom:14px;">📊 Participaciones</div>
+      ${divisionesOrd.length ? `<div style="margin-bottom:${copasOrd.length ? '18px' : '0'};">
+        ${subtitulo('Por división <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--texto-3);">(temporadas jugadas)</span>')}
+        ${grillaChips(divisionesOrd.map(([d, v]) => chip(v.anios.size, d, 'var(--celeste)')).join(''))}
+      </div>` : ''}
+      ${copasOrd.length ? `<div>
+        ${subtitulo('Por copa <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--texto-3);">(ediciones jugadas)</span>')}
+        ${grillaChips(copasOrd.map(([c, set]) => chip(set.size, c, 'var(--oro)')).join(''))}
+      </div>` : ''}
+    </div>`;
+
+  lista.innerHTML = resumenHTML + aniosOrdenados.map(anio => {
     const items = torneosPorAnio[anio];
     const cards = items.map(({ t, pj, pg, pe, pp, gf, gc, pos, fueCampeon, fueSubcampeon, fueAscenso, fueDescenso }) => {
       const foto = t.Foto_Trofeo
