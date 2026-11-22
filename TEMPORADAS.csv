@@ -176,7 +176,7 @@ ID_Temporada,Año,Competencia,Division,Campeon,Subcampeon,Ascensos,Descensos,Fot
 175,1917,Campeonato de Primera Division 1917,Primera Division,Racing Club,River Plate,,Gimnasia de Buenos Aires;Banfield,
 176,1916,Campeonato de Primera Division 1916,Primera Division,Racing Club,Platense,,Belgrano Athletic;Quilmes,
 177,1915,Campeonato de Primera Division 1915,Primera Division,Racing Club,San Isidro,,Sportivo Floresta;Comercio;Defensores de Belgrano;Kimberley,
-178,2026,Copa de la Liga Apertura 2026,Primera Division,Belgrano,River Plate,,,apertura_2025.jpg
+178,2026,Copa De La Liga Apertura 2026,Primera Division,Belgrano,River Plate,,,apertura_2025.jpg
 179,2026,Copa De La Liga Clausura 2026,Primera Division,,,,,apertura_2025.jpg
 180,2025,Primera Nacional 2025,Segunda Division,Gimnasia de Mendoza,Deportivo Madryn,Gimnasia de Mendoza;Estudiantes RC,Alvarado;Arsenal;Defensores Unidos;Talleres RdE,
 181,2025,Primera B Metropolitana 2025,Tercera Division,Midland,Real Pilar,Midland;Acassuso,Fenix;Sacachispas,
@@ -217,10 +217,18 @@ ID_Temporada,Año,Competencia,Division,Campeon,Subcampeon,Ascensos,Descensos,Fot
 216,2020,Primera Nacional Transicion 2020,Segunda Division,Sarmiento,Estudiantes RC,Sarmiento;Platense,,
 217,2019/2020,Primera Nacional 2019/2020,Segunda Division,,,,,
 218,2020,Primera B Metropolitana Transicion 2020,Tercera Division,Almirante Brown,JJ Urquiza,Almirante Brown;Tristan Suarez;San Telmo,,
-219,2019/2020,Primera B Metropolitana 2019/2020,Tercera Division,,,,,primera_b2020.PNG
+219,2019/2020,Primera B Metropolitana 2019/2020,Tercera Division,,,,,
 220,2020,Primera C Transicion 2020,Cuarta Division,Cañuelas,Real Pilar,Cañuelas;Deportivo Merlo,,
 221,2019/2020,Primera C 2019/2020,Cuarta Division,,,,,
 222,2020,Primera D Transicion 2020,Quinta Division,Claypole,Liniers,Claypole;Atlas,,
 223,2019/2020,Primera D 2019/2020,Quinta Division,,,,,
 224,2020,Federal A Transicion 2020,Tercera Division,Guemes SdE,Villa Mitre,,,
 225,2019/2020,Federal A 2019/2020,Tercera Division,,,,,
+226,2018/2019,Primera B Nacional 2018/2019,Segunda Division,Arsenal,Sarmiento,Arsenal;Central Cordoba SdE,Olimpo;Los Andes,
+227,2018/2019,Primera B Metropolitana 2018/2019,Tercera Division,Barracas Central,Atlanta,Atlanta;All Boys;Barracas Central;Deportivo Riestra;Estudiantes de Caseros,Deportivo Español,
+228,2018/2019,Primera C 2018/2019,Cuarta Division,Argentino de Quilmes,Deportivo Armenio,Argentino de Quilmes;Deportivo Armenio;Villa San Carlos,Sportivo Barracas,
+229,2018/2019,Primera D 2018/2019,Quinta Division,Argentino de Merlo,Liniers,Argentino de Merlo;Real Pilar,,
+230,2018/2019,Federal A 2018/2019,Tercera Division,Estudiantes RC,Sarmiento de Resistencia,Estudiantes RC;Alvarado,Altos Hornos Zapla;Atletico Paraná;General Roca;Gimnasia y Tiro;Independiente de Neuquén;Juventud Antoniana;Racing de Córdoba;Deportivo San Jorge;San Lorenzo de Alem,
+231,2019,Copa Argentina 2019,Copa Nacional,River Plate,Central Cordoba SdE,,,
+232,2019,Trofeo de Campeones 2019,Copa Nacional,Racing Club,Tigre,,,
+233,2019,Supercopa Argentina 2019,Copa Nacional,River Plate,Racing Club,,,
