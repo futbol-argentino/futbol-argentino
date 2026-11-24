@@ -1055,6 +1055,17 @@ table.tabla-partidos-fija th:nth-child(5),table.tabla-partidos-fija td:nth-child
   #modal-participaciones .modal-box { padding:18px !important; }
 }
 
+/* ── H2H: enfrentamientos por división / copa nacional / copa internacional ── */
+.h2h-cat-box { background:var(--fondo-2); border:1px solid var(--borde); border-radius:14px; padding:16px 16px 8px; margin-bottom:18px; }
+.h2h-cat-titulo { font-family:var(--fuente-titulo); font-size:18px; letter-spacing:0.5px; color:var(--texto-1); margin-bottom:2px; }
+.h2h-cat-sec { font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--texto-3); margin:12px 0 8px; padding-bottom:5px; border-bottom:1px solid var(--borde); }
+.h2h-cat-fila { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+.h2h-cat-card { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; min-width:112px; max-width:170px; background:var(--fondo-3); border:1px solid var(--borde); border-radius:12px; padding:12px 12px 10px; text-align:center; }
+.h2h-cat-num { font-family:var(--fuente-titulo); font-size:30px; line-height:1; color:var(--celeste); }
+.h2h-cat-num.oro { color:var(--oro); }
+.h2h-cat-nombre { font-size:11px; color:var(--texto-2); line-height:1.25; }
+.h2h-cat-rec { font-size:11px; font-weight:700; letter-spacing:0.3px; }
+
 /* ── ÁLBUM JUGADORES ── */
 .album-card {
   background:var(--fondo-2); border:1px solid var(--borde);
@@ -14103,6 +14114,53 @@ function volverHistorialLista() {
 // ════════════════════════════════════════════
 // H2H — Dashboard completo de enfrentamientos
 // ════════════════════════════════════════════
+// Cantidad de enfrentamientos entre dos equipos por división, copa nacional y copa internacional.
+function construirCategoriasH2H(jugados, eq1, eq2) {
+  const tMap = {};
+  temporadasArr.forEach(t => { tMap[t.ID_Temporada] = t; });
+  const grupos = {};
+  jugados.forEach(p => {
+    const t = tMap[p.ID_Temporada] || { Competencia: temporadas[p.ID_Temporada] || '', Division: '' };
+    const r = rangoTorneoHoy(t.Competencia, t.Division);
+    const tipo = r === 0 ? 'int' : (r === 1 ? 'nac' : 'div');
+    const nombre = tipo === 'div' ? (divisionCamp(t) || 'Sin división') : (_familiaTorneoPart(t) || 'Otra copa');
+    const key = tipo + '|' + _hoyNorm(nombre);
+    const g = grupos[key] || (grupos[key] = { tipo, nombre, pj: 0, v1: 0, e: 0, v2: 0 });
+    g.pj++;
+    if (esDefinicionDecisiva(p.Tipo_Definicion) && p.ID_Ganador === eq1) g.v1++;
+    else if (esDefinicionDecisiva(p.Tipo_Definicion) && p.ID_Ganador === eq2) g.v2++;
+    else g.e++;
+  });
+  const todos = Object.values(grupos);
+  const porCant = (a, b) => b.pj - a.pj || a.nombre.localeCompare(b.nombre, 'es');
+  const divs = todos.filter(g => g.tipo === 'div').sort((a, b) => {
+    const ra = rangoDivisionCampeones({ Division: a.nombre }), rb = rangoDivisionCampeones({ Division: b.nombre });
+    return ra !== rb ? ra - rb : a.nombre.localeCompare(b.nombre, 'es');
+  });
+  const nacs = todos.filter(g => g.tipo === 'nac').sort(porCant);
+  const ints = todos.filter(g => g.tipo === 'int').sort(porCant);
+  if (!todos.length) return '';
+
+  const card = (g) => `<div class="h2h-cat-card" title="${String(g.nombre).replace(/"/g, '&quot;')}">
+      <span class="h2h-cat-num${g.tipo !== 'div' ? ' oro' : ''}">${g.pj}</span>
+      <span class="h2h-cat-nombre">${g.nombre}</span>
+      <span class="h2h-cat-rec"><span style="color:var(--verde);">${g.v1}</span><span style="color:var(--texto-3);"> · </span><span style="color:var(--amarillo);">${g.e}</span><span style="color:var(--texto-3);"> · </span><span style="color:var(--rojo);">${g.v2}</span></span>
+    </div>`;
+  const fila = (titulo, arr) => {
+    if (!arr.length) return '';
+    const tot = arr.reduce((a, g) => a + g.pj, 0);
+    return `<div class="h2h-cat-sec">${titulo} · ${tot} ${tot === 1 ? 'partido' : 'partidos'}</div><div class="h2h-cat-fila">${arr.map(card).join('')}</div>`;
+  };
+  const n1 = equipos[eq1] || eq1, n2 = equipos[eq2] || eq2;
+  return `<div class="h2h-cat-box">
+    <div class="h2h-cat-titulo">🏟️ Enfrentamientos por competición</div>
+    <div style="font-size:11px;color:var(--texto-3);margin-bottom:2px;">Debajo de cada número: <span style="color:var(--verde);">victorias de ${n1}</span> · <span style="color:var(--amarillo);">empates</span> · <span style="color:var(--rojo);">victorias de ${n2}</span></div>
+    ${fila('Divisiones', divs)}
+    ${fila('Copas nacionales', nacs)}
+    ${fila('Copas internacionales', ints)}
+  </div>`;
+}
+
 function renderH2H(eq1, eq2, contenedorId) {
   const el = document.getElementById(contenedorId);
   if (!el) return;
@@ -14358,6 +14416,9 @@ function renderH2H(eq1, eq2, contenedorId) {
         <div class="stat-pill"><span class="stat-pill-num num-amarillo">${totGoles}</span><span class="stat-pill-label">Total goles</span></div>
         <div class="stat-pill"><span class="stat-pill-num num-celeste">${promGoles}</span><span class="stat-pill-label">Prom/partido</span></div>
       </div>
+
+      <!-- Enfrentamientos por división / copa nacional / copa internacional -->
+      ${construirCategoriasH2H(jugados, eq1, eq2)}
 
       <!-- Último / Próximo a lo ancho -->
       ${cardPartido(ultimo,'🕐 Último partido')}
