@@ -1060,7 +1060,9 @@ table.tabla-partidos-fija th:nth-child(5),table.tabla-partidos-fija td:nth-child
 .h2h-cat-titulo { font-family:var(--fuente-titulo); font-size:18px; letter-spacing:0.5px; color:var(--texto-1); margin-bottom:2px; }
 .h2h-cat-sec { font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--texto-3); margin:12px 0 8px; padding-bottom:5px; border-bottom:1px solid var(--borde); }
 .h2h-cat-fila { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
-.h2h-cat-card { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; min-width:112px; max-width:170px; background:var(--fondo-3); border:1px solid var(--borde); border-radius:12px; padding:12px 12px 10px; text-align:center; }
+.h2h-cat-card { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; min-width:112px; max-width:170px; background:var(--fondo-3); border:1px solid var(--borde); border-radius:12px; padding:12px 12px 10px; text-align:center;  cursor:pointer; transition:var(--trans); }
+.h2h-cat-card:hover { border-color:var(--borde-hover); background:var(--fondo-4); }
+.h2h-cat-card.activa { border-color:var(--celeste); background:var(--fondo-4); box-shadow:0 0 0 1px var(--celeste) inset; }
 .h2h-cat-num { font-family:var(--fuente-titulo); font-size:30px; line-height:1; color:var(--celeste); }
 .h2h-cat-num.oro { color:var(--oro); }
 .h2h-cat-nombre { font-size:11px; color:var(--texto-2); line-height:1.25; }
@@ -1508,6 +1510,12 @@ header::after{animation:none;height:4px;background:var(--azul)}
             <option value="empate">Empate</option>
           </select>
         </div>
+        <div class="filtro-grupo" id="filtro-competicion-grupo" style="display:none;">
+          <label class="filtro-label">Competición</label>
+          <select id="filtro-competicion" class="filtro-select" onchange="filtrar()">
+            <option value="">Todas las competiciones</option>
+          </select>
+        </div>
         <button class="btn-limpiar" onclick="limpiarFiltros()">✕ Limpiar</button>
       </div>
     </div>
@@ -1756,6 +1764,9 @@ header::after{animation:none;height:4px;background:var(--azul)}
           <option value="victoria" id="opt-victoria">Victorias</option>
           <option value="empate">Empates</option>
           <option value="derrota" id="opt-derrota">Derrotas</option>
+        </select>
+        <select id="detalle-filtro-competicion" onchange="filtrarDetalle()" style="display:none;">
+          <option value="">Todas las competiciones</option>
         </select>
       </div>
 
@@ -3997,7 +4008,7 @@ function actualizarUIFechaNav() {
 
 // ── BUSCADOR ──
 function limpiarFiltros() {
-  ['filtro-equipo','filtro-equipo2','filtro-resultado','filtro-equipo-input','filtro-equipo2-input'].forEach(id => {
+  ['filtro-equipo','filtro-equipo2','filtro-resultado','filtro-competicion','filtro-equipo-input','filtro-equipo2-input'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -4008,6 +4019,8 @@ function filtrar() {
   const eq1 = document.getElementById('filtro-equipo').value;
   const eq2 = document.getElementById('filtro-equipo2').value;
   const res = document.getElementById('filtro-resultado').value;
+  // Filtro por competición (solo cuando hay dos equipos elegidos)
+  const compKey = h2hPrepararSelect('buscador', eq1, eq2);
 
   let filtrados = partidos.filter(p => {
     const okEq1 = !eq1 || p.Local_ID === eq1 || p.Visitante_ID === eq1;
@@ -4018,7 +4031,8 @@ function filtrar() {
     if (res === 'local') okRes = parseInt(p.Goles_Local) > parseInt(p.Goles_Visitante);
     if (res === 'visitante') okRes = parseInt(p.Goles_Visitante) > parseInt(p.Goles_Local);
     if (res === 'empate') okRes = esPartidoJugado(p) && p.Goles_Local === p.Goles_Visitante;
-    return okEq1 && okEq2 && okRes;
+    const okComp = !compKey || _compInfoPartido(p).key === compKey;
+    return okEq1 && okEq2 && okRes && okComp;
   });
 
   const tbody = document.getElementById('tabla-partidos');
@@ -4613,9 +4627,13 @@ function filtrarDetalle() {
 
   let lista = partidos.filter(p => p.Local_ID===id||p.Visitante_ID===id);
 
+  // Filtro por competición (solo cuando hay un rival elegido)
+  const compKey = h2hPrepararSelect('equipo', id, rival || '');
+
   if (rival) {
     lista = lista.filter(p =>
       (p.Local_ID===id&&p.Visitante_ID===rival)||(p.Local_ID===rival&&p.Visitante_ID===id));
+    if (compKey) lista = lista.filter(p => _compInfoPartido(p).key === compKey);
   }
 
   if (res === 'victoria') lista = lista.filter(p=>esPartidoJugado(p)&&esDefinicionDecisiva(p.Tipo_Definicion)&&p.ID_Ganador===id);
@@ -14114,18 +14132,27 @@ function volverHistorialLista() {
 // ════════════════════════════════════════════
 // H2H — Dashboard completo de enfrentamientos
 // ════════════════════════════════════════════
-// Cantidad de enfrentamientos entre dos equipos por división, copa nacional y copa internacional.
-function construirCategoriasH2H(jugados, eq1, eq2) {
-  const tMap = {};
-  temporadasArr.forEach(t => { tMap[t.ID_Temporada] = t; });
+// ── Clasificación de un partido por competición (división / copa nacional / copa internacional) ──
+let _tMapH2H = null, _tMapH2HLen = -1;
+function _compInfoPartido(p) {
+  if (!_tMapH2H || _tMapH2HLen !== temporadasArr.length) {
+    _tMapH2H = {};
+    temporadasArr.forEach(t => { _tMapH2H[t.ID_Temporada] = t; });
+    _tMapH2HLen = temporadasArr.length;
+  }
+  const t = _tMapH2H[p.ID_Temporada] || { Competencia: temporadas[p.ID_Temporada] || '', Division: '' };
+  const r = rangoTorneoHoy(t.Competencia, t.Division);
+  const tipo = r === 0 ? 'int' : (r === 1 ? 'nac' : 'div');
+  const nombre = tipo === 'div' ? (divisionCamp(t) || 'Sin división') : (_familiaTorneoPart(t) || 'Otra copa');
+  return { tipo, nombre, key: tipo + '|' + _hoyNorm(nombre) };
+}
+
+// Agrupa los partidos jugados entre eq1 y eq2 por competición.
+function _h2hAgrupar(jugados, eq1, eq2) {
   const grupos = {};
   jugados.forEach(p => {
-    const t = tMap[p.ID_Temporada] || { Competencia: temporadas[p.ID_Temporada] || '', Division: '' };
-    const r = rangoTorneoHoy(t.Competencia, t.Division);
-    const tipo = r === 0 ? 'int' : (r === 1 ? 'nac' : 'div');
-    const nombre = tipo === 'div' ? (divisionCamp(t) || 'Sin división') : (_familiaTorneoPart(t) || 'Otra copa');
-    const key = tipo + '|' + _hoyNorm(nombre);
-    const g = grupos[key] || (grupos[key] = { tipo, nombre, pj: 0, v1: 0, e: 0, v2: 0 });
+    const ci = _compInfoPartido(p);
+    const g = grupos[ci.key] || (grupos[ci.key] = { key: ci.key, tipo: ci.tipo, nombre: ci.nombre, pj: 0, v1: 0, e: 0, v2: 0 });
     g.pj++;
     if (esDefinicionDecisiva(p.Tipo_Definicion) && p.ID_Ganador === eq1) g.v1++;
     else if (esDefinicionDecisiva(p.Tipo_Definicion) && p.ID_Ganador === eq2) g.v2++;
@@ -14133,15 +14160,73 @@ function construirCategoriasH2H(jugados, eq1, eq2) {
   });
   const todos = Object.values(grupos);
   const porCant = (a, b) => b.pj - a.pj || a.nombre.localeCompare(b.nombre, 'es');
-  const divs = todos.filter(g => g.tipo === 'div').sort((a, b) => {
-    const ra = rangoDivisionCampeones({ Division: a.nombre }), rb = rangoDivisionCampeones({ Division: b.nombre });
-    return ra !== rb ? ra - rb : a.nombre.localeCompare(b.nombre, 'es');
-  });
-  const nacs = todos.filter(g => g.tipo === 'nac').sort(porCant);
-  const ints = todos.filter(g => g.tipo === 'int').sort(porCant);
-  if (!todos.length) return '';
+  return {
+    divs: todos.filter(g => g.tipo === 'div').sort((a, b) => {
+      const ra = rangoDivisionCampeones({ Division: a.nombre }), rb = rangoDivisionCampeones({ Division: b.nombre });
+      return ra !== rb ? ra - rb : a.nombre.localeCompare(b.nombre, 'es');
+    }),
+    nacs: todos.filter(g => g.tipo === 'nac').sort(porCant),
+    ints: todos.filter(g => g.tipo === 'int').sort(porCant)
+  };
+}
 
-  const card = (g) => `<div class="h2h-cat-card" title="${String(g.nombre).replace(/"/g, '&quot;')}">
+// Selects de "Competición" (Buscador y Equipos): se llenan con las competiciones en las que se enfrentaron.
+const _H2H_SEL = {
+  buscador: { sel: 'filtro-competicion', grupo: 'filtro-competicion-grupo' },
+  equipo:   { sel: 'detalle-filtro-competicion', grupo: 'detalle-filtro-competicion' }
+};
+const _h2hPar = {};
+function h2hPrepararSelect(ctx, eq1, eq2) {
+  const cfg = _H2H_SEL[ctx];
+  const sel = document.getElementById(cfg.sel);
+  const grp = document.getElementById(cfg.grupo);
+  if (!sel) return '';
+  if (!eq1 || !eq2) {
+    sel.value = '';
+    _h2hPar[ctx] = '';
+    if (grp) grp.style.display = 'none';
+    return '';
+  }
+  const parKey = [eq1, eq2].sort().join('|');
+  const previo = (_h2hPar[ctx] === parKey) ? sel.value : '';   // si cambió el cruce, se reinicia el filtro
+  const jug = partidos.filter(p => esPartidoJugado(p) &&
+    ((p.Local_ID === eq1 && p.Visitante_ID === eq2) || (p.Local_ID === eq2 && p.Visitante_ID === eq1)));
+  const { divs, nacs, ints } = _h2hAgrupar(jug, eq1, eq2);
+  const attr = (k) => String(k).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+  const opts = (titulo, arr) => arr.length
+    ? `<optgroup label="${titulo}">${arr.map(g => `<option value="${attr(g.key)}">${g.nombre} (${g.pj})</option>`).join('')}</optgroup>` : '';
+  sel.innerHTML = '<option value="">Todas las competiciones</option>' +
+    opts('Divisiones', divs) + opts('Copas nacionales', nacs) + opts('Copas internacionales', ints);
+  sel.value = previo;
+  if (sel.value !== previo) sel.value = '';
+  _h2hPar[ctx] = parKey;
+  if (grp) grp.style.display = (divs.length + nacs.length + ints.length) ? '' : 'none';
+  return sel.value;
+}
+
+// Al tocar una tarjeta del recuadro: aplica (o quita) el filtro y baja hasta la lista de partidos.
+function h2hFiltrarCompeticion(ctx, key) {
+  const sel = document.getElementById(_H2H_SEL[ctx].sel);
+  if (!sel) return;
+  const quitar = sel.value === key;
+  sel.value = quitar ? '' : key;
+  if (ctx === 'buscador') filtrar(); else filtrarDetalle();
+  if (!quitar) {
+    const tabla = document.getElementById(ctx === 'buscador' ? 'tabla-partidos' : 'tabla-detalle');
+    const dest = tabla && tabla.closest('.tabla-wrapper');
+    if (dest) dest.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+// Cantidad de enfrentamientos entre dos equipos por división, copa nacional y copa internacional.
+function construirCategoriasH2H(jugados, eq1, eq2, ctx) {
+  const { divs, nacs, ints } = _h2hAgrupar(jugados, eq1, eq2);
+  if (!(divs.length + nacs.length + ints.length)) return '';
+  const selEl = document.getElementById((_H2H_SEL[ctx] || {}).sel);
+  const activa = selEl ? selEl.value : '';
+
+  const card = (g) => `<div class="h2h-cat-card${g.key === activa ? ' activa' : ''}" title="Tocá para filtrar los partidos"
+      onclick="h2hFiltrarCompeticion('${ctx}', ${JSON.stringify(g.key).replace(/"/g, '&quot;')})">
       <span class="h2h-cat-num${g.tipo !== 'div' ? ' oro' : ''}">${g.pj}</span>
       <span class="h2h-cat-nombre">${g.nombre}</span>
       <span class="h2h-cat-rec"><span style="color:var(--verde);">${g.v1}</span><span style="color:var(--texto-3);"> · </span><span style="color:var(--amarillo);">${g.e}</span><span style="color:var(--texto-3);"> · </span><span style="color:var(--rojo);">${g.v2}</span></span>
@@ -14152,9 +14237,12 @@ function construirCategoriasH2H(jugados, eq1, eq2) {
     return `<div class="h2h-cat-sec">${titulo} · ${tot} ${tot === 1 ? 'partido' : 'partidos'}</div><div class="h2h-cat-fila">${arr.map(card).join('')}</div>`;
   };
   const n1 = equipos[eq1] || eq1, n2 = equipos[eq2] || eq2;
+  const quitar = activa
+    ? ` · <span onclick="h2hFiltrarCompeticion('${ctx}', ${JSON.stringify(activa).replace(/"/g, '&quot;')})" style="cursor:pointer;color:var(--celeste);">Quitar filtro ✕</span>` : '';
   return `<div class="h2h-cat-box">
     <div class="h2h-cat-titulo">🏟️ Enfrentamientos por competición</div>
     <div style="font-size:11px;color:var(--texto-3);margin-bottom:2px;">Debajo de cada número: <span style="color:var(--verde);">victorias de ${n1}</span> · <span style="color:var(--amarillo);">empates</span> · <span style="color:var(--rojo);">victorias de ${n2}</span></div>
+    <div style="font-size:11px;color:var(--texto-3);">Tocá una competición para filtrar la lista de partidos${quitar}</div>
     ${fila('Divisiones', divs)}
     ${fila('Copas nacionales', nacs)}
     ${fila('Copas internacionales', ints)}
@@ -14418,7 +14506,7 @@ function renderH2H(eq1, eq2, contenedorId) {
       </div>
 
       <!-- Enfrentamientos por división / copa nacional / copa internacional -->
-      ${construirCategoriasH2H(jugados, eq1, eq2)}
+      ${construirCategoriasH2H(jugados, eq1, eq2, contenedorId === 'h2h-panel-buscador' ? 'buscador' : 'equipo')}
 
       <!-- Último / Próximo a lo ancho -->
       ${cardPartido(ultimo,'🕐 Último partido')}
