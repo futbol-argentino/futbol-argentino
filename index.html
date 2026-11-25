@@ -4054,7 +4054,8 @@ function filtrar() {
   if (eq1 && eq2) {
     const n1 = equipos[eq1], n2 = equipos[eq2];
     const pe = partidos.filter(p =>
-      esPartidoJugado(p) && ((p.Local_ID===eq1 && p.Visitante_ID===eq2)||(p.Local_ID===eq2 && p.Visitante_ID===eq1)));
+      esPartidoJugado(p) && ((p.Local_ID===eq1 && p.Visitante_ID===eq2)||(p.Local_ID===eq2 && p.Visitante_ID===eq1)) &&
+      (!compKey || _compInfoPartido(p).key === compKey));
     const pj = pe.length;
     const g1 = pe.filter(p=>esDefinicionDecisiva(p.Tipo_Definicion)&&p.ID_Ganador===eq1).length;
     const g2 = pe.filter(p=>esDefinicionDecisiva(p.Tipo_Definicion)&&p.ID_Ganador===eq2).length;
@@ -4063,7 +4064,7 @@ function filtrar() {
     const gf2 = pe.reduce((a,p)=>a+(p.Local_ID===eq2?parseInt(p.Goles_Local)||0:parseInt(p.Goles_Visitante)||0),0);
     document.getElementById('stats-enfrentamiento').classList.add('visible');
     document.getElementById('stats-equipo').classList.remove('visible');
-    document.getElementById('enf-titulo').textContent = n1+' vs '+n2;
+    document.getElementById('enf-titulo').textContent = n1+' vs '+n2 + (compKey ? ' · ' + _h2hNombreComp('buscador') : '');
     document.getElementById('enf-pj').textContent = pj;
     const short = n => n.length > 10 ? n.slice(0,10)+'.' : n;
     document.getElementById('enf-g1').textContent = g1; document.getElementById('enf-g1-nombre').textContent = short(n1);
@@ -4647,7 +4648,8 @@ function filtrarDetalle() {
     const nombreRival = equipos[rival] || rival;
     const lisAll = partidos.filter(p =>
       esPartidoJugado(p) &&
-      ((p.Local_ID===id&&p.Visitante_ID===rival)||(p.Local_ID===rival&&p.Visitante_ID===id)));
+      ((p.Local_ID===id&&p.Visitante_ID===rival)||(p.Local_ID===rival&&p.Visitante_ID===id)) &&
+      (!compKey || _compInfoPartido(p).key === compKey));
     const pj = lisAll.length;
     let pg=0, pe=0, pp=0, gf=0, gc=0;
     lisAll.forEach(p => {
@@ -4669,7 +4671,7 @@ function filtrarDetalle() {
         <div style="display:flex;align-items:center;gap:10px;">${escRival}
           <div>
             <div class="stats-card-nombre">${nombre} vs ${nombreRival}</div>
-            <div class="stats-card-sub">Historial de enfrentamientos</div>
+            <div class="stats-card-sub">Historial de enfrentamientos${compKey ? ' · ' + _h2hNombreComp('equipo') : ''}</div>
           </div>
         </div>
       </div>
@@ -14204,6 +14206,14 @@ function h2hPrepararSelect(ctx, eq1, eq2) {
   return sel.value;
 }
 
+// Nombre de la competición elegida en el filtro ('' si no hay).
+function _h2hNombreComp(ctx) {
+  const sel = document.getElementById((_H2H_SEL[ctx] || {}).sel);
+  if (!sel || !sel.value) return '';
+  const o = sel.options[sel.selectedIndex];
+  return o ? o.textContent.replace(/\s*\(\d+\)\s*$/, '') : '';
+}
+
 // Al tocar una tarjeta del recuadro: aplica (o quita) el filtro y baja hasta la lista de partidos.
 function h2hFiltrarCompeticion(ctx, key) {
   const sel = document.getElementById(_H2H_SEL[ctx].sel);
@@ -14259,12 +14269,22 @@ function renderH2H(eq1, eq2, contenedorId) {
   const esc1 = ESCUDOS[n1] ? `<img src="${ESCUDOS[n1]}" style="width:28px;height:28px;object-fit:contain;" onerror="this.style.display='none'">` : '';
   const esc2 = ESCUDOS[n2] ? `<img src="${ESCUDOS[n2]}" style="width:28px;height:28px;object-fit:contain;" onerror="this.style.display='none'">` : '';
 
-  const todos = partidos.filter(p =>
+  const ctxH2H = contenedorId === 'h2h-panel-buscador' ? 'buscador' : 'equipo';
+  const selComp = document.getElementById(_H2H_SEL[ctxH2H].sel);
+  const todosSinFiltro = partidos.filter(p =>
     (p.Local_ID===eq1 && p.Visitante_ID===eq2) ||
     (p.Local_ID===eq2 && p.Visitante_ID===eq1)
   );
-  const jugados = todos.filter(p => esPartidoJugado(p));
-  if (!jugados.length) { el.style.display='none'; return; }
+  const jugadosTodos = todosSinFiltro.filter(p => esPartidoJugado(p));
+  if (!jugadosTodos.length) { el.style.display='none'; return; }
+
+  // Si hay una competición elegida (división / copa), TODO el dashboard se calcula solo con esos partidos.
+  // El recuadro de "Enfrentamientos por competición" sigue usando jugadosTodos para poder cambiar de filtro.
+  let compKey = selComp ? selComp.value : '';
+  let todos = compKey ? todosSinFiltro.filter(p => _compInfoPartido(p).key === compKey) : todosSinFiltro;
+  let jugados = todos.filter(p => esPartidoJugado(p));
+  if (compKey && !jugados.length) { compKey = ''; todos = todosSinFiltro; jugados = jugadosTodos.slice(); }
+  const nombreCompActiva = compKey ? _h2hNombreComp(ctxH2H) : '';
 
   const normFecha = f => normalizarFechaISO(f) || '';
   jugados.sort((a,b) => normFecha(a.Fecha).localeCompare(normFecha(b.Fecha)));
@@ -14477,6 +14497,8 @@ function renderH2H(eq1, eq2, contenedorId) {
         <span>${n2}</span>${esc2}
       </div>
 
+      ${nombreCompActiva?`<div style="margin:-6px 0 14px;"><span style="font-size:12px;color:var(--celeste);border:1px solid var(--celeste);border-radius:999px;padding:3px 12px;">📌 Estadísticas de ${nombreCompActiva}</span></div>`:''}
+
       ${rachaTexto?`<div style="background:rgba(34,197,94,0.07);border:1px solid var(--borde);border-radius:10px;padding:10px 16px;margin-bottom:14px;font-size:13px;">${rachaTexto}</div>`:''}
 
       <!-- Barra balance -->
@@ -14506,7 +14528,7 @@ function renderH2H(eq1, eq2, contenedorId) {
       </div>
 
       <!-- Enfrentamientos por división / copa nacional / copa internacional -->
-      ${construirCategoriasH2H(jugados, eq1, eq2, contenedorId === 'h2h-panel-buscador' ? 'buscador' : 'equipo')}
+      ${construirCategoriasH2H(jugadosTodos, eq1, eq2, ctxH2H)}
 
       <!-- Último / Próximo a lo ancho -->
       ${cardPartido(ultimo,'🕐 Último partido')}
