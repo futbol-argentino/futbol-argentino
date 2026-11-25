@@ -7383,6 +7383,20 @@ function cambiarEstadisticasSubTab(tab) {
   }
 }
 
+// ── Tercera División dividida en Primera B Metropolitana y Federal A (filtro de Estadísticas > Equipos) ──
+function _esTerceraDivStats(div) {
+  return _hoyNorm(div) === 'tercera division';
+}
+// Federal A (incluye el viejo Argentino A); el resto de la Tercera es Primera B Metropolitana.
+function _subTerceraStats(t) {
+  return /federal a\b|argentino a\b/.test(_hoyNorm(t.Competencia)) ? 'Federal A' : 'Primera B Metropolitana';
+}
+function _claveTerceraStats(sub) { return 'Tercera Division::' + sub; }
+// Valor del filtro al que pertenece una temporada ('Primera Division', 'Tercera Division::Federal A', etc.)
+function _claveFiltroDivStats(t) {
+  return _esTerceraDivStats(t.Division) ? _claveTerceraStats(_subTerceraStats(t)) : t.Division;
+}
+
 // Llena el <select> de división con las divisiones en las que efectivamente se disputaron
 // temporadas/torneos (campo Division de TEMPORADAS.csv), no con la división actual del equipo.
 function llenarFiltroDivisionEquiposStats() {
@@ -7391,12 +7405,23 @@ function llenarFiltroDivisionEquiposStats() {
   const divsEnCSV = new Set(temporadasArr.map(t => t.Division).filter(Boolean));
   const divsOrdenadas = DIVISIONES_ORDEN.filter(d => divsEnCSV.has(d));
   divsEnCSV.forEach(d => { if (!DIVISIONES_ORDEN.includes(d)) divsOrdenadas.push(d); });
-  divsOrdenadas.forEach(div => {
-    const cfg = DIVISIONES_CONFIG[div] || {};
+  const agregar = (valor, texto) => {
     const opt = document.createElement('option');
-    opt.value = div;
-    opt.textContent = cfg.label || div;
+    opt.value = valor;
+    opt.textContent = texto;
     sel.appendChild(opt);
+  };
+  divsOrdenadas.forEach(div => {
+    // Tercera División se divide en sus dos torneos: Primera B Metropolitana y Federal A
+    if (_esTerceraDivStats(div)) {
+      const subs = new Set(temporadasArr.filter(t => _esTerceraDivStats(t.Division)).map(_subTerceraStats));
+      ['Primera B Metropolitana', 'Federal A'].forEach(sub => {
+        if (subs.has(sub)) agregar(_claveTerceraStats(sub), sub);
+      });
+      return;
+    }
+    const cfg = DIVISIONES_CONFIG[div] || {};
+    agregar(div, cfg.label || div);
   });
   sel.dataset.cargado = '1';
 }
@@ -7430,7 +7455,7 @@ function renderEstadisticasEquipos() {
 
   // Mapa ID_Temporada → División en la que se disputó esa temporada/torneo
   const divisionPorTemporada = {};
-  temporadasArr.forEach(t => { divisionPorTemporada[t.ID_Temporada] = t.Division; });
+  temporadasArr.forEach(t => { divisionPorTemporada[t.ID_Temporada] = _claveFiltroDivStats(t); });
 
   // Acumula las estadísticas de todos los partidos jugados. Si se pasa idMaximo, solo cuenta
   // los partidos con ID_Partido menor a ese número (ranking "de antes", para las flechas).
@@ -7529,9 +7554,8 @@ function renderEstadisticasEquipos() {
 
   Object.keys(paginasEq).forEach(k => paginasEq[k] = 1);
 
-  const nota = `<div style="font-size:12px;color:var(--texto-3);margin:0 2px 12px;">Las flechas muestran cuántas posiciones subió <span style="color:var(--verde);font-weight:700;">▲</span> o bajó <span style="color:var(--rojo);font-weight:700;">▼</span> cada equipo desde el partido N° ${EQST_ID_PARTIDO_BASE}.</div>`;
 
-  container.innerHTML = nota + Object.entries(EQST_CONFIG).map(([key, cfg]) => `
+  container.innerHTML = Object.entries(EQST_CONFIG).map(([key, cfg]) => `
     <div class="tabla-wrapper" style="margin-bottom:16px;">
       <div class="tabla-header"><div class="tabla-titulo">${cfg.titulo}</div><div class="tabla-count" id="eqst-count-${key}"></div></div>
       <div class="tabla-scroll scroll-forzado"><table style="width:100%;border-collapse:collapse;min-width:320px;">
