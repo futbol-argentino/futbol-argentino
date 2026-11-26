@@ -2130,14 +2130,12 @@ header::after{animation:none;height:4px;background:var(--azul)}
       <div class="filtros-panel" style="margin-bottom:20px;">
         <div class="filtros-titulo">Filtros</div>
         <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
-          <div class="filtro-grupo" style="flex:1;min-width:160px;">
-            <label class="filtro-label">Buscar equipo</label>
-            <input type="text" id="stats-eq-buscar" class="filtro-input" placeholder="Nombre del equipo..." autocomplete="off" oninput="buscarEquiposStatsDebounced()">
-            <div id="eqst-busqueda-nav" style="display:none;align-items:center;gap:8px;margin-top:6px;font-size:12px;color:var(--texto-2);">
-              <button class="pag-btn" style="padding:3px 10px;font-size:11px;" onclick="moverBusquedaEquipos(-1)">← Ant.</button>
-              <span id="eqst-busqueda-contador">0 de 0</span>
-              <button class="pag-btn" style="padding:3px 10px;font-size:11px;" onclick="moverBusquedaEquipos(1)">Sig. →</button>
-            </div>
+          <div class="filtro-grupo" style="flex:1;min-width:220px;position:relative;">
+            <label class="filtro-label">Equipo</label>
+            <input type="text" id="eqstats-equipo-input" class="filtro-input" placeholder="Todos los equipos..." autocomplete="off"
+              oninput="filtrarEquipoDropdown('eqstats')" onfocus="mostrarDropdown('eqstats')" onblur="setTimeout(()=>ocultarDropdown('eqstats'),200)" onkeydown="return manejarTecladoEquipoDropdown('eqstats', event)">
+            <input type="hidden" id="eqstats-buscar-equipo" value="">
+            <div id="eqstats-equipo-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:9999;background:var(--fondo-2);border:1px solid var(--borde-activo);border-radius:10px;max-height:220px;overflow-y:auto;box-shadow:var(--sombra-card);margin-top:3px;"></div>
           </div>
           <div class="filtro-grupo" style="flex:1;min-width:220px;">
             <label class="filtro-label">División</label>
@@ -2145,6 +2143,11 @@ header::after{animation:none;height:4px;background:var(--azul)}
               <option value="">Todas las divisiones</option>
             </select>
           </div>
+        </div>
+        <div id="eqst-busqueda-nav" style="display:none;align-items:center;gap:8px;margin-top:10px;font-size:12px;color:var(--texto-2);">
+          <button class="pag-btn" style="padding:3px 10px;font-size:11px;" onclick="moverBusquedaEquipos(-1)">← Ant.</button>
+          <span id="eqst-busqueda-contador">0 de 0</span>
+          <button class="pag-btn" style="padding:3px 10px;font-size:11px;" onclick="moverBusquedaEquipos(1)">Sig. →</button>
         </div>
       </div>
       <div id="stats-equipos-container"></div>
@@ -7689,21 +7692,15 @@ function renderTablaStatEquipo(key) {
 // ── Buscador de equipo en Estadísticas > Equipos (igual que el de jugadores) ──
 let busquedaEq = { termino: '', resultados: [], indice: -1 };
 
-function buscarEquiposStatsDebounced() {
-  clearTimeout(buscarEquiposStatsDebounced._t);
-  buscarEquiposStatsDebounced._t = setTimeout(buscarEquiposStats, 200);
-}
-
 // Recorre las tablas (en el orden en que aparecen) buscando las filas del equipo buscado
 function calcularBusquedaEquiposStats() {
-  const termino = (document.getElementById('stats-eq-buscar')?.value || '').trim();
-  busquedaEq.termino = termino;
+  const eqId = document.getElementById('eqstats-buscar-equipo')?.value || '';
+  busquedaEq.termino = eqId;
   busquedaEq.resultados = [];
-  if (!termino) { busquedaEq.indice = -1; return; }
-  const norm = normalizarNombre(termino);
+  if (!eqId) { busquedaEq.indice = -1; return; }
   Object.keys(EQST_CONFIG).forEach(tipo => {
     (datosStatsEquipos.listas[tipo] || []).forEach(([id], idx) => {
-      if (normalizarNombre(equipos[id] || id).includes(norm)) busquedaEq.resultados.push({ tipo, id, indice: idx });
+      if (String(id) === String(eqId)) busquedaEq.resultados.push({ tipo, id, indice: idx });
     });
   });
   busquedaEq.indice = busquedaEq.resultados.length ? 0 : -1;
@@ -11293,8 +11290,10 @@ function filtrarEquipoDropdown(contexto) {
 
   // Si borraron el texto, limpiar el filtro
   if (!q) {
+    const habiaValor = !!document.getElementById(hidId).value;
     document.getElementById(hidId).value = '';
-    if (contexto === 'jugador') { actualizarAniosDropdownJugador(); buscarJugador(); }
+    if (contexto === 'eqstats') { if (habiaValor) buscarEquiposStats(); }
+    else if (contexto === 'jugador') { actualizarAniosDropdownJugador(); buscarJugador(); }
     else if (contexto === 'dt') buscarDT();
     else if (contexto === 'arbitro') buscarArbitro();
     else if (contexto === 'match1' || contexto === 'match2') filtrar();
@@ -11387,6 +11386,7 @@ function seleccionarEquipoDropdown(contexto, id, nombre) {
   else if (contexto === 'match1' || contexto === 'match2') filtrar();
   else if (contexto === 'estadio1' || contexto === 'estadio2') filtrarPartidosEstadio();
   else if (contexto === 'dtcomp2eq') compararDT();
+  else if (contexto === 'eqstats') buscarEquiposStats();
   else renderEstadisticas();
 }
 
