@@ -2671,6 +2671,19 @@ header::after{animation:none;height:4px;background:var(--azul)}
 </div><!-- fin main -->
 
 <!-- MODAL FICHA JUGADOR -->
+<div class="modal-overlay" id="modal-llave" onclick="cerrarLlaveBracket()">
+  <div class="modal-box" style="max-width:560px;" onclick="event.stopPropagation()">
+    <div class="modal-top">
+      <div style="text-align:center;padding:0 34px;">
+        <div id="modal-llave-titulo" style="font-family:var(--fuente-titulo);font-size:22px;color:var(--texto-1);letter-spacing:0.5px;"></div>
+        <div id="modal-llave-subtitulo" style="font-size:12px;color:var(--texto-3);margin-top:4px;"></div>
+      </div>
+      <button class="modal-cerrar" onclick="cerrarLlaveBracket()">✕</button>
+    </div>
+    <div id="modal-llave-body"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-participaciones" onclick="cerrarParticipaciones()">
   <div class="modal-box" style="max-width:660px;" onclick="event.stopPropagation()">
     <div class="modal-top">
@@ -10422,6 +10435,78 @@ function _bracketRenderEquipo(idEq, goles, ganador, jugado) {
   return `<div class="bracket-equipo ${claseEq}">${esc}<span style="flex:1;">${nombre}</span><span class="bracket-gol ${claseGol}">${goles}</span></div>`;
 }
 
+// Ventana con los partidos de una llave de ida y vuelta (global + cada partido clickeable).
+function abrirLlaveBracket(ids) {
+  const lista = String(ids).split(',')
+    .map(x => partidos.find(p => String(p.ID_Partido) === String(x)))
+    .filter(Boolean)
+    .sort((a, b) => String(a.Fecha || '').localeCompare(String(b.Fecha || '')) || (parseInt(a.ID_Partido) - parseInt(b.ID_Partido)));
+  if (!lista.length) return;
+  const enf = _bracketAgruparEnfrentamientos(lista)[0];
+  const nom = (id) => equipos[id] || id;
+  const esc = (id, px) => ESCUDOS[nom(id)]
+    ? `<img src="${ESCUDOS[nom(id)]}" style="width:${px}px;height:${px}px;object-fit:contain;" onerror="this.style.display='none'">`
+    : `<span style="display:inline-block;width:${px}px;"></span>`;
+  const jugadoP = (p) => p.Goles_Local !== '' && p.Goles_Local !== undefined && p.Goles_Local !== null;
+
+  let totA = 0, totB = 0;
+  lista.forEach(p => {
+    const gl = parseInt(p.Goles_Local) || 0, gv = parseInt(p.Goles_Visitante) || 0;
+    if (p.Local_ID === enf.eqA) { totA += gl; totB += gv; } else { totA += gv; totB += gl; }
+  });
+  const hayJugado = lista.some(jugadoP);
+
+  document.getElementById('modal-llave-titulo').textContent = `${nom(enf.eqA)} vs ${nom(enf.eqB)}`;
+  document.getElementById('modal-llave-subtitulo').textContent = _bracketNombreCanonico(lista[0].Fase || '') || `${lista.length} partidos`;
+
+  const lado = (id, tot) => {
+    const gana = enf.ganador === id;
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;">
+      ${esc(id, 56)}
+      <div style="font-size:14px;font-weight:700;text-align:center;color:${hayJugado && enf.ganador && !gana ? 'var(--texto-3)' : 'var(--texto-1)'};">${nom(id)}</div>
+    </div>`;
+  };
+  const global = `<div style="display:flex;align-items:center;justify-content:center;gap:16px;padding:6px 0 14px;">
+      ${lado(enf.eqA, totA)}
+      <div style="text-align:center;flex-shrink:0;">
+        <div style="font-family:var(--fuente-titulo);font-size:40px;line-height:1;letter-spacing:2px;">
+          <span style="${enf.ganador === enf.eqA ? 'color:var(--celeste);' : ''}">${hayJugado ? totA : '-'}</span><span style="color:var(--texto-3);margin:0 6px;">-</span><span style="${enf.ganador === enf.eqB ? 'color:var(--celeste);' : ''}">${hayJugado ? totB : '-'}</span>
+        </div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--texto-3);margin-top:4px;">Global</div>
+      </div>
+      ${lado(enf.eqB, totB)}
+    </div>
+    ${hayJugado && enf.ganador ? `<div style="text-align:center;margin-bottom:14px;"><span style="font-size:12px;font-weight:700;color:var(--oro);">🏆 Avanza ${nom(enf.ganador)}</span></div>` : ''}`;
+
+  const filas = lista.map((p, i) => {
+    const jug = jugadoP(p);
+    const pen = jug && typeof esDefinicionPorPenales === 'function' && esDefinicionPorPenales(p.Tipo_Definicion) && p.Penales
+      ? calcularScorePenales(p.Penales) : null;
+    const fecha = p.Fecha ? formatearFechaDisplay(String(p.Fecha).split('T')[0]) : '';
+    const estadio = p.Estadio && String(p.Estadio).toLowerCase() !== 'no disponible' ? p.Estadio : '';
+    const etiqueta = p.Fase || `Partido ${i + 1}`;
+    return `<div onclick="cerrarLlaveBracket();verPartido(${p.ID_Partido})" style="cursor:pointer;background:var(--fondo-3);border:1px solid var(--borde);border-radius:12px;padding:10px 14px;margin-bottom:8px;transition:var(--trans);" onmouseover="this.style.borderColor='var(--borde-hover)'" onmouseout="this.style.borderColor='var(--borde)'">
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--oro);font-weight:700;text-align:center;margin-bottom:8px;">${etiqueta}</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0;font-size:13px;font-weight:600;text-align:right;">${nom(p.Local_ID)}${esc(p.Local_ID, 24)}</div>
+        <div style="font-family:var(--fuente-titulo);font-size:24px;letter-spacing:1px;flex-shrink:0;min-width:64px;text-align:center;">${jug ? `${p.Goles_Local}<span style="color:var(--texto-3);margin:0 4px;">-</span>${p.Goles_Visitante}` : `<span style="color:var(--texto-3);font-size:16px;">${p.Hora || p.hora || 'vs'}</span>`}</div>
+        <div style="flex:1;display:flex;align-items:center;gap:8px;min-width:0;font-size:13px;font-weight:600;">${esc(p.Visitante_ID, 24)}${nom(p.Visitante_ID)}</div>
+      </div>
+      ${pen ? `<div style="text-align:center;font-size:12px;color:var(--amarillo);font-weight:600;margin-top:4px;">Penales: ${pen.local} - ${pen.visita}</div>` : ''}
+      <div style="text-align:center;font-size:11px;color:var(--texto-3);margin-top:6px;">${[fecha && '📅 ' + fecha, estadio && '🏟️ ' + estadio].filter(Boolean).join('  ·  ')}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('modal-llave-body').innerHTML = global + filas +
+    `<div style="text-align:center;font-size:11px;color:var(--texto-3);margin-top:4px;">Tocá un partido para ver el detalle</div>`;
+  document.getElementById('modal-llave').classList.add('visible');
+}
+
+function cerrarLlaveBracket() {
+  const m = document.getElementById('modal-llave');
+  if (m) m.classList.remove('visible');
+}
+
 function _bracketRenderEnfrentamiento(enf) {
   const { eqA, eqB, ganador, partidos: ps } = enf;
   const jugado = ps.some(p => p.Goles_Local !== '' && p.Goles_Local !== undefined);
@@ -10430,11 +10515,14 @@ function _bracketRenderEnfrentamiento(enf) {
     const gl = parseInt(p.Goles_Local)||0, gv = parseInt(p.Goles_Visitante)||0;
     if (p.Local_ID === eqA) { totA += gl; totB += gv; } else { totA += gv; totB += gl; }
   });
-  const clickable = ps.length === 1 ? `onclick="verPartido(${ps[0].ID_Partido})"` : '';
-  return `<div class="bracket-partido" ${clickable} style="${ps.length > 1 ? 'cursor:default;' : ''}">
+  // Un solo partido: abre ese partido. Ida y vuelta: abre una ventana con los partidos de la llave.
+  const clickable = ps.length === 1
+    ? `onclick="verPartido(${ps[0].ID_Partido})"`
+    : `onclick="abrirLlaveBracket('${ps.map(p => p.ID_Partido).join(',')}')"`;
+  return `<div class="bracket-partido" ${clickable}>
     ${_bracketRenderEquipo(eqA, totA, ganador, jugado)}
     ${_bracketRenderEquipo(eqB, totB, ganador, jugado)}
-    ${ps.length > 1 ? `<div style="padding:4px 10px;font-size:10px;color:var(--texto-3);text-align:center;">${ps.length} partidos</div>` : ''}
+    ${ps.length > 1 ? `<div style="padding:4px 10px;font-size:10px;color:var(--texto-3);text-align:center;">${ps.length} partidos ›</div>` : ''}
   </div>`;
 }
 
@@ -13868,6 +13956,8 @@ document.addEventListener('keydown', (ev) => {
   if (ev.key === 'Escape') {
     const m = document.getElementById('modal-participaciones');
     if (m && m.classList.contains('visible')) cerrarParticipaciones();
+    const ml = document.getElementById('modal-llave');
+    if (ml && ml.classList.contains('visible')) cerrarLlaveBracket();
   }
 });
 
