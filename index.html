@@ -465,6 +465,16 @@ table.tabla-partidos-fija th:nth-child(5),table.tabla-partidos-fija td:nth-child
    las filas (a diferencia del auto-layout de una tabla HTML), y una misma
    clase (.grid-partidos) asegura el mismo grosor en los dos lugares. ═══ */
 .grid-partidos{display:grid}
+/* Torneo de un solo partido (copas, supercopas): tarjeta destacada, siempre abierta */
+.partido-unico{border:1px solid var(--oro);border-radius:16px;overflow:hidden;background:linear-gradient(180deg,rgba(245,158,11,0.10),var(--fondo-2) 140px);box-shadow:0 0 0 1px rgba(245,158,11,0.15),0 8px 28px rgba(0,0,0,0.25)}
+.partido-unico-head{text-align:center;padding:18px 16px 8px}
+.partido-unico-fase{font-family:var(--fuente-titulo);font-size:28px;letter-spacing:3px;color:var(--oro);text-transform:uppercase}
+.partido-unico-info{margin-top:6px;font-size:13px;color:var(--texto-2);display:flex;flex-wrap:wrap;justify-content:center;gap:6px 16px}
+.partido-unico .gp-celda{font-size:18px;padding:20px 8px;border-bottom:none}
+.partido-unico .gp-celda img{width:38px!important;height:38px!important}
+.partido-unico .gp-resultado{font-size:34px;padding:20px 4px}
+.partido-unico .grid-partidos.grid-simetrica{grid-template-columns:1fr 130px 1fr 40px}
+.partido-unico .gp-goleadores{border-top:1px solid var(--borde)}
 /* Compacta (Campeones): columnas al ancho justo del contenido, pegadas a la
    izquierda, nombres completos sin recortar — igual espíritu que el Buscador.
    Si no entra en el ancho de pantalla, el contenedor padre permite scroll. */
@@ -9453,6 +9463,7 @@ function cambiarTorneoTab(tab) {
     document.getElementById('torneo-panel-'+t).style.display = t===tab ? 'block' : 'none';
     document.getElementById('ttab-'+t)?.classList.toggle('activo', t===tab);
   });
+  if (tab === 'partidos') setTimeout(abrirGolesPartidoUnico, 0);
   if (tab === 'stats' && torneoActualId) renderStatsTorneo(torneoActualId);
   if (tab === 'bracket' && torneoActualId) renderBracket(torneoActualId);
   if (tab === 'equipos' && torneoActualId) renderEquiposTorneo(torneoActualId);
@@ -10159,6 +10170,9 @@ function verTorneo(idTemporada) {
 
   if (pts.length === 0) {
     container.innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">No hay partidos cargados para este torneo.</div>';
+  } else if (pts.length === 1) {
+    container.innerHTML = renderPartidoUnicoTorneo(pts[0]);
+    setTimeout(abrirGolesPartidoUnico, 0);
   } else {
     const faseOrder = [
       // Fases numeradas de Copa Maradona
@@ -10902,6 +10916,42 @@ function renderStatsTorneo(idTemporada) {
     makeTabla('expulsados',  '🟥 Expulsados',      ['#','Jugador','Rojas']);
 
   ['goleadores','ec','amonestados','expulsados'].forEach(renderTablaTorneo);
+}
+
+// Torneo de un solo partido: tarjeta destacada (sin acordeón), con el partido y los goles ya desplegados
+function renderPartidoUnicoTorneo(p) {
+  const fecha = p.Fecha ? p.Fecha.split('T')[0] : '';
+  let fechaTxt = '';
+  if (fecha) {
+    try {
+      const [d, m, a] = fecha.includes('/') ? fecha.split('/') : fecha.split('-').reverse();
+      const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+      const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+      const dt = new Date(parseInt(a), parseInt(m)-1, parseInt(d));
+      fechaTxt = `${dias[dt.getDay()]} ${parseInt(d)} de ${meses[parseInt(m)-1]} de ${a}`;
+    } catch(e) { fechaTxt = fecha; }
+  }
+  const info = [];
+  if (fechaTxt) info.push(`<span>📅 ${fechaTxt}</span>`);
+  if (p.Hora) info.push(`<span>🕒 ${p.Hora}</span>`);
+  if (p.Estadio) info.push(`<span>🏟️ ${p.Estadio}</span>`);
+  return `<div class="partido-unico">
+    <div class="partido-unico-head">
+      <div class="partido-unico-fase">🏆 ${p.Fase || 'Final'}</div>
+      ${info.length ? `<div class="partido-unico-info">${info.join('')}</div>` : ''}
+    </div>
+    <div class="grid-simetrica-scroll"><div class="grid-partidos grid-simetrica">${filaPartidoGrid(p)}</div></div>
+  </div>`;
+}
+// Despliega los goles del partido único (idempotente). Hay que llamarlo cuando el panel ya es visible,
+// porque la posición de los goles se mide sobre el layout real.
+function abrirGolesPartidoUnico() {
+  const panel = document.getElementById('torneo-panel-partidos');
+  if (!panel || panel.style.display === 'none') return;
+  const arrow = panel.querySelector('.partido-unico .gol-arrow-toggle');
+  if (!arrow) return;
+  const wrap = panel.querySelector('.partido-unico .gp-goleadores');
+  if (wrap && wrap.style.display !== 'block') arrow.click();
 }
 
 function formatearFechaDia(fecha) {
