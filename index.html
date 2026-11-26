@@ -2130,6 +2130,15 @@ header::after{animation:none;height:4px;background:var(--azul)}
       <div class="filtros-panel" style="margin-bottom:20px;">
         <div class="filtros-titulo">Filtros</div>
         <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+          <div class="filtro-grupo" style="flex:1;min-width:160px;">
+            <label class="filtro-label">Buscar equipo</label>
+            <input type="text" id="stats-eq-buscar" class="filtro-input" placeholder="Nombre del equipo..." autocomplete="off" oninput="buscarEquiposStatsDebounced()">
+            <div id="eqst-busqueda-nav" style="display:none;align-items:center;gap:8px;margin-top:6px;font-size:12px;color:var(--texto-2);">
+              <button class="pag-btn" style="padding:3px 10px;font-size:11px;" onclick="moverBusquedaEquipos(-1)">← Ant.</button>
+              <span id="eqst-busqueda-contador">0 de 0</span>
+              <button class="pag-btn" style="padding:3px 10px;font-size:11px;" onclick="moverBusquedaEquipos(1)">Sig. →</button>
+            </div>
+          </div>
           <div class="filtro-grupo" style="flex:1;min-width:220px;">
             <label class="filtro-label">División</label>
             <select id="stats-eq-filtro-division" class="filtro-select" onchange="renderEstadisticasEquipos()">
@@ -7491,13 +7500,12 @@ const EQST_CONFIG = {
   pp:   { titulo:'❌ Más Partidos Perdidos',     col:'PP',    color:'var(--rojo)' },
   gf:   { titulo:'⚽ Más Goles a Favor',         col:'GF',    color:'var(--verde)' },
   gc:   { titulo:'🥅 Más Goles Recibidos',       col:'GC',    color:'var(--rojo)' },
-  dg:   { titulo:'💪 Mejor Diferencia de Gol',   col:'DG',    color:'var(--celeste)' },
   amon: { titulo:'🟨 Más Amonestados',           col:'Amar.', color:'var(--amarillo)' },
   expu: { titulo:'🟥 Más Expulsados',            col:'Rojas', color:'var(--rojo)' },
   gcEq: { titulo:'↩️ Más Goles en Contra',       col:'EC',    color:'var(--rojo)' },
 };
 const POR_PAG_EQ = 20;
-let paginasEq = { pj:1, pg:1, pe:1, pp:1, gf:1, gc:1, dg:1, amon:1, expu:1, gcEq:1 };
+let paginasEq = { pj:1, pg:1, pe:1, pp:1, gf:1, gc:1, amon:1, expu:1, gcEq:1 };
 // Las flechas de movimiento comparan el ranking actual contra el ranking que había ANTES de este partido
 // (se cuentan solo los partidos con ID_Partido menor a este número).
 const EQST_ID_PARTIDO_BASE = 60331;
@@ -7592,7 +7600,6 @@ function renderEstadisticasEquipos() {
     return {
       pg: sorted('pg'), pe: sorted('pe'), pp: sorted('pp'),
       gf: sorted('gf'), gc: sorted('gc'),
-      dg: Object.entries(st).filter(([,v])=>v.pj>0).sort((a,b)=>(((b[1].gf-b[1].gc)-(a[1].gf-a[1].gc)) || (b[1].pj-a[1].pj)) || tb(a,b)).map(([id,v])=>[id,v.gf-v.gc]),
       pj: sorted('pj'), amon: sorted('amon'), expu: sorted('expu'), gcEq: sorted('gcEq'),
     };
   };
@@ -7610,7 +7617,9 @@ function renderEstadisticasEquipos() {
   });
 
   Object.keys(paginasEq).forEach(k => paginasEq[k] = 1);
-
+  // Si hay un equipo buscado, cada tabla salta a la página donde aparece
+  calcularBusquedaEquiposStats();
+  aplicarPaginasBusquedaEquipos();
 
   container.innerHTML = Object.entries(EQST_CONFIG).map(([key, cfg]) => `
     <div class="tabla-wrapper" style="margin-bottom:16px;">
@@ -7623,6 +7632,8 @@ function renderEstadisticasEquipos() {
     </div>`).join('');
 
   Object.keys(EQST_CONFIG).forEach(renderTablaStatEquipo);
+  actualizarNavBusquedaEquipos();
+  scrollAHitEquipos();
 }
 
 function renderTablaStatEquipo(key) {
@@ -7648,7 +7659,9 @@ function renderTablaStatEquipo(key) {
       else if (posAntes < posAhora) mov = `<span style="color:var(--rojo);font-size:12px;font-weight:700;">▼ ${posAhora - posAntes}</span>`;
       else mov = '<span style="color:var(--texto-3);font-size:12px;">=</span>';
     }
-    return `<tr style="cursor:pointer;" onclick="verDetalleEquipo('${id}')">
+    const hit = infoResaltadoEquipos(key, inicio + i);
+    const trAttrs = hit ? ` id="${hit.id}" class="fila-stat-hit${hit.activo ? ' fila-stat-hit-activa' : ''}"` : '';
+    return `<tr${trAttrs} style="cursor:pointer;" onclick="verDetalleEquipo('${id}')">
       <td style="padding:8px 12px;color:var(--texto-3);font-size:13px;width:36px;">${posAhora}</td>
       <td style="text-align:center;white-space:nowrap;">${mov}</td>
       <td style="padding:8px 12px;"><div style="display:flex;align-items:center;gap:8px;">${esc}<span style="font-size:13px;font-weight:600;">${nombre}</span></div></td>
@@ -7671,6 +7684,86 @@ function renderTablaStatEquipo(key) {
       <span class="pag-info">Página ${pag} de ${totalPags}</span>
       <button class="pag-btn" onclick="cambiarPaginaEquiposStat(${pag+1},'${key}')" ${pag===totalPags?'disabled':''}>Siguiente →</button>`;
   }
+}
+
+// ── Buscador de equipo en Estadísticas > Equipos (igual que el de jugadores) ──
+let busquedaEq = { termino: '', resultados: [], indice: -1 };
+
+function buscarEquiposStatsDebounced() {
+  clearTimeout(buscarEquiposStatsDebounced._t);
+  buscarEquiposStatsDebounced._t = setTimeout(buscarEquiposStats, 200);
+}
+
+// Recorre las tablas (en el orden en que aparecen) buscando las filas del equipo buscado
+function calcularBusquedaEquiposStats() {
+  const termino = (document.getElementById('stats-eq-buscar')?.value || '').trim();
+  busquedaEq.termino = termino;
+  busquedaEq.resultados = [];
+  if (!termino) { busquedaEq.indice = -1; return; }
+  const norm = normalizarNombre(termino);
+  Object.keys(EQST_CONFIG).forEach(tipo => {
+    (datosStatsEquipos.listas[tipo] || []).forEach(([id], idx) => {
+      if (normalizarNombre(equipos[id] || id).includes(norm)) busquedaEq.resultados.push({ tipo, id, indice: idx });
+    });
+  });
+  busquedaEq.indice = busquedaEq.resultados.length ? 0 : -1;
+}
+
+// Cada tabla salta a la página de su primera coincidencia; sin coincidencia, página 1
+function aplicarPaginasBusquedaEquipos() {
+  const primera = {};
+  busquedaEq.resultados.forEach(r => { if (!(r.tipo in primera)) primera[r.tipo] = r.indice; });
+  Object.keys(paginasEq).forEach(t => {
+    paginasEq[t] = (t in primera) ? Math.floor(primera[t] / POR_PAG_EQ) + 1 : 1;
+  });
+}
+
+function infoResaltadoEquipos(tipo, idx) {
+  if (!busquedaEq.resultados.length) return null;
+  const pos = busquedaEq.resultados.findIndex(r => r.tipo === tipo && r.indice === idx);
+  if (pos === -1) return null;
+  return { id: 'eqst-hit-' + tipo + '-' + idx, activo: pos === busquedaEq.indice };
+}
+
+function actualizarNavBusquedaEquipos() {
+  const nav = document.getElementById('eqst-busqueda-nav');
+  if (!nav) return;
+  if (!busquedaEq.termino) { nav.style.display = 'none'; return; }
+  nav.style.display = 'flex';
+  const cont = document.getElementById('eqst-busqueda-contador');
+  cont.textContent = busquedaEq.resultados.length
+    ? (busquedaEq.indice + 1) + ' de ' + busquedaEq.resultados.length
+    : 'Sin resultados';
+}
+
+function scrollAHitEquipos() {
+  if (!busquedaEq.termino || !busquedaEq.resultados.length) return;
+  requestAnimationFrame(() => {
+    const r = busquedaEq.resultados[busquedaEq.indice];
+    const el = r && document.getElementById('eqst-hit-' + r.tipo + '-' + r.indice);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+}
+
+// Al escribir: recalcula coincidencias, salta cada tabla a su página y resalta las filas
+function buscarEquiposStats() {
+  if (!datosStatsEquipos.listas || !Object.keys(datosStatsEquipos.listas).length) return;
+  calcularBusquedaEquiposStats();
+  aplicarPaginasBusquedaEquipos();
+  Object.keys(EQST_CONFIG).forEach(renderTablaStatEquipo);
+  actualizarNavBusquedaEquipos();
+  scrollAHitEquipos();
+}
+
+// Ant./Sig.: salta entre todas las apariciones del equipo en todas las tablas
+function moverBusquedaEquipos(delta) {
+  if (!busquedaEq.resultados.length) return;
+  busquedaEq.indice = (busquedaEq.indice + delta + busquedaEq.resultados.length) % busquedaEq.resultados.length;
+  const r = busquedaEq.resultados[busquedaEq.indice];
+  paginasEq[r.tipo] = Math.floor(r.indice / POR_PAG_EQ) + 1;
+  Object.keys(EQST_CONFIG).forEach(renderTablaStatEquipo); // re-render para mover el resaltado "activo"
+  actualizarNavBusquedaEquipos();
+  scrollAHitEquipos();
 }
 
 function cambiarPaginaEquiposStat(pag, key) {
