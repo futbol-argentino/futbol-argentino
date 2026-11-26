@@ -10197,6 +10197,13 @@ function verTorneo(idTemporada) {
         const idx = faseOrderLower.indexOf(m[1].toLowerCase());
         return { key: quitarAc(m[1]), titulo: m[1], base: m[1], rank: idx === -1 ? 500 : idx };
       }
+      // Dentro de la fase final se separan, en este orden: Fase Final (resto) -> Final por el 1er Ascenso -> Reducido
+      if (/^final por (el )?(1er|primer)\s+ascenso/i.test(nombre)) {
+        return { key: '__final_ascenso__', titulo: 'Final por el 1er Ascenso', base: '', rank: 9100 };
+      }
+      if (/reducido/i.test(nombre)) {
+        return { key: '__reducido__', titulo: 'Reducido', base: '', rank: 9200 };
+      }
       return { key: '__final__', titulo: 'Fase Final', base: '', rank: 9000 };
     };
 
