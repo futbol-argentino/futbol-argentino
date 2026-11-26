@@ -10435,6 +10435,18 @@ function _bracketRenderEquipo(idEq, goles, ganador, jugado) {
   return `<div class="bracket-equipo ${claseEq}">${esc}<span style="flex:1;">${nombre}</span><span class="bracket-gol ${claseGol}">${goles}</span></div>`;
 }
 
+// Fecha legible para una fecha que puede venir como "dd/mm/aaaa" o "aaaa-mm-dd" (ej. "18 oct 2025").
+function _fechaLlaveBracket(f) {
+  const raw = String(f || '').split('T')[0].trim();
+  if (!raw) return '';
+  const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  let m = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) return `${parseInt(m[1])} ${meses[parseInt(m[2]) - 1]} ${m[3]}`;
+  m = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (m) return `${parseInt(m[3])} ${meses[parseInt(m[2]) - 1]} ${m[1]}`;
+  return raw;
+}
+
 // Ventana con los partidos de una llave de ida y vuelta (global + cada partido clickeable).
 function abrirLlaveBracket(ids) {
   const lista = String(ids).split(',')
@@ -10482,8 +10494,7 @@ function abrirLlaveBracket(ids) {
     const jug = jugadoP(p);
     const pen = jug && typeof esDefinicionPorPenales === 'function' && esDefinicionPorPenales(p.Tipo_Definicion) && p.Penales
       ? calcularScorePenales(p.Penales) : null;
-    const fecha = p.Fecha ? formatearFechaDisplay(String(p.Fecha).split('T')[0]) : '';
-    const estadio = p.Estadio && String(p.Estadio).toLowerCase() !== 'no disponible' ? p.Estadio : '';
+    const fecha = _fechaLlaveBracket(p.Fecha);
     const etiqueta = p.Fase || `Partido ${i + 1}`;
     return `<div onclick="cerrarLlaveBracket();verPartido(${p.ID_Partido})" style="cursor:pointer;background:var(--fondo-3);border:1px solid var(--borde);border-radius:12px;padding:10px 14px;margin-bottom:8px;transition:var(--trans);" onmouseover="this.style.borderColor='var(--borde-hover)'" onmouseout="this.style.borderColor='var(--borde)'">
       <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--oro);font-weight:700;text-align:center;margin-bottom:8px;">${etiqueta}</div>
@@ -10493,7 +10504,7 @@ function abrirLlaveBracket(ids) {
         <div style="flex:1;display:flex;align-items:center;gap:8px;min-width:0;font-size:13px;font-weight:600;">${esc(p.Visitante_ID, 24)}${nom(p.Visitante_ID)}</div>
       </div>
       ${pen ? `<div style="text-align:center;font-size:12px;color:var(--amarillo);font-weight:600;margin-top:4px;">Penales: ${pen.local} - ${pen.visita}</div>` : ''}
-      <div style="text-align:center;font-size:11px;color:var(--texto-3);margin-top:6px;">${[fecha && '📅 ' + fecha, estadio && '🏟️ ' + estadio].filter(Boolean).join('  ·  ')}</div>
+      ${fecha ? `<div style="text-align:center;font-size:11px;color:var(--texto-3);margin-top:6px;">📅 ${fecha}</div>` : ''}
     </div>`;
   }).join('');
 
@@ -10602,7 +10613,7 @@ function _bracketRenderPartidoUnico(p) {
     else if (scorePen) ganador = scorePen.local > scorePen.visita ? p.Local_ID : scorePen.visita > scorePen.local ? p.Visitante_ID : null;
   }
 
-  const fecha = p.Fecha ? formatearFechaDisplay(String(p.Fecha).split('T')[0]) : '';
+  const fecha = _fechaLlaveBracket(p.Fecha);
   const hora = p.Hora || p.hora || '';
   const lado = (idEq, nombre, goles, pen) => {
     const gana = ganador === idEq;
