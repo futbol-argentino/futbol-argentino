@@ -10192,7 +10192,8 @@ function verTorneo(idTemporada) {
         return { key: '__regular__', titulo: t, base: '', rank: -1 };
       }
       let m = nombre.match(/^(.+?) — Fecha \d+$/);
-      if (!m) m = nombre.match(/^(Fase (?:Campeonato|Revalid[aá]))\b/i);
+      // La fase puede estar al principio ("Fase Campeonato Final") o en el medio ("Cuartos de Final Fase Campeonato Ida")
+      if (!m) m = nombre.match(/\b(Fase (?:Campeonato|Revalid[aá]))\b/i);
       if (m) {
         const idx = faseOrderLower.indexOf(m[1].toLowerCase());
         return { key: quitarAc(m[1]), titulo: m[1], base: m[1], rank: idx === -1 ? 500 : idx };
@@ -10209,9 +10210,16 @@ function verTorneo(idTemporada) {
 
     // Etiqueta corta del acordeón dentro de su sección (el título de la fase ya la explica)
     const etiquetaGrupo = (nombre, base) => {
-      if (!base || !nombre.toLowerCase().startsWith(base.toLowerCase())) return nombre;
-      const resto = nombre.slice(base.length).replace(/^\s*[—-]\s*/, '').trim();
-      return resto || nombre;
+      if (!base) return nombre;
+      const idx = nombre.toLowerCase().indexOf(base.toLowerCase());
+      if (idx === -1) return nombre;
+      if (idx === 0) {
+        const resto = nombre.slice(base.length).replace(/^\s*[—-]\s*/, '').trim();
+        return resto || nombre;
+      }
+      // Fase en el medio: "Cuartos de Final Fase Campeonato Ida" -> "Cuartos de Final Ida"
+      const sinFase = (nombre.slice(0, idx) + ' ' + nombre.slice(idx + base.length)).replace(/\s{2,}/g, ' ').trim();
+      return sinFase || nombre;
     };
 
     let contGid = 0;
