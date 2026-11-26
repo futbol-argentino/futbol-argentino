@@ -6843,7 +6843,7 @@ function parsearGoleadores(equipoId, torneoId, listaPartidos, excluirEquipoId) {
   (listaPartidos || partidos).forEach(p => {
     if (!esPartidoJugado(p)) return; // Fix: ignorar partidos sin resultado
     if (torneoId && p.ID_Temporada != torneoId) return;
-    if (torneoId && ['Promoción Ida','Promoción Vuelta','Promocion Ida','Promocion Vuelta'].includes(p.Fase)) return;
+    if (torneoId && esFasePromoExcluida(p.Fase)) return;
     const raw = p['Goleadores'] || '';
     if (!raw) return;
     const partes = raw.split('/');
@@ -6896,7 +6896,7 @@ function parsearGoleadasMultiples(equipoId, torneoId, listaPartidos, excluirEqui
   (listaPartidos || partidos).forEach(p => {
     if (!esPartidoJugado(p)) return;
     if (torneoId && p.ID_Temporada != torneoId) return;
-    if (torneoId && ['Promoción Ida','Promoción Vuelta','Promocion Ida','Promocion Vuelta'].includes(p.Fase)) return;
+    if (torneoId && esFasePromoExcluida(p.Fase)) return;
     const raw = p['Goleadores'] || '';
     if (!raw) return;
     raw.split('/').forEach((parte, idx) => {
@@ -6933,7 +6933,7 @@ function parsearTarjetas(campo, equipoId, torneoId, listaPartidos, excluirEquipo
   (listaPartidos || partidos).forEach(p => {
     if (!esPartidoJugado(p)) return; // Fix: ignorar partidos sin resultado
     if (torneoId && p.ID_Temporada != torneoId) return;
-    if (torneoId && ['Promoción Ida','Promoción Vuelta','Promocion Ida','Promocion Vuelta'].includes(p.Fase)) return;
+    if (torneoId && esFasePromoExcluida(p.Fase)) return;
     const raw = p[campo] || '';
     if (!raw) return;
     const partes = raw.split('/');
@@ -9463,6 +9463,51 @@ function cambiarTorneoTab(tab) {
 // ══════════════════════════════════════════════════════════════
 // RÉCORDS DEL TORNEO — pestaña "Récords" dentro de cada torneo
 // ══════════════════════════════════════════════════════════════
+// ── Promoción entre categorías (Primera C ↔ Promocional Amateur) ──
+// Son 2 partidos (ida y vuelta) que existen UNA sola vez en Partidos.csv. Se muestran en la lista de
+// partidos de AMBOS torneos (con el nombre que corresponde a cada uno), pero no cuentan como partidos
+// "propios" de ninguno: no suman a las estadísticas/récords/goleadores del torneo ni hacen que el equipo
+// figure como participante del otro torneo.
+function _normFasePromo(f) { return String(f||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); }
+const _RX_PROMO_C  = /^promocion con (la )?primera c( ida| vuelta)?$/;
+const _RX_PROMO_PA = /^promocion con (el )?promocional amateur( ida| vuelta)?$/;
+function esFasePromoInterdiv(f) { const n = _normFasePromo(f); return _RX_PROMO_C.test(n) || _RX_PROMO_PA.test(n); }
+// Fases de promoción que no cuentan para las estadísticas del torneo (las de siempre + las interdivisionales)
+function esFasePromoExcluida(f) { return ['promocion ida','promocion vuelta'].includes(_normFasePromo(f)) || esFasePromoInterdiv(f); }
+function _catPromoInterdiv(t) {
+  const n = _fmtNorm(t.Competencia);
+  if (/(femenin|reserva|copa|supercopa)/.test(n)) return null;
+  if (/promocional amateur/.test(n)) return 'PA';
+  if (/primera c\b/.test(n) && !/promocion/.test(n)) return 'C';
+  return null;
+}
+// Partidos a MOSTRAR de un torneo: los suyos + (si es Primera C o Promocional Amateur) los de la promoción entre ambos,
+// con el nombre de fase correspondiente a ese torneo. No modifica el arreglo global `partidos`.
+function partidosParaMostrarTorneo(idTemporada) {
+  const base = partidos.filter(p => p.ID_Temporada == idTemporada);
+  const temp = temporadasArr.find(t => t.ID_Temporada == idTemporada);
+  const cat = temp ? _catPromoInterdiv(temp) : null;
+  if (!cat) return base;
+  const nombreProm = cat === 'C' ? 'Promocion con el Promocional Amateur' : 'Promocion con la Primera C';
+  const renombrar = p => {
+    const m = String(p.Fase || '').match(/\s(ida|vuelta)\s*$/i);
+    const suf = m ? ' ' + m[1][0].toUpperCase() + m[1].slice(1).toLowerCase() : '';
+    return { ...p, Fase: nombreProm + suf };
+  };
+  const lista = base.map(p => esFasePromoInterdiv(p.Fase) ? renombrar(p) : p);
+  if (!base.some(p => esFasePromoInterdiv(p.Fase))) {
+    const anio = obtenerAnioTemporada(temp);
+    const catOtra = cat === 'C' ? 'PA' : 'C';
+    const idsOtros = new Set(temporadasArr
+      .filter(t => t.ID_Temporada != idTemporada && _catPromoInterdiv(t) === catOtra && obtenerAnioTemporada(t) === anio)
+      .map(t => String(t.ID_Temporada)));
+    partidos.forEach(p => {
+      if (idsOtros.has(String(p.ID_Temporada)) && esFasePromoInterdiv(p.Fase)) lista.push(renombrar(p));
+    });
+  }
+  return lista;
+}
+
 const REC_FASES_EXCLUIDAS = ['Promoción Ida','Promoción Vuelta','Promocion Ida','Promocion Vuelta'];
 const REC_MAX_ITEMS = 5; // máximo de empatados que se muestran por récord
 
@@ -9568,7 +9613,7 @@ function recCardRacha(titulo, tono, seqs, filtro, pred, unidad) {
 
 function renderRecordsTorneo(idTemporada) {
   const cont = document.getElementById('torneo-records-container');
-  const todos = partidos.filter(p => p.ID_Temporada == idTemporada && !REC_FASES_EXCLUIDAS.includes(p.Fase));
+  const todos = partidos.filter(p => p.ID_Temporada == idTemporada && !esFasePromoExcluida(p.Fase));
   const jugados = todos.filter(p => esPartidoJugado(p) && p.Local_ID && p.Visitante_ID);
   if (jugados.length === 0) {
     cont.innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">Todavía no hay partidos jugados para calcular récords.</div>';
@@ -9883,6 +9928,7 @@ function renderEquiposTorneo(idTemporada) {
   // Equipos que aparecen en los partidos del torneo
   partidos.forEach(p => {
     if (p.ID_Temporada != idTemporada) return;
+    if (esFasePromoInterdiv(p.Fase)) return; // la promoción entre categorías no cuenta como participación en el torneo
     [p.Local_ID, p.Visitante_ID].forEach(id => { if (id && equipos[id]) agregar(id, equipos[id]); });
   });
 
@@ -10076,8 +10122,7 @@ function verTorneo(idTemporada) {
   renderTablaPromedios(idTemporada);
 
   // ── Partidos ──
-  const pts = partidos
-    .filter(p => p.ID_Temporada == idTemporada)
+  const pts = partidosParaMostrarTorneo(idTemporada)
     .sort((a, b) => {
       // Orden cronológico real usando Fecha_Numerica (serial numérico), evita el bug
       // de comparar fechas como texto (ej: "17/2" ordenaba antes que "3/2" por string).
@@ -10201,6 +10246,14 @@ function verTorneo(idTemporada) {
       // Dentro de la fase final se separan, en este orden: Fase Final (resto) -> Final por el 1er Ascenso -> Promoción por la Permanencia -> Reducido -> Reducido Copa Argentina
       if (/^final por (el )?(1er|primer)\s+ascenso/i.test(nombre)) {
         return { key: '__final_ascenso__', titulo: 'Final por el 1er Ascenso', base: '', rank: 9100 };
+      }
+      if (/^final por (el )?t[ií]tulo/i.test(nombre)) {
+        return { key: '__final_titulo__', titulo: 'Final por el Título', base: '', rank: 9050 };
+      }
+      const mProm = nombre.match(/^promoci[oó]n con (la )?primera c|^promoci[oó]n con (el )?promocional amateur/i);
+      if (mProm) {
+        const aPA = /promocional amateur/i.test(mProm[0]);
+        return { key: aPA ? '__promo_pa__' : '__promo_c__', titulo: aPA ? 'Promoción con el Promocional Amateur' : 'Promoción con la Primera C', base: mProm[0], rank: 9160 };
       }
       if (/promoci[oó]n por la permanencia/i.test(nombre)) {
         return { key: '__promo_perm__', titulo: 'Promoción por la Permanencia', base: '', rank: 9150 };
@@ -12184,7 +12237,7 @@ function cambiarStatsSubTab(tab) {
 function renderStatsEquiposTorneo(idTemporada) {
   const container = document.getElementById('torneo-stats-equipos-container');
   const FASES_EXCLUIDAS_STATS = ['Promoción Ida','Promoción Vuelta','Promocion Ida','Promocion Vuelta'];
-  const pts = partidos.filter(p => p.ID_Temporada == idTemporada && !FASES_EXCLUIDAS_STATS.includes(p.Fase));
+  const pts = partidos.filter(p => p.ID_Temporada == idTemporada && !esFasePromoExcluida(p.Fase));
 
   if (pts.length === 0) {
     container.innerHTML = '<div style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:14px;text-align:center;padding:40px;color:var(--texto-3);">Sin datos de partidos.</div>';
@@ -13581,7 +13634,7 @@ function renderLineaTiempoEquipo(equipoId) {
   // Agrupar por año, igual que en Historial de Torneos, uniendo las marcas de todos los torneos de ese año
   const porAnio = {};
   temporadasArr.forEach(t => {
-    const juega = partidos.some(p => p.ID_Temporada == t.ID_Temporada && (p.Local_ID===equipoId || p.Visitante_ID===equipoId));
+    const juega = partidos.some(p => p.ID_Temporada == t.ID_Temporada && !esFasePromoInterdiv(p.Fase) && (p.Local_ID===equipoId || p.Visitante_ID===equipoId));
     if (!juega) return;
 
     const anio = obtenerAnioTemporada(t);
@@ -14006,6 +14059,7 @@ function renderHistorialTorneos(equipoId) {
   temporadasArr.forEach(t => {
     const psTorneo = partidos.filter(p =>
       p.ID_Temporada == t.ID_Temporada &&
+      !esFasePromoInterdiv(p.Fase) &&
       (p.Local_ID === equipoId || p.Visitante_ID === equipoId)
     );
     if (!psTorneo.length) return;
