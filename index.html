@@ -1293,6 +1293,11 @@ header::after{animation:none;height:4px;background:var(--azul)}
 .camp-año{font-family:var(--fuente-mono);font-size:10px;letter-spacing:.5px;color:var(--texto-3)}
 .camp-nombre{font-size:16px;letter-spacing:0}
 .camp-campeon{color:var(--oro);font-weight:700}
+
+/* Sub-pestañas de Estadísticas (Jugadores / Equipos): el estado activo va por clase, no por estilos inline */
+.estab-btn{font-family:var(--fuente-cuerpo);font-size:13px;font-weight:700;padding:8px 16px;border-radius:0;border:2px solid var(--borde);cursor:pointer;background:transparent;color:var(--texto-2);transition:var(--trans)}
+.estab-btn:hover{background:var(--fondo-3);color:var(--texto-1)}
+.estab-btn.activo,.estab-btn.activo:hover{background:var(--azul);color:#0a0a23;border-color:var(--azul)}
 </style>
 </head>
 <body>
@@ -1826,8 +1831,8 @@ header::after{animation:none;height:4px;background:var(--azul)}
 
     <!-- Sub-tabs: Jugadores / Equipos -->
     <div style="display:flex;gap:8px;margin-bottom:16px;">
-      <button id="estab-tab-jugadores" onclick="cambiarEstadisticasSubTab('jugadores')" style="font-family:var(--fuente-cuerpo);font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;border:none;cursor:pointer;background:var(--azul);color:white;transition:var(--trans);">👤 Jugadores</button>
-      <button id="estab-tab-equipos" onclick="cambiarEstadisticasSubTab('equipos')" style="font-family:var(--fuente-cuerpo);font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;border:none;cursor:pointer;background:transparent;color:var(--texto-2);transition:var(--trans);">🛡️ Equipos</button>
+      <button id="estab-tab-jugadores" class="estab-btn activo" aria-pressed="true" onclick="cambiarEstadisticasSubTab('jugadores')">👤 Jugadores</button>
+      <button id="estab-tab-equipos" class="estab-btn" aria-pressed="false" onclick="cambiarEstadisticasSubTab('equipos')">🛡️ Equipos</button>
     </div>
 
     <div id="stats-vista-jugadores">
@@ -7371,10 +7376,12 @@ function moverBusquedaStats(delta) {
 // ── ESTADÍSTICAS DE EQUIPOS (sub-tab "Equipos" dentro de la pestaña Estadísticas) ──
 function cambiarEstadisticasSubTab(tab) {
   const esJug = tab === 'jugadores';
-  document.getElementById('estab-tab-jugadores').style.background = esJug ? 'var(--azul)' : 'transparent';
-  document.getElementById('estab-tab-jugadores').style.color = esJug ? 'white' : 'var(--texto-2)';
-  document.getElementById('estab-tab-equipos').style.background = !esJug ? 'var(--azul)' : 'transparent';
-  document.getElementById('estab-tab-equipos').style.color = !esJug ? 'white' : 'var(--texto-2)';
+  [['estab-tab-jugadores', esJug], ['estab-tab-equipos', !esJug]].forEach(([id, activo]) => {
+    const b = document.getElementById(id);
+    b.classList.toggle('activo', activo);
+    b.setAttribute('aria-pressed', activo ? 'true' : 'false');
+    b.removeAttribute('style');   // por si quedó algún estilo inline viejo
+  });
   document.getElementById('stats-vista-jugadores').style.display = esJug ? 'block' : 'none';
   document.getElementById('stats-vista-equipos').style.display = esJug ? 'none' : 'block';
   if (!esJug) {
