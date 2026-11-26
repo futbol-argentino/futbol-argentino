@@ -1298,6 +1298,11 @@ header::after{animation:none;height:4px;background:var(--azul)}
 .estab-btn{font-family:var(--fuente-cuerpo);font-size:13px;font-weight:700;padding:8px 16px;border-radius:0;border:2px solid var(--borde);cursor:pointer;background:transparent;color:var(--texto-2);transition:var(--trans)}
 .estab-btn:hover{background:var(--fondo-3);color:var(--texto-1)}
 .estab-btn.activo,.estab-btn.activo:hover{background:var(--azul);color:#0a0a23;border-color:var(--azul)}
+
+/* Selector "Por División / Todos" de la pestaña Equipos: estado activo por clase */
+.vista-btn{font-family:var(--fuente-cuerpo);font-size:12px;font-weight:700;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;background:transparent;color:var(--texto-2);transition:var(--trans)}
+.vista-btn:hover{background:var(--fondo-3);color:var(--texto-1)}
+.vista-btn.activo,.vista-btn.activo:hover{background:var(--azul);color:#0a0a23}
 </style>
 </head>
 <body>
@@ -1608,8 +1613,8 @@ header::after{animation:none;height:4px;background:var(--azul)}
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
           <div class="filtros-titulo" style="margin-bottom:0;">🏟️ Equipos</div>
           <div style="display:flex;gap:3px;background:var(--fondo-3);border:1px solid var(--borde);border-radius:9px;padding:3px;">
-            <button id="btn-ver-divisiones" onclick="setVistaEquipos('divisiones')" style="font-family:var(--fuente-cuerpo);font-size:12px;font-weight:500;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;background:var(--azul);color:white;transition:var(--trans);">🏟️ Por División</button>
-            <button id="btn-ver-todos" onclick="setVistaEquipos('todos')" style="font-family:var(--fuente-cuerpo);font-size:12px;font-weight:500;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;background:transparent;color:var(--texto-2);transition:var(--trans);">⊞ Todos</button>
+            <button id="btn-ver-divisiones" class="vista-btn activo" aria-pressed="true" onclick="setVistaEquipos('divisiones')">🏟️ Por División</button>
+            <button id="btn-ver-todos" class="vista-btn" aria-pressed="false" onclick="setVistaEquipos('todos')">⊞ Todos</button>
           </div>
         </div>
       </div>
@@ -11983,10 +11988,11 @@ function setVistaEquipos(modo) {
   const gridDiv = document.getElementById('divisiones-grid');
   const gridTodos = document.getElementById('todos-equipos-wrap');
 
-  btnDiv.style.background = modo === 'divisiones' ? 'var(--azul)' : 'transparent';
-  btnDiv.style.color = modo === 'divisiones' ? 'white' : 'var(--texto-2)';
-  btnTodos.style.background = modo === 'todos' ? 'var(--azul)' : 'transparent';
-  btnTodos.style.color = modo === 'todos' ? 'white' : 'var(--texto-2)';
+  [[btnDiv, modo === 'divisiones'], [btnTodos, modo === 'todos']].forEach(([b, activo]) => {
+    b.classList.toggle('activo', activo);
+    b.setAttribute('aria-pressed', activo ? 'true' : 'false');
+    b.removeAttribute('style');   // por si quedó algún estilo inline viejo
+  });
 
   if (modo === 'divisiones') {
     gridDiv.style.display = 'grid';
