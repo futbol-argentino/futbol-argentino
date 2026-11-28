@@ -4773,7 +4773,7 @@ function iniciarFiltrosRivales(id, pe) {
   // Divisiones en las que el equipo jugó, en orden de jerarquía
   const ORDEN = ['primera division','segunda division','tercera division','cuarta division','quinta division','sexta division'];
   const norm = (x) => String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
-  const divs = [...new Set(pe.map(p => (_rivalesInfoTemp[p.ID_Temporada] || {}).division).filter(Boolean))]
+  const divs = [...new Set(pe.map(p => (_rivalesInfoTemp[idTemporadaPropia(p, id)] || {}).division).filter(Boolean))]
     .sort((a, b) => {
       const ia = ORDEN.indexOf(norm(a)), ib = ORDEN.indexOf(norm(b));
       return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b, 'es');
@@ -4792,7 +4792,7 @@ function poblarTorneosRivales() {
   const divSel = document.getElementById('rivales-filtro-division').value;
   const torneos = new Set();
   _rivalesPartidos.forEach(p => {
-    const inf = _rivalesInfoTemp[p.ID_Temporada];
+    const inf = _rivalesInfoTemp[idTemporadaPropia(p, _rivalesEquipoId)];
     if (!inf || inf.esPrimera || !inf.torneo) return;
     if (divSel && inf.division !== divSel) return;
     torneos.add(inf.torneo);
@@ -4854,7 +4854,7 @@ function recalcularRivales() {
 
   const filtrados = _rivalesPartidos.filter(p => {
     if (!divSel && !torSel) return true;
-    const inf = _rivalesInfoTemp[p.ID_Temporada];
+    const inf = _rivalesInfoTemp[idTemporadaPropia(p, id)];
     if (!inf) return false;
     if (divSel && inf.division !== divSel) return false;
     if (torSel && (inf.esPrimera || inf.torneo !== torSel)) return false;
@@ -7528,14 +7528,22 @@ function renderEstadisticasEquipos() {
         const idp = parseInt(p.ID_Partido);
         if (!isNaN(idp) && idp >= idMaximo) return;
       }
-      if (filtro && divisionPorTemporada[p.ID_Temporada] !== filtro) return;
       const l = p.Local_ID, v = p.Visitante_ID;
       if (!l || !v) return;
-      iniciar(l); iniciar(v);
+      // Con división elegida, cada equipo cuenta solo si el partido es de esa división PARA ÉL
+      // (en la promoción Primera C ↔ Promocional Amateur, cada uno cuenta en su propio torneo)
+      const cuentaL = !filtro || divisionPorTemporada[idTemporadaPropia(p, l)] === filtro;
+      const cuentaV = !filtro || divisionPorTemporada[idTemporadaPropia(p, v)] === filtro;
+      if (!cuentaL && !cuentaV) return;
+      if (cuentaL) iniciar(l);
+      if (cuentaV) iniciar(v);
+      const nuevo = () => ({ pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, amon:0, expu:0, gcEq:0 });
+      const SL = cuentaL ? stats[l] : nuevo();
+      const SV = cuentaV ? stats[v] : nuevo();
 
       const gl = parseInt(p.Goles_Local)||0, gv = parseInt(p.Goles_Visitante)||0;
-      stats[l].pj++; stats[l].gf += gl; stats[l].gc += gv;
-      stats[v].pj++; stats[v].gf += gv; stats[v].gc += gl;
+      SL.pj++; SL.gf += gl; SL.gc += gv;
+      SV.pj++; SV.gf += gv; SV.gc += gl;
 
       let resultado; // 'l' gana, 'v' gana, 'e' empate/definición no decisiva
       if (esDefinicionDecisiva(p.Tipo_Definicion)) {
@@ -7544,16 +7552,16 @@ function renderEstadisticasEquipos() {
         else resultado = 'e';
       } else resultado = 'e';
 
-      if (resultado === 'l') { stats[l].pg++; stats[v].pp++; }
-      else if (resultado === 'v') { stats[v].pg++; stats[l].pp++; }
-      else { stats[l].pe++; stats[v].pe++; }
+      if (resultado === 'l') { SL.pg++; SV.pp++; }
+      else if (resultado === 'v') { SV.pg++; SL.pp++; }
+      else { SL.pe++; SV.pe++; }
 
       // Goles en contra (autogoles) a favor del equipo beneficiado
       const rawG = p.Goleadores || '';
       rawG.split('/').forEach((parte, idx) => {
         const benefId = idx === 0 ? l : v;
         parte.split('-').forEach(entrada => {
-          if (/\(EC\)/i.test(entrada)) stats[benefId].gcEq = (stats[benefId].gcEq||0) + 1;
+          if (/\(EC\)/i.test(entrada)) (benefId === l ? SL : SV).gcEq = ((benefId === l ? SL : SV).gcEq||0) + 1;
         });
       });
 
@@ -7564,7 +7572,7 @@ function renderEstadisticasEquipos() {
           const teamId = idx === 0 ? l : v;
           parte.split('-').forEach(e => {
             const n = limpiarNombre(e);
-            if (n && n.length > 1 && n.toLowerCase() !== 'ninguno') stats[teamId][key]++;
+            if (n && n.length > 1 && n.toLowerCase() !== 'ninguno') (teamId === l ? SL : SV)[key]++;
           });
         });
       });
@@ -9548,6 +9556,39 @@ const _RX_PROMO_PA = /^promocion con (el )?promocional amateur( ida| vuelta)?$/;
 function esFasePromoInterdiv(f) { const n = _normFasePromo(f); return _RX_PROMO_C.test(n) || _RX_PROMO_PA.test(n); }
 // Fases de promoción que no cuentan para las estadísticas del torneo (las de siempre + las interdivisionales)
 function esFasePromoExcluida(f) { return ['promocion ida','promocion vuelta'].includes(_normFasePromo(f)) || esFasePromoInterdiv(f); }
+// Para un partido de promoción entre categorías, devuelve la temporada "propia" de un equipo: aquella (Primera C o
+// Promocional Amateur del mismo año) en la que ese equipo jugó de verdad. Así cada uno cuenta en SU torneo y no en el contrario.
+// Para cualquier otro partido devuelve su temporada normal.
+let _partTempCache = null;
+function _participantesTemporada() {
+  if (_partTempCache && _partTempCache.n === partidos.length) return _partTempCache.map;
+  const map = {};
+  partidos.forEach(p => {
+    if (esFasePromoInterdiv(p.Fase)) return;
+    const k = p.ID_Temporada;
+    if (!map[k]) map[k] = new Set();
+    map[k].add(String(p.Local_ID)); map[k].add(String(p.Visitante_ID));
+  });
+  _partTempCache = { n: partidos.length, map };
+  return map;
+}
+function idTemporadaPropia(p, equipoId) {
+  if (!esFasePromoInterdiv(p.Fase)) return p.ID_Temporada;
+  const part = _participantesTemporada();
+  const eq = String(equipoId);
+  if (part[p.ID_Temporada] && part[p.ID_Temporada].has(eq)) return p.ID_Temporada;
+  const t = temporadasArr.find(x => x.ID_Temporada == p.ID_Temporada);
+  const cat = t ? _catPromoInterdiv(t) : null;
+  if (cat) {
+    const anio = obtenerAnioTemporada(t);
+    const otra = temporadasArr.find(x => x.ID_Temporada != p.ID_Temporada
+      && _catPromoInterdiv(x) === (cat === 'C' ? 'PA' : 'C')
+      && obtenerAnioTemporada(x) === anio
+      && part[x.ID_Temporada] && part[x.ID_Temporada].has(eq));
+    if (otra) return otra.ID_Temporada;
+  }
+  return p.ID_Temporada;
+}
 function _catPromoInterdiv(t) {
   const n = _fmtNorm(t.Competencia);
   if (/(femenin|reserva|copa|supercopa)/.test(n)) return null;
