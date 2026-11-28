@@ -473,7 +473,9 @@ table.tabla-partidos-fija th:nth-child(5),table.tabla-partidos-fija td:nth-child
 .partido-unico .gp-celda{font-size:18px;padding:20px 8px;border-bottom:none}
 .partido-unico .gp-celda img{width:38px!important;height:38px!important}
 .partido-unico .gp-resultado{font-size:34px;padding:20px 4px}
-.partido-unico .grid-partidos.grid-simetrica{grid-template-columns:1fr 130px 1fr 40px}
+.partido-unico .grid-partidos.grid-simetrica{grid-template-columns:40px 1fr 130px 1fr 40px}
+/* columna vacía de 40px a la izquierda = igual a la de la flecha de goles a la derecha, así equipos y resultado quedan centrados */
+.partido-unico .grid-partidos.grid-simetrica .gp-local{grid-column:2}
 .partido-unico .gp-goleadores{border-top:1px solid var(--borde)}
 /* Compacta (Campeones): columnas al ancho justo del contenido, pegadas a la
    izquierda, nombres completos sin recortar — igual espíritu que el Buscador.
@@ -7428,9 +7430,19 @@ function _subTerceraStats(t) {
   return /federal a\b|argentino a\b/.test(_hoyNorm(t.Competencia)) ? 'Federal A' : 'Primera B Metropolitana';
 }
 function _claveTerceraStats(sub) { return 'Tercera Division::' + sub; }
-// Valor del filtro al que pertenece una temporada ('Primera Division', 'Tercera Division::Federal A', etc.)
+// Quinta División dividida en Primera D y Promocional Amateur
+function _esQuintaDivStats(div) {
+  return _hoyNorm(div) === 'quinta division';
+}
+function _subQuintaStats(t) {
+  return /promocional amateur/.test(_hoyNorm(t.Competencia)) ? 'Promocional Amateur' : 'Primera D';
+}
+function _claveQuintaStats(sub) { return 'Quinta Division::' + sub; }
+// Valor del filtro al que pertenece una temporada ('Primera Division', 'Tercera Division::Federal A', 'Quinta Division::Primera D', etc.)
 function _claveFiltroDivStats(t) {
-  return _esTerceraDivStats(t.Division) ? _claveTerceraStats(_subTerceraStats(t)) : t.Division;
+  if (_esTerceraDivStats(t.Division)) return _claveTerceraStats(_subTerceraStats(t));
+  if (_esQuintaDivStats(t.Division)) return _claveQuintaStats(_subQuintaStats(t));
+  return t.Division;
 }
 
 // Llena el <select> de división con las divisiones en las que efectivamente se disputaron
@@ -7456,6 +7468,16 @@ function llenarFiltroDivisionEquiposStats() {
       });
       return;
     }
+    // Quinta División se divide en sus dos torneos: Primera D y Promocional Amateur
+    if (_esQuintaDivStats(div)) {
+      const subs = new Set(temporadasArr.filter(t => _esQuintaDivStats(t.Division)).map(_subQuintaStats));
+      ['Primera D', 'Promocional Amateur'].forEach(sub => {
+        if (subs.has(sub)) agregar(_claveQuintaStats(sub), sub);
+      });
+      return;
+    }
+    // Cuarta División = Primera C
+    if (_hoyNorm(div) === 'cuarta division') { agregar(div, 'Primera C'); return; }
     const cfg = DIVISIONES_CONFIG[div] || {};
     agregar(div, cfg.label || div);
   });
@@ -10308,7 +10330,7 @@ function verTorneo(idTemporada) {
       const mProm = nombre.match(/^promoci[oó]n con (la )?primera c|^promoci[oó]n con (el )?promocional amateur/i);
       if (mProm) {
         const aPA = /promocional amateur/i.test(mProm[0]);
-        return { key: aPA ? '__promo_pa__' : '__promo_c__', titulo: aPA ? 'Promoción con el Promocional Amateur' : 'Promoción con la Primera C', base: mProm[0], rank: 9160 };
+        return { key: aPA ? '__promo_pa__' : '__promo_c__', titulo: aPA ? 'Promoción con el Promocional Amateur' : 'Promoción con la Primera C', base: mProm[0], rank: 9400 };
       }
       if (/promoci[oó]n por la permanencia/i.test(nombre)) {
         return { key: '__promo_perm__', titulo: 'Promoción por la Permanencia', base: '', rank: 9150 };
