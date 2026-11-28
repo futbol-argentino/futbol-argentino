@@ -14388,21 +14388,28 @@ function navegarAnioMovimientos(delta) {
 }
 
 // ── PROMOVIDOS: equipos que pasan de categoría sin haber ascendido (ej.: 2023, la Primera D se unifica con la Primera C) ──
-// Se leen de la columna opcional "Promovidos" de TEMPORADAS.csv (equipos separados por ";") y, además, de esta lista fija.
+// Se definen en esta lista fija. cat = categoría de la temporada que terminan (la marca va en ESA temporada: ej. Primera D 2023); origenDivision/origenTorneo = respaldo para mostrarlos en Ascensos y Descensos.
 // anio = año de la temporada a la que pasan a jugar; cat 'C' = Primera C (misma detección que usa la promoción C ↔ Promocional Amateur).
 const PROMOVIDOS_MANUALES = [
-  { anio: 2023, cat: 'C', equipos: [
+  { anio: 2023, cat: 'D', origenDivision: 'Quinta Division', origenTorneo: 'Primera D', equipos: [
     'Argentino de Rosario', 'Central Ballester', 'Centro Español', 'Defensores de Cambaceres', 'Deportivo Paraguayo',
     'El Porvenir', 'Juventud Unida de San Miguel', 'Lugano', 'Mercedes', 'Muñiz', 'Sportivo Barracas'
   ] }
 ];
 function _normEqPromo(n) { return String(n || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ''); }
 // Nombres (tal cual están cargados) de los equipos promovidos a esa temporada
+function _esTemporadaCat(t, cat) {
+  if (cat === 'D') {
+    const n = _fmtNorm(t.Competencia);
+    return /primera d\b/.test(n) && !/(femenin|reserva|copa|supercopa|promocion)/.test(n);
+  }
+  return _catPromoInterdiv(t) === cat;
+}
 function listaPromovidosTemporada(t) {
-  const lista = String(t.Promovidos || '').split(';').map(x => x.trim()).filter(Boolean);
+  const lista = [];
   const anio = obtenerAnioTemporada(t);
   PROMOVIDOS_MANUALES.forEach(m => {
-    if (m.anio === Number(anio) && _catPromoInterdiv(t) === m.cat) m.equipos.forEach(e => { if (!lista.includes(e)) lista.push(e); });
+    if (m.anio === Number(anio) && _esTemporadaCat(t, m.cat)) m.equipos.forEach(e => { if (!lista.includes(e)) lista.push(e); });
   });
   return lista;
 }
@@ -14424,8 +14431,7 @@ function renderMovimientosAscensoDescenso() {
   temporadasArr.forEach(t => {
     const ascensos  = (t.Ascensos||'').split(';').map(s=>s.trim()).filter(Boolean);
     const descensos = (t.Descensos||'').split(';').map(s=>s.trim()).filter(Boolean);
-    const promovidos = listaPromovidosTemporada(t);
-    if (!ascensos.length && !descensos.length && !promovidos.length) return;
+    if (!ascensos.length && !descensos.length) return;
 
     const anio = obtenerAnioTemporada(t);
     const anioLabel = anio || t.Año || '?';
@@ -14440,7 +14446,19 @@ function renderMovimientosAscensoDescenso() {
     if (!divs[division].torneos[nombreTorneo]) divs[division].torneos[nombreTorneo] = { nombre: nombreTorneo, ascensos: new Set(), descensos: new Set(), promovidos: new Set() };
     ascensos.forEach(e => divs[division].torneos[nombreTorneo].ascensos.add(e));
     descensos.forEach(e => divs[division].torneos[nombreTorneo].descensos.add(e));
-    promovidos.forEach(e => divs[division].torneos[nombreTorneo].promovidos.add(e));
+  });
+
+  // Promovidos (sin ascender): se muestran como un torneo más, en la división de la que vienen
+  PROMOVIDOS_MANUALES.forEach(m => {
+    const k = String(m.anio);
+    const tReal = temporadasArr.find(t => Number(obtenerAnioTemporada(t)) === m.anio && _esTemporadaCat(t, m.cat));
+    const divNombre = tReal ? (tReal.Division || divisionSinCampeon(tReal) || m.origenDivision).trim() : m.origenDivision;
+    const torNombre = tReal ? String(tReal.Competencia || '').trim() || m.origenTorneo : m.origenTorneo;
+    if (!porAnio[k]) porAnio[k] = { anioLabel: k, anioNum: m.anio, divisiones: {} };
+    const divs = porAnio[k].divisiones;
+    if (!divs[divNombre]) divs[divNombre] = { division: divNombre, rango: rangoDivisionCampeones(tReal || { Division: divNombre }), torneos: {} };
+    if (!divs[divNombre].torneos[torNombre]) divs[divNombre].torneos[torNombre] = { nombre: torNombre, ascensos: new Set(), descensos: new Set(), promovidos: new Set() };
+    m.equipos.forEach(e => divs[divNombre].torneos[torNombre].promovidos.add(e));
   });
 
   const todasTemporadas = Object.values(porAnio).sort((a,b) => b.anioNum - a.anioNum);
@@ -14492,25 +14510,24 @@ function renderMovimientosAscensoDescenso() {
   // Grilla de ascensos / descensos de un torneo
   // En la máxima categoría (rango 1) no hay ascensos: solo se muestran los descensos
   const grillaMov = (tv, rango) => `
-        <div class="movimiento-grid" style="display:grid;grid-template-columns:${rango === 1 && !tv.ascensos.size ? '1fr' : '1fr 1fr'}${tv.promovidos.size ? ' 1fr' : ''};gap:18px;">
-          ${rango === 1 && !tv.ascensos.size ? '' : `<div>
+        <div class="movimiento-grid" style="display:grid;grid-template-columns:${rango === 1 && !tv.ascensos.size ? '1fr' : '1fr 1fr'};gap:18px;">
+          ${rango === 1 && !tv.ascensos.size ? '' : (tv.promovidos.size && !tv.ascensos.size ? `<div>
+            <div style="font-size:12px;font-weight:700;color:var(--verde);margin-bottom:8px;">▲ PROMOVIDOS</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              ${[...tv.promovidos].map(e => chip(e,'asc')).join('')}
+            </div>
+          </div>` : `<div>
             <div style="font-size:12px;font-weight:700;color:var(--verde);margin-bottom:8px;">▲ ASCIENDEN</div>
             <div style="display:flex;flex-direction:column;gap:6px;">
               ${tv.ascensos.size ? [...tv.ascensos].map(e => chip(e,'asc')).join('') : vacio('Aún no cargado')}
             </div>
-          </div>`}
+          </div>`)}
           <div>
             <div style="font-size:12px;font-weight:700;color:var(--rojo);margin-bottom:8px;">▼ DESCIENDEN</div>
             <div style="display:flex;flex-direction:column;gap:6px;">
               ${tv.descensos.size ? [...tv.descensos].map(e => chip(e,'desc')).join('') : vacio('Sin descensos registrados')}
             </div>
           </div>
-          ${tv.promovidos.size ? `<div>
-            <div style="font-size:12px;font-weight:700;color:var(--verde);margin-bottom:8px;">▲ PROMOVIDOS <span style="font-weight:400;color:var(--texto-3);">(sin ascender)</span></div>
-            <div style="display:flex;flex-direction:column;gap:6px;">
-              ${[...tv.promovidos].map(e => chip(e,'asc')).join('')}
-            </div>
-          </div>` : ''}
         </div>`;
 
   const bloqueDivision = (d) => {
