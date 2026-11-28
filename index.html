@@ -13764,8 +13764,9 @@ function renderLineaTiempoEquipo(equipoId) {
     const listaDescensos = (t.Descensos||'').split(';').map(s => s.toLowerCase().replace(/\s+/g,''));
     const fueAscenso = listaAscensos.includes(nmEqNorm);
     const fueDescenso = !fueAscenso && listaDescensos.includes(nmEqNorm);
+    const fuePromovido = fuePromovidoEnTemporada(t, nmEq);
 
-    if (!porAnio[anio]) porAnio[anio] = { anio, ligas: new Map(), copas: new Map(), campeon:false, subcampeon:false, ascenso:false, descenso:false };
+    if (!porAnio[anio]) porAnio[anio] = { anio, ligas: new Map(), copas: new Map(), campeon:false, subcampeon:false, ascenso:false, descenso:false, promovido:false };
     const reg = porAnio[anio];
     // Se muestra el NOMBRE de cada torneo que jugó en el año (también los de Primera División, para saber de cuál salió
     // campeón). Primero los torneos de liga y después las copas.
@@ -13783,6 +13784,7 @@ function renderLineaTiempoEquipo(equipoId) {
     reg.campeon    = reg.campeon    || fueCampeon;
     reg.subcampeon = reg.subcampeon || fueSubcampeon;
     reg.ascenso    = reg.ascenso    || fueAscenso;
+    reg.promovido  = reg.promovido  || fuePromovido;
     reg.descenso   = reg.descenso   || fueDescenso;
   });
 
@@ -13803,10 +13805,12 @@ function renderLineaTiempoEquipo(equipoId) {
     else if (reg.ascenso) { dotColor = 'var(--verde)'; dotBg = 'rgba(74,222,128,0.15)'; icono = '▲'; etiqueta = 'ASCENSO'; }
     else if (reg.descenso) { dotColor = 'var(--rojo)'; dotBg = 'rgba(244,63,94,0.15)'; icono = '▼'; etiqueta = 'DESCENSO'; }
     else if (reg.subcampeon) { dotColor = '#C0C0C0'; dotBg = 'rgba(192,192,192,0.15)'; icono = '🥈'; etiqueta = 'SUBCAMPEÓN'; }
+    else if (reg.promovido) { dotColor = 'var(--verde)'; dotBg = 'rgba(74,222,128,0.15)'; icono = '▲'; etiqueta = 'PROMOVIDO'; }
 
     // Si además del hito principal también descendió/ascendió (raro pero posible), lo mostramos como badge secundario
     const extraBadges = [];
     if (reg.campeon && reg.ascenso) extraBadges.push(`<span style="font-size:10px;background:rgba(74,222,128,0.15);color:var(--verde);padding:2px 7px;border-radius:5px;border:1px solid rgba(74,222,128,0.35);font-weight:700;">▲ ASCENSO</span>`);
+    if (reg.promovido && etiqueta !== 'PROMOVIDO') extraBadges.push(BADGE_PROMOVIDO);
     if (reg.campeon && reg.descenso) extraBadges.push(`<span style="font-size:10px;background:rgba(244,63,94,0.15);color:var(--rojo);padding:2px 7px;border-radius:5px;border:1px solid rgba(244,63,94,0.35);font-weight:700;">▼ DESCENSO</span>`);
 
     // Hueco respecto al año siguiente más reciente en la lista (posible paso por otra categoría o falta de datos)
@@ -14222,9 +14226,10 @@ function renderHistorialTorneos(equipoId) {
     const listaDescensos = (t.Descensos||'').split(';').map(s => s.toLowerCase().replace(/\s+/g,''));
     const fueAscenso = listaAscensos.includes(nmEqNorm);
     const fueDescenso = !fueAscenso && listaDescensos.includes(nmEqNorm);
+    const fuePromovido = fuePromovidoEnTemporada(t, nmEq);
 
     if (!torneosPorAnio[anio]) torneosPorAnio[anio] = [];
-    torneosPorAnio[anio].push({ t, anio, jugados, pj, pg, pe, pp, gf, gc, pos: posRow?.Pos||null, fueCampeon, fueSubcampeon, fueAscenso, fueDescenso });
+    torneosPorAnio[anio].push({ t, anio, jugados, pj, pg, pe, pp, gf, gc, pos: posRow?.Pos||null, fueCampeon, fueSubcampeon, fueAscenso, fueDescenso, fuePromovido });
   });
 
   const aniosOrdenados = Object.keys(torneosPorAnio).sort((a,b)=>b-a);
@@ -14240,7 +14245,7 @@ function renderHistorialTorneos(equipoId) {
 
   lista.innerHTML = _resumenPart + aniosOrdenados.map(anio => {
     const items = torneosPorAnio[anio];
-    const cards = items.map(({ t, pj, pg, pe, pp, gf, gc, pos, fueCampeon, fueSubcampeon, fueAscenso, fueDescenso }) => {
+    const cards = items.map(({ t, pj, pg, pe, pp, gf, gc, pos, fueCampeon, fueSubcampeon, fueAscenso, fueDescenso, fuePromovido }) => {
       const foto = t.Foto_Trofeo
         ? `<img src="trofeos/${t.Foto_Trofeo}" style="width:38px;height:38px;object-fit:contain;" onerror="this.style.display='none'">`
         : `<span style="font-size:28px;">🏅</span>`;
@@ -14249,11 +14254,12 @@ function renderHistorialTorneos(equipoId) {
         : fueSubcampeon
         ? `<span style="font-size:10px;background:rgba(192,192,192,0.15);color:#C0C0C0;padding:2px 7px;border-radius:5px;border:1px solid rgba(192,192,192,0.35);font-weight:700;">🥈 SUBCAMPEÓN</span>`
         : '';
-      const ascDescBadge = fueAscenso
+      const promBadge = fuePromovido ? BADGE_PROMOVIDO : '';
+      const ascDescBadge = promBadge + (fueAscenso
         ? `<span style="font-size:10px;background:rgba(74,222,128,0.15);color:var(--verde);padding:2px 7px;border-radius:5px;border:1px solid rgba(74,222,128,0.35);font-weight:700;">▲ ASCENSO</span>`
         : fueDescenso
         ? `<span style="font-size:10px;background:rgba(244,63,94,0.15);color:var(--rojo);padding:2px 7px;border-radius:5px;border:1px solid rgba(244,63,94,0.35);font-weight:700;">▼ DESCENSO</span>`
-        : '';
+        : '');
       return `
         <div onclick="verTorneoEquipo('${t.ID_Temporada}','${equipoId}')"
           style="background:var(--fondo-2);border:1px solid var(--borde);border-radius:12px;padding:14px 16px;
@@ -14381,6 +14387,31 @@ function navegarAnioMovimientos(delta) {
   renderMovimientosAscensoDescenso();
 }
 
+// ── PROMOVIDOS: equipos que pasan de categoría sin haber ascendido (ej.: 2023, la Primera D se unifica con la Primera C) ──
+// Se leen de la columna opcional "Promovidos" de TEMPORADAS.csv (equipos separados por ";") y, además, de esta lista fija.
+// anio = año de la temporada a la que pasan a jugar; cat 'C' = Primera C (misma detección que usa la promoción C ↔ Promocional Amateur).
+const PROMOVIDOS_MANUALES = [
+  { anio: 2023, cat: 'C', equipos: [
+    'Argentino de Rosario', 'Central Ballester', 'Centro Español', 'Defensores de Cambaceres', 'Deportivo Paraguayo',
+    'El Porvenir', 'Juventud Unida de San Miguel', 'Lugano', 'Mercedes', 'Muñiz', 'Sportivo Barracas'
+  ] }
+];
+function _normEqPromo(n) { return String(n || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ''); }
+// Nombres (tal cual están cargados) de los equipos promovidos a esa temporada
+function listaPromovidosTemporada(t) {
+  const lista = String(t.Promovidos || '').split(';').map(x => x.trim()).filter(Boolean);
+  const anio = obtenerAnioTemporada(t);
+  PROMOVIDOS_MANUALES.forEach(m => {
+    if (m.anio === Number(anio) && _catPromoInterdiv(t) === m.cat) m.equipos.forEach(e => { if (!lista.includes(e)) lista.push(e); });
+  });
+  return lista;
+}
+function fuePromovidoEnTemporada(t, nombreEquipo) {
+  const n = _normEqPromo(nombreEquipo);
+  return listaPromovidosTemporada(t).some(e => _normEqPromo(e) === n);
+}
+const BADGE_PROMOVIDO = `<span style="font-size:10px;background:rgba(74,222,128,0.15);color:var(--verde);padding:2px 7px;border-radius:5px;border:1px solid rgba(74,222,128,0.35);font-weight:700;">▲ PROMOVIDO</span>`;
+
 // ── VISTA GLOBAL: Ascensos y Descensos por temporada ──
 // Se agrupa por AÑO → CATEGORÍA (división) → torneo, así se ve de qué categoría
 // sale cada equipo que asciende o desciende (los movimientos de cada fila de
@@ -14393,7 +14424,8 @@ function renderMovimientosAscensoDescenso() {
   temporadasArr.forEach(t => {
     const ascensos  = (t.Ascensos||'').split(';').map(s=>s.trim()).filter(Boolean);
     const descensos = (t.Descensos||'').split(';').map(s=>s.trim()).filter(Boolean);
-    if (!ascensos.length && !descensos.length) return;
+    const promovidos = listaPromovidosTemporada(t);
+    if (!ascensos.length && !descensos.length && !promovidos.length) return;
 
     const anio = obtenerAnioTemporada(t);
     const anioLabel = anio || t.Año || '?';
@@ -14405,9 +14437,10 @@ function renderMovimientosAscensoDescenso() {
     // Cada torneo de la división tiene sus propios ascensos y descensos (ej. Tercera División:
     // Primera B Metropolitana y Federal A van por separado).
     const nombreTorneo = String(t.Competencia || '').trim();
-    if (!divs[division].torneos[nombreTorneo]) divs[division].torneos[nombreTorneo] = { nombre: nombreTorneo, ascensos: new Set(), descensos: new Set() };
+    if (!divs[division].torneos[nombreTorneo]) divs[division].torneos[nombreTorneo] = { nombre: nombreTorneo, ascensos: new Set(), descensos: new Set(), promovidos: new Set() };
     ascensos.forEach(e => divs[division].torneos[nombreTorneo].ascensos.add(e));
     descensos.forEach(e => divs[division].torneos[nombreTorneo].descensos.add(e));
+    promovidos.forEach(e => divs[division].torneos[nombreTorneo].promovidos.add(e));
   });
 
   const todasTemporadas = Object.values(porAnio).sort((a,b) => b.anioNum - a.anioNum);
@@ -14459,7 +14492,7 @@ function renderMovimientosAscensoDescenso() {
   // Grilla de ascensos / descensos de un torneo
   // En la máxima categoría (rango 1) no hay ascensos: solo se muestran los descensos
   const grillaMov = (tv, rango) => `
-        <div class="movimiento-grid" style="display:grid;grid-template-columns:${rango === 1 && !tv.ascensos.size ? '1fr' : '1fr 1fr'};gap:18px;">
+        <div class="movimiento-grid" style="display:grid;grid-template-columns:${rango === 1 && !tv.ascensos.size ? '1fr' : '1fr 1fr'}${tv.promovidos.size ? ' 1fr' : ''};gap:18px;">
           ${rango === 1 && !tv.ascensos.size ? '' : `<div>
             <div style="font-size:12px;font-weight:700;color:var(--verde);margin-bottom:8px;">▲ ASCIENDEN</div>
             <div style="display:flex;flex-direction:column;gap:6px;">
@@ -14472,6 +14505,12 @@ function renderMovimientosAscensoDescenso() {
               ${tv.descensos.size ? [...tv.descensos].map(e => chip(e,'desc')).join('') : vacio('Sin descensos registrados')}
             </div>
           </div>
+          ${tv.promovidos.size ? `<div>
+            <div style="font-size:12px;font-weight:700;color:var(--verde);margin-bottom:8px;">▲ PROMOVIDOS <span style="font-weight:400;color:var(--texto-3);">(sin ascender)</span></div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              ${[...tv.promovidos].map(e => chip(e,'asc')).join('')}
+            </div>
+          </div>` : ''}
         </div>`;
 
   const bloqueDivision = (d) => {
