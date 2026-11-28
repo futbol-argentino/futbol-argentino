@@ -1748,31 +1748,6 @@ header::after{animation:none;height:4px;background:var(--azul)}
         </div>
       </div>
 
-      <!-- Directores Técnicos -->
-      <div class="tabla-wrapper" style="margin-bottom:16px;">
-        <div class="tabla-header" onclick="toggleDTsEquipo()" style="cursor:pointer;user-select:none;">
-          <div class="tabla-titulo">🧑‍💼 Directores Técnicos</div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <div class="tabla-count" id="detalle-dts-count"></div>
-            <span id="arrow-dts" style="color:var(--texto-2);font-size:12px;transition:transform 0.2s;">▼</span>
-          </div>
-        </div>
-        <div id="dts-contenido" style="display:none;">
-          <div style="padding:14px 18px;border-bottom:1px solid var(--borde);display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-            <span class="detalle-filtro-label">Ordenar por:</span>
-            <select id="dts-orden" onchange="aplicarOrdenDTsEquipo()" class="filtro-select" style="max-width:240px;">
-              <option value="reciente">📅 Más recientes primero</option>
-              <option value="antiguo">📅 Más antiguos primero</option>
-              <option value="pj">🔢 Más partidos dirigidos</option>
-              <option value="pg">✅ Más victorias</option>
-              <option value="pe">🤝 Más empates</option>
-              <option value="pp">❌ Más derrotas</option>
-            </select>
-          </div>
-          <div id="tabla-dts-equipo"></div>
-        </div>
-      </div>
-
       <!-- Filtro rival -->
       <div class="detalle-filtro" id="detalle-filtro-wrap">
         <span class="detalle-filtro-label">Filtrar rival:</span>
@@ -4232,9 +4207,6 @@ function verDetalleEquipo(id, moverScrollArriba = true) {
 
   // Récords del equipo
   renderRecordsEquipo(id, calcularRecordsEquipo(id, pe));
-
-  // Directores Técnicos del equipo
-  renderDTsEquipo(id);
 
   // Tabla de rivales (con filtros por división / torneo)
   iniciarFiltrosRivales(id, pe);
@@ -7520,6 +7492,8 @@ function renderEstadisticasEquipos() {
   const divisionPorTemporada = {};
   temporadasArr.forEach(t => { divisionPorTemporada[t.ID_Temporada] = _claveFiltroDivStats(t); });
 
+  const extintos = new Set(equiposArr.filter(e => e.Division === 'Extintos').map(e => String(e.ID_Equipo)));
+
   // Acumula las estadísticas de todos los partidos jugados. Si se pasa idMaximo, solo cuenta
   // los partidos con ID_Partido menor a ese número (ranking "de antes", para las flechas).
   const acumular = (idMaximo) => {
@@ -7573,6 +7547,8 @@ function renderEstadisticasEquipos() {
         });
       });
     });
+    // Los equipos extintos no aparecen en las tablas (ni en el ranking "de antes", para que las flechas sigan siendo coherentes)
+    Object.keys(stats).forEach(id => { if (extintos.has(String(id))) delete stats[id]; });
     return stats;
   };
 
@@ -13826,7 +13802,7 @@ function renderLineaTiempoEquipo(equipoId) {
     }
 
     // Torneos del año: los que ganó se marcan en dorado (el mismo del número del año) y en los que fue subcampeón, en plateado.
-    // Con 1 o 2 torneos van en una sola línea separados por "·"; con 3 o más, uno debajo del otro.
+    // Con 1 torneo va en una sola línea; con 2 o más, uno debajo del otro.
     const listaTorneos = [...reg.ligas, ...reg.copas];
     const spanTorneo = ([nombre, res]) => res === 'oro'
       ? `<span style="color:var(--oro);font-weight:600;">${nombre}</span>`
@@ -13834,7 +13810,7 @@ function renderLineaTiempoEquipo(equipoId) {
         ? `<span style="color:#93A7BD;font-weight:700;">${nombre}</span>`
         : `<span>${nombre}</span>`);
     const torneosHTML = !listaTorneos.length ? '—'
-      : listaTorneos.length >= 3
+      : listaTorneos.length >= 2
         ? `<div style="display:flex;flex-direction:column;gap:3px;margin-top:2px;">${listaTorneos.map(x => `<div>${spanTorneo(x)}</div>`).join('')}</div>`
         : listaTorneos.map(spanTorneo).join('<span style="color:var(--texto-3);"> · </span>');
 
